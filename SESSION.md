@@ -141,6 +141,102 @@ push sequence must start with `git init`.
 Next steps: Initialize Git, add the GitHub remote, commit the current contents,
 and push the `main` branch.
 
+## 2026-05-22 00:24 EEST
+
+Goal: Diagnose generic `failed to push some refs` after attempting to push the
+new GitHub repository.
+
+Files changed:
+
+- `.gitignore`
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git remote -v`
+- `git log --oneline --decorate --max-count=5`
+- `git branch -vv`
+- `sed -n '1,220p' .gitignore`
+- `ls -la .codex`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+
+Status: The local repository has no commits yet, while all project files are
+staged. Remote `origin` is set to
+`https://github.com/VedenemoDev/VedenemoMonorepo.git`. `.codex` was staged, so
+`.gitignore` was updated to ignore it.
+
+Next steps: Remove `.codex` from the Git index, stage the updated `.gitignore`,
+create the initial commit, and push `main` to `origin`.
+
+## 2026-05-22 00:27 EEST
+
+Goal: Diagnose `git pull` reporting no tracking information for local `main`.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git remote -v`
+- `git branch -vv`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Local branch `main` exists and has commit `8fc8a6a`, but it has no
+upstream tracking branch. Remote `origin` is configured. `.gitignore` and
+`SESSION.md` have local modifications.
+
+Next steps: Push with `git push -u origin main` to create/link the remote branch,
+or set upstream with `git branch --set-upstream-to=origin/main main` if the
+remote branch already exists.
+
+## 2026-05-22 00:28 EEST
+
+Goal: Handle a likely accidental one-character message.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+
+Status: No project change requested. Local branch `main` still has uncommitted
+changes in `.gitignore` and `SESSION.md`.
+
+Next steps: Await the next command or error output from the user.
+
+## 2026-05-22 00:28 EEST
+
+Goal: Diagnose `git pull origin main --allow-unrelated-histories` failing
+because Git requires an explicit reconciliation strategy.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git log --oneline --decorate --graph --max-count=10 --all`
+- `git branch -a -vv`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Local `main` is at `8fc8a6a Initial Vedenemo monorepo skeleton`.
+Remote `origin/main` is at `d5133a9 Initial commit`. The histories are
+unrelated/divergent, and local `.gitignore` plus `SESSION.md` have uncommitted
+changes.
+
+Next steps: Commit or stash local modifications, then merge the remote
+GitHub-created initial commit with `git pull --no-rebase origin main
+--allow-unrelated-histories`, resolve conflicts if any, and push with
+`git push -u origin main`.
+
 ## 2026-05-22 00:01 EEST
 
 Goal: Update `.gitignore` for the current Java Maven plus Vite TypeScript
