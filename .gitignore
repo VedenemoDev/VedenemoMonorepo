@@ -1,0 +1,19 @@
+# Maven / Java
+target/
+
+# Node / Vite
+node_modules/
+vedenemo-ux/dist/
+
+# IDEs and editor metadata
+.idea/
+.vscode/
+*.iml
+
+# OS and local environment files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.env
+.env.*

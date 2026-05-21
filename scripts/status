@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+WORKSPACE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+cd "$WORKSPACE_ROOT"
+
+echo "============================================================"
+echo " Vedenemo workspace status"
+echo "============================================================"
+echo
+echo "Workspace root:"
+echo "  $WORKSPACE_ROOT"
+echo
+
+echo "============================================================"
+echo " Workspace files"
+echo "============================================================"
+
+echo
+echo "AGENTS.md:"
+if [ -f AGENTS.md ]; then
+  echo "  exists"
+else
+  echo "  missing"
+fi
+
+echo
+echo "Current task:"
+if [ -f tasks/current.md ]; then
+  sed -n '1,160p' tasks/current.md
+else
+  echo "  tasks/current.md missing"
+fi
+
+echo
+echo "Latest handoff:"
+if [ -f sessions/handoff.md ]; then
+  sed -n '1,200p' sessions/handoff.md
+else
+  echo "  sessions/handoff.md missing"
+fi
+
+echo
+echo "Recent session log:"
+if [ -f sessions/session-log.md ]; then
+  tail -80 sessions/session-log.md
+else
+  echo "  sessions/session-log.md missing"
+fi
+
+echo
+echo "============================================================"
+echo " Git repositories"
+echo "============================================================"
+
+found_repo=false
+
+for dir in */ ; do
+  [ -d "$dir/.git" ] || continue
+
+  found_repo=true
+  repo="${dir%/}"
+
+  echo
+  echo "------------------------------------------------------------"
+  echo " Repository: $repo"
+  echo "------------------------------------------------------------"
+
+  (
+    cd "$repo"
+
+    echo
+    echo "Branch:"
+    git branch --show-current 2>/dev/null || echo "  unable to read branch"
+
+    echo
+    echo "Status:"
+    if git diff --quiet && git diff --cached --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+      echo "  clean"
+    else
+      git status --short
+    fi
+
+    echo
+    echo "Recent commits:"
+    git log --oneline -5 2>/dev/null || echo "  no commits or unable to read log"
+
+    echo
+    echo "Diff stat:"
+    git diff --stat || true
+
+    echo
+    echo "Staged diff stat:"
+    git diff --cached --stat || true
+  )
+done
+
+if [ "$found_repo" = false ]; then
+  echo
+  echo "No child Git repositories found."
+fi
+
+echo
+echo "============================================================"
+echo " Done"
+echo "============================================================"
