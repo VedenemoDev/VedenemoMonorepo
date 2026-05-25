@@ -367,3 +367,31 @@ format/validate/apply were not run.
 
 Next steps: Commit and push, then configure a GCP project and GitHub repository
 variables before enabling real deployment.
+
+## 2026-05-25 22:30 EEST
+
+Goal: Add root Firebase setup instructions for creating GCP project resources,
+configuring GitHub variables, and deploying from the Codex CLI workflow.
+
+Files changed:
+
+- `FIREBASE_SETUP.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' .github/workflows/deploy-ux.yml`
+- `sed -n '1,240p' infra/gcp/firebase-hosting/README.md`
+- `sed -n '1,220p' infra/gcp/firebase-hosting/main.tf`
+- `git status --short --branch`
+- `sed -n '1,280p' FIREBASE_SETUP.md`
+- `rg -n "GCP_PROJECT_ID|GCP_WORKLOAD_IDENTITY_PROVIDER|GCP_DEPLOY_SERVICE_ACCOUNT|FIREBASE_HOSTING_SITE|deploy-ux.yml|firebase_site_id|github_repository" FIREBASE_SETUP.md .github/workflows/deploy-ux.yml infra/gcp/firebase-hosting`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added a root-level Firebase setup guide covering local tool auth,
+GCP project creation, Terraform apply, GitHub repository variable setup,
+automatic/manual deployment, and a Codex CLI execution chain.
+
+Next steps: Commit and push the setup guide. Actual provisioning still requires
+choosing a real GCP project ID and Firebase Hosting site ID, plus local
+`gcloud`, `terraform`, and `gh` authentication.
