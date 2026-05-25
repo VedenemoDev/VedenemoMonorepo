@@ -1,0 +1,46 @@
+name: Deploy UX
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/deploy-ux.yml
+      - vedenemo-ux/**
+
+jobs:
+  firebase-hosting:
+    if: ${{ vars.GCP_PROJECT_ID != '' && vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && vars.GCP_DEPLOY_SERVICE_ACCOUNT != '' && vars.FIREBASE_HOSTING_SITE != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    defaults:
+      run:
+        working-directory: vedenemo-ux
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20.19.5'
+          cache: npm
+          cache-dependency-path: vedenemo-ux/package-lock.json
+
+      - run: npm ci --registry=https://registry.npmjs.org/ --no-audit --no-fund
+      - run: npm run build
+
+      - uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Select Firebase Hosting site
+        run: npx --yes firebase-tools@latest target:apply hosting vedenemo-ux "${{ vars.FIREBASE_HOSTING_SITE }}" --project "${{ vars.GCP_PROJECT_ID }}"
+
+      - name: Deploy Firebase Hosting
+        run: npx --yes firebase-tools@latest deploy --only hosting:vedenemo-ux --project "${{ vars.GCP_PROJECT_ID }}"

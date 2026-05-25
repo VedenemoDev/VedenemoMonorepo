@@ -331,3 +331,39 @@ and `mvn -B clean verify` locally.
 
 Next steps: Push the commit and confirm the GitHub Actions frontend workflow
 passes on the remote runner.
+
+## 2026-05-25 22:00 EEST
+
+Goal: Add Firebase Hosting deployment scaffolding for the Vite UX.
+
+Files changed:
+
+- `.github/workflows/deploy-ux.yml`
+- `.gitignore`
+- `infra/gcp/firebase-hosting/README.md`
+- `infra/gcp/firebase-hosting/main.tf`
+- `infra/gcp/firebase-hosting/outputs.tf`
+- `infra/gcp/firebase-hosting/variables.tf`
+- `infra/gcp/firebase-hosting/versions.tf`
+- `vedenemo-ux/firebase.json`
+- `SESSION.md`
+
+Commands run:
+
+- `terraform version`
+- `mkdir -p infra/gcp/firebase-hosting .github/workflows`
+- `npm run build`
+- `mvn -B clean verify`
+- `rg -n "applied-caas|PRIVATE KEY|client_secret|credentials_json|firebase-token|FIREBASE_TOKEN" .`
+- `rg -n "TODO|YOUR_|FIXME|PRIVATE KEY|client_secret|credentials_json|FIREBASE_TOKEN|applied-caas" .github vedenemo-ux infra .gitignore`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added a guarded GitHub Actions workflow for Firebase Hosting deploys,
+Firebase Hosting config for the Vite SPA, and Terraform scaffolding for Firebase
+Hosting plus Workload Identity Federation. The deploy workflow is skipped until
+the required GitHub repository variables are configured. `npm run build` and
+`mvn -B clean verify` passed. `terraform` is not installed locally, so Terraform
+format/validate/apply were not run.
+
+Next steps: Commit and push, then configure a GCP project and GitHub repository
+variables before enabling real deployment.

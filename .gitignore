@@ -18,3 +18,14 @@ Thumbs.db
 .env
 .env.*
 .codex
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+.terraform.lock.hcl
+
+# Generated Google GitHub Actions credentials
+gha-creds-*.json
