@@ -237,6 +237,34 @@ GitHub-created initial commit with `git pull --no-rebase origin main
 --allow-unrelated-histories`, resolve conflicts if any, and push with
 `git push -u origin main`.
 
+## 2026-05-22 00:35 EEST
+
+Goal: Record pause status after remote repository creation and push.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+- `git remote -v`
+- `git branch -vv`
+
+Status: Git repository has been created and pushed to remote
+`https://github.com/VedenemoDev/VedenemoMonorepo.git`. Local `main` tracks
+`origin/main` and is currently clean at commit `263382f Update local session and
+ignore files`. No successful backend or frontend builds have been confirmed yet.
+The frontend `npm ci` attempt appeared to hang or take too long without useful
+verbose output.
+
+Next steps: Resume by validating the WSL2 toolchain and builds. Suggested order:
+check Java/Maven with `java -version`, `javac -version`, and `mvn -version`;
+run `mvn clean verify`; check Node/npm with `node -v` and `npm -v`; rerun
+frontend install with more visibility, such as `npm ci --foreground-scripts
+--loglevel=info`, then `npm run build`.
+
 ## 2026-05-22 00:01 EEST
 
 Goal: Update `.gitignore` for the current Java Maven plus Vite TypeScript
@@ -269,3 +297,37 @@ environment files.
 
 Next steps: Run backend and frontend build checks once the WSL2 toolchain is
 installed.
+
+## 2026-05-25 21:36 EEST
+
+Goal: Diagnose and fix the GitHub frontend CI `npm ci` failure.
+
+Files changed:
+
+- `.github/workflows/backend-ci.yml`
+- `.github/workflows/frontend-ci.yml`
+- `vedenemo-ux/package.json`
+- `vedenemo-ux/package-lock.json`
+- `SESSION.md`
+
+Commands run:
+
+- `rg --files .github vedenemo-ux`
+- `sed -n '1,220p' .github/workflows/frontend-ci.yml`
+- `sed -n '1,220p' vedenemo-ux/package.json`
+- `sed -n '1,80p' vedenemo-ux/package-lock.json`
+- `rg -n "applied-caas|registry|packageManager|actions/(checkout|setup-node)|node-version|npm ci" .github vedenemo-ux`
+- `perl -0pi -e 's#https://packages\\.applied-caas-gateway1\\.internal\\.api\\.openai\\.org/artifactory/api/npm/npm-public/#https://registry.npmjs.org/#g' vedenemo-ux/package-lock.json`
+- `npm ci --registry=https://registry.npmjs.org/ --no-audit --no-fund --foreground-scripts --loglevel=info`
+- `npm run build`
+- `mvn -B clean verify`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Updated CI to use Node-24-compatible action versions while running the
+frontend project install on Node `20.19.5`. Rewrote `package-lock.json` tarball
+URLs from the local internal registry to `registry.npmjs.org`, pinned frontend
+dependency versions instead of `latest`, and verified `npm ci`, `npm run build`,
+and `mvn -B clean verify` locally.
+
+Next steps: Push the commit and confirm the GitHub Actions frontend workflow
+passes on the remote runner.

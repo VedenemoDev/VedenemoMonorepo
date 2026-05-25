@@ -7,19 +7,21 @@ on:
 jobs:
   frontend:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     defaults:
       run:
         working-directory: vedenemo-ux
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '20.19.5'
           cache: npm
           cache-dependency-path: vedenemo-ux/package-lock.json
 
-      - run: npm ci
+      - run: npm ci --registry=https://registry.npmjs.org/ --no-audit --no-fund
       - run: npm run build
