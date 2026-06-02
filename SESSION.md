@@ -395,3 +395,31 @@ automatic/manual deployment, and a Codex CLI execution chain.
 Next steps: Commit and push the setup guide. Actual provisioning still requires
 choosing a real GCP project ID and Firebase Hosting site ID, plus local
 `gcloud`, `terraform`, and `gh` authentication.
+
+## 2026-06-02 19:39 EEST
+
+Goal: Correct Firebase setup ADC authentication instructions after
+`gcloud auth application-default login` crashed with a scope mismatch warning.
+
+Files changed:
+
+- `FIREBASE_SETUP.md`
+- `SESSION.md`
+
+Commands run:
+
+- `gcloud version`
+- `gcloud info --run-diagnostics`
+- `which gcloud`
+- `git status --short --branch`
+- `sed -n '1,100p' FIREBASE_SETUP.md`
+- `tail -n 70 SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Updated the documented Google Cloud auth flow to use
+`gcloud auth login --update-adc`, added ADC token verification, and documented
+the `--no-browser` fallback for WSL environments. This avoids the failing
+copy-pasted verification-code flow.
+
+Next steps: Commit and push the documentation correction, then continue Firebase
+setup after `gcloud auth application-default print-access-token` succeeds.

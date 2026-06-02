@@ -20,18 +20,33 @@ Install and authenticate these tools on the machine that will provision GCP:
 Authenticate:
 
 ```bash
-gcloud auth login
-gcloud auth application-default login
+gcloud auth login --update-adc
 gh auth login
 ```
+
+`--update-adc` signs in to the Google Cloud CLI and writes Application Default
+Credentials (ADC) for Terraform in the same flow.
 
 Verify:
 
 ```bash
 gcloud auth list
+gcloud auth application-default print-access-token
 terraform version
 gh auth status
 ```
+
+The ADC command should print an access token. If the normal browser flow does
+not work in WSL, retry with:
+
+```bash
+gcloud auth login --update-adc --no-browser
+```
+
+This mode requires a second trusted machine with `gcloud` installed. Avoid the
+older copy-pasted verification-code flow if
+`gcloud auth application-default login` crashes with a `Scope has changed`
+warning.
 
 ## 2. Create a GCP Project
 
