@@ -524,3 +524,30 @@ build locally. The changed file is under `vedenemo-ux/**`, so pushing should
 trigger both `Frontend CI` and `Deploy UX`.
 
 Next steps: Commit and push, then check GitHub Actions and Firebase Hosting.
+
+## 2026-06-03 19:15 EEST
+
+Goal: Record a backend-first next-steps plan after Firebase UX deployment was
+validated.
+
+Files changed:
+
+- `BE_FIRST_STEPS_PLAN.md`
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added a root-level plan recommending that Firebase Hosting remains the
+static UX deployment target while backend deployment is deferred until a minimal
+runtime/API contract exists. The plan outlines near-term backend tests, boundary
+checks, one minimal core behavior, and later Cloud Run/private/Kubernetes
+deployment options.
+
+Next steps: Commit and push the backend-first plan.
