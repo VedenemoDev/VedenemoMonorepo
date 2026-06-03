@@ -423,3 +423,39 @@ copy-pasted verification-code flow.
 
 Next steps: Commit and push the documentation correction, then continue Firebase
 setup after `gcloud auth application-default print-access-token` succeeds.
+
+## 2026-06-03 11:29 EEST
+
+Goal: Fix Terraform Firebase API quota-project failures with local user ADC.
+
+Files changed:
+
+- `FIREBASE_SETUP.md`
+- `infra/gcp/firebase-hosting/versions.tf`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '1,260p' FIREBASE_SETUP.md`
+- `sed -n '1,120p' infra/gcp/firebase-hosting/versions.tf`
+- `sed -n '1,140p' infra/gcp/firebase-hosting/main.tf`
+- `terraform version`
+- `terraform fmt`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added `billing_project` and `user_project_override` to both Terraform
+Google providers so Terraform sends the configured project as the quota project.
+Updated Firebase setup docs with Google's client-based API guidance:
+set `billing/quota_project`, set the ADC quota project, export
+`GOOGLE_CLOUD_QUOTA_PROJECT`, and unset `GOOGLE_APPLICATION_CREDENTIALS` unless
+using an intentional external credential file.
+
+Next steps: Commit and push, then retry `terraform apply` after running the
+quota-project setup commands in the same shell.

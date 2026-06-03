@@ -73,6 +73,21 @@ gcloud services enable serviceusage.googleapis.com \
   --project "$GCP_PROJECT_ID"
 ```
 
+Set the active project and quota project for both `gcloud` and local ADC:
+
+```bash
+gcloud config set project "$GCP_PROJECT_ID"
+gcloud config set billing/quota_project "$GCP_PROJECT_ID"
+gcloud auth application-default set-quota-project "$GCP_PROJECT_ID"
+export GOOGLE_CLOUD_QUOTA_PROJECT="$GCP_PROJECT_ID"
+unset GOOGLE_APPLICATION_CREDENTIALS
+```
+
+`GOOGLE_APPLICATION_CREDENTIALS` should be unset here unless you intentionally
+want Terraform to use a service account or external credential JSON file. If it
+is set, it takes precedence over the local ADC file created by `gcloud auth
+login --update-adc`.
+
 If Google Cloud reports that billing is required for enabling services, link a
 billing account in the Google Cloud console or with `gcloud billing`. Firebase
 Hosting itself can still be kept on the Firebase Spark/free plan, but GCP project
@@ -199,6 +214,11 @@ export GITHUB_REPOSITORY_NAME="VedenemoDev/VedenemoMonorepo"
 
 gcloud projects create "$GCP_PROJECT_ID" --name="Vedenemo UX" --set-as-default
 gcloud services enable serviceusage.googleapis.com --project "$GCP_PROJECT_ID"
+gcloud config set project "$GCP_PROJECT_ID"
+gcloud config set billing/quota_project "$GCP_PROJECT_ID"
+gcloud auth application-default set-quota-project "$GCP_PROJECT_ID"
+export GOOGLE_CLOUD_QUOTA_PROJECT="$GCP_PROJECT_ID"
+unset GOOGLE_APPLICATION_CREDENTIALS
 
 cd infra/gcp/firebase-hosting
 terraform init
@@ -227,6 +247,21 @@ GitHub/GCP APIs may require explicit approval from the Codex CLI environment.
 ## 7. Troubleshooting
 
 If `Deploy UX` is skipped, check that all four GitHub variables exist.
+
+If Terraform fails with `requires a quota project`, run:
+
+```bash
+gcloud config set project "$GCP_PROJECT_ID"
+gcloud config set billing/quota_project "$GCP_PROJECT_ID"
+gcloud auth application-default set-quota-project "$GCP_PROJECT_ID"
+export GOOGLE_CLOUD_QUOTA_PROJECT="$GCP_PROJECT_ID"
+unset GOOGLE_APPLICATION_CREDENTIALS
+```
+
+Then retry `terraform apply`. Google classifies Firebase as a client-based API
+for this authentication path, so local user ADC must specify a quota project.
+The authenticated user must also have `serviceusage.services.use`, included in
+`roles/serviceusage.serviceUsageConsumer`, on the quota project.
 
 If authentication fails in GitHub Actions, compare:
 
