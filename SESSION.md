@@ -459,3 +459,36 @@ using an intentional external credential file.
 
 Next steps: Commit and push, then retry `terraform apply` after running the
 quota-project setup commands in the same shell.
+
+## 2026-06-03 17:21 EEST
+
+Goal: Update Firebase setup docs to reflect the successful browser-assisted
+GCP/Firebase onboarding path.
+
+Files changed:
+
+- `FIREBASE_SETUP.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,280p' FIREBASE_SETUP.md`
+- `sed -n '280,360p' FIREBASE_SETUP.md`
+- `sed -n '35,260p' FIREBASE_SETUP.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Documented that the initial setup is not fully command-line-only for a
+new account/project. The guide now includes accepting Google Cloud Terms,
+adding/linking billing, creating the initial Firebase project through the
+Firebase Console, importing `google_firebase_project.default` into Terraform
+state, and then running `terraform apply`.
+
+Next steps: Commit and push the corrected setup guide.

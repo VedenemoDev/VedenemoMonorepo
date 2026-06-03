@@ -48,7 +48,7 @@ older copy-pasted verification-code flow if
 `gcloud auth application-default login` crashes with a `Scope has changed`
 warning.
 
-## 2. Create a GCP Project
+## 2. Create and Prepare a GCP Project
 
 Choose globally unique IDs:
 
@@ -65,6 +65,21 @@ gcloud projects create "$GCP_PROJECT_ID" \
   --name="Vedenemo UX" \
   --set-as-default
 ```
+
+For a new Google Cloud account, some steps must be completed in the browser.
+The command line cannot accept every required Google/Firebase prompt.
+
+Open the Google Cloud Console while signed in as the same account:
+
+```text
+https://console.cloud.google.com/
+```
+
+Complete these browser-only setup steps:
+
+1. Accept Google Cloud Terms of Service if prompted.
+2. Add or select billing information.
+3. Link the billing account to `$GCP_PROJECT_ID`.
 
 Enable Service Usage first. Terraform uses this API to enable the rest:
 
@@ -88,21 +103,35 @@ want Terraform to use a service account or external credential JSON file. If it
 is set, it takes precedence over the local ADC file created by `gcloud auth
 login --update-adc`.
 
-If Google Cloud reports that billing is required for enabling services, link a
-billing account in the Google Cloud console or with `gcloud billing`. Firebase
-Hosting itself can still be kept on the Firebase Spark/free plan, but GCP project
-policy may require a billing account before API enablement succeeds.
+Open the Firebase Console:
 
-## 3. Apply Terraform
+```text
+https://console.firebase.google.com/
+```
+
+Complete the initial Firebase setup in the browser:
+
+1. Click `Add project`.
+2. Select the existing GCP project `$GCP_PROJECT_ID`.
+3. Complete the wizard.
+4. Disable or skip Google Analytics unless it is intentionally needed.
+
+This one-time Firebase browser onboarding avoids a generic Terraform
+`google_firebase_project.default` 403 error even when the caller already has
+`roles/owner` and `roles/firebase.admin`.
+
+## 3. Import Firebase Project and Apply Terraform
 
 Terraform config is intentionally separate from the app build. It creates:
 
 - required GCP/Firebase APIs
-- Firebase project linkage
 - Firebase Hosting site
 - GitHub Actions deploy service account
 - IAM roles needed by Firebase CLI deploys
 - Workload Identity Federation for keyless GitHub Actions auth
+
+The Firebase project itself was created through the browser in the previous
+step, so import it into Terraform state before applying:
 
 Run:
 
@@ -111,11 +140,21 @@ cd infra/gcp/firebase-hosting
 
 terraform init
 
+terraform import \
+  -var="project_id=$GCP_PROJECT_ID" \
+  -var="firebase_site_id=$FIREBASE_HOSTING_SITE" \
+  -var="github_repository=$GITHUB_REPOSITORY_NAME" \
+  google_firebase_project.default \
+  "projects/$GCP_PROJECT_ID"
+
 terraform apply \
   -var="project_id=$GCP_PROJECT_ID" \
   -var="firebase_site_id=$FIREBASE_HOSTING_SITE" \
   -var="github_repository=$GITHUB_REPOSITORY_NAME"
 ```
+
+If Terraform says `google_firebase_project.default` is already managed, skip the
+import and run `terraform apply`.
 
 After apply, capture outputs:
 
@@ -204,8 +243,8 @@ npx --yes firebase-tools@latest deploy --only hosting:vedenemo-ux --project "$GC
 
 ## 6. Codex CLI Execution Chain
 
-Once the project IDs are chosen and local auth is available, Codex can run this
-sequence from the repo root:
+Once the project IDs are chosen and local auth is available, Codex can run the
+command-line parts from the repo root:
 
 ```bash
 export GCP_PROJECT_ID="vedenemo-ux-prod"
@@ -219,9 +258,31 @@ gcloud config set billing/quota_project "$GCP_PROJECT_ID"
 gcloud auth application-default set-quota-project "$GCP_PROJECT_ID"
 export GOOGLE_CLOUD_QUOTA_PROJECT="$GCP_PROJECT_ID"
 unset GOOGLE_APPLICATION_CREDENTIALS
+```
+
+Pause here and complete the browser-only setup:
+
+1. Accept Google Cloud Terms of Service.
+2. Add billing information.
+3. Link billing to `$GCP_PROJECT_ID`.
+4. Open Firebase Console.
+5. Add Firebase to the existing project `$GCP_PROJECT_ID`.
+
+After the browser setup is complete, continue:
+
+```bash
+cd /home/vedenemodev/github
 
 cd infra/gcp/firebase-hosting
 terraform init
+
+terraform import \
+  -var="project_id=$GCP_PROJECT_ID" \
+  -var="firebase_site_id=$FIREBASE_HOSTING_SITE" \
+  -var="github_repository=$GITHUB_REPOSITORY_NAME" \
+  google_firebase_project.default \
+  "projects/$GCP_PROJECT_ID"
+
 terraform apply \
   -var="project_id=$GCP_PROJECT_ID" \
   -var="firebase_site_id=$FIREBASE_HOSTING_SITE" \
@@ -243,6 +304,9 @@ gh run list --workflow "Deploy UX" --limit 3
 
 Commands that authenticate, create cloud resources, apply Terraform, or call
 GitHub/GCP APIs may require explicit approval from the Codex CLI environment.
+The setup is not fully automatable from this environment because Google Cloud
+Terms of Service, billing setup, and initial Firebase onboarding may require
+browser interaction.
 
 ## 7. Troubleshooting
 
@@ -262,6 +326,22 @@ Then retry `terraform apply`. Google classifies Firebase as a client-based API
 for this authentication path, so local user ADC must specify a quota project.
 The authenticated user must also have `serviceusage.services.use`, included in
 `roles/serviceusage.serviceUsageConsumer`, on the quota project.
+
+If Terraform fails creating `google_firebase_project.default` with a generic
+`403: The caller does not have permission`, create/add the Firebase project once
+through the Firebase Console and import it:
+
+```bash
+terraform import \
+  -var="project_id=$GCP_PROJECT_ID" \
+  -var="firebase_site_id=$FIREBASE_HOSTING_SITE" \
+  -var="github_repository=$GITHUB_REPOSITORY_NAME" \
+  google_firebase_project.default \
+  "projects/$GCP_PROJECT_ID"
+```
+
+This is expected for some new accounts/projects because Firebase onboarding can
+require browser-side prompts that the API error does not describe clearly.
 
 If authentication fails in GitHub Actions, compare:
 
