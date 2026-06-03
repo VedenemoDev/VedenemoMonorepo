@@ -2,9 +2,9 @@ export function App() {
   return (
     <main className="app-shell">
       <section className="card">
-        <h1>Vedenemo UX Skeleton</h1>
-        <p>This frontend exists only to prove the initial project structure builds.</p>
-        <p>No backend integration or visualization is implemented yet.</p>
+        <h1>Vedenemo UX Deployment Check</h1>
+        <p>The Firebase Hosting pipeline is now serving updates from GitHub Actions.</p>
+        <p>This page is still intentionally minimal while the backend skeleton settles.</p>
       </section>
     </main>
   );

@@ -492,3 +492,35 @@ Firebase Console, importing `google_firebase_project.default` into Terraform
 state, and then running `terraform apply`.
 
 Next steps: Commit and push the corrected setup guide.
+
+## 2026-06-03 18:59 EEST
+
+Goal: Update the Vite UX front page text to verify automatic Firebase deploys
+from a pushed source change.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,220p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,220p' vedenemo-ux/src/styles.css`
+- `sed -n '1,180p' .github/workflows/deploy-ux.yml`
+- `npm run build`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Updated the visible UX front page text and verified the Vite production
+build locally. The changed file is under `vedenemo-ux/**`, so pushing should
+trigger both `Frontend CI` and `Deploy UX`.
+
+Next steps: Commit and push, then check GitHub Actions and Firebase Hosting.
