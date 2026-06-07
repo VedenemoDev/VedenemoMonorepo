@@ -551,3 +551,47 @@ checks, one minimal core behavior, and later Cloud Run/private/Kubernetes
 deployment options.
 
 Next steps: Commit and push the backend-first plan.
+
+## 2026-06-07 14:08 EEST
+
+Goal: Add a backend `/models/ping` proof-of-connectivity endpoint and a Vite UX
+Ping button configured for the Tailscale backend URL.
+
+Files changed:
+
+- `pom.xml`
+- `vedenemo-web-api/pom.xml`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/http/CorsSupport.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/http/WebApiConfig.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `vedenemo-web-api/src/test/TODO.md`
+- `vedenemo-ux/public/config.json`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `.github/workflows/deploy-ux.yml`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `mvn -B clean verify`
+- `npm run build`
+- `java -jar vedenemo-web-api/target/vedenemo-web-api-0.1.0-SNAPSHOT.jar`
+- `curl -fsS http://127.0.0.1:18080/models/ping`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added a separate `vedenemo-web-api` Javalin adapter/runtime module with
+`GET /models/ping` returning `{"status":"ok"}` and an executable shaded jar.
+Added UX runtime config at `public/config.json`, a Ping button that calls the
+configured backend, and deploy workflow support for overriding the backend URL
+from GitHub variable `VEDENEMO_API_BASE_URL`.
+
+Next steps: Commit and push, then confirm backend CI, frontend CI, and Firebase
+deploy complete on GitHub Actions.

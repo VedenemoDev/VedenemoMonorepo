@@ -17,11 +17,13 @@
         <module>vedenemo-storage-memory</module>
         <module>vedenemo-cli</module>
         <module>vedenemo-app</module>
+        <module>vedenemo-web-api</module>
     </modules>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <javalin.version>7.2.2</javalin.version>
     </properties>
 
     <build>
