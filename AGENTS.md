@@ -146,3 +146,35 @@ Before finishing a session, append a concise entry that includes:
 - files changed
 - commands run
 - current status and next steps
+
+## Architecture documentation
+
+The repository separates architecture definition/planning documents from the
+current implementation architecture document.
+
+Architecture definition and planning documents describe rules, constraints,
+decisions, intended direction, and future prospects. These include:
+
+- `docs/architecture/*`
+- `docs/roadmap/*`
+- `decisions/*`
+
+`docs/architecture_doc.md` is a special case. It is living documentation of the
+current concrete implementation only. It must not describe planned architecture
+as if it already exists.
+
+When making any meaningful architectural change, update `docs/architecture_doc.md` in the same change.
+
+Before updating it, read `docs/architecture_doc_instructions.md` and follow its rules.
+
+Use Mermaid diagrams directly in Markdown. Do not generate PNG/SVG diagram artifacts unless explicitly requested.
+
+Architectural changes include, for example:
+
+- new modules or packages
+- changed component boundaries
+- new dependencies between components
+- new runtime flows
+- new extension points
+- changed persistence, API, CLI, plugin, or visualization structure
+- removed or renamed architectural concepts

@@ -265,6 +265,91 @@ run `mvn clean verify`; check Node/npm with `node -v` and `npm -v`; rerun
 frontend install with more visibility, such as `npm ci --foreground-scripts
 --loglevel=info`, then `npm run build`.
 
+## 2026-07-09 01:43 EEST
+
+Goal: Digest updated `AGENTS.md` instructions and identify any refinements
+needed.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,260p' AGENTS.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,260p' docs/architecture_doc_instructions.md`
+- `if [ -f docs/architecture_doc.md ]; then sed -n '1,260p' docs/architecture_doc.md; else printf 'MISSING docs/architecture_doc.md\\n'; fi`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+
+Status: `AGENTS.md` now adds a living architecture documentation rule for
+`docs/architecture_doc.md` and requires reading
+`docs/architecture_doc_instructions.md` before updating it. The instruction file
+exists, but `docs/architecture_doc.md` is currently missing.
+
+Next steps: Clarify whether to create the initial `docs/architecture_doc.md`
+now, and whether `docs/architecture_doc.md` should be added to the protected
+architectural documents list in `AGENTS.md`.
+
+## 2026-07-09 01:50 EEST
+
+Goal: Create the initial current-implementation architecture document and clarify
+the distinction between architecture definition/planning documents and the
+living implementation architecture document.
+
+Files changed:
+
+- `AGENTS.md`
+- `docs/architecture_doc.md`
+- `docs/architecture_doc_instructions.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,320p' AGENTS.md`
+- `sed -n '1,320p' docs/architecture_doc_instructions.md`
+- `find . -maxdepth 3 -type f | sort`
+- `sed -n '1,260p' pom.xml`
+- `find vedenemo-model-api vedenemo-core-spi vedenemo-core vedenemo-storage-memory vedenemo-cli vedenemo-app vedenemo-web-api -path '*/src/main/java/*' -type f | sort`
+- `sed -n '1,260p' vedenemo-web-api/pom.xml`
+- `sed -n '1,220p' vedenemo-ux/package.json`
+- `sed -n '1,220p' .github/workflows/deploy-ux.yml`
+- `sed -n '1,220p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `sed -n '1,220p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/http/WebApiConfig.java`
+- `sed -n '1,220p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/http/CorsSupport.java`
+- `sed -n '1,220p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `sed -n '1,220p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,220p' vedenemo-ux/public/config.json`
+- `sed -n '1,220p' vedenemo-app/src/main/java/org/vedenemo/app/VedenemoApp.java`
+- `sed -n '1,220p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCli.java`
+- `sed -n '1,220p' vedenemo-core-spi/src/main/java/org/vedenemo/core/spi/storage/ModelStorage.java`
+- `sed -n '1,220p' vedenemo-storage-memory/src/main/java/org/vedenemo/storage/memory/InMemoryModelStorage.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `sed -n '1,220p' .github/workflows/backend-ci.yml && sed -n '1,220p' .github/workflows/frontend-ci.yml`
+- `sed -n '104,180p' AGENTS.md`
+- `sed -n '1,220p' docs/architecture_doc.md`
+- `sed -n '1,80p' docs/architecture_doc_instructions.md`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added `docs/architecture_doc.md` as the current concrete architecture
+snapshot, including module overview, Mermaid diagrams, runtime flows, CI/deploy
+notes, constraints reflected in code, and current gaps. Updated `AGENTS.md` and
+`docs/architecture_doc_instructions.md` to make clear that
+`docs/architecture_doc.md` is a special current-state document, while
+`docs/architecture/*`, `docs/roadmap/*`, and `decisions/*` are definition,
+planning, rule, and prospect documents.
+
+Next steps: Review the new architecture doc for terminology and desired level
+of detail, then commit when acceptable.
+
 ## 2026-05-22 00:01 EEST
 
 Goal: Update `.gitignore` for the current Java Maven plus Vite TypeScript
@@ -595,3 +680,26 @@ from GitHub variable `VEDENEMO_API_BASE_URL`.
 
 Next steps: Commit and push, then confirm backend CI, frontend CI, and Firebase
 deploy complete on GitHub Actions.
+
+## 2026-07-09 01:57 EEST
+
+Goal: Commit and push the architecture documentation updates to the remote
+repository.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff -- AGENTS.md docs/architecture_doc.md docs/architecture_doc_instructions.md SESSION.md`
+- `tail -n 80 SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Preparing to commit the new current-implementation architecture
+document, updated architecture documentation instructions, updated agent
+instructions, and session handoff entries.
+
+Next steps: Stage the documentation changes, commit with a descriptive message,
+and push to `origin/main`.
