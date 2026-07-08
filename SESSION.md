@@ -703,3 +703,25 @@ instructions, and session handoff entries.
 
 Next steps: Stage the documentation changes, commit with a descriptive message,
 and push to `origin/main`.
+
+## 2026-07-09 02:01 EEST
+
+Goal: Answer whether Javalin can support WebSockets for pushing model changes to
+the UX.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Confirmed from Javalin documentation that WebSocket routes are supported
+and are a viable fit for backend-to-UX push notifications. Noted that a concrete
+implementation should update `docs/architecture_doc.md` because it would add a
+new runtime flow and API surface.
+
+Next steps: If model-change push is selected for implementation, design a small
+event stream boundary first, then add a WebSocket endpoint in `vedenemo-web-api`
+without leaking Javalin types into core or SPI.
