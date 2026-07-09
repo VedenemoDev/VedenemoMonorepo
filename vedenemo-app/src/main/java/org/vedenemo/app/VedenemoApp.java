@@ -1,6 +1,7 @@
 package org.vedenemo.app;
 
 import org.vedenemo.core.command.CommandExecutor;
+import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.storage.memory.InMemoryModelStorage;
 
 /**
@@ -13,5 +14,9 @@ public final class VedenemoApp {
 
     public static CommandExecutor createCommandExecutor() {
         return new CommandExecutor(new InMemoryModelStorage());
+    }
+
+    public static ModelRegistry createModelRegistry() {
+        return new ModelRegistry();
     }
 }

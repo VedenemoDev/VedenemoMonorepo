@@ -725,3 +725,191 @@ new runtime flow and API surface.
 Next steps: If model-change push is selected for implementation, design a small
 event stream boundary first, then add a WebSocket endpoint in `vedenemo-web-api`
 without leaking Javalin types into core or SPI.
+
+## 2026-07-09 18:51 EEST
+
+Goal: Analyze and refine the new backlog task "Create model root entity task"
+as a planning step before execution.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,260p' AGENTS.md`
+- `tail -n 100 SESSION.md`
+- `find tasks docs decisions -maxdepth 3 -type f | sort`
+- `git status --short --branch`
+- `sed -n '1,260p' tasks/backlog.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `sed -n '1,260p' docs/architecture_doc.md`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md && sed -n '1,220p' docs/architecture/module-map.md && sed -n '1,220p' docs/architecture/coding-rules.md && sed -n '1,180p' docs/architecture/testing-strategy.md`
+- `find . -path '*/src/test/*' -type f | sort`
+- `find . -name 'pom.xml' -maxdepth 3 -print -exec sed -n '1,220p' {} \\;`
+- `find vedenemo-web-api/src -type f -maxdepth 6 | sort`
+- `git diff -- tasks/backlog.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Rewrote the backlog item into a planning-ready task titled "Create
+ModelRoot Entity And Model Registry". The task now separates domain model,
+process-local registry, HTTP API, tests, architecture documentation, and open
+questions. No implementation code was changed and no builds were run.
+
+Next steps: Resolve the open questions in `tasks/backlog.md`, then move the task
+to execution by updating `tasks/current-task.md` or explicitly approving
+implementation.
+
+## 2026-07-09 18:59 EEST
+
+Goal: Review the user's answers to the ModelRoot task planning questions and
+fold resolved decisions into the task description.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,260p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `tail -n 80 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,240p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Incorporated the answers into the task requirements: `azName`
+uniqueness is case-insensitive while preserving original case, digits are not
+allowed in `azName`, `visName` must be non-blank, semantic version leading
+zeroes are normalized, `POST /models/add` returns the created model root, and
+JUnit 5 plus small test-scoped HTTP testing dependencies are acceptable.
+
+Next steps: Confirm whether `azName` should allow hyphens. Current task wording
+assumes only ASCII letters and underscores, starting with an ASCII letter.
+
+## 2026-07-09 19:00 EEST
+
+Goal: Finalize the `azName` validation rule for the ModelRoot backlog task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,240p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+
+Status: Updated the task to make the `azName` rule final: it must start with an
+ASCII letter and then contain only ASCII letters and underscores. Numeric
+characters and hyphens are not allowed. The task now states that all planning
+questions are resolved and it is ready to move to execution when selected as the
+current task.
+
+Next steps: Commit the planning update or move it into `tasks/current-task.md`
+when implementation should begin.
+
+## 2026-07-09 19:10 EEST
+
+Goal: Select and execute the ModelRoot task while preserving task history.
+
+Files changed:
+
+- `pom.xml`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `docs/architecture_doc.md`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelVersion.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/registry/ModelRegistry.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/registry/DuplicateModelRootException.java`
+- `vedenemo-app/src/main/java/org/vedenemo/app/VedenemoApp.java`
+- `vedenemo-web-api/pom.xml`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,260p' AGENTS.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,180p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,260p' docs/architecture_doc_instructions.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `find vedenemo-model-api vedenemo-core-spi vedenemo-core vedenemo-storage-memory vedenemo-app vedenemo-cli vedenemo-web-api -type f | sort`
+- `sed -n '1,260p' pom.xml`
+- `sed -n '1,260p' vedenemo-web-api/pom.xml`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VedenemoModel.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `sed -n '1,220p' vedenemo-app/src/main/java/org/vedenemo/app/VedenemoApp.java`
+- `sed -n '1,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `sed -n '1,220p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `mvn -B clean verify`
+- `sed -n '1,280p' docs/architecture_doc.md`
+- `git status --short --branch`
+- `find vedenemo-model-api/src/main/java vedenemo-core/src/main/java vedenemo-web-api/src/main/java vedenemo-web-api/src/test/java -type f | sort`
+- `mvn -B clean verify`
+- `sed -n '1,240p' docs/architecture_doc.md`
+- `sed -n '1,40p' tasks/backlog.md && sed -n '1,40p' tasks/current-task.md`
+- `git status --short --branch`
+- `git diff --stat`
+- `sed -n '240,340p' docs/architecture_doc.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `find vedenemo-model-api/src/main/java/org/vedenemo/core/model vedenemo-core/src/main/java/org/vedenemo/core/registry vedenemo-web-api/src/test/java -type f | sort`
+- `nl -ba vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java | sed -n '1,180p'`
+- `nl -ba vedenemo-core/src/main/java/org/vedenemo/core/registry/ModelRegistry.java | sed -n '1,160p'`
+- `nl -ba vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java | sed -n '1,220p'`
+- `nl -ba vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java | sed -n '1,240p'`
+- `mvn -B clean verify`
+
+Status: Implemented `ModelRoot` and `ModelVersion` in the pure JDK
+`vedenemo-model-api` module. Added a process-local, insertion-ordered
+`ModelRegistry` in `vedenemo-core` with case-insensitive `azName` uniqueness.
+Updated app wiring and added `POST /models/add` plus `GET /models/list` in
+`vedenemo-web-api`, with Jackson isolated to the web adapter. Added JUnit 5
+endpoint tests covering valid add/list, duplicate names, case-only duplicates,
+blank `visName`, invalid version, and leading-zero version normalization.
+Updated `docs/architecture_doc.md`. Marked the backlog task as executed and
+`tasks/current-task.md` as completed while preserving the full task text.
+
+Verification: `mvn -B clean verify` succeeded after the final code cleanup.
+`git diff --check` reported no whitespace errors.
+
+Next steps: Review the implementation, then commit and push if acceptable.
+
+## 2026-07-09 19:17 EEST
+
+Goal: Commit and push the completed ModelRoot implementation.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Preparing a detailed commit containing the completed ModelRoot domain
+model, process-local registry, web API endpoints, endpoint tests, task record
+updates, and current architecture documentation updates.
+
+Next steps: Stage all changes, commit with a detailed message, push to
+`origin/main`, and verify clean local status.
