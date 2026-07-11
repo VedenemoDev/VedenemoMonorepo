@@ -2,7 +2,7 @@ package org.vedenemo.core.model;
 
 import java.util.Objects;
 
-public record ModelVersion(int major, int minor, int patch) {
+public record ModelVersion(int major, int minor, int patch) implements Comparable<ModelVersion> {
 
     public ModelVersion {
         requireNonNegative("major", major);
@@ -22,6 +22,20 @@ public record ModelVersion(int major, int minor, int patch) {
     @Override
     public String toString() {
         return major + "." + minor + "." + patch;
+    }
+
+    @Override
+    public int compareTo(ModelVersion other) {
+        Objects.requireNonNull(other, "other must not be null");
+        int majorComparison = Integer.compare(major, other.major);
+        if (majorComparison != 0) {
+            return majorComparison;
+        }
+        int minorComparison = Integer.compare(minor, other.minor);
+        if (minorComparison != 0) {
+            return minorComparison;
+        }
+        return Integer.compare(patch, other.patch);
     }
 
     private static int parsePart(String name, String value) {

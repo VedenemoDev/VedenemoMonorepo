@@ -33,7 +33,7 @@ subgraph Core["Core"]
     CoreModule["vedenemo-core<br/>command placeholders"]
     ModelRegistry["ModelRegistry<br/>process-local known models"]
     Spi["vedenemo-core-spi<br/>ModelStorage port"]
-    ModelApi["vedenemo-model-api<br/>ModelRoot, ModelVersion"]
+    ModelApi["vedenemo-model-api<br/>ModelRoot, ModelVersion, VEntity, VAttribute"]
 end
 
 subgraph Adapters["Adapters"]
@@ -66,6 +66,27 @@ Shared model API module. It currently contains:
 
 - `ModelRoot`, the first concrete model root entity
 - `ModelVersion`, a normalized semantic version value
+- `Versionable`, an abstract base class for model elements with lifecycle
+  version metadata
+- `DataType`, the initial enum of supported attribute data types:
+  `TEXT`, `NUMERIC`, `URL`, and `DATA`
+- `VAttribute`, a model attribute with `azName`, `visName`, `DataType`, and
+  lifecycle version metadata
+- `VEntity`, a model entity with `azName`, `visName`, lifecycle version
+  metadata, and an ordered attribute collection
+
+`ModelRoot`, `VEntity`, and `VAttribute` share the same `azName` rule: the name
+must start with an ASCII letter and then contain only ASCII letters and
+underscores. Original casing is preserved. Case-insensitive uniqueness keys are
+used where uniqueness is enforced.
+
+`VEntity` preserves attribute insertion order and enforces attribute `azName`
+uniqueness case-insensitively. It exposes attributes as a read-only snapshot
+list. Attributes can be removed by `azName` or by `VAttribute` instance while a
+model is under construction.
+
+`Versionable` requires `activeSince`. `deprecatedSince` is optional, but when it
+is present it must be strictly later than `activeSince`.
 
 Dependencies: Java JDK only.
 
@@ -231,9 +252,10 @@ GitHub Actions contains separate backend and frontend CI workflows:
 - backend CI runs `mvn -B clean verify`
 - frontend CI runs `npm ci` and `npm run build` in `vedenemo-ux`
 
-Backend verification includes JUnit 5 endpoint tests for the model add/list
-HTTP API in `vedenemo-web-api` and focused `InMemoryModelStorage` tests for
-storing and loading `ModelRoot` instances.
+Backend verification includes focused model API tests for `VAttribute`,
+`VEntity`, and lifecycle validation, JUnit 5 endpoint tests for the model
+add/list HTTP API in `vedenemo-web-api`, and focused `InMemoryModelStorage`
+tests for storing and loading `ModelRoot` instances.
 
 The UX deployment workflow builds `vedenemo-ux` and deploys it to Firebase
 Hosting when required GitHub variables are present. The deployment workflow can
@@ -255,6 +277,7 @@ override `public/config.json` from the `VEDENEMO_API_BASE_URL` GitHub variable.
 The current implementation does not yet contain:
 
 - real command execution behavior
-- model internals beyond `ModelRoot` metadata
+- binding `VEntity` instances under `ModelRoot`
+- model internals beyond the first `VEntity` / `VAttribute` structure
 - durable persistence
 - parser, scripting, plugin, or visualization implementations

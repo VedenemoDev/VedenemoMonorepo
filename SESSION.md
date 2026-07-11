@@ -914,6 +914,178 @@ updates, and current architecture documentation updates.
 Next steps: Stage all changes, commit with a detailed message, push to
 `origin/main`, and verify clean local status.
 
+## 2026-07-11 20:34 EEST
+
+Goal: Execute the `Create VEntity and VAttribute classes into
+vedenemo-model-api` task.
+
+Files changed:
+
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `docs/architecture_doc.md`
+- `vedenemo-model-api/pom.xml`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelVersion.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelTextRules.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/Versionable.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/VAttribute.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/VEntity.java`
+- `vedenemo-model-api/src/test/java/org/vedenemo/core/model/VAttributeTest.java`
+- `vedenemo-model-api/src/test/java/org/vedenemo/core/model/VEntityTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `pwd && rg --files`
+- `sed -n '1,220p' tasks/backlog.md`
+- `sed -n '220,520p' tasks/backlog.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelVersion.java`
+- `sed -n '1,220p' vedenemo-model-api/pom.xml`
+- `sed -n '1,260p' pom.xml`
+- `sed -n '1,260p' docs/architecture_doc.md`
+- `git status --short`
+- `mvn -B clean verify`
+- `git diff --check`
+- `sed -n '1,260p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VEntity.java`
+- `sed -n '1,260p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VAttribute.java`
+- `sed -n '1,260p' tasks/current-task.md`
+- `sed -n '160,380p' tasks/backlog.md`
+- `tail -n 120 SESSION.md`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Promoted the VEntity/VAttribute task to current, implemented the new
+model API types, extracted shared naming/display-name validation, made
+`ModelVersion` comparable for lifecycle ordering, added focused JUnit tests,
+updated current implementation documentation, and marked the backlog history
+entry executed while retaining the full task text.
+
+Verification: `mvn -B clean verify` passed with 17 new model-api tests.
+`git diff --check` reported no whitespace errors.
+
+Next steps: Review the changes and commit them when acceptable.
+
+## 2026-07-11 20:37 EEST
+
+Goal: Commit and push the completed VEntity/VAttribute model API task.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Preparing a detailed commit containing the new model API types,
+lifecycle validation, shared validation helper, tests, task history updates,
+current implementation documentation, and session record updates.
+
+Next steps: Stage all changes, commit with a detailed message, push to
+`origin/main`, and verify local status.
+
+## 2026-07-11 20:18 EEST
+
+Goal: Analyze and refine the new backlog task "Create VEntity and VAttribute
+classes into vedenemo-model-api" as a planning step before execution.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,260p' AGENTS.md`
+- `sed -n '1,320p' tasks/backlog.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,180p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,260p' docs/architecture_doc.md`
+- `find vedenemo-model-api/src/main/java/org/vedenemo/core/model -type f -maxdepth 1 -print -exec sed -n '1,220p' {} \\;`
+- `find vedenemo-model-api/src/test vedenemo-storage-memory/src/test vedenemo-web-api/src/test -type f 2>/dev/null | sort`
+- `rg "azName|visName|ModelVersion|DataType|Versionable|VEntity|VAttribute" -n`
+- `git diff -- tasks/backlog.md`
+- `sed -n '160,310p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Rewrote the new backlog entry into a planning-ready task that separates
+domain model scope, constraints, tests, architecture documentation, and open
+questions. Clarified that this task introduces model API types only, not REST,
+UX, persistence, parser behavior, or binding under `ModelRoot`. Also clarified
+that `VAttribute` validates its own fields, while `VEntity` enforces
+case-insensitive uniqueness of hosted attribute `azName` values; model-level
+entity uniqueness remains a later container responsibility.
+
+Next steps: Resolve the open questions in `tasks/backlog.md` before promoting
+the task to `tasks/current-task.md` for implementation.
+
+## 2026-07-11 20:24 EEST
+
+Goal: Incorporate user answers for the VEntity/VAttribute planning task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '174,330p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md SESSION.md`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '180,335p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Updated the VEntity/VAttribute task with resolved planning decisions:
+`deprecatedSince` is optional, `activeSince` is required and supplied from the
+owning `ModelRoot` version when model elements are added, `VEntity` supports
+removal by both `azName` and `VAttribute` instance, `attributes()` exposes a
+read-only `List<VAttribute>` copy, and `VEntity`/`VAttribute` should be
+immutable after construction except for explicit attribute management during
+model construction.
+
+Next steps: Resolve the remaining lifecycle ordering question: whether
+`deprecatedSince` must be greater than or equal to `activeSince` when present.
+
+## 2026-07-11 20:25 EEST
+
+Goal: Finalize the lifecycle ordering rule for the VEntity/VAttribute planning
+task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '250,335p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Updated the task to require `deprecatedSince` to be strictly later than
+`activeSince` when present. Equal versions are invalid. The task now has all
+planning questions resolved and is ready to move to execution when selected as
+the current task.
+
+Next steps: Promote the task to `tasks/current-task.md` when implementation
+should begin.
+
 ## 2026-07-11 13:13 EEST
 
 Goal: Assess whether the earlier skeleton `VedenemoModel` type is now obsolete
