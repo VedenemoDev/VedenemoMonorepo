@@ -990,6 +990,44 @@ current implementation documentation, and session record updates.
 Next steps: Stage all changes, commit with a detailed message, push to
 `origin/main`, and verify local status.
 
+## 2026-07-12 00:43 EEST
+
+Goal: Update `README.md` with local backend startup and VedenemoCli testing
+instructions.
+
+Files changed:
+
+- `README.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' AGENTS.md`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '1,260p' README.md`
+- `sed -n '1,220p' vedenemo-cli/src/main/java/org/vedenemo/cli/CliConfig.java`
+- `sed -n '1,260p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCli.java`
+- `sed -n '1,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/http/WebApiConfig.java`
+- `git diff --check`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added README instructions for building the backend, starting the web API
+JAR, configuring backend host/port, checking `/models/ping`, creating and
+ending sessions with curl, and running `VedenemoCli` against the backend with
+optional `VEDENEMO_API_BASE_URL`.
+
+Verification: `git diff --check` reported no whitespace errors. No code changed,
+so the Maven build was not rerun.
+
+Next steps: Review and commit the README update if acceptable.
+
 ## 2026-07-12 00:10 EEST
 
 Goal: Analyze and refine the new backlog task for introducing a Session concept
