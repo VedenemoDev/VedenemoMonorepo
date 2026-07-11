@@ -913,3 +913,135 @@ updates, and current architecture documentation updates.
 
 Next steps: Stage all changes, commit with a detailed message, push to
 `origin/main`, and verify clean local status.
+
+## 2026-07-11 13:13 EEST
+
+Goal: Assess whether the earlier skeleton `VedenemoModel` type is now obsolete
+or orphaned after adding `ModelRoot`.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `tail -n 80 SESSION.md`
+- `rg "VedenemoModel|ModelRoot|ModelStorage" -n`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: `VedenemoModel` is obsolete for the new `ModelRoot` HTTP flow, but it is
+not technically unused. It is still referenced by `ModelStorage`,
+`InMemoryModelStorage`, architecture docs, and the command executor storage
+port. Removing it safely would require a small follow-up refactor that either
+removes or repurposes `ModelStorage`, `InMemoryModelStorage`, and the
+`CommandExecutor` storage dependency.
+
+Next steps: Decide whether to create a cleanup task to retire the old
+`VedenemoModel`/`ModelStorage` skeleton path or adapt it to store `ModelRoot`.
+
+## 2026-07-11 13:17 EEST
+
+Goal: Create a backlog planning task for refactoring the remaining storage
+skeleton to use `ModelRoot`.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,260p' tasks/backlog.md`
+- `sed -n '1,180p' tasks/current-task.md`
+- `rg "VedenemoModel|ModelStorage|InMemoryModelStorage|CommandExecutor" -n vedenemo-* docs tasks`
+- `git status --short --branch`
+- `tail -n 90 tasks/backlog.md`
+- `git diff -- tasks/backlog.md SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added `Refactor ModelStorage To Use ModelRoot` to `tasks/backlog.md` as
+a planning task. The task keeps `ModelStorage`, `InMemoryModelStorage`,
+`CommandExecutor`, CLI wiring, and application composition intact while changing
+the stored model type from the earlier `VedenemoModel` placeholder to
+`ModelRoot`. It also notes that `VedenemoModel` should only be removed if no
+references remain after the refactor.
+
+Next steps: Review the planning task, then promote it to `tasks/current-task.md`
+when ready to execute.
+
+## 2026-07-11 13:22 EEST
+
+Goal: Execute the `Refactor ModelStorage To Use ModelRoot` task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `docs/architecture_doc.md`
+- `vedenemo-core-spi/src/main/java/org/vedenemo/core/spi/storage/ModelStorage.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/VedenemoModel.java`
+- `vedenemo-storage-memory/pom.xml`
+- `vedenemo-storage-memory/src/main/java/org/vedenemo/storage/memory/InMemoryModelStorage.java`
+- `vedenemo-storage-memory/src/test/java/org/vedenemo/storage/memory/InMemoryModelStorageTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,240p' AGENTS.md`
+- `sed -n '1,240p' tasks/backlog.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,180p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,260p' docs/architecture_doc_instructions.md`
+- `sed -n '1,200p' vedenemo-core-spi/src/main/java/org/vedenemo/core/spi/storage/ModelStorage.java`
+- `sed -n '1,220p' vedenemo-storage-memory/src/main/java/org/vedenemo/storage/memory/InMemoryModelStorage.java`
+- `sed -n '1,220p' vedenemo-storage-memory/pom.xml`
+- `sed -n '1,180p' vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `rg "VedenemoModel|ModelStorage|InMemoryModelStorage" -n vedenemo-* docs tasks`
+- `sed -n '1,300p' docs/architecture_doc.md`
+- `mvn -B clean verify`
+- `rg "VedenemoModel" -n vedenemo-* docs/architecture_doc.md tasks/current-task.md`
+- `git diff --check`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Promoted the refactor task to current, changed `ModelStorage` and
+`InMemoryModelStorage` to store `ModelRoot`, added focused
+`InMemoryModelStorage` tests, removed the obsolete `VedenemoModel` placeholder
+after code references were eliminated, and updated `docs/architecture_doc.md`.
+The backlog keeps the original task text and is marked executed; current task is
+marked completed with before/after notes.
+
+Verification: `mvn -B clean verify` passed. `git diff --check` reported no
+whitespace errors. Remaining `VedenemoModel` mentions are limited to task
+history/planning text.
+
+Next steps: Review the refactor and commit if acceptable.
+
+## 2026-07-11 13:25 EEST
+
+Goal: Commit and push the completed ModelStorage-to-ModelRoot refactor.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Preparing a detailed commit containing the ModelStorage SPI refactor,
+in-memory storage adapter update, removal of the obsolete `VedenemoModel`
+placeholder, storage tests, task record updates, and architecture documentation
+updates.
+
+Next steps: Stage all changes, commit with a detailed message, push to
+`origin/main`, and verify clean local status.

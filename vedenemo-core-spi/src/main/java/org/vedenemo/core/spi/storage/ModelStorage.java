@@ -1,6 +1,6 @@
 package org.vedenemo.core.spi.storage;
 
-import org.vedenemo.core.model.VedenemoModel;
+import org.vedenemo.core.model.ModelRoot;
 
 import java.util.Optional;
 
@@ -11,7 +11,7 @@ import java.util.Optional;
  */
 public interface ModelStorage {
 
-    void save(String modelId, VedenemoModel model);
+    void save(String modelId, ModelRoot model);
 
-    Optional<VedenemoModel> load(String modelId);
+    Optional<ModelRoot> load(String modelId);
 }

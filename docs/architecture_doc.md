@@ -33,7 +33,7 @@ subgraph Core["Core"]
     CoreModule["vedenemo-core<br/>command placeholders"]
     ModelRegistry["ModelRegistry<br/>process-local known models"]
     Spi["vedenemo-core-spi<br/>ModelStorage port"]
-    ModelApi["vedenemo-model-api<br/>VedenemoModel, ModelRoot, ModelVersion"]
+    ModelApi["vedenemo-model-api<br/>ModelRoot, ModelVersion"]
 end
 
 subgraph Adapters["Adapters"]
@@ -64,7 +64,6 @@ MemoryStorage --> ModelApi
 
 Shared model API module. It currently contains:
 
-- `VedenemoModel`, a minimal immutable record with an `id`
 - `ModelRoot`, the first concrete model root entity
 - `ModelVersion`, a normalized semantic version value
 
@@ -73,7 +72,7 @@ Dependencies: Java JDK only.
 ### `vedenemo-core-spi`
 
 Core-facing service provider interfaces. It currently defines `ModelStorage`
-with `save` and `load` operations for `VedenemoModel`.
+with `save` and `load` operations for `ModelRoot`.
 
 Dependencies:
 
@@ -100,7 +99,7 @@ Dependencies:
 ### `vedenemo-storage-memory`
 
 Initial in-memory storage adapter. `InMemoryModelStorage` implements
-`ModelStorage` with a `HashMap`.
+`ModelStorage` with a `HashMap` of `ModelRoot` instances.
 
 Dependencies:
 
@@ -233,7 +232,8 @@ GitHub Actions contains separate backend and frontend CI workflows:
 - frontend CI runs `npm ci` and `npm run build` in `vedenemo-ux`
 
 Backend verification includes JUnit 5 endpoint tests for the model add/list
-HTTP API in `vedenemo-web-api`.
+HTTP API in `vedenemo-web-api` and focused `InMemoryModelStorage` tests for
+storing and loading `ModelRoot` instances.
 
 The UX deployment workflow builds `vedenemo-ux` and deploys it to Firebase
 Hosting when required GitHub variables are present. The deployment workflow can

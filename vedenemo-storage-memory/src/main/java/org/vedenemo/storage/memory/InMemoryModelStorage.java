@@ -1,6 +1,6 @@
 package org.vedenemo.storage.memory;
 
-import org.vedenemo.core.model.VedenemoModel;
+import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.spi.storage.ModelStorage;
 
 import java.util.HashMap;
@@ -15,15 +15,15 @@ import java.util.Optional;
  */
 public final class InMemoryModelStorage implements ModelStorage {
 
-    private final Map<String, VedenemoModel> models = new HashMap<>();
+    private final Map<String, ModelRoot> models = new HashMap<>();
 
     @Override
-    public void save(String modelId, VedenemoModel model) {
+    public void save(String modelId, ModelRoot model) {
         models.put(requireModelId(modelId), Objects.requireNonNull(model, "model must not be null"));
     }
 
     @Override
-    public Optional<VedenemoModel> load(String modelId) {
+    public Optional<ModelRoot> load(String modelId) {
         return Optional.ofNullable(models.get(requireModelId(modelId)));
     }
 
