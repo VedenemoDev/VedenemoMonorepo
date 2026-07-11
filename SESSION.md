@@ -990,6 +990,195 @@ current implementation documentation, and session record updates.
 Next steps: Stage all changes, commit with a detailed message, push to
 `origin/main`, and verify local status.
 
+## 2026-07-12 00:10 EEST
+
+Goal: Analyze and refine the new backlog task for introducing a Session concept
+and CLI session startup flow.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,240p' AGENTS.md`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 140 SESSION.md`
+- `sed -n '1,520p' tasks/backlog.md`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `sed -n '1,180p' vedenemo-core/src/main/java/org/vedenemo/core/command/Command.java`
+- `sed -n '1,180p' vedenemo-core/src/main/java/org/vedenemo/core/command/NoOpCommand.java`
+- `sed -n '1,220p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCli.java`
+- `sed -n '1,220p' vedenemo-app/src/main/java/org/vedenemo/app/VedenemoApp.java`
+- `sed -n '1,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `sed -n '1,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/registry/ModelRegistry.java`
+- `git status --short --branch`
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Expanded the new backlog item into a planning draft with current
+implementation context, proposed session responsibilities, CommandExecutor
+binding considerations, CLI behavior, backend access boundary options, module
+placement, tests, architecture documentation expectations, and open questions.
+
+Next steps: Resolve the open questions before promoting the task to
+`tasks/current-task.md`.
+
+## 2026-07-12 00:19 EEST
+
+Goal: Incorporate user answers into the Session/CLI planning task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '330,560p' tasks/backlog.md`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/backlog.md`
+
+Status: Updated the backlog task to use HTTP API access for the CLI, add
+backend HTTP session endpoints now, keep `CommandExecutor` backend-side and
+bound to one active `Session`, store the selected model as optional model
+`azName`, use create-on-start/remove-on-exit for the first CLI iteration, and
+expose both execution-order and reverse-order command history snapshots.
+
+Next steps: Resolve the remaining endpoint, CLI backend URL, and first command
+endpoint scope questions before promoting the task to `tasks/current-task.md`.
+
+## 2026-07-12 00:22 EEST
+
+Goal: Finalize remaining planning decisions for the Session/CLI task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '430,580p' tasks/backlog.md`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/backlog.md`
+
+Status: Updated the task to use `POST /sessions/start` and
+`DELETE /sessions/{uuid}`, configure the CLI backend URL through
+`VEDENEMO_API_BASE_URL` with default `http://127.0.0.1:8080`, and exclude HTTP
+command endpoints from this task. The task now has all planning questions
+resolved.
+
+Next steps: Promote the Session/CLI task to `tasks/current-task.md` when
+execution should begin.
+
+## 2026-07-12 00:36 EEST
+
+Goal: Execute the Session/CLI task as the current task.
+
+Files changed:
+
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `docs/architecture_doc.md`
+- `vedenemo-core/pom.xml`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/session/Session.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/session/SessionManager.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/session/SessionTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/session/SessionManagerTest.java`
+- `vedenemo-app/src/main/java/org/vedenemo/app/VedenemoApp.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/SessionResourceTest.java`
+- `vedenemo-cli/pom.xml`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCli.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/CliConfig.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpSessionClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/SessionClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/CliConfigTest.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,240p' AGENTS.md`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `sed -n '340,580p' tasks/backlog.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `sed -n '1,280p' docs/architecture_doc.md`
+- `git status --short --branch`
+- `sed -n '1,260p' vedenemo-core/pom.xml`
+- `sed -n '1,260p' vedenemo-cli/pom.xml`
+- `sed -n '1,320p' vedenemo-web-api/pom.xml`
+- `sed -n '1,320p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `sed -n '1,220p' vedenemo-storage-memory/pom.xml`
+- `sed -n '1,220p' pom.xml`
+- `mvn -B clean verify`
+- `sed -n '1,160p' vedenemo-core-spi/src/main/java/org/vedenemo/core/spi/storage/ModelStorage.java`
+- `bash -lc 'VEDENEMO_WEB_HOST=127.0.0.1 VEDENEMO_WEB_PORT=18082 java -jar vedenemo-web-api/target/vedenemo-web-api-0.1.0-SNAPSHOT.jar >/tmp/vedenemo-session-smoke.log 2>&1 & pid=$!; sleep 2; body=$(curl -fsS -X POST http://127.0.0.1:18082/sessions/start); sid=$(printf "%s" "$body" | sed -n "s/.*\"sessionId\":\"\\([^\"]*\\)\".*/\\1/p"); test -n "$sid"; code=$(curl -s -o /tmp/vedenemo-session-delete.out -w "%{http_code}" -X DELETE http://127.0.0.1:18082/sessions/$sid); kill $pid >/dev/null 2>&1 || true; wait $pid >/dev/null 2>&1 || true; test "$code" = "204"'`
+- `sed -n '1,160p' /tmp/vedenemo-session-smoke.log`
+- `bash -lc 'VEDENEMO_WEB_HOST=127.0.0.1 VEDENEMO_WEB_PORT=18082 java -jar vedenemo-web-api/target/vedenemo-web-api-0.1.0-SNAPSHOT.jar >/tmp/vedenemo-session-smoke.log 2>&1 & pid=$!; for i in $(seq 1 30); do if curl -fsS http://127.0.0.1:18082/models/ping >/tmp/vedenemo-session-ping.out 2>/dev/null; then break; fi; sleep 0.2; done; body=$(curl -fsS -X POST http://127.0.0.1:18082/sessions/start); sid=$(printf "%s" "$body" | sed -n "s/.*\"sessionId\":\"\\([^\"]*\\)\".*/\\1/p"); test -n "$sid"; code=$(curl -s -o /tmp/vedenemo-session-delete.out -w "%{http_code}" -X DELETE http://127.0.0.1:18082/sessions/$sid); kill $pid >/dev/null 2>&1 || true; wait $pid >/dev/null 2>&1 || true; test "$code" = "204"'`
+- `sed -n '1,130p' docs/architecture_doc.md`
+- `sed -n '130,260p' docs/architecture_doc.md`
+- `sed -n '260,420p' docs/architecture_doc.md`
+- `rg "Status: executed|Create Session concept|Completion Notes" -n tasks/backlog.md tasks/current-task.md`
+- `git diff --check`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Promoted the Session/CLI task to current, added process-local core
+sessions and session-bound command executors, added HTTP session lifecycle
+endpoints, changed the CLI to create and clean up backend sessions through HTTP,
+updated living architecture documentation, marked the current task completed,
+and marked the backlog history item executed while retaining its full text.
+
+Verification: `mvn -B clean verify` passed after implementation. A live local
+smoke test for `POST /sessions/start` and `DELETE /sessions/{uuid}` passed when
+run outside the sandbox; the first sandboxed attempt failed because binding a
+local server socket was blocked with `Operation not permitted`. `git diff
+--check` reported no whitespace errors.
+
+Next steps: Review the changes and commit if acceptable.
+
+## 2026-07-12 00:39 EEST
+
+Goal: Commit and push the completed Session/CLI task.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Preparing a detailed commit containing the core Session and
+SessionManager implementation, session-bound CommandExecutor changes, HTTP
+session lifecycle endpoints, HTTP-backed CLI session flow, tests, architecture
+documentation, task history updates, and session record updates.
+
+Next steps: Stage all changes, commit with a detailed message, push to
+`origin/main`, and verify local status.
+
 ## 2026-07-11 20:18 EEST
 
 Goal: Analyze and refine the new backlog task "Create VEntity and VAttribute

@@ -1,8 +1,5 @@
 package org.vedenemo.cli;
 
-import org.vedenemo.core.command.CommandExecutor;
-import org.vedenemo.storage.memory.InMemoryModelStorage;
-
 /**
  * Minimal CLI entry point.
  */
@@ -12,7 +9,10 @@ public final class VedenemoCli {
     }
 
     public static void main(String[] args) {
-        CommandExecutor executor = new CommandExecutor(new InMemoryModelStorage());
-        System.out.println("Vedenemo CLI skeleton started. Executor: " + executor.getClass().getSimpleName());
+        CliConfig config = CliConfig.fromEnvironment(System.getenv());
+        int exitCode = new VedenemoCliApp(new HttpSessionClient(config.apiBaseUrl()), System.in, System.out, true).run();
+        if (exitCode != 0) {
+            System.exit(exitCode);
+        }
     }
 }
