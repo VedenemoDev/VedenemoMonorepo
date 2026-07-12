@@ -565,3 +565,300 @@ All planning questions were resolved before execution.
 - `mvn -B clean verify` passed.
 - Live local smoke test for session start/delete passed after running outside
   the sandbox because sandbox socket binding was blocked.
+
+## Adding support for adding new models and listing existing models to VedenemoCli
+
+Status: executed. Full task text retained here for history.
+
+### Goal
+
+Add first useful model-management commands to `VedenemoCli` while preserving the
+existing HTTP-backed session startup and cleanup behavior.
+
+The CLI should be able to:
+
+- list existing models from the backend
+- add a new model through the backend HTTP API
+- attach the current CLI session to one listed model
+- detach the current CLI session from the attached model
+- show help for available commands
+
+This is a planning task. All planning questions are resolved, and the task is
+ready to move to execution when selected.
+
+### Current Implementation Context
+
+- `VedenemoCli` currently starts an HTTP-backed backend session using
+  `POST /sessions/start`.
+- The CLI currently supports only empty lines and `exit`.
+- The CLI already reads `VEDENEMO_API_BASE_URL`, defaulting to
+  `http://127.0.0.1:8080`.
+- The web API already exposes:
+  - `POST /models/add`
+  - `GET /models/list`
+  - `POST /sessions/start`
+  - `DELETE /sessions/{uuid}`
+- `Session` already stores selected model as `Optional<String>` containing
+  model `azName`, but no HTTP endpoint currently updates that selected model.
+
+### CLI Commands
+
+All previously available CLI behavior must keep working:
+
+- startup creates a backend session
+- empty line returns a new prompt
+- `exit` cleans up the backend session and exits
+
+Add these new commands.
+
+#### `list`
+
+Lists all currently added / loaded models from the backend as a numbered list.
+
+Each row should show:
+
+- running number `N`
+- visible name / `visName`
+- ASCII name / `azName`
+- version, if useful and already returned by the backend
+
+Example output shape:
+
+```text
+1. Example Model (Example_Model) version 1.0.0
+2. Sales Model (Sales_Model) version 1.0.0
+```
+
+If there are no models, print a clear message such as:
+
+```text
+No models available.
+```
+
+The numbering should be deterministic and based on the backend list order.
+
+#### `attach [N | azName]`
+
+Associates the current CLI session with an existing model.
+
+Supported forms:
+
+- `attach N` attaches by the running number from the latest model list.
+- `attach azName` attaches by model `azName`.
+- `attach` with no argument asks the user for a number or `azName`.
+
+Expected behavior:
+
+- If there are no models, report that there are no models to attach.
+- If a numeric argument does not match any listed model number, report a clear
+  error.
+- If an `azName` argument does not match any existing model, report a clear
+  error.
+- After successful attach, the prompt changes to:
+
+```text
+VedenemoCli[azName]>
+```
+
+- Successful attach must update backend `Session.selectedModelAzName` through
+  HTTP.
+- `attach N` always refers to the most recent `list` output. If no list has been
+  loaded yet, report that the user must run `list` first or attach by `azName`.
+
+#### `detach`
+
+Detaches the current CLI session from the previously attached model.
+
+Expected behavior:
+
+- If a model is attached, clear the attached model and return the prompt to:
+
+```text
+VedenemoCli>
+```
+
+- If no model is attached, print a clear message that there is no attached
+  model.
+- Successful detach must update backend `Session.selectedModelAzName` through
+  HTTP.
+
+Only the correctly spelled `detach` command is supported. Do not add `detatch`
+as an alias.
+
+#### `add`
+
+Adds a new model through the backend HTTP API.
+
+Interactive flow:
+
+1. Ask for `visName`.
+2. Generate a valid ASCII `azName` suggestion from the entered `visName`.
+3. Ask for `azName`, showing the suggestion.
+4. If the user presses Enter without typing a replacement, use the suggestion.
+5. If the user types a replacement, use the typed value.
+6. Create the model with version `1.0.0`.
+7. After successful creation, automatically attach the CLI session to the new
+   model, update backend `Session.selectedModelAzName`, and update the prompt
+   to `VedenemoCli[azName]>`.
+
+The `add` command should handle backend validation errors, including duplicate
+`azName`, and show a readable message without exiting the CLI.
+
+Suggested `azName` generation rule for planning:
+
+- transliterate only by simple ASCII filtering for now; no third-party
+  dependency
+- split the visual name into ASCII letter runs
+- join runs with underscores
+- ensure the result starts with an ASCII letter
+- if no valid ASCII letter exists, fall back to a prompt asking the user to
+  enter `azName` manually
+- preserve the user's final typed casing
+
+This should align with the existing `ModelRoot` rule: starts with an ASCII
+letter and then contains only ASCII letters and underscores. Digits and hyphens
+are not allowed.
+
+#### `help`
+
+Lists all available commands with short explanations.
+
+Minimum commands to show:
+
+- `list`
+- `add`
+- `attach [N | azName]`
+- `detach`
+- `help`
+- `exit`
+
+### Backend / HTTP Scope
+
+The existing model endpoints are enough for listing and adding:
+
+- `GET /models/list`
+- `POST /models/add`
+
+Add backend session-selection endpoints in this task so attach/detach are
+reflected in backend `Session.selectedModelAzName`.
+
+Suggested endpoint shape:
+
+- `PUT /sessions/{uuid}/selected-model`
+  - request body contains `azName`
+  - validates that the session exists
+  - validates that the model exists in the process-local `ModelRegistry`
+  - updates `Session.selectedModelAzName`
+- `DELETE /sessions/{uuid}/selected-model`
+  - validates that the session exists
+  - clears `Session.selectedModelAzName`
+
+The exact request/response DTO shape can be chosen during implementation, but
+HTTP and JSON details must stay in `vedenemo-web-api`.
+
+### Suggested CLI Structure
+
+The current `VedenemoCliApp` has a simple prompt loop. This task can extend that
+structure, but should keep the code testable without hanging on stdin.
+
+Suggested implementation direction:
+
+- Add a model HTTP client abstraction in `vedenemo-cli`, similar to
+  `SessionClient`.
+- Extend the session HTTP client abstraction to support selecting and clearing
+  the selected model.
+- Add small CLI command handling methods/classes for `list`, `add`, `attach`,
+  `detach`, `help`, and `exit`.
+- Keep JSON parsing/writing in the CLI small and explicit. If possible, use JDK
+  APIs and simple structured parsing compatible with the known backend response
+  shape rather than adding a new CLI JSON dependency.
+- Keep backend HTTP framework and Jackson types out of the CLI.
+
+### Tests / Verification
+
+Add focused CLI tests where practical.
+
+Minimum intended coverage:
+
+- `help` prints all commands.
+- `list` prints an empty-list message when there are no models.
+- `list` prints numbered models when models exist.
+- `attach N` attaches to the numbered model and updates the prompt.
+- `attach azName` attaches to the named model and updates the prompt.
+- `attach` with no argument asks for a model identifier.
+- `attach N` without a previous `list` prints a clear message and does not
+  fetch automatically.
+- successful attach updates backend selected model state.
+- invalid `attach` input prints a clear message and keeps the previous prompt.
+- `detach` clears the prompt when a model is attached.
+- `detach` with no attached model prints a clear message.
+- successful detach clears backend selected model state.
+- `add` prompts for `visName`, suggests `azName`, creates model version
+  `1.0.0`, attaches to the created model, and updates backend selected model
+  state.
+- backend validation failure during `add` is reported without exiting the CLI.
+- backend tests verify session selected-model set/clear endpoints.
+- `exit` still cleans up the backend session.
+
+At minimum, run:
+
+```bash
+mvn -B clean verify
+```
+
+If practical, run a local smoke test with the backend JAR and the CLI command
+flow. Any smoke test must not require manual input in CI.
+
+### Documentation
+
+After implementation:
+
+- Create a separate CLI reference document, preferably `docs/cli-reference.md`.
+- Document `list`, `add`, `attach`, `detach`, `help`, and `exit`.
+- Include examples of adding a model, listing models, attaching by number,
+  attaching by `azName`, detaching, and exiting.
+- Update `README.md` with a short link to the CLI reference instead of
+  duplicating all command details there.
+
+### Architecture Documentation
+
+If implementation adds new HTTP endpoints or changes current component
+responsibilities, update `docs/architecture_doc.md` in the same change.
+
+At minimum, update it if:
+
+- new session model-selection endpoints are added
+- CLI command handling becomes a distinct component worth documenting
+- CLI/backend runtime flow materially changes
+
+### Resolved Planning Decisions
+
+- `attach` and `detach` must update backend `Session.selectedModelAzName`
+  through HTTP endpoints.
+- Only `detach` is supported. Do not add typo alias `detatch`.
+- For `attach N`, `N` always refers to the most recent `list` output.
+- `attach N` must not fetch the model list automatically if no list exists.
+- After `add` creates a model, auto-attach must update backend selected model
+  state as well as local CLI prompt state.
+- Create a separate CLI reference document now and link to it from `README.md`.
+
+### Planning Status
+
+All planning questions were resolved before execution.
+
+### Completion Notes
+
+- Added CLI model-management commands: `list`, `add`, `attach`, `detach`, and
+  `help`.
+- Added CLI HTTP model client support for `GET /models/list` and
+  `POST /models/add`.
+- Extended CLI session HTTP support for selecting and clearing the backend
+  session selected model.
+- Added backend selected-model endpoints:
+  - `PUT /sessions/{uuid}/selected-model`
+  - `DELETE /sessions/{uuid}/selected-model`
+- Added focused CLI and web API tests for the new command and endpoint
+  behavior.
+- Added `docs/cli-reference.md`, linked it from `README.md`, and updated the
+  current implementation architecture document.
+- `mvn -B clean verify` passed.

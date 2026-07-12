@@ -3,19 +3,23 @@ package org.vedenemo.web.api.resource;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.router.JavalinDefaultRoutingApi;
+import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.Session;
 import org.vedenemo.core.session.SessionManager;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 public final class SessionResource {
 
     private final SessionManager sessionManager;
+    private final ModelRegistry modelRegistry;
     private final ObjectMapper objectMapper;
 
-    public SessionResource(SessionManager sessionManager) {
+    public SessionResource(SessionManager sessionManager, ModelRegistry modelRegistry) {
         this.sessionManager = Objects.requireNonNull(sessionManager, "sessionManager must not be null");
+        this.modelRegistry = Objects.requireNonNull(modelRegistry, "modelRegistry must not be null");
         this.objectMapper = new ObjectMapper();
     }
 
@@ -38,6 +42,56 @@ public final class SessionResource {
                 writeJson(context, 404, new ErrorResponse("session not found"));
             }
         });
+        routes.put("/sessions/{uuid}/selected-model", context -> {
+            UUID sessionId = parseSessionId(context.pathParam("uuid"));
+            if (sessionId == null) {
+                writeJson(context, 400, new ErrorResponse("session uuid is invalid"));
+                return;
+            }
+            SelectModelRequest request;
+            try {
+                request = objectMapper.readValue(context.body(), SelectModelRequest.class);
+            } catch (JsonProcessingException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+                return;
+            }
+            if (request.azName() == null || request.azName().isBlank()) {
+                writeJson(context, 400, new ErrorResponse("azName must not be blank"));
+                return;
+            }
+            boolean modelExists;
+            try {
+                modelExists = modelRegistry.contains(request.azName());
+            } catch (IllegalArgumentException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+                return;
+            }
+            if (!modelExists) {
+                writeJson(context, 404, new ErrorResponse("model not found"));
+                return;
+            }
+            Optional<Session> session = sessionManager.findSession(sessionId);
+            if (session.isEmpty()) {
+                writeJson(context, 404, new ErrorResponse("session not found"));
+                return;
+            }
+            session.orElseThrow().selectModel(request.azName());
+            context.status(204);
+        });
+        routes.delete("/sessions/{uuid}/selected-model", context -> {
+            UUID sessionId = parseSessionId(context.pathParam("uuid"));
+            if (sessionId == null) {
+                writeJson(context, 400, new ErrorResponse("session uuid is invalid"));
+                return;
+            }
+            Optional<Session> session = sessionManager.findSession(sessionId);
+            if (session.isEmpty()) {
+                writeJson(context, 404, new ErrorResponse("session not found"));
+                return;
+            }
+            session.orElseThrow().clearSelectedModel();
+            context.status(204);
+        });
     }
 
     private void writeJson(io.javalin.http.Context context, int status, Object body) throws JsonProcessingException {
@@ -49,6 +103,17 @@ public final class SessionResource {
     private record SessionResponse(String sessionId) {
     }
 
+    private record SelectModelRequest(String azName) {
+    }
+
     private record ErrorResponse(String error) {
+    }
+
+    private static UUID parseSessionId(String value) {
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
 }

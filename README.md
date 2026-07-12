@@ -124,7 +124,11 @@ Current CLI behavior:
 - prints the created session UUID
 - shows the prompt `VedenemoCli>`
 - pressing Enter on an empty line shows a new prompt
+- supports `list`, `add`, `attach`, `detach`, `help`, and `exit`
 - `exit` ends the backend session with `DELETE /sessions/{uuid}` and exits
+
+See [docs/cli-reference.md](docs/cli-reference.md) for full command usage and
+examples.
 
 ## Frontend build
 

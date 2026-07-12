@@ -34,7 +34,7 @@ public final class VedenemoWebApi {
             javalinConfig.routes.before(context -> CorsSupport.apply(context, config));
             javalinConfig.routes.options("/*", context -> context.status(204));
             new ModelsResource(modelRegistry).register(javalinConfig.routes);
-            new SessionResource(sessionManager).register(javalinConfig.routes);
+            new SessionResource(sessionManager, modelRegistry).register(javalinConfig.routes);
         });
     }
 }

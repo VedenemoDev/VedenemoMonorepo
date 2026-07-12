@@ -50,11 +50,41 @@ public final class HttpSessionClient implements SessionClient {
         }
     }
 
+    @Override
+    public void selectModel(UUID sessionId, String azName) throws IOException, InterruptedException {
+        Objects.requireNonNull(sessionId, "sessionId must not be null");
+        Objects.requireNonNull(azName, "azName must not be null");
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/sessions/" + sessionId + "/selected-model"))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString("{\"azName\":\"" + escapeJson(azName) + "\"}"))
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 204) {
+            throw new IOException("model attach failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+    }
+
+    @Override
+    public void clearSelectedModel(UUID sessionId) throws IOException, InterruptedException {
+        Objects.requireNonNull(sessionId, "sessionId must not be null");
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/sessions/" + sessionId + "/selected-model"))
+                .DELETE()
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 204) {
+            throw new IOException("model detach failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+    }
+
     private static UUID parseSessionId(String body) throws IOException {
         Matcher matcher = SESSION_ID_PATTERN.matcher(body);
         if (!matcher.matches()) {
             throw new IOException("session start response did not contain sessionId");
         }
         return UUID.fromString(matcher.group(1));
+    }
+
+    private static String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

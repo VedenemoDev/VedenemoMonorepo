@@ -25,4 +25,8 @@ public final class ModelRegistry {
     public synchronized List<ModelRoot> list() {
         return List.copyOf(new ArrayList<>(modelsByAzName.values()));
     }
+
+    public synchronized boolean contains(String azName) {
+        return modelsByAzName.containsKey(ModelRoot.uniquenessKey(azName));
+    }
 }

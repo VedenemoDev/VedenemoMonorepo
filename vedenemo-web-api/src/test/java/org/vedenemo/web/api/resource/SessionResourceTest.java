@@ -4,6 +4,7 @@ import io.javalin.Javalin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.SessionManager;
 import org.vedenemo.storage.memory.InMemoryModelStorage;
@@ -30,6 +31,7 @@ final class SessionResourceTest {
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
+    private ModelRegistry modelRegistry;
     private SessionManager sessionManager;
     private Javalin app;
     private String baseUrl;
@@ -38,8 +40,9 @@ final class SessionResourceTest {
     void startServer() throws IOException {
         int port = availablePort();
         WebApiConfig config = new WebApiConfig("127.0.0.1", port, Set.of("*"));
+        modelRegistry = new ModelRegistry();
         sessionManager = new SessionManager(new InMemoryModelStorage());
-        app = VedenemoWebApi.create(config, new ModelRegistry(), sessionManager);
+        app = VedenemoWebApi.create(config, modelRegistry, sessionManager);
         app.start(config.host(), config.port());
         baseUrl = "http://" + config.host() + ":" + config.port();
     }
@@ -87,6 +90,77 @@ final class SessionResourceTest {
         assertTrue(response.body().contains("session uuid is invalid"));
     }
 
+    @Test
+    void selectModelUpdatesBackendSession() throws Exception {
+        modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+
+        HttpResponse<String> response = put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        assertEquals(204, response.statusCode());
+        assertEquals("Example_Model", sessionManager.findSession(sessionId).orElseThrow().selectedModelAzName().orElseThrow());
+    }
+
+    @Test
+    void clearSelectedModelUpdatesBackendSession() throws Exception {
+        modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        HttpResponse<String> response = delete("/sessions/" + sessionId + "/selected-model");
+
+        assertEquals(204, response.statusCode());
+        assertTrue(sessionManager.findSession(sessionId).orElseThrow().selectedModelAzName().isEmpty());
+    }
+
+    @Test
+    void selectModelRejectsUnknownSession() throws Exception {
+        modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+
+        HttpResponse<String> response = put("/sessions/" + UUID.randomUUID() + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        assertEquals(404, response.statusCode());
+        assertTrue(response.body().contains("session not found"));
+    }
+
+    @Test
+    void selectModelRejectsUnknownModel() throws Exception {
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+
+        HttpResponse<String> response = put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Missing_Model"}
+                """);
+
+        assertEquals(404, response.statusCode());
+        assertTrue(response.body().contains("model not found"));
+    }
+
+    @Test
+    void selectModelRejectsInvalidModelName() throws Exception {
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+
+        HttpResponse<String> response = put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"123_Invalid"}
+                """);
+
+        assertEquals(400, response.statusCode());
+        assertTrue(response.body().contains("azName must start with an ASCII letter"));
+    }
+
+    @Test
+    void clearSelectedModelRejectsUnknownSession() throws Exception {
+        HttpResponse<String> response = delete("/sessions/" + UUID.randomUUID() + "/selected-model");
+
+        assertEquals(404, response.statusCode());
+        assertTrue(response.body().contains("session not found"));
+    }
+
     private HttpResponse<String> post(String path) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
                 .POST(HttpRequest.BodyPublishers.noBody())
@@ -97,6 +171,14 @@ final class SessionResourceTest {
     private HttpResponse<String> delete(String path) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
                 .DELETE()
+                .build();
+        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> put(String path, String body) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(body))
                 .build();
         return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     }

@@ -914,6 +914,91 @@ updates, and current architecture documentation updates.
 Next steps: Stage all changes, commit with a detailed message, push to
 `origin/main`, and verify clean local status.
 
+## 2026-07-12 16:50 EEST
+
+Goal: Execute the `Adding support for adding new models and listing existing
+models to VedenemoCli` task.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpSessionClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/ModelClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/ModelSummary.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/SessionClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCli.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/registry/ModelRegistry.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/SessionResourceTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' AGENTS.md`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,260p' docs/architecture_doc.md`
+- `sed -n '260,620p' docs/architecture_doc.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `sed -n '620,980p' tasks/backlog.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg "class VedenemoCliApp|interface SessionClient|class SessionResource|class ModelRegistry" -n`
+- `mvn -B clean verify`
+- `bash -lc 'VEDENEMO_WEB_HOST=127.0.0.1 VEDENEMO_WEB_PORT=18083 java -jar vedenemo-web-api/target/vedenemo-web-api-0.1.0-SNAPSHOT.jar >/tmp/vedenemo-cli-model-smoke.log 2>&1 & pid=$!; for i in $(seq 1 50); do if curl -fsS http://127.0.0.1:18083/models/ping >/dev/null 2>&1; then break; fi; sleep 0.2; done; printf "add\nSmoke Model\n\nlist\nattach 1\ndetach\nexit\n" | VEDENEMO_API_BASE_URL=http://127.0.0.1:18083 java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli >/tmp/vedenemo-cli-model-smoke.out; status=$?; kill $pid >/dev/null 2>&1 || true; wait $pid >/dev/null 2>&1 || true; test $status -eq 0; grep -q "Added and attached model Smoke_Model" /tmp/vedenemo-cli-model-smoke.out; grep -q "1. Smoke Model (Smoke_Model) version 1.0.0" /tmp/vedenemo-cli-model-smoke.out; grep -q "Detached from model." /tmp/vedenemo-cli-model-smoke.out'`
+- `git diff --check`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Implemented CLI model-management commands for listing, adding,
+attaching, detaching, and help. Added CLI HTTP model access, backend
+selected-model session endpoints, selected-model validation against the
+process-local model registry, focused CLI tests, and selected-model endpoint
+tests. Marked the task executed in both current task and backlog while keeping
+the full backlog task text for history. Added `docs/cli-reference.md`, linked
+it from `README.md`, and updated the current implementation architecture
+document.
+
+Verification: `mvn -B clean verify` passed. A live non-interactive backend plus
+CLI smoke test for add/list/attach/detach/exit passed. `git diff --check`
+reported no whitespace errors.
+
+Next steps: Review the implementation and commit when acceptable.
+
+## 2026-07-12 16:52 EEST
+
+Goal: Commit and push the completed CLI model-management implementation.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff --stat`
+- `git remote -v`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Preparing a detailed commit containing the CLI model-management
+commands, CLI HTTP model client, backend selected-model endpoints, tests,
+README and CLI reference updates, architecture document updates, task history
+updates, and session records.
+
+Next steps: Stage all changes, commit with a detailed message, push to
+`origin/main`, and verify the local branch status.
+
 ## 2026-07-11 20:34 EEST
 
 Goal: Execute the `Create VEntity and VAttribute classes into
@@ -989,6 +1074,75 @@ current implementation documentation, and session record updates.
 
 Next steps: Stage all changes, commit with a detailed message, push to
 `origin/main`, and verify local status.
+
+## 2026-07-12 16:11 EEST
+
+Goal: Analyze and refine the new backlog task for adding model list/add/attach
+commands to `VedenemoCli`.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,240p' AGENTS.md`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `tail -n 260 tasks/backlog.md`
+- `sed -n '1,260p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '1,260p' vedenemo-cli/src/main/java/org/vedenemo/cli/HttpSessionClient.java`
+- `sed -n '1,280p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/session/Session.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/session/SessionManager.java`
+- `sed -n '1,240p' README.md`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/backlog.md`
+
+Status: Expanded the new backlog item into a structured planning draft covering
+`list`, `add`, `attach`, `detach`, `help`, HTTP/model endpoint usage, CLI
+structure, tests, README updates, architecture documentation conditions, and
+open questions around backend session selection, typo aliasing, model-number
+lookup behavior, auto-attach semantics, and whether to add a separate CLI
+reference document.
+
+Next steps: Resolve the open questions before promoting the task to
+`tasks/current-task.md`.
+
+## 2026-07-12 16:36 EEST
+
+Goal: Incorporate user answers into the VedenemoCli model-management planning
+task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '650,860p' tasks/backlog.md`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/backlog.md`
+
+Status: Updated the backlog task to require backend HTTP endpoints for setting
+and clearing `Session.selectedModelAzName`, support only the correctly spelled
+`detach` command, make `attach N` refer to the most recent `list` output without
+auto-fetching, make `add` auto-attach in backend session state as well as local
+prompt state, and create a separate CLI reference document linked from
+`README.md`. The task now has all planning questions resolved and is ready for
+execution when selected.
+
+Next steps: Promote the task to `tasks/current-task.md` when implementation
+should begin.
 
 ## 2026-07-12 00:43 EEST
 

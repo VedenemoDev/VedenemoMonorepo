@@ -22,7 +22,7 @@ end
 subgraph Web["Web API Runtime"]
     WebApi["vedenemo-web-api<br/>Javalin executable jar"]
     ModelsResource["ModelsResource<br/>ping/add/list endpoints"]
-    SessionResource["SessionResource<br/>start/end session endpoints"]
+    SessionResource["SessionResource<br/>session lifecycle and selected model endpoints"]
 end
 
 subgraph App["Application Assembly"]
@@ -45,12 +45,13 @@ end
 
 ViteUX --> RuntimeConfig
 ViteUX -->|fetch /models/ping| WebApi
-Cli -->|HTTP sessions API| WebApi
+Cli -->|HTTP model and session APIs| WebApi
 WebApi --> ModelsResource
 WebApi --> SessionResource
 WebApi --> AppRoot
 ModelsResource --> ModelRegistry
 SessionResource --> SessionManager
+SessionResource --> ModelRegistry
 AppRoot --> CoreModule
 AppRoot --> ModelRegistry
 AppRoot --> SessionManager
@@ -172,7 +173,13 @@ Current CLI behavior:
 
 - prints the created session UUID
 - prompts with `VedenemoCli>`
+- prompts with `VedenemoCli[azName]>` when a model is attached
 - treats an empty line as an empty echo plus a new prompt
+- supports `help`
+- lists current backend models with `list`
+- adds a new backend model with `add`, using version `1.0.0`
+- attaches the session to a model by latest list number or `azName`
+- detaches the session from the current selected model
 - supports `exit`
 - calls `DELETE /sessions/{uuid}` during normal exit and through a best-effort
   shutdown hook
@@ -191,6 +198,10 @@ and exposes:
 - `GET /models/list`, which returns the current process-local model registry
 - `POST /sessions/start`, which creates a backend session and returns its UUID
 - `DELETE /sessions/{uuid}`, which ends/removes a backend session
+- `PUT /sessions/{uuid}/selected-model`, which selects an existing model for a
+  backend session
+- `DELETE /sessions/{uuid}/selected-model`, which clears the selected model for
+  a backend session
 
 HTTP JSON parsing and response serialization are kept in this module. Jackson is
 used here as an adapter/runtime dependency and does not leak into core or model
@@ -294,6 +305,39 @@ sequenceDiagram
     Resource-->>CLI: 204
 ```
 
+### CLI Model Management
+
+```mermaid
+sequenceDiagram
+    participant CLI as vedenemo-cli
+    participant API as vedenemo-web-api
+    participant Models as ModelsResource
+    participant Sessions as SessionResource
+    participant Registry as ModelRegistry
+    participant Session as Session
+
+    CLI->>API: GET /models/list
+    API->>Models: route request
+    Models->>Registry: list()
+    Registry-->>CLI: model root list
+
+    CLI->>API: POST /models/add
+    API->>Models: route request
+    Models->>Registry: add(ModelRoot)
+    Registry-->>CLI: created model root
+
+    CLI->>API: PUT /sessions/{uuid}/selected-model
+    API->>Sessions: route request
+    Sessions->>Registry: contains(azName)
+    Sessions->>Session: selectModel(azName)
+    Sessions-->>CLI: 204
+
+    CLI->>API: DELETE /sessions/{uuid}/selected-model
+    API->>Sessions: route request
+    Sessions->>Session: clearSelectedModel()
+    Sessions-->>CLI: 204
+```
+
 ### UX Ping
 
 ```mermaid
@@ -318,10 +362,10 @@ GitHub Actions contains separate backend and frontend CI workflows:
 Backend verification includes focused model API tests for `VAttribute`,
 `VEntity`, and lifecycle validation, focused core tests for `Session`,
 `SessionManager`, and session-bound `CommandExecutor` behavior, focused CLI
-tests for backend URL configuration and non-hanging prompt behavior, JUnit 5
-endpoint tests for the model add/list and session lifecycle HTTP APIs in
-`vedenemo-web-api`, and focused `InMemoryModelStorage` tests for storing and
-loading `ModelRoot` instances.
+tests for backend URL configuration, non-hanging prompt behavior, and CLI model
+commands, JUnit 5 endpoint tests for the model add/list, session lifecycle, and
+selected-model HTTP APIs in `vedenemo-web-api`, and focused
+`InMemoryModelStorage` tests for storing and loading `ModelRoot` instances.
 
 The UX deployment workflow builds `vedenemo-ux` and deploys it to Firebase
 Hosting when required GitHub variables are present. The deployment workflow can
