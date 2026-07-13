@@ -1,136 +1,118 @@
 # Current Task
 
-## Adding support for adding new models and listing existing models to VedenemoCli
+## Taking Command concept into use and implementing the first command
 
 Status: executed.
 
 ### Goal
 
-Add first useful model-management commands to `VedenemoCli` while preserving the
-existing HTTP-backed session startup and cleanup behavior.
+Take the existing command placeholders into real use by adding the first
+model-changing command: create a new `VEntity` in the currently selected model.
 
-The CLI should be able to:
+### Domain / Model Scope
 
-- list existing models from the backend
-- add a new model through the backend HTTP API
-- attach the current CLI session to one listed model
-- detach the current CLI session from the attached model
-- show help for available commands
+- Extend `ModelRoot` so it directly contains and manages ordered `VEntity`
+  instances.
+- Add explicit operations such as `addEntity(VEntity)`,
+  `removeEntity(String azName)`, `removeEntity(VEntity)`, and `entities()`.
+- Preserve insertion order and enforce entity `azName` uniqueness
+  case-insensitively inside one model.
+- `entities()` should expose a read-only `List<VEntity>` copy in insertion
+  order.
+- Do not introduce a separate model aggregate/document type in this task.
 
-### CLI Commands
+### Command Architecture
 
-All previously available CLI behavior must keep working:
+- Add `CreateEntityCommand` containing target model `azName`, entity `azName`,
+  and entity `visName`.
+- Command execution derives entity `activeSince` from the current version of the
+  target model.
+- Created entities start with no attributes.
+- Add `DeleteEntityCommand` as the internal undo counterpart.
+- `CommandExecutor.execute(command)` should validate and apply the command to
+  the selected model.
+- Successful commands are recorded in session history.
+- Failed commands are not recorded.
+- Undo removes the latest created entity and removes the original command from
+  active session command history.
+- Undo reports when there is no command to undo.
 
-- startup creates a backend session
-- empty line returns a new prompt
-- `exit` cleans up the backend session and exits
+### Backend / HTTP API Scope
 
-Add these new commands.
+Use command-specific endpoints:
 
-#### `list`
+- `POST /sessions/{uuid}/commands/create-entity`
+- `POST /sessions/{uuid}/commands/undo`
 
-Lists all currently added / loaded models from the backend as a numbered list.
-Each row should show running number, `visName`, `azName`, and version. If there
-are no models, print a clear message.
+Expected undo HTTP results:
 
-#### `attach [N | azName]`
+- `200` when undo succeeds
+- `304` when there is no command available to undo
+- clear client error when session/model/command input is invalid
 
-Associates the current CLI session with an existing model.
+### CLI Scope
 
-- `attach N` attaches by the running number from the latest model list.
-- `attach azName` attaches by model `azName`.
-- `attach` with no argument asks the user for a number or `azName`.
-- Successful attach must update backend `Session.selectedModelAzName`.
-- `attach N` always refers to the most recent `list` output and must not fetch
-  the model list automatically if no list exists.
-- After successful attach, the prompt changes to `VedenemoCli[azName]>`.
+- `add` without an attached model keeps current model-add behavior.
+- `add` with an attached model adds a new entity through the backend command
+  endpoint.
+- Add `undo`, which asks the backend to undo the latest executed command for
+  the active session.
+- Successful entity creation prints:
 
-#### `detach`
-
-Detaches the current CLI session from the previously attached model.
-
-- Successful detach must update backend `Session.selectedModelAzName`.
-- Only the correctly spelled `detach` command is supported.
-
-#### `add`
-
-Adds a new model through the backend HTTP API.
-
-Interactive flow:
-
-1. Ask for `visName`.
-2. Generate a valid ASCII `azName` suggestion from the entered `visName`.
-3. Ask for `azName`, showing the suggestion.
-4. If the user presses Enter without typing a replacement, use the suggestion.
-5. If the user types a replacement, use the typed value.
-6. Create the model with version `1.0.0`.
-7. After successful creation, automatically attach the CLI session to the new
-   model, update backend `Session.selectedModelAzName`, and update the prompt
-   to `VedenemoCli[azName]>`.
-
-#### `help`
-
-Lists all available commands with short explanations.
-
-### Backend / HTTP Scope
-
-Use existing model endpoints:
-
-- `GET /models/list`
-- `POST /models/add`
-
-Add backend session-selection endpoints:
-
-- `PUT /sessions/{uuid}/selected-model`
-- `DELETE /sessions/{uuid}/selected-model`
-
-HTTP and JSON details must stay in `vedenemo-web-api`.
-
-### Documentation
-
-After implementation:
-
-- Create `docs/cli-reference.md`.
-- Update `README.md` with a short link to the CLI reference.
-- Update `docs/architecture_doc.md` if component responsibilities or runtime
-  flows materially change.
+```text
+Entity <azName> added.
+```
 
 ### Tests / Verification
 
-At minimum, run:
+Add focused model, core, web API, and CLI tests where practical. At minimum,
+run:
 
 ```bash
 mvn -B clean verify
 ```
 
-If practical, run a local smoke test with the backend JAR and non-interactive
-CLI input.
+If practical, run a non-interactive local backend plus CLI smoke test for:
+
+- add model
+- add entity while attached
+- undo
+- exit
+
+### Documentation
+
+After implementation, update `docs/architecture_doc.md` because this task adds
+real command execution, model entity ownership, backend command endpoints, undo
+behavior, and CLI command execution flow.
 
 ### Resolved Planning Decisions
 
-- `attach` and `detach` must update backend `Session.selectedModelAzName`
-  through HTTP endpoints.
-- Only `detach` is supported. Do not add typo alias `detatch`.
-- For `attach N`, `N` always refers to the most recent `list` output.
-- `attach N` must not fetch the model list automatically if no list exists.
-- After `add` creates a model, auto-attach must update backend selected model
-  state as well as local CLI prompt state.
-- Create a separate CLI reference document now and link to it from `README.md`.
+- `ModelRoot` directly owns `VEntity` instances in this iteration.
+- Use command-specific HTTP endpoints for this phase.
+- Undo removes the original command from session command history.
+- `DeleteEntityCommand` is only an internal inverse command for undo in this
+  task.
+- CLI keeps HTTP request DTO construction separate from backend/core command
+  records.
 
 ### Completion Notes
 
-- Added CLI model-management commands: `list`, `add`, `attach`, `detach`, and
-  `help`.
-- Added CLI HTTP model client support for `GET /models/list` and
-  `POST /models/add`.
-- Extended CLI session HTTP support for selecting and clearing the backend
-  session selected model.
-- Added backend selected-model endpoints:
-  - `PUT /sessions/{uuid}/selected-model`
-  - `DELETE /sessions/{uuid}/selected-model`
-- Added focused CLI and web API tests for the new command and endpoint
-  behavior.
-- Added `docs/cli-reference.md`, linked it from `README.md`, and updated the
-  current implementation architecture document.
-- `mvn -B clean verify` passed during implementation; final verification was
-  run after documentation updates.
+- Extended `ModelRoot` to directly own ordered `VEntity` instances with
+  case-insensitive entity `azName` uniqueness, remove operations, and read-only
+  snapshot listing.
+- Added `CreateEntityCommand`, internal `DeleteEntityCommand`, and `UndoResult`
+  in `vedenemo-core`.
+- Updated `CommandExecutor` to apply create-entity commands to the selected
+  model, record only successful commands, and undo the latest create-entity
+  command by removing the created entity and removing the original command from
+  active history.
+- Added session history support for peeking/removing the latest command.
+- Wired `SessionManager` and `CommandExecutor` to the process-local
+  `ModelRegistry` used by the web API.
+- Added `POST /sessions/{uuid}/commands/create-entity` and
+  `POST /sessions/{uuid}/commands/undo`.
+- Added CLI command transport, context-dependent `add` for attached-model entity
+  creation, and `undo`.
+- Added focused model, core, web API, and CLI tests.
+- Updated `docs/cli-reference.md` and `docs/architecture_doc.md`.
+- `mvn -B clean verify` passed during implementation.

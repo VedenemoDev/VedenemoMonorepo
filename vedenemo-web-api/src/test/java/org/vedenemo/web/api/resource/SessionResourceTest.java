@@ -41,7 +41,7 @@ final class SessionResourceTest {
         int port = availablePort();
         WebApiConfig config = new WebApiConfig("127.0.0.1", port, Set.of("*"));
         modelRegistry = new ModelRegistry();
-        sessionManager = new SessionManager(new InMemoryModelStorage());
+        sessionManager = new SessionManager(new InMemoryModelStorage(), modelRegistry);
         app = VedenemoWebApi.create(config, modelRegistry, sessionManager);
         app.start(config.host(), config.port());
         baseUrl = "http://" + config.host() + ":" + config.port();
@@ -161,9 +161,103 @@ final class SessionResourceTest {
         assertTrue(response.body().contains("session not found"));
     }
 
+    @Test
+    void createEntityCommandAddsEntityToSelectedModel() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/create-entity", """
+                {"entityAzName":"Customer","entityVisName":"Customer"}
+                """);
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("\"azName\":\"Customer\""));
+        assertEquals("Customer", modelRoot.entities().getFirst().azName());
+        assertEquals("1.0.0", modelRoot.entities().getFirst().activeSince().toString());
+        assertEquals(1, sessionManager.findSession(sessionId).orElseThrow().commandHistory().size());
+    }
+
+    @Test
+    void createEntityCommandRejectsUnknownSession() throws Exception {
+        HttpResponse<String> response = post("/sessions/" + UUID.randomUUID() + "/commands/create-entity", """
+                {"entityAzName":"Customer","entityVisName":"Customer"}
+                """);
+
+        assertEquals(404, response.statusCode());
+        assertTrue(response.body().contains("session not found"));
+    }
+
+    @Test
+    void createEntityCommandRejectsNoSelectedModel() throws Exception {
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/create-entity", """
+                {"entityAzName":"Customer","entityVisName":"Customer"}
+                """);
+
+        assertEquals(400, response.statusCode());
+        assertTrue(response.body().contains("no selected model"));
+    }
+
+    @Test
+    void createEntityCommandRejectsInvalidEntityInput() throws Exception {
+        modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/create-entity", """
+                {"entityAzName":"Customer1","entityVisName":"Customer"}
+                """);
+
+        assertEquals(400, response.statusCode());
+        assertTrue(response.body().contains("azName must contain only ASCII letters and underscores"));
+        assertTrue(sessionManager.findSession(sessionId).orElseThrow().commandHistory().isEmpty());
+    }
+
+    @Test
+    void undoCommandRemovesPreviouslyCreatedEntity() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+        post("/sessions/" + sessionId + "/commands/create-entity", """
+                {"entityAzName":"Customer","entityVisName":"Customer"}
+                """);
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/undo");
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("\"status\":\"undone\""));
+        assertTrue(modelRoot.entities().isEmpty());
+        assertTrue(sessionManager.findSession(sessionId).orElseThrow().commandHistory().isEmpty());
+    }
+
+    @Test
+    void undoCommandReturnsNotModifiedWhenNothingCanBeUndone() throws Exception {
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/undo");
+
+        assertEquals(304, response.statusCode());
+    }
+
     private HttpResponse<String> post(String path) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
                 .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> post(String path, String body) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
         return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     }

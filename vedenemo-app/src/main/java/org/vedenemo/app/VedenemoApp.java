@@ -15,11 +15,15 @@ public final class VedenemoApp {
     }
 
     public static CommandExecutor createCommandExecutor() {
-        return createCommandExecutor(Session.create());
+        return createCommandExecutor(Session.create(), createModelRegistry());
     }
 
     public static CommandExecutor createCommandExecutor(Session session) {
-        return new CommandExecutor(new InMemoryModelStorage(), session);
+        return createCommandExecutor(session, createModelRegistry());
+    }
+
+    public static CommandExecutor createCommandExecutor(Session session, ModelRegistry modelRegistry) {
+        return new CommandExecutor(new InMemoryModelStorage(), modelRegistry, session);
     }
 
     public static ModelRegistry createModelRegistry() {
@@ -27,6 +31,10 @@ public final class VedenemoApp {
     }
 
     public static SessionManager createSessionManager() {
-        return new SessionManager(new InMemoryModelStorage());
+        return createSessionManager(createModelRegistry());
+    }
+
+    public static SessionManager createSessionManager(ModelRegistry modelRegistry) {
+        return new SessionManager(new InMemoryModelStorage(), modelRegistry);
     }
 }

@@ -21,11 +21,12 @@ public final class VedenemoWebApi {
     }
 
     public static Javalin create(WebApiConfig config) {
-        return create(config, VedenemoApp.createModelRegistry(), VedenemoApp.createSessionManager());
+        ModelRegistry modelRegistry = VedenemoApp.createModelRegistry();
+        return create(config, modelRegistry, VedenemoApp.createSessionManager(modelRegistry));
     }
 
     public static Javalin create(WebApiConfig config, ModelRegistry modelRegistry) {
-        return create(config, modelRegistry, VedenemoApp.createSessionManager());
+        return create(config, modelRegistry, VedenemoApp.createSessionManager(modelRegistry));
     }
 
     public static Javalin create(WebApiConfig config, ModelRegistry modelRegistry, SessionManager sessionManager) {

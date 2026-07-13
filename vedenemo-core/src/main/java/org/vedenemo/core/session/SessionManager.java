@@ -1,6 +1,7 @@
 package org.vedenemo.core.session;
 
 import org.vedenemo.core.command.CommandExecutor;
+import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.spi.storage.ModelStorage;
 
 import java.util.LinkedHashMap;
@@ -12,15 +13,21 @@ import java.util.UUID;
 public final class SessionManager {
 
     private final ModelStorage modelStorage;
+    private final ModelRegistry modelRegistry;
     private final Map<UUID, CommandExecutor> executorsBySessionId = new LinkedHashMap<>();
 
     public SessionManager(ModelStorage modelStorage) {
+        this(modelStorage, new ModelRegistry());
+    }
+
+    public SessionManager(ModelStorage modelStorage, ModelRegistry modelRegistry) {
         this.modelStorage = Objects.requireNonNull(modelStorage, "modelStorage must not be null");
+        this.modelRegistry = Objects.requireNonNull(modelRegistry, "modelRegistry must not be null");
     }
 
     public synchronized Session startSession() {
         Session session = Session.create();
-        executorsBySessionId.put(session.id(), new CommandExecutor(modelStorage, session));
+        executorsBySessionId.put(session.id(), new CommandExecutor(modelStorage, modelRegistry, session));
         return session;
     }
 

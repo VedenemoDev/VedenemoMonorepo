@@ -53,4 +53,8 @@ public final class VEntity extends Versionable {
     public List<VAttribute> attributes() {
         return List.copyOf(attributesByAzName.values());
     }
+
+    public static String uniquenessKey(String azName) {
+        return ModelTextRules.uniquenessKey(azName);
+    }
 }

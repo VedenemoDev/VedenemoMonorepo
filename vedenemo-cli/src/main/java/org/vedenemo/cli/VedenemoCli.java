@@ -13,6 +13,7 @@ public final class VedenemoCli {
         int exitCode = new VedenemoCliApp(
                 new HttpSessionClient(config.apiBaseUrl()),
                 new HttpModelClient(config.apiBaseUrl()),
+                new HttpCommandClient(config.apiBaseUrl()),
                 System.in,
                 System.out,
                 true

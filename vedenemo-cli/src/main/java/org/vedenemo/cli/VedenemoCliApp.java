@@ -17,6 +17,7 @@ public final class VedenemoCliApp {
 
     private final SessionClient sessionClient;
     private final ModelClient modelClient;
+    private final CommandClient commandClient;
     private final InputStream input;
     private final PrintStream output;
     private final boolean registerShutdownHook;
@@ -26,12 +27,14 @@ public final class VedenemoCliApp {
     public VedenemoCliApp(
             SessionClient sessionClient,
             ModelClient modelClient,
+            CommandClient commandClient,
             InputStream input,
             PrintStream output,
             boolean registerShutdownHook
     ) {
         this.sessionClient = Objects.requireNonNull(sessionClient, "sessionClient must not be null");
         this.modelClient = Objects.requireNonNull(modelClient, "modelClient must not be null");
+        this.commandClient = Objects.requireNonNull(commandClient, "commandClient must not be null");
         this.input = Objects.requireNonNull(input, "input must not be null");
         this.output = Objects.requireNonNull(output, "output must not be null");
         this.registerShutdownHook = registerShutdownHook;
@@ -87,9 +90,11 @@ public final class VedenemoCliApp {
         } else if ("list".equals(line)) {
             listModels();
         } else if ("add".equals(line)) {
-            addModel(sessionId, reader);
+            add(sessionId, reader);
         } else if ("detach".equals(line)) {
             detachModel(sessionId);
+        } else if ("undo".equals(line)) {
+            undo(sessionId);
         } else if (line.startsWith("attach")) {
             attachModel(sessionId, reader, line);
         } else {
@@ -103,6 +108,7 @@ public final class VedenemoCliApp {
         output.println("  add - add a new model");
         output.println("  attach [N | azName] - attach to a listed model");
         output.println("  detach - detach from the current model");
+        output.println("  undo - undo the latest backend command");
         output.println("  help - show this help");
         output.println("  exit - end the session and exit");
     }
@@ -170,6 +176,14 @@ public final class VedenemoCliApp {
         }
     }
 
+    private void add(UUID sessionId, BufferedReader reader) throws IOException, InterruptedException {
+        if (attachedModelAzName.get() == null) {
+            addModel(sessionId, reader);
+        } else {
+            addEntity(sessionId, reader);
+        }
+    }
+
     private void addModel(UUID sessionId, BufferedReader reader) throws IOException, InterruptedException {
         output.print("Model visible name: ");
         output.flush();
@@ -210,6 +224,44 @@ public final class VedenemoCliApp {
         }
     }
 
+    private void addEntity(UUID sessionId, BufferedReader reader) throws IOException, InterruptedException {
+        output.print("Entity visible name: ");
+        output.flush();
+        String visName = reader.readLine();
+        if (visName == null || visName.isBlank()) {
+            output.println("Entity visible name is required.");
+            return;
+        }
+        String suggestion = suggestAzName(visName);
+        String azName;
+        if (suggestion == null) {
+            output.print("Entity azName: ");
+        } else {
+            output.print("Entity azName [" + suggestion + "]: ");
+        }
+        output.flush();
+        String enteredAzName = reader.readLine();
+        if (enteredAzName == null) {
+            output.println("Entity azName is required.");
+            return;
+        }
+        if (enteredAzName.isBlank()) {
+            if (suggestion == null) {
+                output.println("Entity azName is required.");
+                return;
+            }
+            azName = suggestion;
+        } else {
+            azName = enteredAzName.trim();
+        }
+        try {
+            commandClient.createEntity(sessionId, azName, visName);
+            output.println("Entity " + azName + " added.");
+        } catch (IOException exception) {
+            output.println(exception.getMessage());
+        }
+    }
+
     private void attachResolvedModel(UUID sessionId, ModelSummary model) throws InterruptedException {
         try {
             sessionClient.selectModel(sessionId, model.azName());
@@ -229,6 +281,19 @@ public final class VedenemoCliApp {
             sessionClient.clearSelectedModel(sessionId);
             attachedModelAzName.set(null);
             output.println("Detached from model.");
+        } catch (IOException exception) {
+            output.println(exception.getMessage());
+        }
+    }
+
+    private void undo(UUID sessionId) throws InterruptedException {
+        try {
+            UndoCommandResult result = commandClient.undo(sessionId);
+            if (result == UndoCommandResult.NOTHING_TO_UNDO) {
+                output.println("Nothing to undo.");
+            } else {
+                output.println("Undo completed.");
+            }
         } catch (IOException exception) {
             output.println(exception.getMessage());
         }

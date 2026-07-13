@@ -1,9 +1,7 @@
 package org.vedenemo.core.command;
 
 /**
- * Marker interface for future Vedenemo commands.
- *
- * Real command types are intentionally not implemented yet.
+ * Marker interface for Vedenemo commands.
  */
-public sealed interface Command permits NoOpCommand {
+public sealed interface Command permits CreateEntityCommand, DeleteEntityCommand, NoOpCommand {
 }

@@ -976,6 +976,30 @@ reported no whitespace errors.
 
 Next steps: Review the implementation and commit when acceptable.
 
+## 2026-07-13 17:34 EEST
+
+Goal: Commit and push the completed first command implementation.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff --stat`
+- `git remote -v`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Preparing a detailed commit containing `ModelRoot` entity ownership,
+create-entity command execution, undo support, command-specific web API
+endpoints, CLI command transport, attached-model entity add behavior, CLI undo,
+focused tests, architecture documentation, CLI reference updates, task history,
+and session records.
+
+Next steps: Stage all changes, commit with a detailed message, push to
+`origin/main`, and verify clean local status.
+
 ## 2026-07-12 16:52 EEST
 
 Goal: Commit and push the completed CLI model-management implementation.
@@ -998,6 +1022,167 @@ updates, and session records.
 
 Next steps: Stage all changes, commit with a detailed message, push to
 `origin/main`, and verify the local branch status.
+
+## 2026-07-13 17:07 EEST
+
+Goal: Analyze and refine the new backlog task `Taking Command concept into use
+and implementing the first command`.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' AGENTS.md`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,260p' docs/roadmap/first-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 180 SESSION.md`
+- `rg -n "Taking Command concept|Command concept|first command|^## " tasks/backlog.md`
+- `sed -n '840,980p' tasks/backlog.md`
+- `sed -n '1,240p' vedenemo-core/src/main/java/org/vedenemo/core/command/Command.java`
+- `sed -n '1,240p' vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `sed -n '1,240p' vedenemo-core/src/main/java/org/vedenemo/core/command/NoOpCommand.java`
+- `sed -n '1,260p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java`
+- `sed -n '1,260p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VEntity.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/session/Session.java`
+- `sed -n '1,240p' vedenemo-core/src/main/java/org/vedenemo/core/registry/ModelRegistry.java`
+- `sed -n '1,220p' vedenemo-core-spi/src/main/java/org/vedenemo/core/spi/storage/ModelStorage.java`
+- `sed -n '1,240p' vedenemo-storage-memory/src/main/java/org/vedenemo/storage/memory/InMemoryModelStorage.java`
+- `sed -n '1,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `sed -n '1,260p' vedenemo-core/src/test/java/org/vedenemo/core/session/SessionManagerTest.java`
+- `sed -n '1,220p' vedenemo-core/src/test/java/org/vedenemo/core/session/SessionTest.java`
+- `sed -n '1,240p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `sed -n '1,220p' vedenemo-app/src/main/java/org/vedenemo/app/VedenemoApp.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/session/SessionManager.java`
+- `git diff -- tasks/backlog.md`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Refined the backlog task into a structured planning document. The
+updated task records current implementation context, identifies the missing
+model entity ownership structure, lays out ModelRoot-vs-model-aggregate options,
+documents command execution and undo goals, compares generic versus
+command-specific HTTP endpoints, defines CLI scope, captures future command
+serialization concerns, and lists open planning questions.
+
+Next steps: Resolve the open planning questions before promoting this task to
+`tasks/current-task.md` for implementation.
+
+## 2026-07-13 17:14 EEST
+
+Goal: Record resolved planning decisions for the `Taking Command concept into
+use and implementing the first command` backlog task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '866,1160p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Updated the backlog task with resolved decisions: `ModelRoot` will
+directly own `VEntity` instances for this iteration, command-specific HTTP
+endpoints will be used, undo removes the original command from session command
+history, `DeleteEntityCommand` is internal to undo, CLI request DTO construction
+stays separate from backend/core command records, and successful entity creation
+prints `Entity <azName> added.`. The task is now marked ready to move to
+`tasks/current-task.md` when execution should begin.
+
+Next steps: Promote the task to `tasks/current-task.md` when implementation
+should start.
+
+## 2026-07-13 17:26 EEST
+
+Goal: Execute the `Taking Command concept into use and implementing the first
+command` task.
+
+Files changed:
+
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-app/src/main/java/org/vedenemo/app/VedenemoApp.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/CommandClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpCommandClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/UndoCommandResult.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCli.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/Command.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CreateEntityCommand.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/DeleteEntityCommand.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/UndoResult.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/registry/ModelRegistry.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/session/Session.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/session/SessionManager.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/session/SessionManagerTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/session/SessionTest.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/VEntity.java`
+- `vedenemo-model-api/src/test/java/org/vedenemo/core/model/ModelRootTest.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/SessionResourceTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' AGENTS.md`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/first-milestone.md`
+- `sed -n '1,260p' docs/architecture_doc_instructions.md`
+- `tail -n 160 SESSION.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '866,1120p' tasks/backlog.md`
+- `find vedenemo-* -path '*/src/main/java/*.java' -o -path '*/src/test/java/*.java' | sort`
+- `sed -n '1,360p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '1,260p' vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `sed -n '1,320p' vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `sed -n '1,280p' vedenemo-model-api/src/test/java/org/vedenemo/core/model/VEntityTest.java`
+- `sed -n '1,280p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/SessionResourceTest.java`
+- `sed -n '1,260p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `sed -n '1,240p' docs/architecture_doc.md`
+- `sed -n '240,520p' docs/architecture_doc.md`
+- `mvn -B clean verify`
+- `bash -lc 'VEDENEMO_WEB_HOST=127.0.0.1 VEDENEMO_WEB_PORT=18084 java -jar vedenemo-web-api/target/vedenemo-web-api-0.1.0-SNAPSHOT.jar >/tmp/vedenemo-command-smoke.log 2>&1 & pid=$!; for i in $(seq 1 50); do if curl -fsS http://127.0.0.1:18084/models/ping >/dev/null 2>&1; then break; fi; sleep 0.2; done; printf "add\nSmoke Model\n\nadd\nSmoke Entity\n\nundo\nexit\n" | VEDENEMO_API_BASE_URL=http://127.0.0.1:18084 java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli >/tmp/vedenemo-command-smoke.out; status=$?; kill $pid >/dev/null 2>&1 || true; wait $pid >/dev/null 2>&1 || true; test $status -eq 0; grep -q "Added and attached model Smoke_Model" /tmp/vedenemo-command-smoke.out; grep -q "Entity Smoke_Entity added." /tmp/vedenemo-command-smoke.out; grep -q "Undo completed." /tmp/vedenemo-command-smoke.out'`
+- `git diff --check`
+- `git status --short --branch`
+- `sed -n '1,220p' /tmp/vedenemo-command-smoke.out`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Promoted the planned command task to current and executed it. `ModelRoot`
+now owns ordered entities. `CreateEntityCommand` is the first real
+model-changing command. `CommandExecutor` applies create-entity commands to the
+selected model, records successful commands, and supports undo through an
+internal `DeleteEntityCommand` inverse. The web API exposes command-specific
+create-entity and undo endpoints. `VedenemoCli` reuses `add` to create entities
+when a model is attached and adds `undo`. The backlog task remains in
+`tasks/backlog.md` as history and is marked executed; `tasks/current-task.md` is
+also marked executed with completion notes.
+
+Verification: `mvn -B clean verify` passed. A live backend plus scripted CLI
+smoke test for add model, add entity, undo, and exit passed. `git diff --check`
+reported no whitespace errors.
+
+Next steps: Review the implementation and commit when acceptable.
 
 ## 2026-07-11 20:34 EEST
 

@@ -73,7 +73,7 @@ No models available.
 
 ### `add`
 
-Adds a new model through the backend.
+When no model is attached, adds a new model through the backend.
 
 The CLI asks for a visible name and then suggests an ASCII `azName`. Press
 Enter to accept the suggestion or type a replacement.
@@ -91,6 +91,19 @@ VedenemoCli[Example_Model]>
 
 New models are created with version `1.0.0`. After a successful add, the CLI
 automatically attaches the current backend session to the created model.
+
+When a model is attached, `add` creates a new entity in that model through the
+backend command API.
+
+Example:
+
+```text
+VedenemoCli[Example_Model]>add
+Entity visible name: Customer Entity
+Entity azName [Customer_Entity]:
+Entity Customer_Entity added.
+VedenemoCli[Example_Model]>
+```
 
 ### `attach [N | azName]`
 
@@ -140,6 +153,22 @@ If no model is attached, the CLI prints:
 
 ```text
 No model is currently attached.
+```
+
+### `undo`
+
+Asks the backend to undo the latest executed command for the current session.
+Currently this can undo an entity created through attached-model `add`.
+
+```text
+VedenemoCli[Example_Model]>undo
+Undo completed.
+```
+
+If there is no command to undo:
+
+```text
+Nothing to undo.
 ```
 
 ### `exit`

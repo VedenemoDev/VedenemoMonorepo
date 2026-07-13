@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public final class ModelRegistry {
 
@@ -24,6 +25,10 @@ public final class ModelRegistry {
 
     public synchronized List<ModelRoot> list() {
         return List.copyOf(new ArrayList<>(modelsByAzName.values()));
+    }
+
+    public synchronized Optional<ModelRoot> find(String azName) {
+        return Optional.ofNullable(modelsByAzName.get(ModelRoot.uniquenessKey(azName)));
     }
 
     public synchronized boolean contains(String azName) {

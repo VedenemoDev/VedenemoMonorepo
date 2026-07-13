@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.vedenemo.core.command.CommandExecutor;
 import org.vedenemo.core.command.NoOpCommand;
 import org.vedenemo.core.model.ModelRoot;
+import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.spi.storage.ModelStorage;
 
 import java.util.Map;
@@ -18,12 +19,14 @@ final class SessionManagerTest {
 
     @Test
     void startsSessionWithBoundCommandExecutor() {
-        SessionManager manager = new SessionManager(new TestModelStorage());
+        ModelRegistry modelRegistry = new ModelRegistry();
+        SessionManager manager = new SessionManager(new TestModelStorage(), modelRegistry);
 
         Session session = manager.startSession();
         CommandExecutor executor = manager.findExecutor(session.id()).orElseThrow();
 
         assertSame(session, executor.session());
+        assertSame(modelRegistry, executor.modelRegistry());
         assertEquals(1, manager.activeSessionCount());
     }
 

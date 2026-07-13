@@ -22,7 +22,7 @@ end
 subgraph Web["Web API Runtime"]
     WebApi["vedenemo-web-api<br/>Javalin executable jar"]
     ModelsResource["ModelsResource<br/>ping/add/list endpoints"]
-    SessionResource["SessionResource<br/>session lifecycle and selected model endpoints"]
+    SessionResource["SessionResource<br/>session lifecycle, selected model, and command endpoints"]
 end
 
 subgraph App["Application Assembly"]
@@ -31,7 +31,7 @@ subgraph App["Application Assembly"]
 end
 
 subgraph Core["Core"]
-    CoreModule["vedenemo-core<br/>CommandExecutor"]
+    CoreModule["vedenemo-core<br/>CommandExecutor, commands, undo"]
     SessionManager["SessionManager<br/>process-local active sessions"]
     Session["Session<br/>UUID, selected model, command history"]
     ModelRegistry["ModelRegistry<br/>process-local known models"]
@@ -73,7 +73,8 @@ MemoryStorage --> ModelApi
 
 Shared model API module. It currently contains:
 
-- `ModelRoot`, the first concrete model root entity
+- `ModelRoot`, the first concrete model root entity, which owns ordered
+  `VEntity` instances
 - `ModelVersion`, a normalized semantic version value
 - `Versionable`, an abstract base class for model elements with lifecycle
   version metadata
@@ -94,6 +95,11 @@ uniqueness case-insensitively. It exposes attributes as a read-only snapshot
 list. Attributes can be removed by `azName` or by `VAttribute` instance while a
 model is under construction.
 
+`ModelRoot` preserves entity insertion order and enforces entity `azName`
+uniqueness case-insensitively. It exposes entities as a read-only snapshot list.
+Entities can be removed by `azName` or by `VEntity` instance while a model is
+under construction.
+
 `Versionable` requires `activeSince`. `deprecatedSince` is optional, but when it
 is present it must be strictly later than `activeSince`.
 
@@ -112,27 +118,32 @@ Dependencies:
 ### `vedenemo-core`
 
 Core command module. It currently contains a sealed `Command` marker interface,
-`NoOpCommand`, `CommandExecutor`, `Session`, `SessionManager`, and
+`NoOpCommand`, `CreateEntityCommand`, an internal `DeleteEntityCommand`,
+`UndoResult`, `CommandExecutor`, `Session`, `SessionManager`, and
 `ModelRegistry`.
 
 `Session` represents a process-local user work session. It has a UUID, an
 optional selected model reference stored as `ModelRoot.azName`, execution-order
-command history, and a reverse-order command history snapshot prepared for
-future undo behavior.
+command history, a reverse-order command history snapshot, and a latest-command
+removal operation used by undo.
 
 `SessionManager` creates sessions and keeps active session-bound
 `CommandExecutor` instances in memory. Ending a session removes the active
 executor and session from the manager.
 
-`CommandExecutor` is bound to exactly one active `Session`. Command execution
-still has no real model-changing behavior, but executed commands are recorded
-in the bound session.
+`CommandExecutor` is bound to exactly one active `Session` and the process-local
+`ModelRegistry`. It can execute `CreateEntityCommand` against the selected
+model, record successfully applied commands in the session, and undo the latest
+create-entity command by applying the internal `DeleteEntityCommand` inverse.
+Failed commands are not recorded. Undo removes the original command from active
+session command history.
 
 `ModelRegistry` is the process-local registry of currently known models. It
 stores `ModelRoot` instances in insertion order and enforces case-insensitive
 `azName` uniqueness while preserving the original submitted casing.
 
-Real command behavior beyond session history recording is not implemented yet.
+Other command types beyond create-entity and its undo inverse are not
+implemented yet.
 
 Dependencies:
 
@@ -178,8 +189,11 @@ Current CLI behavior:
 - supports `help`
 - lists current backend models with `list`
 - adds a new backend model with `add`, using version `1.0.0`
+- when a model is attached, reuses `add` to create a new entity in that model
+  through the backend command API
 - attaches the session to a model by latest list number or `azName`
 - detaches the session from the current selected model
+- supports `undo` for the latest backend command
 - supports `exit`
 - calls `DELETE /sessions/{uuid}` during normal exit and through a best-effort
   shutdown hook
@@ -202,6 +216,10 @@ and exposes:
   backend session
 - `DELETE /sessions/{uuid}/selected-model`, which clears the selected model for
   a backend session
+- `POST /sessions/{uuid}/commands/create-entity`, which creates a `VEntity` in
+  the session's selected model through `CommandExecutor`
+- `POST /sessions/{uuid}/commands/undo`, which undoes the latest command for
+  the active backend session or returns `304` when nothing can be undone
 
 HTTP JSON parsing and response serialization are kept in this module. Jackson is
 used here as an adapter/runtime dependency and does not leak into core or model
@@ -338,6 +356,36 @@ sequenceDiagram
     Sessions-->>CLI: 204
 ```
 
+### CLI Entity Command And Undo
+
+```mermaid
+sequenceDiagram
+    participant CLI as vedenemo-cli
+    participant API as vedenemo-web-api
+    participant Sessions as SessionResource
+    participant Manager as SessionManager
+    participant Executor as CommandExecutor
+    participant Registry as ModelRegistry
+    participant Model as ModelRoot
+
+    CLI->>API: POST /sessions/{uuid}/commands/create-entity
+    API->>Sessions: route request
+    Sessions->>Manager: findExecutor(uuid)
+    Sessions->>Executor: execute(CreateEntityCommand)
+    Executor->>Registry: find(selected model azName)
+    Executor->>Model: addEntity(VEntity)
+    Executor->>Executor: record command in Session
+    Sessions-->>CLI: 200 entity response
+
+    CLI->>API: POST /sessions/{uuid}/commands/undo
+    API->>Sessions: route request
+    Sessions->>Manager: findExecutor(uuid)
+    Sessions->>Executor: undoLatest()
+    Executor->>Model: removeEntity(entity azName)
+    Executor->>Executor: remove original command from Session
+    Sessions-->>CLI: 200 undo response
+```
+
 ### UX Ping
 
 ```mermaid
@@ -359,13 +407,14 @@ GitHub Actions contains separate backend and frontend CI workflows:
 - backend CI runs `mvn -B clean verify`
 - frontend CI runs `npm ci` and `npm run build` in `vedenemo-ux`
 
-Backend verification includes focused model API tests for `VAttribute`,
-`VEntity`, and lifecycle validation, focused core tests for `Session`,
-`SessionManager`, and session-bound `CommandExecutor` behavior, focused CLI
-tests for backend URL configuration, non-hanging prompt behavior, and CLI model
-commands, JUnit 5 endpoint tests for the model add/list, session lifecycle, and
-selected-model HTTP APIs in `vedenemo-web-api`, and focused
-`InMemoryModelStorage` tests for storing and loading `ModelRoot` instances.
+Backend verification includes focused model API tests for `ModelRoot`,
+`VAttribute`, `VEntity`, and lifecycle validation, focused core tests for
+`Session`, `SessionManager`, create-entity command execution, and undo behavior,
+focused CLI tests for backend URL configuration, non-hanging prompt behavior,
+model commands, entity command creation, and undo output, JUnit 5 endpoint tests
+for the model add/list, session lifecycle, selected-model, create-entity, and
+undo HTTP APIs in `vedenemo-web-api`, and focused `InMemoryModelStorage` tests
+for storing and loading `ModelRoot` instances.
 
 The UX deployment workflow builds `vedenemo-ux` and deploys it to Firebase
 Hosting when required GitHub variables are present. The deployment workflow can
@@ -389,9 +438,8 @@ override `public/config.json` from the `VEDENEMO_API_BASE_URL` GitHub variable.
 
 The current implementation does not yet contain:
 
-- real command execution behavior
-- binding `VEntity` instances under `ModelRoot`
-- HTTP command execution endpoints
 - model internals beyond the first `VEntity` / `VAttribute` structure
+- command types beyond create-entity and its undo inverse
+- generic command envelope or command replay persistence
 - durable persistence
 - parser, scripting, plugin, or visualization implementations

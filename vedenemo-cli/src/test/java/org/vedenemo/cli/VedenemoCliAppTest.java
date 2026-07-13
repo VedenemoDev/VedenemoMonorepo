@@ -22,7 +22,7 @@ final class VedenemoCliAppTest {
         TestSessionClient sessionClient = new TestSessionClient(sessionId);
         TestModelClient modelClient = new TestModelClient();
 
-        Result result = run(sessionClient, modelClient, "exit\n");
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "exit\n");
 
         assertEquals(0, result.exitCode);
         assertTrue(result.output.contains("Session with UUID " + sessionId + " is created / attached to."));
@@ -34,7 +34,7 @@ final class VedenemoCliAppTest {
     void emptyLineEchoesEmptyLineAndContinuesPrompting() {
         TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
 
-        Result result = run(sessionClient, new TestModelClient(), "\nexit\n");
+        Result result = run(sessionClient, new TestModelClient(), new TestCommandClient(), "\nexit\n");
 
         assertEquals(0, result.exitCode);
         assertTrue(result.output.contains("VedenemoCli>\nVedenemoCli>"));
@@ -43,18 +43,19 @@ final class VedenemoCliAppTest {
 
     @Test
     void helpPrintsAvailableCommands() {
-        Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), "help\nexit\n");
+        Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), new TestCommandClient(), "help\nexit\n");
 
         assertTrue(result.output.contains("list - list existing models"));
         assertTrue(result.output.contains("add - add a new model"));
         assertTrue(result.output.contains("attach [N | azName] - attach to a listed model"));
         assertTrue(result.output.contains("detach - detach from the current model"));
+        assertTrue(result.output.contains("undo - undo the latest backend command"));
         assertTrue(result.output.contains("exit - end the session and exit"));
     }
 
     @Test
     void listPrintsEmptyMessageWhenNoModelsExist() {
-        Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), "list\nexit\n");
+        Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), new TestCommandClient(), "list\nexit\n");
 
         assertTrue(result.output.contains("No models available."));
     }
@@ -65,7 +66,7 @@ final class VedenemoCliAppTest {
         modelClient.models.add(new ModelSummary("First", "First Model", "1.0.0"));
         modelClient.models.add(new ModelSummary("Second_Model", "Second Model", "2.0.0"));
 
-        Result result = run(new TestSessionClient(UUID.randomUUID()), modelClient, "list\nexit\n");
+        Result result = run(new TestSessionClient(UUID.randomUUID()), modelClient, new TestCommandClient(), "list\nexit\n");
 
         assertTrue(result.output.contains("1. First Model (First) version 1.0.0"));
         assertTrue(result.output.contains("2. Second Model (Second_Model) version 2.0.0"));
@@ -77,7 +78,7 @@ final class VedenemoCliAppTest {
         TestModelClient modelClient = new TestModelClient();
         modelClient.models.add(new ModelSummary("First", "First Model", "1.0.0"));
 
-        Result result = run(sessionClient, modelClient, "list\nattach 1\nexit\n");
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "list\nattach 1\nexit\n");
 
         assertEquals("First", sessionClient.selectedModelAzName);
         assertTrue(result.output.contains("Attached to model First."));
@@ -90,7 +91,7 @@ final class VedenemoCliAppTest {
         TestModelClient modelClient = new TestModelClient();
         modelClient.models.add(new ModelSummary("First", "First Model", "1.0.0"));
 
-        Result result = run(sessionClient, modelClient, "attach First\nexit\n");
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach First\nexit\n");
 
         assertEquals("First", sessionClient.selectedModelAzName);
         assertTrue(result.output.contains("VedenemoCli[First]>"));
@@ -102,7 +103,7 @@ final class VedenemoCliAppTest {
         TestModelClient modelClient = new TestModelClient();
         modelClient.models.add(new ModelSummary("First", "First Model", "1.0.0"));
 
-        Result result = run(sessionClient, modelClient, "attach\nFirst\nexit\n");
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach\nFirst\nexit\n");
 
         assertEquals("First", sessionClient.selectedModelAzName);
         assertTrue(result.output.contains("Model number or azName: "));
@@ -114,7 +115,7 @@ final class VedenemoCliAppTest {
         TestModelClient modelClient = new TestModelClient();
         modelClient.models.add(new ModelSummary("First", "First Model", "1.0.0"));
 
-        Result result = run(sessionClient, modelClient, "attach 1\nexit\n");
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach 1\nexit\n");
 
         assertEquals(null, sessionClient.selectedModelAzName);
         assertTrue(result.output.contains("Run list first before attaching by number."));
@@ -126,7 +127,7 @@ final class VedenemoCliAppTest {
         TestModelClient modelClient = new TestModelClient();
         modelClient.models.add(new ModelSummary("First", "First Model", "1.0.0"));
 
-        Result result = run(sessionClient, modelClient, "list\nattach 9\nexit\n");
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "list\nattach 9\nexit\n");
 
         assertEquals(null, sessionClient.selectedModelAzName);
         assertTrue(result.output.contains("No model found for list number 9."));
@@ -139,7 +140,7 @@ final class VedenemoCliAppTest {
         TestModelClient modelClient = new TestModelClient();
         modelClient.models.add(new ModelSummary("First", "First Model", "1.0.0"));
 
-        Result result = run(sessionClient, modelClient, "attach First\ndetach\nexit\n");
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach First\ndetach\nexit\n");
 
         assertEquals(null, sessionClient.selectedModelAzName);
         assertTrue(sessionClient.clearSelectedModelCalled);
@@ -150,7 +151,7 @@ final class VedenemoCliAppTest {
 
     @Test
     void detachWithoutAttachedModelPrintsMessage() {
-        Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), "detach\nexit\n");
+        Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), new TestCommandClient(), "detach\nexit\n");
 
         assertTrue(result.output.contains("No model is currently attached."));
     }
@@ -160,7 +161,7 @@ final class VedenemoCliAppTest {
         TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
         TestModelClient modelClient = new TestModelClient();
 
-        Result result = run(sessionClient, modelClient, "add\nExample Model\n\nexit\n");
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "add\nExample Model\n\nexit\n");
 
         assertEquals(List.of(new ModelSummary("Example_Model", "Example Model", "1.0.0")), modelClient.models);
         assertEquals("Example_Model", sessionClient.selectedModelAzName);
@@ -175,17 +176,79 @@ final class VedenemoCliAppTest {
         TestModelClient modelClient = new TestModelClient();
         modelClient.addFailure = new IOException("model add failed with HTTP status 409: duplicate");
 
-        Result result = run(new TestSessionClient(UUID.randomUUID()), modelClient, "add\nExample Model\nExample\nexit\n");
+        Result result = run(new TestSessionClient(UUID.randomUUID()), modelClient, new TestCommandClient(), "add\nExample Model\nExample\nexit\n");
 
         assertTrue(result.output.contains("model add failed with HTTP status 409: duplicate"));
         assertTrue(result.output.contains("VedenemoCli>"));
     }
 
-    private static Result run(TestSessionClient sessionClient, TestModelClient modelClient, String input) {
+    @Test
+    void addWithAttachedModelCreatesEntityCommand() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+
+        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nadd\nCustomer Entity\n\nexit\n");
+
+        assertEquals("Customer_Entity", commandClient.createdEntityAzName);
+        assertEquals("Customer Entity", commandClient.createdEntityVisName);
+        assertEquals(sessionClient.sessionId, commandClient.createEntitySessionId);
+        assertTrue(result.output.contains("Entity visible name: "));
+        assertTrue(result.output.contains("Entity azName [Customer_Entity]: "));
+        assertTrue(result.output.contains("Entity Customer_Entity added."));
+    }
+
+    @Test
+    void addWithAttachedModelReportsCommandFailureWithoutExiting() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        commandClient.createFailure = new IOException("entity add failed with HTTP status 400: duplicate");
+
+        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nadd\nCustomer\nCustomer\nexit\n");
+
+        assertTrue(result.output.contains("entity add failed with HTTP status 400: duplicate"));
+        assertTrue(result.output.contains("VedenemoCli[Example_Model]>"));
+    }
+
+    @Test
+    void undoPrintsSuccessWhenBackendUndoSucceeds() {
+        TestCommandClient commandClient = new TestCommandClient();
+
+        Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), commandClient, "undo\nexit\n");
+
+        assertTrue(commandClient.undoCalled);
+        assertTrue(result.output.contains("Undo completed."));
+    }
+
+    @Test
+    void undoPrintsClearMessageWhenNothingCanBeUndone() {
+        TestCommandClient commandClient = new TestCommandClient();
+        commandClient.undoResult = UndoCommandResult.NOTHING_TO_UNDO;
+
+        Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), commandClient, "undo\nexit\n");
+
+        assertTrue(result.output.contains("Nothing to undo."));
+    }
+
+    @Test
+    void undoPrintsUnexpectedResponseErrors() {
+        TestCommandClient commandClient = new TestCommandClient();
+        commandClient.undoFailure = new IOException("Unexpected response code: 500");
+
+        Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), commandClient, "undo\nexit\n");
+
+        assertTrue(result.output.contains("Unexpected response code: 500"));
+    }
+
+    private static Result run(TestSessionClient sessionClient, TestModelClient modelClient, CommandClient commandClient, String input) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         VedenemoCliApp app = new VedenemoCliApp(
                 sessionClient,
                 modelClient,
+                commandClient,
                 new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)),
                 new PrintStream(output, true, StandardCharsets.UTF_8),
                 false
@@ -246,6 +309,35 @@ final class VedenemoCliAppTest {
             ModelSummary model = new ModelSummary(azName, visName, version);
             models.add(model);
             return model;
+        }
+    }
+
+    private static final class TestCommandClient implements CommandClient {
+        private UUID createEntitySessionId;
+        private String createdEntityAzName;
+        private String createdEntityVisName;
+        private boolean undoCalled;
+        private UndoCommandResult undoResult = UndoCommandResult.UNDONE;
+        private IOException createFailure;
+        private IOException undoFailure;
+
+        @Override
+        public void createEntity(UUID sessionId, String entityAzName, String entityVisName) throws IOException {
+            if (createFailure != null) {
+                throw createFailure;
+            }
+            createEntitySessionId = sessionId;
+            createdEntityAzName = entityAzName;
+            createdEntityVisName = entityVisName;
+        }
+
+        @Override
+        public UndoCommandResult undo(UUID sessionId) throws IOException {
+            if (undoFailure != null) {
+                throw undoFailure;
+            }
+            undoCalled = true;
+            return undoResult;
         }
     }
 }

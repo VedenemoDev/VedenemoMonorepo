@@ -42,6 +42,20 @@ public final class Session {
         return List.copyOf(reversed);
     }
 
+    public synchronized Optional<Command> removeLatestCommand() {
+        if (commandHistory.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(commandHistory.removeLast());
+    }
+
+    public synchronized Optional<Command> latestCommand() {
+        if (commandHistory.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(commandHistory.getLast());
+    }
+
     public synchronized Optional<String> selectedModelAzName() {
         return Optional.ofNullable(selectedModelAzName);
     }

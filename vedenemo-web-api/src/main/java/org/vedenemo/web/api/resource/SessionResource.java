@@ -3,6 +3,9 @@ package org.vedenemo.web.api.resource;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.router.JavalinDefaultRoutingApi;
+import org.vedenemo.core.command.CommandExecutor;
+import org.vedenemo.core.command.CreateEntityCommand;
+import org.vedenemo.core.command.UndoResult;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.Session;
 import org.vedenemo.core.session.SessionManager;
@@ -92,6 +95,59 @@ public final class SessionResource {
             session.orElseThrow().clearSelectedModel();
             context.status(204);
         });
+        routes.post("/sessions/{uuid}/commands/create-entity", context -> {
+            UUID sessionId = parseSessionId(context.pathParam("uuid"));
+            if (sessionId == null) {
+                writeJson(context, 400, new ErrorResponse("session uuid is invalid"));
+                return;
+            }
+            Optional<CommandExecutor> executor = sessionManager.findExecutor(sessionId);
+            if (executor.isEmpty()) {
+                writeJson(context, 404, new ErrorResponse("session not found"));
+                return;
+            }
+            Optional<String> selectedModelAzName = executor.orElseThrow().session().selectedModelAzName();
+            if (selectedModelAzName.isEmpty()) {
+                writeJson(context, 400, new ErrorResponse("no selected model"));
+                return;
+            }
+            CreateEntityRequest request;
+            try {
+                request = objectMapper.readValue(context.body(), CreateEntityRequest.class);
+                executor.orElseThrow().execute(new CreateEntityCommand(
+                        selectedModelAzName.orElseThrow(),
+                        request.entityAzName(),
+                        request.entityVisName()
+                ));
+            } catch (JsonProcessingException | IllegalArgumentException | IllegalStateException | NullPointerException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+                return;
+            }
+            writeJson(context, 200, new EntityResponse(request.entityAzName(), request.entityVisName()));
+        });
+        routes.post("/sessions/{uuid}/commands/undo", context -> {
+            UUID sessionId = parseSessionId(context.pathParam("uuid"));
+            if (sessionId == null) {
+                writeJson(context, 400, new ErrorResponse("session uuid is invalid"));
+                return;
+            }
+            Optional<CommandExecutor> executor = sessionManager.findExecutor(sessionId);
+            if (executor.isEmpty()) {
+                writeJson(context, 404, new ErrorResponse("session not found"));
+                return;
+            }
+            try {
+                UndoResult result = executor.orElseThrow().undoLatest();
+                if (result == UndoResult.NOTHING_TO_UNDO) {
+                    context.status(304);
+                    return;
+                }
+            } catch (IllegalArgumentException | IllegalStateException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+                return;
+            }
+            writeJson(context, 200, new UndoResponse("undone"));
+        });
     }
 
     private void writeJson(io.javalin.http.Context context, int status, Object body) throws JsonProcessingException {
@@ -104,6 +160,15 @@ public final class SessionResource {
     }
 
     private record SelectModelRequest(String azName) {
+    }
+
+    private record CreateEntityRequest(String entityAzName, String entityVisName) {
+    }
+
+    private record EntityResponse(String azName, String visName) {
+    }
+
+    private record UndoResponse(String status) {
     }
 
     private record ErrorResponse(String error) {
