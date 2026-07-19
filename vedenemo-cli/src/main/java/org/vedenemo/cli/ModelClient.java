@@ -8,4 +8,8 @@ public interface ModelClient {
     List<ModelSummary> listModels() throws IOException, InterruptedException;
 
     ModelSummary addModel(String azName, String visName, String version) throws IOException, InterruptedException;
+
+    List<EntitySummary> listEntities(String modelAzName) throws IOException, InterruptedException;
+
+    List<AttributeSummary> listAttributes(String modelAzName, String entityAzName) throws IOException, InterruptedException;
 }

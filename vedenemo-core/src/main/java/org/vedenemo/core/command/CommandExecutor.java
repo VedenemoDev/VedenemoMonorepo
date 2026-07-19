@@ -1,6 +1,7 @@
 package org.vedenemo.core.command;
 
 import org.vedenemo.core.model.ModelRoot;
+import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.spi.storage.ModelStorage;
@@ -45,12 +46,24 @@ public final class CommandExecutor {
             apply(new DeleteEntityCommand(createEntityCommand.modelAzName(), createEntityCommand.entityAzName()));
             return UndoResult.UNDONE;
         }
+        if (command instanceof CreateAttributeCommand createAttributeCommand) {
+            apply(new DeleteAttributeCommand(
+                    createAttributeCommand.modelAzName(),
+                    createAttributeCommand.entityAzName(),
+                    createAttributeCommand.attributeAzName()
+            ));
+            return UndoResult.UNDONE;
+        }
         throw new IllegalStateException("command has no undo counterpart: " + command.getClass().getSimpleName());
     }
 
     private void apply(Command command) {
         if (command instanceof CreateEntityCommand createEntityCommand) {
             applyCreateEntity(createEntityCommand);
+        } else if (command instanceof CreateAttributeCommand createAttributeCommand) {
+            applyCreateAttribute(createAttributeCommand);
+        } else if (command instanceof DeleteAttributeCommand deleteAttributeCommand) {
+            applyDeleteAttribute(deleteAttributeCommand);
         } else if (command instanceof DeleteEntityCommand deleteEntityCommand) {
             applyDeleteEntity(deleteEntityCommand);
         } else if (command instanceof NoOpCommand) {
@@ -61,20 +74,51 @@ public final class CommandExecutor {
     }
 
     private void applyCreateEntity(CreateEntityCommand command) {
-        String selectedModelAzName = session.selectedModelAzName()
-                .orElseThrow(() -> new IllegalStateException("no selected model"));
-        if (!ModelRoot.uniquenessKey(selectedModelAzName).equals(ModelRoot.uniquenessKey(command.modelAzName()))) {
-            throw new IllegalStateException("command target model is not selected");
-        }
+        ModelRoot modelRoot = selectedModel(command.modelAzName());
+        modelRoot.addEntity(new VEntity(command.entityAzName(), command.entityVisName(), modelRoot.version()));
+    }
+
+    private void applyCreateAttribute(CreateAttributeCommand command) {
+        ModelRoot modelRoot = selectedModel(command.modelAzName());
+        VEntity entity = findEntity(modelRoot, command.entityAzName());
+        entity.addAttribute(new VAttribute(
+                command.attributeAzName(),
+                command.attributeVisName(),
+                command.dataType(),
+                modelRoot.version()
+        ));
+    }
+
+    private void applyDeleteAttribute(DeleteAttributeCommand command) {
         ModelRoot modelRoot = modelRegistry.find(command.modelAzName())
                 .orElseThrow(() -> new IllegalStateException("selected model not found"));
-        modelRoot.addEntity(new VEntity(command.entityAzName(), command.entityVisName(), modelRoot.version()));
+        VEntity entity = findEntity(modelRoot, command.entityAzName());
+        entity.removeAttribute(command.attributeAzName())
+                .orElseThrow(() -> new IllegalStateException("attribute not found"));
+    }
+
+    private ModelRoot selectedModel(String commandModelAzName) {
+        String selectedModelAzName = session.selectedModelAzName()
+                .orElseThrow(() -> new IllegalStateException("no selected model"));
+        if (!ModelRoot.uniquenessKey(selectedModelAzName).equals(ModelRoot.uniquenessKey(commandModelAzName))) {
+            throw new IllegalStateException("command target model is not selected");
+        }
+        return modelRegistry.find(commandModelAzName)
+                .orElseThrow(() -> new IllegalStateException("selected model not found"));
     }
 
     private void applyDeleteEntity(DeleteEntityCommand command) {
         ModelRoot modelRoot = modelRegistry.find(command.modelAzName())
                 .orElseThrow(() -> new IllegalStateException("selected model not found"));
         modelRoot.removeEntity(command.entityAzName())
+                .orElseThrow(() -> new IllegalStateException("entity not found"));
+    }
+
+    private static VEntity findEntity(ModelRoot modelRoot, String entityAzName) {
+        String targetKey = VEntity.uniquenessKey(entityAzName);
+        return modelRoot.entities().stream()
+                .filter(entity -> VEntity.uniquenessKey(entity.azName()).equals(targetKey))
+                .findFirst()
                 .orElseThrow(() -> new IllegalStateException("entity not found"));
     }
 

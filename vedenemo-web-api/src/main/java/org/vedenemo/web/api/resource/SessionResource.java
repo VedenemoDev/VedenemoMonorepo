@@ -4,8 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.router.JavalinDefaultRoutingApi;
 import org.vedenemo.core.command.CommandExecutor;
+import org.vedenemo.core.command.CreateAttributeCommand;
 import org.vedenemo.core.command.CreateEntityCommand;
 import org.vedenemo.core.command.UndoResult;
+import org.vedenemo.core.model.DataType;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.Session;
 import org.vedenemo.core.session.SessionManager;
@@ -125,6 +127,44 @@ public final class SessionResource {
             }
             writeJson(context, 200, new EntityResponse(request.entityAzName(), request.entityVisName()));
         });
+        routes.post("/sessions/{uuid}/commands/create-attribute", context -> {
+            UUID sessionId = parseSessionId(context.pathParam("uuid"));
+            if (sessionId == null) {
+                writeJson(context, 400, new ErrorResponse("session uuid is invalid"));
+                return;
+            }
+            Optional<CommandExecutor> executor = sessionManager.findExecutor(sessionId);
+            if (executor.isEmpty()) {
+                writeJson(context, 404, new ErrorResponse("session not found"));
+                return;
+            }
+            Optional<String> selectedModelAzName = executor.orElseThrow().session().selectedModelAzName();
+            if (selectedModelAzName.isEmpty()) {
+                writeJson(context, 400, new ErrorResponse("no selected model"));
+                return;
+            }
+            CreateAttributeRequest request;
+            DataType dataType;
+            try {
+                request = objectMapper.readValue(context.body(), CreateAttributeRequest.class);
+                dataType = parseDataType(request.dataType());
+                executor.orElseThrow().execute(new CreateAttributeCommand(
+                        selectedModelAzName.orElseThrow(),
+                        request.entityAzName(),
+                        request.attributeAzName(),
+                        request.attributeVisName(),
+                        dataType
+                ));
+            } catch (JsonProcessingException | IllegalArgumentException | IllegalStateException | NullPointerException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+                return;
+            }
+            writeJson(context, 200, new AttributeResponse(
+                    request.attributeAzName(),
+                    request.attributeVisName(),
+                    dataType.name()
+            ));
+        });
         routes.post("/sessions/{uuid}/commands/undo", context -> {
             UUID sessionId = parseSessionId(context.pathParam("uuid"));
             if (sessionId == null) {
@@ -165,7 +205,18 @@ public final class SessionResource {
     private record CreateEntityRequest(String entityAzName, String entityVisName) {
     }
 
+    private record CreateAttributeRequest(
+            String entityAzName,
+            String attributeAzName,
+            String attributeVisName,
+            String dataType
+    ) {
+    }
+
     private record EntityResponse(String azName, String visName) {
+    }
+
+    private record AttributeResponse(String azName, String visName, String dataType) {
     }
 
     private record UndoResponse(String status) {
@@ -180,5 +231,18 @@ public final class SessionResource {
         } catch (IllegalArgumentException exception) {
             return null;
         }
+    }
+
+    private static DataType parseDataType(String value) {
+        if (value == null || value.isBlank()) {
+            return DataType.TEXT;
+        }
+        return switch (value.trim().toLowerCase()) {
+            case "text" -> DataType.TEXT;
+            case "numeric", "number" -> DataType.NUMERIC;
+            case "url" -> DataType.URL;
+            case "data" -> DataType.DATA;
+            default -> throw new IllegalArgumentException("unsupported dataType: " + value);
+        };
     }
 }

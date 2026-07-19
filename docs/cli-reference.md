@@ -47,6 +47,12 @@ With an attached model:
 VedenemoCli[Example_Model]>
 ```
 
+With an attached model and selected entity:
+
+```text
+VedenemoCli[Example_Model/Customer]>
+```
+
 ## Commands
 
 ### `help`
@@ -105,6 +111,8 @@ Entity Customer_Entity added.
 VedenemoCli[Example_Model]>
 ```
 
+Attribute creation uses `attr add`, not `add`.
+
 ### `attach [N | azName]`
 
 Attaches the current CLI session to an existing model and updates the backend
@@ -141,7 +149,8 @@ Attached to model Example_Model.
 
 ### `detach`
 
-Clears the selected model for the current backend session.
+Clears the selected model for the current backend session. It also clears any
+selected entity in the CLI context.
 
 ```text
 VedenemoCli[Example_Model]>detach
@@ -155,10 +164,103 @@ If no model is attached, the CLI prints:
 No model is currently attached.
 ```
 
+### `entities`
+
+Lists entities in the attached model.
+
+Example:
+
+```text
+VedenemoCli[Example_Model]>entities
+1. Customer (Customer) active since 1.0.0
+```
+
+If no model is attached, the CLI prints:
+
+```text
+Attach a model before listing entities.
+```
+
+### `entity [N | azName]`
+
+Selects an entity in the attached model for attribute operations.
+
+Select by list number from the most recent `entities` output:
+
+```text
+VedenemoCli[Example_Model]>entities
+1. Customer (Customer) active since 1.0.0
+VedenemoCli[Example_Model]>entity 1
+Selected entity Customer.
+VedenemoCli[Example_Model/Customer]>
+```
+
+Select by `azName`:
+
+```text
+VedenemoCli[Example_Model]>entity Customer
+Selected entity Customer.
+VedenemoCli[Example_Model/Customer]>
+```
+
+Clear only the selected entity while keeping the model attached:
+
+```text
+VedenemoCli[Example_Model/Customer]>entity detach
+Entity detached.
+VedenemoCli[Example_Model]>
+```
+
+### `attributes`
+
+Lists attributes in the selected entity. Output includes data type and lifecycle
+version fields.
+
+Example:
+
+```text
+VedenemoCli[Example_Model/Customer]>attributes
+1. Email (Email) type TEXT active since 1.0.0
+```
+
+If no entity is selected, the CLI prints:
+
+```text
+Select an entity before listing attributes.
+```
+
+### `attr add`
+
+Adds a new attribute to the selected entity through the backend command API.
+
+The CLI asks for a visible name, suggests an ASCII `azName`, and asks for a data
+type. Press Enter at the data type prompt to use `TEXT`. Data type input accepts
+case-insensitive aliases such as `text`, `number`, `url`, and `data`.
+
+Example:
+
+```text
+VedenemoCli[Example_Model/Customer]>attr add
+Attribute visible name: Email Address
+Attribute azName [Email_Address]:
+Attribute data type [TEXT]: url
+Attribute Email_Address added.
+VedenemoCli[Example_Model/Customer]>
+```
+
+If the backend rejects the attribute, for example because the `azName` already
+exists in the entity, the CLI prints the failure and keeps the current context:
+
+```text
+Attribute was not added: attribute add failed with HTTP status 400: ...
+```
+
 ### `undo`
 
 Asks the backend to undo the latest executed command for the current session.
-Currently this can undo an entity created through attached-model `add`.
+Undo is stack-based: it applies only to the latest successful command. Currently
+this can undo an entity created through attached-model `add` and an attribute
+created through `attr add`.
 
 ```text
 VedenemoCli[Example_Model]>undo

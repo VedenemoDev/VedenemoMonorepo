@@ -49,6 +49,11 @@ final class VedenemoCliAppTest {
         assertTrue(result.output.contains("add - add a new model"));
         assertTrue(result.output.contains("attach [N | azName] - attach to a listed model"));
         assertTrue(result.output.contains("detach - detach from the current model"));
+        assertTrue(result.output.contains("entities - list entities in the attached model"));
+        assertTrue(result.output.contains("entity [N | azName] - select an entity in the attached model"));
+        assertTrue(result.output.contains("entity detach - clear the selected entity"));
+        assertTrue(result.output.contains("attributes - list attributes in the selected entity"));
+        assertTrue(result.output.contains("attr add - add an attribute to the selected entity"));
         assertTrue(result.output.contains("undo - undo the latest backend command"));
         assertTrue(result.output.contains("exit - end the session and exit"));
     }
@@ -150,6 +155,19 @@ final class VedenemoCliAppTest {
     }
 
     @Test
+    void detachClearsAttachedEntityToo() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach Example_Model\nentity Customer\ndetach\nexit\n");
+
+        assertTrue(result.output.contains("VedenemoCli[Example_Model/Customer]>"));
+        assertTrue(result.output.endsWith("VedenemoCli>"));
+    }
+
+    @Test
     void detachWithoutAttachedModelPrintsMessage() {
         Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), new TestCommandClient(), "detach\nexit\n");
 
@@ -211,6 +229,136 @@ final class VedenemoCliAppTest {
 
         assertTrue(result.output.contains("entity add failed with HTTP status 400: duplicate"));
         assertTrue(result.output.contains("VedenemoCli[Example_Model]>"));
+    }
+
+    @Test
+    void entitiesRequiresAttachedModel() {
+        Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), new TestCommandClient(), "entities\nexit\n");
+
+        assertTrue(result.output.contains("Attach a model before listing entities."));
+    }
+
+    @Test
+    void entitiesPrintsNumberedRows() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach Example_Model\nentities\nexit\n");
+
+        assertTrue(result.output.contains("1. Customer (Customer) active since 1.0.0"));
+    }
+
+    @Test
+    void entityByNumberUsesLatestEntityListAndUpdatesPrompt() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach Example_Model\nentities\nentity 1\nexit\n");
+
+        assertTrue(result.output.contains("Selected entity Customer."));
+        assertTrue(result.output.contains("VedenemoCli[Example_Model/Customer]>"));
+    }
+
+    @Test
+    void entityByAzNameUpdatesPrompt() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach Example_Model\nentity Customer\nexit\n");
+
+        assertTrue(result.output.contains("VedenemoCli[Example_Model/Customer]>"));
+    }
+
+    @Test
+    void entityDetachClearsEntityButKeepsModel() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach Example_Model\nentity Customer\nentity detach\nexit\n");
+
+        assertTrue(result.output.contains("Entity detached."));
+        assertTrue(result.output.endsWith("VedenemoCli[Example_Model]>"));
+    }
+
+    @Test
+    void attributesRequiresSelectedEntity() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach Example_Model\nattributes\nexit\n");
+
+        assertTrue(result.output.contains("Select an entity before listing attributes."));
+    }
+
+    @Test
+    void attributesPrintsDataTypeAndLifecycleFields() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+        modelClient.attributes.add(new AttributeSummary("Email", "Email", "TEXT", "1.0.0", null));
+
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach Example_Model\nentity Customer\nattributes\nexit\n");
+
+        assertTrue(result.output.contains("1. Email (Email) type TEXT active since 1.0.0"));
+    }
+
+    @Test
+    void attrAddPromptsAndSendsCreateAttribute() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+
+        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nEmail Address\n\nurl\nexit\n");
+
+        assertEquals(sessionClient.sessionId, commandClient.createAttributeSessionId);
+        assertEquals("Customer", commandClient.createdAttributeEntityAzName);
+        assertEquals("Email_Address", commandClient.createdAttributeAzName);
+        assertEquals("Email Address", commandClient.createdAttributeVisName);
+        assertEquals("URL", commandClient.createdAttributeDataType);
+        assertTrue(result.output.contains("Attribute visible name: "));
+        assertTrue(result.output.contains("Attribute azName [Email_Address]: "));
+        assertTrue(result.output.contains("Attribute data type [TEXT]: "));
+        assertTrue(result.output.contains("Attribute Email_Address added."));
+    }
+
+    @Test
+    void attrAddDefaultsBlankDataTypeToText() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+
+        run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nEmail\n\n\nexit\n");
+
+        assertEquals("TEXT", commandClient.createdAttributeDataType);
+    }
+
+    @Test
+    void attrAddReportsDuplicateFailureAndKeepsContext() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+        commandClient.createAttributeFailure = new IOException("attribute add failed with HTTP status 400: duplicate");
+
+        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nEmail\nEmail\ntext\nexit\n");
+
+        assertTrue(result.output.contains("Attribute was not added: attribute add failed with HTTP status 400: duplicate."));
+        assertTrue(result.output.contains("VedenemoCli[Example_Model/Customer]>"));
     }
 
     @Test
@@ -294,6 +442,8 @@ final class VedenemoCliAppTest {
 
     private static final class TestModelClient implements ModelClient {
         private final List<ModelSummary> models = new ArrayList<>();
+        private final List<EntitySummary> entities = new ArrayList<>();
+        private final List<AttributeSummary> attributes = new ArrayList<>();
         private IOException addFailure;
 
         @Override
@@ -310,15 +460,31 @@ final class VedenemoCliAppTest {
             models.add(model);
             return model;
         }
+
+        @Override
+        public List<EntitySummary> listEntities(String modelAzName) {
+            return List.copyOf(entities);
+        }
+
+        @Override
+        public List<AttributeSummary> listAttributes(String modelAzName, String entityAzName) {
+            return List.copyOf(attributes);
+        }
     }
 
     private static final class TestCommandClient implements CommandClient {
         private UUID createEntitySessionId;
         private String createdEntityAzName;
         private String createdEntityVisName;
+        private UUID createAttributeSessionId;
+        private String createdAttributeEntityAzName;
+        private String createdAttributeAzName;
+        private String createdAttributeVisName;
+        private String createdAttributeDataType;
         private boolean undoCalled;
         private UndoCommandResult undoResult = UndoCommandResult.UNDONE;
         private IOException createFailure;
+        private IOException createAttributeFailure;
         private IOException undoFailure;
 
         @Override
@@ -329,6 +495,24 @@ final class VedenemoCliAppTest {
             createEntitySessionId = sessionId;
             createdEntityAzName = entityAzName;
             createdEntityVisName = entityVisName;
+        }
+
+        @Override
+        public void createAttribute(
+                UUID sessionId,
+                String entityAzName,
+                String attributeAzName,
+                String attributeVisName,
+                String dataType
+        ) throws IOException {
+            if (createAttributeFailure != null) {
+                throw createAttributeFailure;
+            }
+            createAttributeSessionId = sessionId;
+            createdAttributeEntityAzName = entityAzName;
+            createdAttributeAzName = attributeAzName;
+            createdAttributeVisName = attributeVisName;
+            createdAttributeDataType = dataType;
         }
 
         @Override

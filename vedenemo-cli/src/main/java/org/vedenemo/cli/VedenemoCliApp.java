@@ -22,7 +22,10 @@ public final class VedenemoCliApp {
     private final PrintStream output;
     private final boolean registerShutdownHook;
     private final AtomicReference<String> attachedModelAzName = new AtomicReference<>();
+    private final AtomicReference<String> attachedEntityAzName = new AtomicReference<>();
     private List<ModelSummary> latestModels = List.of();
+    private List<EntitySummary> latestEntities = List.of();
+    private List<AttributeSummary> latestAttributes = List.of();
 
     public VedenemoCliApp(
             SessionClient sessionClient,
@@ -89,10 +92,18 @@ public final class VedenemoCliApp {
             printHelp();
         } else if ("list".equals(line)) {
             listModels();
+        } else if ("entities".equals(line)) {
+            listEntities();
+        } else if ("attributes".equals(line)) {
+            listAttributes();
         } else if ("add".equals(line)) {
             add(sessionId, reader);
         } else if ("detach".equals(line)) {
             detachModel(sessionId);
+        } else if (line.startsWith("entity")) {
+            handleEntityCommand(reader, line);
+        } else if (line.startsWith("attr")) {
+            handleAttributeCommand(sessionId, reader, line);
         } else if ("undo".equals(line)) {
             undo(sessionId);
         } else if (line.startsWith("attach")) {
@@ -108,6 +119,11 @@ public final class VedenemoCliApp {
         output.println("  add - add a new model");
         output.println("  attach [N | azName] - attach to a listed model");
         output.println("  detach - detach from the current model");
+        output.println("  entities - list entities in the attached model");
+        output.println("  entity [N | azName] - select an entity in the attached model");
+        output.println("  entity detach - clear the selected entity");
+        output.println("  attributes - list attributes in the selected entity");
+        output.println("  attr add - add an attribute to the selected entity");
         output.println("  undo - undo the latest backend command");
         output.println("  help - show this help");
         output.println("  exit - end the session and exit");
@@ -123,6 +139,61 @@ public final class VedenemoCliApp {
             for (int index = 0; index < latestModels.size(); index++) {
                 ModelSummary model = latestModels.get(index);
                 output.println((index + 1) + ". " + model.visName() + " (" + model.azName() + ") version " + model.version());
+            }
+        } catch (IOException exception) {
+            output.println(exception.getMessage());
+        }
+    }
+
+    private void listEntities() throws InterruptedException {
+        String modelAzName = attachedModelAzName.get();
+        if (modelAzName == null) {
+            output.println("Attach a model before listing entities.");
+            return;
+        }
+        try {
+            latestEntities = modelClient.listEntities(modelAzName);
+            if (latestEntities.isEmpty()) {
+                output.println("No entities available.");
+                return;
+            }
+            for (int index = 0; index < latestEntities.size(); index++) {
+                EntitySummary entity = latestEntities.get(index);
+                output.println((index + 1) + ". " + entity.visName() + " (" + entity.azName() + ") active since " + entity.activeSince());
+            }
+        } catch (IOException exception) {
+            output.println(exception.getMessage());
+        }
+    }
+
+    private void listAttributes() throws InterruptedException {
+        String modelAzName = attachedModelAzName.get();
+        String entityAzName = attachedEntityAzName.get();
+        if (modelAzName == null) {
+            output.println("Attach a model before listing attributes.");
+            return;
+        }
+        if (entityAzName == null) {
+            output.println("Select an entity before listing attributes.");
+            return;
+        }
+        try {
+            latestAttributes = modelClient.listAttributes(modelAzName, entityAzName);
+            if (latestAttributes.isEmpty()) {
+                output.println("No attributes available.");
+                return;
+            }
+            for (int index = 0; index < latestAttributes.size(); index++) {
+                AttributeSummary attribute = latestAttributes.get(index);
+                output.println((index + 1) + ". "
+                        + attribute.visName()
+                        + " ("
+                        + attribute.azName()
+                        + ") type "
+                        + attribute.dataType()
+                        + " active since "
+                        + attribute.activeSince()
+                        + deprecatedSuffix(attribute.deprecatedSince()));
             }
         } catch (IOException exception) {
             output.println(exception.getMessage());
@@ -266,6 +337,9 @@ public final class VedenemoCliApp {
         try {
             sessionClient.selectModel(sessionId, model.azName());
             attachedModelAzName.set(model.azName());
+            attachedEntityAzName.set(null);
+            latestEntities = List.of();
+            latestAttributes = List.of();
             output.println("Attached to model " + model.azName() + ".");
         } catch (IOException exception) {
             output.println(exception.getMessage());
@@ -280,9 +354,147 @@ public final class VedenemoCliApp {
         try {
             sessionClient.clearSelectedModel(sessionId);
             attachedModelAzName.set(null);
+            attachedEntityAzName.set(null);
+            latestEntities = List.of();
+            latestAttributes = List.of();
             output.println("Detached from model.");
         } catch (IOException exception) {
             output.println(exception.getMessage());
+        }
+    }
+
+    private void handleEntityCommand(BufferedReader reader, String line) throws IOException, InterruptedException {
+        if ("entity detach".equals(line)) {
+            detachEntity();
+            return;
+        }
+        if (!line.equals("entity") && !line.startsWith("entity ")) {
+            output.println("Unknown command: " + line);
+            return;
+        }
+        selectEntity(reader, line);
+    }
+
+    private void selectEntity(BufferedReader reader, String line) throws IOException, InterruptedException {
+        if (attachedModelAzName.get() == null) {
+            output.println("Attach a model before selecting an entity.");
+            return;
+        }
+        String argument = line.length() == "entity".length() ? "" : line.substring("entity".length()).trim();
+        if (argument.isEmpty()) {
+            output.print("Entity number or azName: ");
+            output.flush();
+            String answer = reader.readLine();
+            if (answer == null || answer.trim().isEmpty()) {
+                output.println("No entity identifier entered.");
+                return;
+            }
+            argument = answer.trim();
+        }
+        Optional<EntitySummary> entity = resolveEntity(argument);
+        if (entity.isEmpty()) {
+            return;
+        }
+        attachedEntityAzName.set(entity.orElseThrow().azName());
+        latestAttributes = List.of();
+        output.println("Selected entity " + entity.orElseThrow().azName() + ".");
+    }
+
+    private Optional<EntitySummary> resolveEntity(String argument) throws InterruptedException {
+        if (isPositiveInteger(argument)) {
+            if (latestEntities.isEmpty()) {
+                output.println("Run entities first before selecting by number.");
+                return Optional.empty();
+            }
+            int index = Integer.parseInt(argument) - 1;
+            if (index < 0 || index >= latestEntities.size()) {
+                output.println("No entity found for list number " + argument + ".");
+                return Optional.empty();
+            }
+            return Optional.of(latestEntities.get(index));
+        }
+        try {
+            List<EntitySummary> entities = modelClient.listEntities(attachedModelAzName.get());
+            return entities.stream()
+                    .filter(entity -> entity.azName().equalsIgnoreCase(argument))
+                    .findFirst()
+                    .or(() -> {
+                        output.println("No entity found with azName " + argument + ".");
+                        return Optional.empty();
+                    });
+        } catch (IOException exception) {
+            output.println(exception.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private void detachEntity() {
+        if (attachedEntityAzName.get() == null) {
+            output.println("No entity is currently selected.");
+            return;
+        }
+        attachedEntityAzName.set(null);
+        latestAttributes = List.of();
+        output.println("Entity detached.");
+    }
+
+    private void handleAttributeCommand(UUID sessionId, BufferedReader reader, String line) throws IOException, InterruptedException {
+        if ("attr add".equals(line)) {
+            addAttribute(sessionId, reader);
+        } else {
+            output.println("Unknown command: " + line);
+        }
+    }
+
+    private void addAttribute(UUID sessionId, BufferedReader reader) throws IOException, InterruptedException {
+        String entityAzName = attachedEntityAzName.get();
+        if (attachedModelAzName.get() == null) {
+            output.println("Attach a model before adding an attribute.");
+            return;
+        }
+        if (entityAzName == null) {
+            output.println("Select an entity before adding an attribute.");
+            return;
+        }
+        output.print("Attribute visible name: ");
+        output.flush();
+        String visName = reader.readLine();
+        if (visName == null || visName.isBlank()) {
+            output.println("Attribute visible name is required.");
+            return;
+        }
+        String suggestion = suggestAzName(visName);
+        String azName;
+        if (suggestion == null) {
+            output.print("Attribute azName: ");
+        } else {
+            output.print("Attribute azName [" + suggestion + "]: ");
+        }
+        output.flush();
+        String enteredAzName = reader.readLine();
+        if (enteredAzName == null) {
+            output.println("Attribute azName is required.");
+            return;
+        }
+        if (enteredAzName.isBlank()) {
+            if (suggestion == null) {
+                output.println("Attribute azName is required.");
+                return;
+            }
+            azName = suggestion;
+        } else {
+            azName = enteredAzName.trim();
+        }
+        output.print("Attribute data type [TEXT]: ");
+        output.flush();
+        String enteredDataType = reader.readLine();
+        String dataType = normalizeDataTypeInput(enteredDataType);
+        try {
+            commandClient.createAttribute(sessionId, entityAzName, azName, visName, dataType);
+            latestAttributes = List.of();
+            output.println("Attribute " + azName + " added.");
+        } catch (IOException exception) {
+            output.println("Attribute was not added: " + exception.getMessage() + ".");
         }
     }
 
@@ -304,7 +516,11 @@ public final class VedenemoCliApp {
         if (azName == null) {
             return "VedenemoCli>";
         }
-        return "VedenemoCli[" + azName + "]>";
+        String entityAzName = attachedEntityAzName.get();
+        if (entityAzName == null) {
+            return "VedenemoCli[" + azName + "]>";
+        }
+        return "VedenemoCli[" + azName + "/" + entityAzName + "]>";
     }
 
     private void cleanup(AtomicReference<UUID> activeSessionId, AtomicBoolean cleanedUp) {
@@ -363,5 +579,25 @@ public final class VedenemoCliApp {
 
     private static boolean isAsciiLetter(char value) {
         return (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z');
+    }
+
+    private static String normalizeDataTypeInput(String value) {
+        if (value == null || value.isBlank()) {
+            return "TEXT";
+        }
+        return switch (value.trim().toLowerCase()) {
+            case "text" -> "TEXT";
+            case "numeric", "number" -> "NUMERIC";
+            case "url" -> "URL";
+            case "data" -> "DATA";
+            default -> value.trim();
+        };
+    }
+
+    private static String deprecatedSuffix(String deprecatedSince) {
+        if (deprecatedSince == null) {
+            return "";
+        }
+        return " deprecated since " + deprecatedSince;
     }
 }

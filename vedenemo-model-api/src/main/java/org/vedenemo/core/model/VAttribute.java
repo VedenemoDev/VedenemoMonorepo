@@ -37,7 +37,7 @@ public final class VAttribute extends Versionable {
         return type;
     }
 
-    static String uniquenessKey(String azName) {
+    public static String uniquenessKey(String azName) {
         return ModelTextRules.uniquenessKey(azName);
     }
 

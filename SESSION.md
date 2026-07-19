@@ -302,6 +302,210 @@ Next steps: Select the next backlog item or define the next task on top of the
 implemented command flow. Likely follow-on work should build on the current
 command boundary rather than bypassing it.
 
+## 2026-07-19 15:14 EEST
+
+Goal: Create a draft planning backlog task for adding `VAttribute` commands and
+CLI usage flow, based on the existing entity command implementation.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,240p' docs/architecture/module-map.md`
+- `sed -n '1,260p' docs/architecture/coding-rules.md`
+- `sed -n '1,260p' docs/architecture/testing-strategy.md`
+- `sed -n '1,280p' docs/roadmap/first-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 220 tasks/backlog.md`
+- `sed -n '1,260p' docs/cli-reference.md`
+- `tail -n 120 SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/backlog.md`
+- `git status --short --branch`
+
+Status: Added `Add VAttribute Commands And CLI Entity Context` to
+`tasks/backlog.md` as a planning draft. The task proposes command-specific
+create/delete attribute endpoints, read-only entity/attribute listing endpoints,
+CLI entity context, `entities`, `entity`, `attributes`, `attr add`, and
+`attr remove` commands, plus open planning questions around delete undo.
+
+Next steps: Review and resolve the planning questions, then promote the task to
+`tasks/current-task.md` when ready to implement.
+
+## 2026-07-19 17:22 EEST
+
+Goal: Make duplicate attribute `azName` handling explicit in the attribute
+commands planning backlog task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `rg -n "Add VAttribute Commands|Expected CLI behavior|Add focused CLI tests|Open Planning Questions" tasks/backlog.md`
+- `sed -n '1128,1485p' tasks/backlog.md`
+- `tail -n 80 SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/backlog.md`
+- `git status --short --branch`
+
+Status: Added an explicit duplicate-name error handling sequence for `attr add`.
+The task now says duplicate attribute names should return a clear backend `400`,
+the CLI should print `Attribute was not added: <backend error>.`, retain the
+current model/entity context, avoid automatic re-prompting, and leave undo
+unaffected because failed commands are not recorded.
+
+Next steps: Continue reviewing the planning task and resolve the remaining open
+questions before promoting it to `tasks/current-task.md`.
+
+## 2026-07-19 18:27 EEST
+
+Goal: Update the attribute command backlog task to clarify how
+`CreateAttributeCommand` undo derives `DeleteAttributeCommand`.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1180,1285p' tasks/backlog.md`
+- `sed -n '1460,1495p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/backlog.md`
+- `git status --short --branch`
+
+Status: Clarified that undoing a successful `CreateAttributeCommand` should
+derive and apply `DeleteAttributeCommand` at undo time using the fully qualified
+target path stored in the original create command. Also clarified that undoing a
+user-visible delete remains a separate planning concern because it needs the
+removed attribute data and original position, unless deferred.
+
+Next steps: Continue reviewing the backlog task and resolve the remaining open
+planning questions before implementation.
+
+## 2026-07-19 18:41 EEST
+
+Goal: Resolve the remaining open planning questions in the `VAttribute` command
+backlog task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1200,1535p' tasks/backlog.md`
+- `rg -n "Open Planning|Question|attr remove|entity clear|delete-attribute|Successful attribute removal|missing or blank data type|case-insensitive data type" tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Updated the backlog task with resolved decisions: keep
+`DeleteAttributeCommand` as an internal undo counterpart only, defer
+user-visible attribute deletion, use stack-only undo for the latest successful
+command, clear entity context with `entity detach`, show `DataType` and
+lifecycle versions in attribute listings, accept case-insensitive data type
+aliases, and default blank/missing data type to `TEXT`.
+
+Next steps: Review the resolved task text, then promote it to
+`tasks/current-task.md` when ready to execute.
+
+## 2026-07-19 19:12 EEST
+
+Goal: Execute the `Add VAttribute Commands And CLI Entity Context` task,
+including implementation, tests, documentation, task status updates, and smoke
+verification.
+
+Files changed:
+
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `docs/cli-reference.md`
+- `docs/architecture_doc.md`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/VAttribute.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/Command.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CreateAttributeCommand.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/DeleteAttributeCommand.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/SessionResourceTest.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/AttributeSummary.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/EntitySummary.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/ModelClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/CommandClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpCommandClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,240p' docs/architecture/module-map.md`
+- `sed -n '1,260p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `sed -n '1128,1515p' tasks/backlog.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,260p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VEntity.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VAttribute.java`
+- `sed -n '1,120p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/command/CreateEntityCommand.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/command/DeleteEntityCommand.java`
+- `sed -n '1,320p' vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `sed -n '1,120p' vedenemo-core/src/main/java/org/vedenemo/core/command/Command.java`
+- `sed -n '1,360p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `sed -n '1,360p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/SessionResourceTest.java`
+- `sed -n '1,300p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `sed -n '1,260p' vedenemo-cli/src/main/java/org/vedenemo/cli/CommandClient.java`
+- `sed -n '1,300p' vedenemo-cli/src/main/java/org/vedenemo/cli/HttpCommandClient.java`
+- `sed -n '1,260p' vedenemo-cli/src/main/java/org/vedenemo/cli/ModelClient.java`
+- `sed -n '1,360p' vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `sed -n '1,460p' vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `sed -n '1,180p' vedenemo-cli/src/main/java/org/vedenemo/cli/ModelSummary.java`
+- `sed -n '1,140p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `sed -n '1,200p' docs/architecture_doc_instructions.md`
+- `sed -n '1,320p' docs/architecture_doc.md`
+- `mvn -B clean verify`
+- `git diff --stat`
+- `git diff -- vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java | sed -n '1,260p'`
+- `sed -n '1,220p' docs/cli-reference.md`
+- `sed -n '320,760p' docs/architecture_doc.md`
+- local backend plus CLI attribute smoke test on port `18085`
+- `git diff --check`
+- `sed -n '1,240p' /tmp/vedenemo-attribute-smoke.out`
+- `rg -n "Open Planning|Status: planning|Add VAttribute Commands|Completion Notes" tasks/backlog.md tasks/current-task.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Implemented attribute creation through the command architecture. The
+core now has `CreateAttributeCommand` and internal `DeleteAttributeCommand`;
+the web API has create-attribute plus entity/attribute read endpoints; the CLI
+has entity context, `entities`, `entity [N | azName]`, `entity detach`,
+`attributes`, and `attr add`; docs and task records are updated. The backlog
+item is marked executed and retained as history.
+
+Verification: `mvn -B clean verify` passed. The first smoke attempt failed
+inside the sandbox because localhost socket binding was blocked; rerunning the
+same backend plus CLI smoke test outside the sandbox passed. `git diff --check`
+reported no whitespace errors.
+
+Next steps: Review the implementation diff and commit if acceptable. A later
+task can add user-visible attribute deletion/edit operations with full undo
+records.
+
 Next steps: Resume by validating the WSL2 toolchain and builds. Suggested order:
 check Java/Maven with `java -version`, `javac -version`, and `mvn -version`;
 run `mvn clean verify`; check Node/npm with `node -v` and `npm -v`; rerun

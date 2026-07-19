@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.router.JavalinDefaultRoutingApi;
 import org.vedenemo.core.model.ModelRoot;
+import org.vedenemo.core.model.VAttribute;
+import org.vedenemo.core.model.VEntity;
 import org.vedenemo.core.registry.DuplicateModelRootException;
 import org.vedenemo.core.registry.ModelRegistry;
 
@@ -42,6 +44,33 @@ public final class ModelsResource {
                     .toList();
             writeJson(context, 200, models);
         });
+        routes.get("/models/{modelAzName}/entities", context -> {
+            ModelRoot modelRoot = findModel(context.pathParam("modelAzName"));
+            if (modelRoot == null) {
+                writeJson(context, 404, new ErrorResponse("model not found"));
+                return;
+            }
+            List<EntityResponse> entities = modelRoot.entities().stream()
+                    .map(EntityResponse::from)
+                    .toList();
+            writeJson(context, 200, entities);
+        });
+        routes.get("/models/{modelAzName}/entities/{entityAzName}/attributes", context -> {
+            ModelRoot modelRoot = findModel(context.pathParam("modelAzName"));
+            if (modelRoot == null) {
+                writeJson(context, 404, new ErrorResponse("model not found"));
+                return;
+            }
+            VEntity entity = findEntity(modelRoot, context.pathParam("entityAzName"));
+            if (entity == null) {
+                writeJson(context, 404, new ErrorResponse("entity not found"));
+                return;
+            }
+            List<AttributeResponse> attributes = entity.attributes().stream()
+                    .map(AttributeResponse::from)
+                    .toList();
+            writeJson(context, 200, attributes);
+        });
     }
 
     private void writeJson(io.javalin.http.Context context, int status, Object body) throws JsonProcessingException {
@@ -50,12 +79,62 @@ public final class ModelsResource {
                 .result(objectMapper.writeValueAsString(body));
     }
 
+    private ModelRoot findModel(String modelAzName) {
+        try {
+            return modelRegistry.find(modelAzName).orElse(null);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    private static VEntity findEntity(ModelRoot modelRoot, String entityAzName) {
+        String targetKey;
+        try {
+            targetKey = VEntity.uniquenessKey(entityAzName);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+        return modelRoot.entities().stream()
+                .filter(entity -> VEntity.uniquenessKey(entity.azName()).equals(targetKey))
+                .findFirst()
+                .orElse(null);
+    }
+
     private record AddModelRequest(String azName, String visName, String version) {
     }
 
     private record ModelRootResponse(String azName, String visName, String version) {
         private static ModelRootResponse from(ModelRoot modelRoot) {
             return new ModelRootResponse(modelRoot.azName(), modelRoot.visName(), modelRoot.version().toString());
+        }
+    }
+
+    private record EntityResponse(String azName, String visName, String activeSince, String deprecatedSince) {
+        private static EntityResponse from(VEntity entity) {
+            return new EntityResponse(
+                    entity.azName(),
+                    entity.visName(),
+                    entity.activeSince().toString(),
+                    entity.deprecatedSince().map(Object::toString).orElse(null)
+            );
+        }
+    }
+
+    private record AttributeResponse(
+            String azName,
+            String visName,
+            String dataType,
+            String activeSince,
+            String deprecatedSince
+    ) {
+        private static AttributeResponse from(VAttribute attribute) {
+            return new AttributeResponse(
+                    attribute.azName(),
+                    attribute.visName(),
+                    attribute.type().name(),
+                    attribute.activeSince().toString(),
+                    attribute.deprecatedSince().map(Object::toString).orElse(null)
+            );
         }
     }
 

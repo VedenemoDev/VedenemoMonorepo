@@ -4,6 +4,10 @@ import io.javalin.Javalin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.vedenemo.core.model.DataType;
+import org.vedenemo.core.model.ModelRoot;
+import org.vedenemo.core.model.VAttribute;
+import org.vedenemo.core.model.VEntity;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.web.api.VedenemoWebApi;
 import org.vedenemo.web.api.http.WebApiConfig;
@@ -23,6 +27,7 @@ final class ModelsResourceTest {
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
+    private ModelRegistry modelRegistry;
     private Javalin app;
     private String baseUrl;
 
@@ -30,7 +35,8 @@ final class ModelsResourceTest {
     void startServer() throws IOException {
         int port = availablePort();
         WebApiConfig config = new WebApiConfig("127.0.0.1", port, Set.of("*"));
-        app = VedenemoWebApi.create(config, new ModelRegistry());
+        modelRegistry = new ModelRegistry();
+        app = VedenemoWebApi.create(config, modelRegistry);
         app.start(config.host(), config.port());
         baseUrl = "http://" + config.host() + ":" + config.port();
     }
@@ -99,6 +105,35 @@ final class ModelsResourceTest {
         assertEquals(400, post("/models/add", """
                 {"azName":"Example","visName":"Example Model","version":"1.x.0"}
                 """).statusCode());
+    }
+
+    @Test
+    void listEntitiesReturnsEntitiesInInsertionOrder() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addEntity(new VEntity("Customer", "Customer", modelRoot.version()));
+        modelRoot.addEntity(new VEntity("Order", "Order", modelRoot.version()));
+
+        HttpResponse<String> response = get("/models/Example_Model/entities");
+
+        assertEquals(200, response.statusCode());
+        assertEquals("""
+                [{"azName":"Customer","visName":"Customer","activeSince":"1.0.0","deprecatedSince":null},{"azName":"Order","visName":"Order","activeSince":"1.0.0","deprecatedSince":null}]\
+                """, response.body());
+    }
+
+    @Test
+    void listAttributesReturnsAttributesInInsertionOrderWithLifecycleFields() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        VEntity customer = modelRoot.addEntity(new VEntity("Customer", "Customer", modelRoot.version()));
+        customer.addAttribute(new VAttribute("Email", "Email", DataType.TEXT, modelRoot.version()));
+        customer.addAttribute(new VAttribute("Website", "Website", DataType.URL, modelRoot.version()));
+
+        HttpResponse<String> response = get("/models/Example_Model/entities/Customer/attributes");
+
+        assertEquals(200, response.statusCode());
+        assertEquals("""
+                [{"azName":"Email","visName":"Email","dataType":"TEXT","activeSince":"1.0.0","deprecatedSince":null},{"azName":"Website","visName":"Website","dataType":"URL","activeSince":"1.0.0","deprecatedSince":null}]\
+                """, response.body());
     }
 
     private HttpResponse<String> post(String path, String body) throws IOException, InterruptedException {

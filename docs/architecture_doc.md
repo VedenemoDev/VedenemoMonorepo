@@ -21,7 +21,7 @@ end
 
 subgraph Web["Web API Runtime"]
     WebApi["vedenemo-web-api<br/>Javalin executable jar"]
-    ModelsResource["ModelsResource<br/>ping/add/list endpoints"]
+    ModelsResource["ModelsResource<br/>ping/add/list/read model endpoints"]
     SessionResource["SessionResource<br/>session lifecycle, selected model, and command endpoints"]
 end
 
@@ -118,9 +118,9 @@ Dependencies:
 ### `vedenemo-core`
 
 Core command module. It currently contains a sealed `Command` marker interface,
-`NoOpCommand`, `CreateEntityCommand`, an internal `DeleteEntityCommand`,
-`UndoResult`, `CommandExecutor`, `Session`, `SessionManager`, and
-`ModelRegistry`.
+`NoOpCommand`, `CreateEntityCommand`, `CreateAttributeCommand`, internal
+`DeleteEntityCommand` and `DeleteAttributeCommand` counterparts, `UndoResult`,
+`CommandExecutor`, `Session`, `SessionManager`, and `ModelRegistry`.
 
 `Session` represents a process-local user work session. It has a UUID, an
 optional selected model reference stored as `ModelRoot.azName`, execution-order
@@ -133,17 +133,20 @@ executor and session from the manager.
 
 `CommandExecutor` is bound to exactly one active `Session` and the process-local
 `ModelRegistry`. It can execute `CreateEntityCommand` against the selected
-model, record successfully applied commands in the session, and undo the latest
-create-entity command by applying the internal `DeleteEntityCommand` inverse.
-Failed commands are not recorded. Undo removes the original command from active
-session command history.
+model and `CreateAttributeCommand` against an entity in the selected model.
+Successful commands are recorded in the session. Failed commands are not
+recorded. Undo is stack-based and only applies to the latest successful command:
+create-entity is undone through the internal `DeleteEntityCommand` inverse, and
+create-attribute is undone through the internal `DeleteAttributeCommand`
+inverse. Undo removes the original command from active session command history.
 
 `ModelRegistry` is the process-local registry of currently known models. It
 stores `ModelRoot` instances in insertion order and enforces case-insensitive
 `azName` uniqueness while preserving the original submitted casing.
 
-Other command types beyond create-entity and its undo inverse are not
-implemented yet.
+User-visible attribute deletion as a standalone edit operation is not
+implemented yet; `DeleteAttributeCommand` exists only as the internal inverse
+for undoing attribute creation.
 
 Dependencies:
 
@@ -185,12 +188,20 @@ Current CLI behavior:
 - prints the created session UUID
 - prompts with `VedenemoCli>`
 - prompts with `VedenemoCli[azName]>` when a model is attached
+- prompts with `VedenemoCli[modelAzName/entityAzName]>` when a model is
+  attached and an entity is selected
 - treats an empty line as an empty echo plus a new prompt
 - supports `help`
 - lists current backend models with `list`
 - adds a new backend model with `add`, using version `1.0.0`
 - when a model is attached, reuses `add` to create a new entity in that model
   through the backend command API
+- lists entities in the attached model with `entities`
+- selects an entity with `entity [N | azName]`
+- clears only selected entity context with `entity detach`
+- lists attributes in the selected entity with `attributes`, including data
+  type and lifecycle version fields
+- creates attributes in the selected entity with `attr add`
 - attaches the session to a model by latest list number or `azName`
 - detaches the session from the current selected model
 - supports `undo` for the latest backend command
@@ -210,6 +221,11 @@ and exposes:
 - `GET /models/ping`, which returns `{"status":"ok"}`
 - `POST /models/add`, which adds a `ModelRoot` to the process-local registry
 - `GET /models/list`, which returns the current process-local model registry
+- `GET /models/{modelAzName}/entities`, which lists entities in insertion order
+  for one model
+- `GET /models/{modelAzName}/entities/{entityAzName}/attributes`, which lists
+  attributes in insertion order for one entity, including `DataType` and
+  lifecycle version fields
 - `POST /sessions/start`, which creates a backend session and returns its UUID
 - `DELETE /sessions/{uuid}`, which ends/removes a backend session
 - `PUT /sessions/{uuid}/selected-model`, which selects an existing model for a
@@ -218,6 +234,9 @@ and exposes:
   a backend session
 - `POST /sessions/{uuid}/commands/create-entity`, which creates a `VEntity` in
   the session's selected model through `CommandExecutor`
+- `POST /sessions/{uuid}/commands/create-attribute`, which creates a
+  `VAttribute` in an entity in the session's selected model through
+  `CommandExecutor`
 - `POST /sessions/{uuid}/commands/undo`, which undoes the latest command for
   the active backend session or returns `304` when nothing can be undone
 
@@ -356,7 +375,7 @@ sequenceDiagram
     Sessions-->>CLI: 204
 ```
 
-### CLI Entity Command And Undo
+### CLI Entity And Attribute Commands With Undo
 
 ```mermaid
 sequenceDiagram
@@ -367,6 +386,7 @@ sequenceDiagram
     participant Executor as CommandExecutor
     participant Registry as ModelRegistry
     participant Model as ModelRoot
+    participant Entity as VEntity
 
     CLI->>API: POST /sessions/{uuid}/commands/create-entity
     API->>Sessions: route request
@@ -377,11 +397,25 @@ sequenceDiagram
     Executor->>Executor: record command in Session
     Sessions-->>CLI: 200 entity response
 
+    CLI->>API: GET /models/{modelAzName}/entities
+    API-->>CLI: entity list
+    CLI->>CLI: select entity context
+
+    CLI->>API: POST /sessions/{uuid}/commands/create-attribute
+    API->>Sessions: route request
+    Sessions->>Manager: findExecutor(uuid)
+    Sessions->>Executor: execute(CreateAttributeCommand)
+    Executor->>Registry: find(selected model azName)
+    Executor->>Model: find entity
+    Executor->>Entity: addAttribute(VAttribute)
+    Executor->>Executor: record command in Session
+    Sessions-->>CLI: 200 attribute response
+
     CLI->>API: POST /sessions/{uuid}/commands/undo
     API->>Sessions: route request
     Sessions->>Manager: findExecutor(uuid)
     Sessions->>Executor: undoLatest()
-    Executor->>Model: removeEntity(entity azName)
+    Executor->>Model: remove latest command target
     Executor->>Executor: remove original command from Session
     Sessions-->>CLI: 200 undo response
 ```
@@ -409,12 +443,13 @@ GitHub Actions contains separate backend and frontend CI workflows:
 
 Backend verification includes focused model API tests for `ModelRoot`,
 `VAttribute`, `VEntity`, and lifecycle validation, focused core tests for
-`Session`, `SessionManager`, create-entity command execution, and undo behavior,
-focused CLI tests for backend URL configuration, non-hanging prompt behavior,
-model commands, entity command creation, and undo output, JUnit 5 endpoint tests
-for the model add/list, session lifecycle, selected-model, create-entity, and
-undo HTTP APIs in `vedenemo-web-api`, and focused `InMemoryModelStorage` tests
-for storing and loading `ModelRoot` instances.
+`Session`, `SessionManager`, create-entity/create-attribute command execution,
+and undo behavior, focused CLI tests for backend URL configuration, non-hanging
+prompt behavior, model commands, entity context, attribute command creation, and
+undo output, JUnit 5 endpoint tests for the model add/list/entity/attribute
+read APIs, session lifecycle, selected-model, create-entity, create-attribute,
+and undo HTTP APIs in `vedenemo-web-api`, and focused `InMemoryModelStorage`
+tests for storing and loading `ModelRoot` instances.
 
 The UX deployment workflow builds `vedenemo-ux` and deploys it to Firebase
 Hosting when required GitHub variables are present. The deployment workflow can
@@ -438,8 +473,7 @@ override `public/config.json` from the `VEDENEMO_API_BASE_URL` GitHub variable.
 
 The current implementation does not yet contain:
 
-- model internals beyond the first `VEntity` / `VAttribute` structure
-- command types beyond create-entity and its undo inverse
+- user-visible deletion/edit commands for entities or attributes
 - generic command envelope or command replay persistence
 - durable persistence
 - parser, scripting, plugin, or visualization implementations

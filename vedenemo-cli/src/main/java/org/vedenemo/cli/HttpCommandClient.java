@@ -37,6 +37,31 @@ public final class HttpCommandClient implements CommandClient {
     }
 
     @Override
+    public void createAttribute(
+            UUID sessionId,
+            String entityAzName,
+            String attributeAzName,
+            String attributeVisName,
+            String dataType
+    ) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/sessions/" + sessionId + "/commands/create-attribute"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("""
+                        {"entityAzName":"%s","attributeAzName":"%s","attributeVisName":"%s","dataType":"%s"}\
+                        """.formatted(
+                        escapeJson(entityAzName),
+                        escapeJson(attributeAzName),
+                        escapeJson(attributeVisName),
+                        escapeJson(dataType)
+                )))
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("attribute add failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+    }
+
+    @Override
     public UndoCommandResult undo(UUID sessionId) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/sessions/" + sessionId + "/commands/undo"))
                 .POST(HttpRequest.BodyPublishers.noBody())

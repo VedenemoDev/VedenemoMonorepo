@@ -1127,3 +1127,403 @@ All planning questions were resolved before execution.
 - Added focused model, core, web API, and CLI tests.
 - Updated `docs/cli-reference.md` and `docs/architecture_doc.md`.
 - `mvn -B clean verify` passed.
+
+## Add VAttribute Commands And CLI Entity Context
+
+Status: executed. Full task text retained here for history.
+
+### Goal
+
+Extend the existing command execution path so users can add `VAttribute` items
+to an existing `VEntity` through `VedenemoCli`, using the backend HTTP API in
+the same command-oriented style already used for adding entities to a model.
+
+This task should also add the internal attribute removal operation needed to
+undo attribute creation. User-visible attribute removal as a separate edit
+operation is deferred until it can be recorded and undone as its own command.
+
+### Current Implementation Context
+
+- `ModelRoot` directly owns ordered `VEntity` instances.
+- `VEntity` already owns ordered `VAttribute` instances and enforces attribute
+  `azName` uniqueness case-insensitively.
+- `VAttribute` already contains `azName`, `visName`, `DataType`, and lifecycle
+  metadata from `Versionable`.
+- `Session` stores the currently selected model as `Optional<String>`.
+- `CommandExecutor` can execute `CreateEntityCommand` against the selected
+  model and can undo it through internal `DeleteEntityCommand`.
+- `vedenemo-web-api` exposes command-specific endpoints:
+  - `POST /sessions/{uuid}/commands/create-entity`
+  - `POST /sessions/{uuid}/commands/undo`
+- `VedenemoCli` uses HTTP-backed sessions. `add` creates a model when detached
+  and creates an entity when attached to a model.
+
+### Domain / Model Scope
+
+No new model types should be required for this task.
+
+Use the existing `VEntity` attribute-management operations:
+
+- add a `VAttribute`
+- remove a `VAttribute` by attribute `azName`
+- remove a `VAttribute` by instance
+- list attributes as a read-only copy in insertion order
+
+Expected behavior:
+
+- Adding an attribute preserves insertion order inside the owning entity.
+- Attribute `azName` uniqueness remains enforced case-insensitively inside one
+  entity.
+- Created attributes derive `activeSince` from the current version of the
+  owning `ModelRoot`.
+- Created attributes start with no additional metadata beyond current
+  `VAttribute` fields.
+- Removing an attribute removes the current attribute from the owning entity.
+- Durable persistence, save/load formats, parser syntax, and UI visualization
+  remain out of scope.
+
+### Command Architecture Goals
+
+Add `CreateAttributeCommand`.
+
+Initial command data:
+
+- target model `azName`
+- target entity `azName`
+- new attribute `azName`
+- new attribute `visName`
+- new attribute `DataType`
+
+The command should not carry `activeSince`; command execution derives it from
+the current version of the target model.
+
+Add `DeleteAttributeCommand`.
+
+Initial command data:
+
+- target model `azName`
+- target entity `azName`
+- target attribute `azName`
+
+Expected command execution behavior:
+
+- `CommandExecutor.execute(command)` validates and applies
+  `CreateAttributeCommand` to an entity in the selected model.
+- `DeleteAttributeCommand` is the internal undo counterpart for
+  `CreateAttributeCommand` in this task.
+- `DeleteAttributeCommand` does not need to be user-executable or recorded as a
+  separate command in this task.
+- Successful commands are recorded in session command history.
+- Failed commands are not recorded.
+- Undo of `CreateAttributeCommand` removes the created attribute by deriving and
+  applying the delete counterpart at undo time, then removes the original create
+  command from active history.
+- Undo always operates on the latest successfully executed command only. Treat
+  session command history as a stack: undo pops the topmost command and cannot
+  undo a command from the middle of the history.
+- `CreateAttributeCommand` must retain enough target identity to derive its undo
+  counterpart later:
+  - target model `azName`
+  - target entity `azName`
+  - target attribute `azName`
+- `DeleteAttributeCommand` does not need to be created or stored when the
+  attribute is originally added. It can be constructed only when undo is
+  actually requested.
+- User-visible attribute deletion as a later edit operation is a separate
+  concern. When introduced, it must be recorded as the latest executed command
+  and must have enough undo data to restore the deleted attribute.
+
+Resolved decision for this task:
+
+- Keep `DeleteAttributeCommand` as the internal counterpart operation used for
+  undoing `CreateAttributeCommand`.
+- Keep undo support in this task focused on undoing newly created attributes.
+- Defer user-visible attribute removal to a later task. That later task should
+  introduce whatever command-result or undo-record structure is needed to retain
+  the removed `VAttribute` and original insertion position.
+
+### Backend / HTTP API Scope
+
+Keep command execution in `vedenemo-web-api` behind command-specific endpoints.
+
+Add:
+
+```text
+POST /sessions/{uuid}/commands/create-attribute
+```
+
+Suggested create-attribute request body:
+
+```json
+{
+  "entityAzName": "Customer",
+  "attributeAzName": "Email",
+  "attributeVisName": "Email",
+  "dataType": "TEXT"
+}
+```
+
+If `dataType` is missing or blank, the backend should default it to `TEXT`.
+If present, the backend should accept case-insensitive enum names and aliases
+such as `text`, `number`, `url`, and `data`.
+
+Expected HTTP behavior:
+
+- `200` when command execution succeeds.
+- `400` for invalid command input, no selected model, missing target entity,
+  duplicate attribute `azName`, or unsupported data type.
+- `404` for missing session.
+- Existing `POST /sessions/{uuid}/commands/undo` should undo attribute creation
+  in addition to entity creation.
+- Do not add a user-facing delete-attribute command endpoint in this task.
+- JSON parsing/serialization stays in `vedenemo-web-api`.
+- Core command records remain pure JDK / Vedenemo-owned types.
+
+### CLI Scope
+
+Add a clear way to select an entity as the target for attribute operations.
+
+Recommended CLI model:
+
+- Keep the existing attached model prompt:
+
+```text
+VedenemoCli[Model_AzName]>
+```
+
+- Add an optional attached entity context and show it in the prompt:
+
+```text
+VedenemoCli[Model_AzName/Entity_AzName]>
+```
+
+Recommended commands:
+
+- `entities`
+  - Lists entities in the currently attached model as a numbered list.
+  - Requires an attached model.
+- `entity [N | azName]`
+  - Selects the target entity for attribute operations.
+  - `entity N` uses the most recent `entities` output.
+  - `entity azName` resolves by entity `azName`.
+  - `entity` with no argument asks for a number or `azName`.
+- `entity detach`
+  - Clears the selected entity while keeping the model attached.
+- `attributes`
+  - Lists attributes in the selected entity.
+  - Requires both an attached model and selected entity.
+- `attr add`
+  - Adds a new attribute to the selected entity.
+  - Prompts for visible name, suggests `azName`, asks for final `azName`, then
+    asks for `DataType`.
+  - If `DataType` is left blank, default to `TEXT`.
+  - Accept case-insensitive data type aliases such as `text`, `number`, `url`,
+    and `data`; normalize them to the existing `DataType` enum values.
+
+Expected CLI behavior:
+
+- `add` should keep its current meanings:
+  - detached from a model: add a model
+  - attached to a model but no entity selected: add an entity
+- Attribute creation should use `attr add` instead of adding a third contextual
+  meaning to `add`. This keeps the prompt behavior predictable and avoids
+  surprising users when an entity is selected.
+- If `attr add` submits an attribute `azName` that overlaps an existing
+  attribute name case-insensitively, the backend should reject the command with
+  a clear `400` validation response and the CLI should print a clear failure
+  message without exiting.
+- Recommended duplicate-name CLI flow:
+  1. User runs `attr add`.
+  2. CLI asks for attribute visible name, suggests an `attributeAzName`, asks
+     for the final `attributeAzName`, then asks for `DataType`.
+  3. CLI sends the create-attribute command to the backend.
+  4. Backend detects the duplicate inside the target `VEntity` and returns a
+     clear validation error such as `attribute azName must be unique within
+     VEntity`.
+  5. CLI prints `Attribute was not added: <backend error>.`
+  6. CLI keeps the current model/entity context and returns to the prompt.
+  7. The failed command is not recorded in backend session history, so `undo`
+     is unaffected by the failed add.
+- Do not automatically re-prompt inside the same `attr add` interaction in this
+  task. The user can run `attributes` to inspect the current state or run
+  `attr add` again with another name.
+- `detach` should continue clearing the selected model. It should also clear
+  any selected entity.
+- `undo` should keep calling the backend undo endpoint.
+- Undo should always target only the latest successfully executed command in the
+  backend session history.
+- Successful attribute creation prints:
+
+```text
+Attribute <azName> added.
+```
+
+- Successful entity detach prints:
+
+```text
+Entity detached.
+```
+
+- `help` should include the new entity and attribute commands.
+
+### Read / Listing API Scope
+
+The CLI needs a way to list entities and attributes before selecting targets by
+number.
+
+Preferred narrow endpoints:
+
+```text
+GET /models/{modelAzName}/entities
+GET /models/{modelAzName}/entities/{entityAzName}/attributes
+```
+
+Expected behavior:
+
+- Entity listing returns deterministic insertion order from `ModelRoot`.
+- Attribute listing returns deterministic insertion order from `VEntity`.
+- Attribute listing should include `DataType` and lifecycle version fields so
+  CLI output can show the current attribute state.
+- Entity and attribute response DTOs should include visible names and ASCII
+  names.
+- These listing endpoints are read-only model API endpoints, not command
+  endpoints.
+
+Alternative for review:
+
+- Return entity and attribute summaries from existing model list responses.
+  This is likely less focused and may make `/models/list` too heavy for the
+  current phase.
+
+### Serialization / Future Persistence Consideration
+
+Command payloads should continue to use stable Vedenemo-owned field names:
+
+- `modelAzName`
+- `entityAzName`
+- `attributeAzName`
+- `attributeVisName`
+- `dataType`
+
+Avoid framework-specific polymorphic command serialization. If a generic command
+envelope is introduced later, give command types stable explicit names.
+
+### Tests / Verification
+
+Add focused model/core tests where practical:
+
+- `CreateAttributeCommand` adds an attribute to an entity in the selected model.
+- Created attribute uses the target model version as `activeSince`.
+- Created attribute has the requested `DataType`.
+- Duplicate attribute `azName` is rejected.
+- Missing target entity is rejected.
+- Failed create-attribute commands are not recorded in session history.
+- Successful create-attribute commands are recorded in session history.
+- Undo after create-attribute removes the created attribute.
+- Undo operates only on the latest command in the session history stack.
+- `DeleteAttributeCommand` removes an existing attribute when used internally as
+  the undo counterpart for `CreateAttributeCommand`.
+
+Add focused web API tests:
+
+- create-attribute command endpoint succeeds for an active session with selected
+  model and existing entity.
+- create-attribute rejects missing session.
+- create-attribute rejects no selected model.
+- create-attribute rejects missing entity.
+- create-attribute rejects invalid attribute input.
+- create-attribute rejects unsupported data type.
+- create-attribute defaults missing or blank data type to `TEXT`.
+- create-attribute accepts case-insensitive data type aliases.
+- undo endpoint succeeds after create-attribute.
+- entity listing endpoint returns created entities in order.
+- attribute listing endpoint returns created attributes in order, including
+  `DataType` and lifecycle version fields.
+
+Add focused CLI tests:
+
+- `entities` requires an attached model.
+- `entities` prints numbered entity rows.
+- `entity N` selects from the latest entity list.
+- `entity azName` selects by name.
+- `entity detach` clears entity context but keeps model context.
+- prompt includes selected model and selected entity when both are selected.
+- `attributes` requires selected entity.
+- `attributes` prints numbered attribute rows with `DataType` and lifecycle
+  version fields.
+- `attr add` prompts for attribute data and sends create-attribute.
+- `attr add` defaults blank data type input to `TEXT`.
+- `attr add` accepts case-insensitive data type aliases.
+- `attr add` prints `Attribute was not added: <backend error>.` when the
+  backend rejects a duplicate attribute `azName`.
+- failed `attr add` keeps the current selected model/entity context.
+- failed `attr add` is not undoable because the backend must not record failed
+  commands.
+- backend validation failures are printed without exiting the CLI.
+- `detach` clears both selected model and selected entity.
+- `undo` reports successful undo of attribute creation.
+
+At minimum, run:
+
+```bash
+mvn -B clean verify
+```
+
+If practical, run a non-interactive local backend plus CLI smoke test for:
+
+- add model
+- add entity
+- select entity
+- add attribute
+- list attributes
+- undo an attribute creation
+- exit
+
+### Documentation
+
+After implementation:
+
+- Update `docs/cli-reference.md` with entity selection and attribute commands.
+- Update `docs/architecture_doc.md` because this task adds attribute command
+  execution, attribute command endpoints, read/list endpoints for model
+  internals, and a CLI entity context.
+
+Before updating `docs/architecture_doc.md`, read and follow
+`docs/architecture_doc_instructions.md`.
+
+### Resolved Planning Decisions
+
+- `DeleteAttributeCommand` is only the internal counterpart operation for
+  undoing `CreateAttributeCommand` in this task.
+- User-visible attribute deletion is deferred to a later edit-operation task.
+- Undo is stack-based and always applies only to the latest successfully
+  executed command.
+- Clearing entity context uses `entity detach`.
+- Attribute listing should show `DataType` and lifecycle version fields.
+- Attribute data type input accepts case-insensitive aliases.
+- Blank attribute data type input defaults to `TEXT`.
+
+### Planning Status
+
+All planning questions were resolved before execution.
+
+### Completion Notes
+
+- Promoted the task to `tasks/current-task.md` and executed it.
+- Added `CreateAttributeCommand` and internal `DeleteAttributeCommand` to
+  `vedenemo-core`.
+- Updated `CommandExecutor` so create-attribute commands add `VAttribute`
+  instances to an existing entity in the selected model.
+- Kept undo stack-based; undo of create-attribute derives and applies the
+  internal delete counterpart at undo time.
+- Added `POST /sessions/{uuid}/commands/create-attribute`.
+- Added read-only listing endpoints:
+  - `GET /models/{modelAzName}/entities`
+  - `GET /models/{modelAzName}/entities/{entityAzName}/attributes`
+- Added CLI entity context with `entities`, `entity [N | azName]`,
+  `entity detach`, `attributes`, and `attr add`.
+- Added attribute data type normalization with blank/missing default `TEXT` and
+  case-insensitive aliases.
+- Added focused core, web API, and CLI tests.
+- Updated `docs/cli-reference.md` and `docs/architecture_doc.md`.
+- `mvn -B clean verify` passed during implementation.

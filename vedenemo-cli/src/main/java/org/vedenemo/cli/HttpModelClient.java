@@ -16,6 +16,12 @@ public final class HttpModelClient implements ModelClient {
     private static final Pattern MODEL_PATTERN = Pattern.compile(
             "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"version\":\"([^\"]*)\"}"
     );
+    private static final Pattern ENTITY_PATTERN = Pattern.compile(
+            "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"activeSince\":\"([^\"]*)\",\"deprecatedSince\":(\"([^\"]*)\"|null)}"
+    );
+    private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile(
+            "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"dataType\":\"([^\"]*)\",\"activeSince\":\"([^\"]*)\",\"deprecatedSince\":(\"([^\"]*)\"|null)}"
+    );
 
     private final URI apiBaseUrl;
     private final HttpClient httpClient;
@@ -60,6 +66,32 @@ public final class HttpModelClient implements ModelClient {
         return models.getFirst();
     }
 
+    @Override
+    public List<EntitySummary> listEntities(String modelAzName) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/models/" + encodePath(modelAzName) + "/entities"))
+                .GET()
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("entity list failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+        return parseEntities(response.body());
+    }
+
+    @Override
+    public List<AttributeSummary> listAttributes(String modelAzName, String entityAzName) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve(
+                        "/models/" + encodePath(modelAzName) + "/entities/" + encodePath(entityAzName) + "/attributes"
+                ))
+                .GET()
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("attribute list failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+        return parseAttributes(response.body());
+    }
+
     private static List<ModelSummary> parseModels(String body) throws IOException {
         if ("[]".equals(body)) {
             return List.of();
@@ -75,7 +107,47 @@ public final class HttpModelClient implements ModelClient {
         return List.copyOf(models);
     }
 
+    private static List<EntitySummary> parseEntities(String body) throws IOException {
+        if ("[]".equals(body)) {
+            return List.of();
+        }
+        ArrayList<EntitySummary> entities = new ArrayList<>();
+        Matcher matcher = ENTITY_PATTERN.matcher(body);
+        while (matcher.find()) {
+            entities.add(new EntitySummary(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(5)));
+        }
+        if (entities.isEmpty()) {
+            throw new IOException("entity response did not contain parseable entities");
+        }
+        return List.copyOf(entities);
+    }
+
+    private static List<AttributeSummary> parseAttributes(String body) throws IOException {
+        if ("[]".equals(body)) {
+            return List.of();
+        }
+        ArrayList<AttributeSummary> attributes = new ArrayList<>();
+        Matcher matcher = ATTRIBUTE_PATTERN.matcher(body);
+        while (matcher.find()) {
+            attributes.add(new AttributeSummary(
+                    matcher.group(1),
+                    matcher.group(2),
+                    matcher.group(3),
+                    matcher.group(4),
+                    matcher.group(6)
+            ));
+        }
+        if (attributes.isEmpty()) {
+            throw new IOException("attribute response did not contain parseable attributes");
+        }
+        return List.copyOf(attributes);
+    }
+
     private static String escapeJson(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private static String encodePath(String value) {
+        return value.replace(" ", "%20");
     }
 }

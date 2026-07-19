@@ -239,6 +239,117 @@ final class SessionResourceTest {
     }
 
     @Test
+    void createAttributeCommandAddsAttributeToExistingEntity() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addEntity(new org.vedenemo.core.model.VEntity("Customer", "Customer", modelRoot.version()));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Customer","attributeAzName":"Email","attributeVisName":"Email","dataType":"text"}
+                """);
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("\"dataType\":\"TEXT\""));
+        assertEquals("Email", modelRoot.entities().getFirst().attributes().getFirst().azName());
+        assertEquals("1.0.0", modelRoot.entities().getFirst().attributes().getFirst().activeSince().toString());
+        assertEquals(1, sessionManager.findSession(sessionId).orElseThrow().commandHistory().size());
+    }
+
+    @Test
+    void createAttributeCommandDefaultsMissingDataTypeToText() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addEntity(new org.vedenemo.core.model.VEntity("Customer", "Customer", modelRoot.version()));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Customer","attributeAzName":"Email","attributeVisName":"Email"}
+                """);
+
+        assertEquals(200, response.statusCode());
+        assertEquals(org.vedenemo.core.model.DataType.TEXT, modelRoot.entities().getFirst().attributes().getFirst().type());
+    }
+
+    @Test
+    void createAttributeCommandRejectsMissingEntity() throws Exception {
+        modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Missing","attributeAzName":"Email","attributeVisName":"Email","dataType":"TEXT"}
+                """);
+
+        assertEquals(400, response.statusCode());
+        assertTrue(response.body().contains("entity not found"));
+        assertTrue(sessionManager.findSession(sessionId).orElseThrow().commandHistory().isEmpty());
+    }
+
+    @Test
+    void createAttributeCommandRejectsDuplicateAttribute() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addEntity(new org.vedenemo.core.model.VEntity("Customer", "Customer", modelRoot.version()));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+        post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Customer","attributeAzName":"Email","attributeVisName":"Email","dataType":"TEXT"}
+                """);
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Customer","attributeAzName":"email","attributeVisName":"Duplicate Email","dataType":"TEXT"}
+                """);
+
+        assertEquals(400, response.statusCode());
+        assertTrue(response.body().contains("attribute azName must be unique within VEntity"));
+        assertEquals(1, sessionManager.findSession(sessionId).orElseThrow().commandHistory().size());
+    }
+
+    @Test
+    void createAttributeCommandRejectsUnsupportedDataType() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addEntity(new org.vedenemo.core.model.VEntity("Customer", "Customer", modelRoot.version()));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Customer","attributeAzName":"Email","attributeVisName":"Email","dataType":"invalid"}
+                """);
+
+        assertEquals(400, response.statusCode());
+        assertTrue(response.body().contains("unsupported dataType"));
+    }
+
+    @Test
+    void undoCommandRemovesPreviouslyCreatedAttribute() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addEntity(new org.vedenemo.core.model.VEntity("Customer", "Customer", modelRoot.version()));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+        post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Customer","attributeAzName":"Email","attributeVisName":"Email","dataType":"TEXT"}
+                """);
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/undo");
+
+        assertEquals(200, response.statusCode());
+        assertTrue(modelRoot.entities().getFirst().attributes().isEmpty());
+        assertTrue(sessionManager.findSession(sessionId).orElseThrow().commandHistory().isEmpty());
+    }
+
+    @Test
     void undoCommandReturnsNotModifiedWhenNothingCanBeUndone() throws Exception {
         UUID sessionId = extractSessionId(post("/sessions/start").body());
 
