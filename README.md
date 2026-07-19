@@ -88,6 +88,40 @@ curl -X DELETE http://127.0.0.1:8080/sessions/<session-id>
 
 Successful cleanup returns HTTP `204`.
 
+## Current Tailscale / Firebase UX Connectivity
+
+Current tested development connectivity:
+
+- WSL backend service runs the web API locally on port `8080`.
+- Tailscale Serve exposes that local backend as:
+
+```text
+https://vedenemo-wsl.tail64b6af.ts.net
+```
+
+- The deployed Firebase UX is:
+
+```text
+https://vedenemo-ux-prod.web.app/
+```
+
+- The Firebase UX ping call works through the Tailscale HTTPS backend URL.
+
+The browser that opens the Firebase UX must have access to the same Tailscale
+tailnet. Firebase Hosting itself is not part of the tailnet; the browser reaches
+the tailnet backend directly.
+
+For this setup, keep the frontend runtime API base URL as:
+
+```json
+{
+  "apiBaseUrl": "https://vedenemo-wsl.tail64b6af.ts.net"
+}
+```
+
+The backend can remain bound locally to `127.0.0.1:8080` when Tailscale Serve is
+proxying HTTPS traffic to it.
+
 ## Run VedenemoCli Locally
 
 `VedenemoCli` connects to the running backend through HTTP. Build first:

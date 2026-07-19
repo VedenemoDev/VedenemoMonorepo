@@ -914,6 +914,62 @@ updates, and current architecture documentation updates.
 Next steps: Stage all changes, commit with a detailed message, push to
 `origin/main`, and verify clean local status.
 
+## 2026-07-19 13:43 EEST
+
+Goal: Record current Tailscale Serve and Firebase UX backend connectivity.
+
+Files changed:
+
+- `README.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' AGENTS.md`
+- `sed -n '1,220p' README.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/first-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: User confirmed that `https://vedenemo-wsl.tail64b6af.ts.net` works via
+Tailscale and that the deployed Firebase UX ping call works. Updated
+`README.md` to document the current development connectivity: local WSL backend
+on port `8080`, Tailscale Serve exposing it at
+`https://vedenemo-wsl.tail64b6af.ts.net`, Firebase UX at
+`https://vedenemo-ux-prod.web.app/`, browser-side tailnet access requirement,
+and the expected frontend runtime `apiBaseUrl`.
+
+Next steps: Commit the README/session documentation update when acceptable.
+
+## 2026-07-19 13:49 EEST
+
+Goal: Commit and push the Tailscale/Firebase connectivity documentation update.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff --stat`
+- `git diff -- README.md SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Preparing a documentation-only commit for the current working
+connectivity state: Firebase UX ping works through Tailscale Serve at
+`https://vedenemo-wsl.tail64b6af.ts.net`, with README and session history
+updated.
+
+Next steps: Stage `README.md` and `SESSION.md`, commit with a descriptive
+message, push to `origin/main`, and verify clean local status.
+
 ## 2026-07-12 16:50 EEST
 
 Goal: Execute the `Adding support for adding new models and listing existing
