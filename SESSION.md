@@ -259,6 +259,49 @@ ignore files`. No successful backend or frontend builds have been confirmed yet.
 The frontend `npm ci` attempt appeared to hang or take too long without useful
 verbose output.
 
+## 2026-07-19 14:23 EEST
+
+Goal: Read the backlog and concentrate on the latest task, "Taking Command
+concept into use and implementing the first command", as preliminary context for
+next steps.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `pwd && rg --files docs tasks decisions -g '!*target*'`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,240p' docs/architecture/module-map.md`
+- `sed -n '1,260p' docs/architecture/coding-rules.md`
+- `sed -n '1,260p' docs/architecture/testing-strategy.md`
+- `sed -n '1,280p' docs/roadmap/first-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `sed -n '1,260p' SESSION.md`
+- `sed -n '1,320p' tasks/backlog.md`
+- `sed -n '321,760p' tasks/backlog.md`
+- `git status --short --branch`
+- `find . -maxdepth 3 -type f | sort | sed -n '1,220p'`
+- `sed -n '761,1220p' tasks/backlog.md`
+- `find vedenemo-model-api vedenemo-core vedenemo-web-api vedenemo-cli docs -type f | sort | sed -n '1,260p'`
+- `sed -n '1,240p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/session/Session.java`
+- `sed -n '1,320p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `sed -n '1,360p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '361,520p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: The latest backlog/current-task item is marked executed. The
+implementation now has `ModelRoot` entity ownership, `CreateEntityCommand`,
+internal `DeleteEntityCommand`, undo support, command-specific web endpoints,
+and CLI support for adding an entity when a model is attached.
+
+Next steps: Select the next backlog item or define the next task on top of the
+implemented command flow. Likely follow-on work should build on the current
+command boundary rather than bypassing it.
+
 Next steps: Resume by validating the WSL2 toolchain and builds. Suggested order:
 check Java/Maven with `java -version`, `javac -version`, and `mvn -version`;
 run `mvn clean verify`; check Node/npm with `node -v` and `npm -v`; rerun
