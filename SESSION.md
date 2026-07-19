@@ -970,6 +970,39 @@ updated.
 Next steps: Stage `README.md` and `SESSION.md`, commit with a descriptive
 message, push to `origin/main`, and verify clean local status.
 
+## 2026-07-19 13:56 EEST
+
+Goal: Answer whether `/status`-style Codex usage data is available through an
+HTTP API and create a local skill for status triage.
+
+Files changed:
+
+- `SESSION.md`
+- `/home/vedenemodev/.codex/skills/codex-status-triage/SKILL.md`
+
+Commands run:
+
+- `sed -n '1,220p' /home/vedenemodev/.codex/skills/.system/openai-docs/SKILL.md`
+- `sed -n '1,220p' /home/vedenemodev/.codex/skills/.system/skill-creator/SKILL.md`
+- `find /home/vedenemodev/.codex/skills -maxdepth 3 -type f -name SKILL.md | sort`
+- `ls -la /home/vedenemodev/.codex/skills`
+- `cat > /home/vedenemodev/.codex/skills/codex-status-triage/SKILL.md`
+- `sed -n '1,220p' /home/vedenemodev/.codex/skills/codex-status-triage/SKILL.md`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Created local skill `codex-status-triage` for interpreting pasted
+Codex `/status` output, distinguishing context-window usage from weekly quota
+and API rate limits, and recommending whether to continue, commit, compact, or
+start a fresh session. No documented public HTTP API for live `/status` output
+or ChatGPT/Codex weekly remaining quota was identified; exact values should be
+taken from the user's `/status` output or UI surfaces unless OpenAI documents an
+API later.
+
+Next steps: Use the `codex-status-triage` skill in future sessions when
+discussing `/status`, context-window remaining, weekly quota, or session
+continuation strategy.
+
 ## 2026-07-12 16:50 EEST
 
 Goal: Execute the `Adding support for adding new models and listing existing
