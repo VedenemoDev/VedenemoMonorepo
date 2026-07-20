@@ -77,7 +77,10 @@ final class CommandExecutorTest {
 
         UndoResult result = fixture.executor.undoLatest();
 
-        assertEquals(UndoResult.UNDONE, result);
+        assertEquals(UndoResult.Status.UNDONE, result.status());
+        assertEquals("create-entity", result.undoneCommand());
+        assertEquals("Example_Model", result.modelAzName());
+        assertEquals("Customer", result.entityAzName());
         assertTrue(fixture.modelRoot.entities().isEmpty());
         assertTrue(fixture.session.commandHistory().isEmpty());
     }
@@ -167,7 +170,11 @@ final class CommandExecutorTest {
 
         UndoResult result = fixture.executor.undoLatest();
 
-        assertEquals(UndoResult.UNDONE, result);
+        assertEquals(UndoResult.Status.UNDONE, result.status());
+        assertEquals("create-attribute", result.undoneCommand());
+        assertEquals("Example_Model", result.modelAzName());
+        assertEquals("Customer", result.entityAzName());
+        assertEquals("Email", result.attributeAzName());
         assertTrue(fixture.modelRoot.entities().getFirst().attributes().isEmpty());
         assertEquals(1, fixture.session.commandHistory().size());
         assertTrue(fixture.session.latestCommand().orElseThrow() instanceof CreateEntityCommand);

@@ -176,9 +176,10 @@ public final class SessionResource {
                 writeJson(context, 404, new ErrorResponse("session not found"));
                 return;
             }
+            UndoResult result;
             try {
-                UndoResult result = executor.orElseThrow().undoLatest();
-                if (result == UndoResult.NOTHING_TO_UNDO) {
+                result = executor.orElseThrow().undoLatest();
+                if (result.isNothingToUndo()) {
                     context.status(304);
                     return;
                 }
@@ -186,7 +187,7 @@ public final class SessionResource {
                 writeJson(context, 400, new ErrorResponse(exception.getMessage()));
                 return;
             }
-            writeJson(context, 200, new UndoResponse("undone"));
+            writeJson(context, 200, UndoResponse.from(result));
         });
     }
 
@@ -219,7 +220,22 @@ public final class SessionResource {
     private record AttributeResponse(String azName, String visName, String dataType) {
     }
 
-    private record UndoResponse(String status) {
+    private record UndoResponse(
+            String status,
+            String undoneCommand,
+            String modelAzName,
+            String entityAzName,
+            String attributeAzName
+    ) {
+        private static UndoResponse from(UndoResult result) {
+            return new UndoResponse(
+                    "undone",
+                    result.undoneCommand(),
+                    result.modelAzName(),
+                    result.entityAzName(),
+                    result.attributeAzName()
+            );
+        }
     }
 
     private record ErrorResponse(String error) {

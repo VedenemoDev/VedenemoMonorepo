@@ -501,10 +501,10 @@ public final class VedenemoCliApp {
     private void undo(UUID sessionId) throws InterruptedException {
         try {
             UndoCommandResult result = commandClient.undo(sessionId);
-            if (result == UndoCommandResult.NOTHING_TO_UNDO) {
+            if (result.isNothingToUndo()) {
                 output.println("Nothing to undo.");
             } else {
-                output.println("Undo completed.");
+                output.println(undoMessage(result));
             }
         } catch (IOException exception) {
             output.println(exception.getMessage());
@@ -563,6 +563,9 @@ public final class VedenemoCliApp {
             if (isAsciiLetter(character)) {
                 suggestion.append(character);
                 previousWasSeparator = false;
+            } else if (isAsciiDigit(character) && !suggestion.isEmpty()) {
+                suggestion.append(character);
+                previousWasSeparator = false;
             } else if (!previousWasSeparator && suggestion.length() > 0) {
                 suggestion.append('_');
                 previousWasSeparator = true;
@@ -579,6 +582,10 @@ public final class VedenemoCliApp {
 
     private static boolean isAsciiLetter(char value) {
         return (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z');
+    }
+
+    private static boolean isAsciiDigit(char value) {
+        return value >= '0' && value <= '9';
     }
 
     private static String normalizeDataTypeInput(String value) {
@@ -599,5 +606,23 @@ public final class VedenemoCliApp {
             return "";
         }
         return " deprecated since " + deprecatedSince;
+    }
+
+    private static String undoMessage(UndoCommandResult result) {
+        return switch (result.undoneCommand()) {
+            case "create-entity" -> "Undo completed: removed entity "
+                    + result.entityAzName()
+                    + " from model "
+                    + result.modelAzName()
+                    + ".";
+            case "create-attribute" -> "Undo completed: removed attribute "
+                    + result.attributeAzName()
+                    + " from entity "
+                    + result.entityAzName()
+                    + " in model "
+                    + result.modelAzName()
+                    + ".";
+            default -> "Undo completed.";
+        };
     }
 }

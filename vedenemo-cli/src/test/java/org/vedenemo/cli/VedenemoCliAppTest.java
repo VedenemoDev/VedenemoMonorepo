@@ -218,6 +218,17 @@ final class VedenemoCliAppTest {
     }
 
     @Test
+    void addSuggestsAzNameWithDigitsAfterFirstLetter() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "add\nModel 2026 Draft\n\nexit\n");
+
+        assertEquals("Model_2026_Draft", modelClient.models.getFirst().azName());
+        assertTrue(result.output.contains("Model azName [Model_2026_Draft]: "));
+    }
+
+    @Test
     void addWithAttachedModelReportsCommandFailureWithoutExiting() {
         TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
         TestModelClient modelClient = new TestModelClient();
@@ -334,6 +345,48 @@ final class VedenemoCliAppTest {
     }
 
     @Test
+    void attrAddSuggestsAzNameWithNumericSuffix() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+
+        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nAttribute 2\n\n\nexit\n");
+
+        assertEquals("Attribute_2", commandClient.createdAttributeAzName);
+        assertTrue(result.output.contains("Attribute azName [Attribute_2]: "));
+    }
+
+    @Test
+    void attrAddSuggestsAzNameWithNumericWordSuffix() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+
+        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nAddress Line 1\n\n\nexit\n");
+
+        assertEquals("Address_Line_1", commandClient.createdAttributeAzName);
+        assertTrue(result.output.contains("Attribute azName [Address_Line_1]: "));
+    }
+
+    @Test
+    void attrAddSkipsLeadingDigitsInAzNameSuggestion() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+
+        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\n2 Attribute\n\n\nexit\n");
+
+        assertEquals("Attribute", commandClient.createdAttributeAzName);
+        assertTrue(result.output.contains("Attribute azName [Attribute]: "));
+    }
+
+    @Test
     void attrAddDefaultsBlankDataTypeToText() {
         TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
         TestModelClient modelClient = new TestModelClient();
@@ -368,7 +421,22 @@ final class VedenemoCliAppTest {
         Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), commandClient, "undo\nexit\n");
 
         assertTrue(commandClient.undoCalled);
-        assertTrue(result.output.contains("Undo completed."));
+        assertTrue(result.output.contains("Undo completed: removed entity Customer from model Example_Model."));
+    }
+
+    @Test
+    void undoPrintsAttributeSpecificMessageWhenBackendUndoSucceeds() {
+        TestCommandClient commandClient = new TestCommandClient();
+        commandClient.undoResult = UndoCommandResult.undone(
+                "create-attribute",
+                "Example_Model",
+                "Customer",
+                "Email"
+        );
+
+        Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), commandClient, "undo\nexit\n");
+
+        assertTrue(result.output.contains("Undo completed: removed attribute Email from entity Customer in model Example_Model."));
     }
 
     @Test
@@ -482,7 +550,12 @@ final class VedenemoCliAppTest {
         private String createdAttributeVisName;
         private String createdAttributeDataType;
         private boolean undoCalled;
-        private UndoCommandResult undoResult = UndoCommandResult.UNDONE;
+        private UndoCommandResult undoResult = UndoCommandResult.undone(
+                "create-entity",
+                "Example_Model",
+                "Customer",
+                null
+        );
         private IOException createFailure;
         private IOException createAttributeFailure;
         private IOException undoFailure;

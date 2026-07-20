@@ -211,11 +211,11 @@ final class SessionResourceTest {
                 """);
 
         HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/create-entity", """
-                {"entityAzName":"Customer1","entityVisName":"Customer"}
+                {"entityAzName":"1Customer","entityVisName":"Customer"}
                 """);
 
         assertEquals(400, response.statusCode());
-        assertTrue(response.body().contains("azName must contain only ASCII letters and underscores"));
+        assertTrue(response.body().contains("azName must start with an ASCII letter"));
         assertTrue(sessionManager.findSession(sessionId).orElseThrow().commandHistory().isEmpty());
     }
 
@@ -233,7 +233,9 @@ final class SessionResourceTest {
         HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/undo");
 
         assertEquals(200, response.statusCode());
-        assertTrue(response.body().contains("\"status\":\"undone\""));
+        assertTrue(response.body().contains("\"undoneCommand\":\"create-entity\""));
+        assertTrue(response.body().contains("\"modelAzName\":\"Example_Model\""));
+        assertTrue(response.body().contains("\"entityAzName\":\"Customer\""));
         assertTrue(modelRoot.entities().isEmpty());
         assertTrue(sessionManager.findSession(sessionId).orElseThrow().commandHistory().isEmpty());
     }
@@ -345,6 +347,10 @@ final class SessionResourceTest {
         HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/undo");
 
         assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("\"undoneCommand\":\"create-attribute\""));
+        assertTrue(response.body().contains("\"modelAzName\":\"Example_Model\""));
+        assertTrue(response.body().contains("\"entityAzName\":\"Customer\""));
+        assertTrue(response.body().contains("\"attributeAzName\":\"Email\""));
         assertTrue(modelRoot.entities().getFirst().attributes().isEmpty());
         assertTrue(sessionManager.findSession(sessionId).orElseThrow().commandHistory().isEmpty());
     }

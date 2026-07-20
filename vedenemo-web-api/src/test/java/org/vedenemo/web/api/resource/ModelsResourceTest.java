@@ -97,7 +97,7 @@ final class ModelsResourceTest {
     @Test
     void invalidInputIsRejected() throws Exception {
         assertEquals(400, post("/models/add", """
-                {"azName":"Example1","visName":"Example Model","version":"1.0.0"}
+                {"azName":"1Example","visName":"Example Model","version":"1.0.0"}
                 """).statusCode());
         assertEquals(400, post("/models/add", """
                 {"azName":"Example","visName":"   ","version":"1.0.0"}

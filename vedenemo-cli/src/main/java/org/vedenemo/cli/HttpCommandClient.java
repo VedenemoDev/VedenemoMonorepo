@@ -7,8 +7,14 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class HttpCommandClient implements CommandClient {
+
+    private static final Pattern UNDO_RESPONSE_PATTERN = Pattern.compile(
+            "\\{\"status\":\"undone\",\"undoneCommand\":\"([^\"]*)\",\"modelAzName\":\"([^\"]*)\",\"entityAzName\":\"([^\"]*)\",\"attributeAzName\":(\"([^\"]*)\"|null)}"
+    );
 
     private final URI apiBaseUrl;
     private final HttpClient httpClient;
@@ -68,12 +74,20 @@ public final class HttpCommandClient implements CommandClient {
                 .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
-            return UndoCommandResult.UNDONE;
+            return parseUndoResponse(response.body());
         }
         if (response.statusCode() == 304) {
             return UndoCommandResult.NOTHING_TO_UNDO;
         }
         throw new IOException("Unexpected response code: " + response.statusCode());
+    }
+
+    private static UndoCommandResult parseUndoResponse(String body) throws IOException {
+        Matcher matcher = UNDO_RESPONSE_PATTERN.matcher(body);
+        if (!matcher.matches()) {
+            throw new IOException("undo response did not contain parseable undo details");
+        }
+        return UndoCommandResult.undone(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(5));
     }
 
     private static String escapeJson(String value) {

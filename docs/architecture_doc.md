@@ -86,9 +86,9 @@ Shared model API module. It currently contains:
   metadata, and an ordered attribute collection
 
 `ModelRoot`, `VEntity`, and `VAttribute` share the same `azName` rule: the name
-must start with an ASCII letter and then contain only ASCII letters and
-underscores. Original casing is preserved. Case-insensitive uniqueness keys are
-used where uniqueness is enforced.
+must start with an ASCII letter and then contain only ASCII letters, ASCII
+digits, and underscores. Original casing is preserved. Case-insensitive
+uniqueness keys are used where uniqueness is enforced.
 
 `VEntity` preserves attribute insertion order and enforces attribute `azName`
 uniqueness case-insensitively. It exposes attributes as a read-only snapshot
@@ -138,7 +138,10 @@ Successful commands are recorded in the session. Failed commands are not
 recorded. Undo is stack-based and only applies to the latest successful command:
 create-entity is undone through the internal `DeleteEntityCommand` inverse, and
 create-attribute is undone through the internal `DeleteAttributeCommand`
-inverse. Undo removes the original command from active session command history.
+inverse. Undo removes the original command from active session command history
+and returns a core-owned `UndoResult` containing a stable command identifier
+such as `create-entity` or `create-attribute` plus the target model, entity, and
+attribute names needed by clients.
 
 `ModelRegistry` is the process-local registry of currently known models. It
 stores `ModelRoot` instances in insertion order and enforces case-insensitive
@@ -204,7 +207,8 @@ Current CLI behavior:
 - creates attributes in the selected entity with `attr add`
 - attaches the session to a model by latest list number or `azName`
 - detaches the session from the current selected model
-- supports `undo` for the latest backend command
+- supports `undo` for the latest backend command and prints operation-specific
+  undo output
 - supports `exit`
 - calls `DELETE /sessions/{uuid}` during normal exit and through a best-effort
   shutdown hook
@@ -238,7 +242,8 @@ and exposes:
   `VAttribute` in an entity in the session's selected model through
   `CommandExecutor`
 - `POST /sessions/{uuid}/commands/undo`, which undoes the latest command for
-  the active backend session or returns `304` when nothing can be undone
+  the active backend session and returns the undone command slug plus target
+  details, or returns `304` when nothing can be undone
 
 HTTP JSON parsing and response serialization are kept in this module. Jackson is
 used here as an adapter/runtime dependency and does not leak into core or model
@@ -417,7 +422,7 @@ sequenceDiagram
     Sessions->>Executor: undoLatest()
     Executor->>Model: remove latest command target
     Executor->>Executor: remove original command from Session
-    Sessions-->>CLI: 200 undo response
+    Sessions-->>CLI: 200 undo response with command slug and target details
 ```
 
 ### UX Ping

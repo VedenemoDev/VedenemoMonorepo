@@ -1527,3 +1527,256 @@ All planning questions were resolved before execution.
 - Added focused core, web API, and CLI tests.
 - Updated `docs/cli-reference.md` and `docs/architecture_doc.md`.
 - `mvn -B clean verify` passed during implementation.
+
+## Improve CLI azName Suggestions And Undo Feedback
+
+Status: executed. Full task text retained here for history.
+
+### Goal
+
+Improve two CLI usability details:
+
+- `azName` suggestions should preserve useful numeric suffixes from visible
+  names, so `Attribute 2` suggests `Attribute_2` instead of `Attribute`.
+- `undo` output should describe what kind of operation was undone instead of
+  only printing `Undo completed.`
+
+### Current Implementation Context
+
+- `VedenemoCliApp.suggestAzName(String)` currently keeps only ASCII letters and
+  uses non-letter runs as separators.
+- Current model validation rules for `azName` do not allow digits, but the CLI
+  now suggests names for models, entities, and attributes.
+- The user-visible desired suggestion `Attribute_2` implies that the model
+  `azName` validation rules should allow digits after the first ASCII letter,
+  or at minimum that the CLI suggestion behavior and validation rules must be
+  reconciled before implementation.
+- `CommandExecutor.undoLatest()` currently returns only `UndoResult.UNDONE` or
+  `UndoResult.NOTHING_TO_UNDO`.
+- `SessionResource` maps successful undo to a generic JSON response:
+
+```json
+{"status":"undone"}
+```
+
+- `HttpCommandClient.undo()` maps the response to `UndoCommandResult.UNDONE`.
+- `VedenemoCliApp.undo()` prints only:
+
+```text
+Undo completed.
+```
+
+### azName Suggestion Scope
+
+Update CLI `azName` suggestion behavior so numeric runs are preserved when they
+occur after the suggested name already starts with an ASCII letter.
+
+Recommended behavior:
+
+- `Attribute 2` suggests `Attribute_2`.
+- `Address Line 1` suggests `Address_Line_1`.
+- `2 Attribute` does not start with `2`; it should suggest `Attribute` if there
+  is a later ASCII-letter run.
+- `Model 2026 Draft` suggests `Model_2026_Draft`.
+- non-ASCII characters remain ignored for now, preserving the current
+  no-transliteration behavior.
+- repeated separators collapse to one underscore.
+- trailing underscores are removed.
+
+Implementation note:
+
+- If digits are allowed in CLI suggestions, update the shared model `azName`
+  validation rules so `ModelRoot`, `VEntity`, and `VAttribute` all allow ASCII
+  digits after the first ASCII letter.
+- Preserve the rule that `azName` must start with an ASCII letter.
+- Keep hyphens invalid.
+
+### Undo Feedback Scope
+
+Make undo return enough Vedenemo-owned information for the CLI to print a
+specific message.
+
+Recommended core behavior:
+
+- Replace or extend `UndoResult` so successful undo can describe the undone
+  command kind and target.
+- Keep `NOTHING_TO_UNDO` behavior for empty command history.
+- Preserve stack-based undo: only the latest successfully executed command can
+  be undone.
+- Failed undo operations should still be reported as client-visible errors and
+  should not silently remove command history.
+
+Recommended backend response shape:
+
+```json
+{
+  "status": "undone",
+  "undoneCommand": "create-attribute",
+  "modelAzName": "Example_Model",
+  "entityAzName": "Customer",
+  "attributeAzName": "Email"
+}
+```
+
+For entity creation undo:
+
+```json
+{
+  "status": "undone",
+  "undoneCommand": "create-entity",
+  "modelAzName": "Example_Model",
+  "entityAzName": "Customer"
+}
+```
+
+Recommended CLI messages:
+
+```text
+Undo completed: removed entity Customer from model Example_Model.
+```
+
+```text
+Undo completed: removed attribute Email from entity Customer in model Example_Model.
+```
+
+`Nothing to undo.` remains unchanged for HTTP `304`.
+
+### Backend / HTTP Scope
+
+- Update `POST /sessions/{uuid}/commands/undo` to return the richer undo
+  response when undo succeeds.
+- Keep `304` when no command is available to undo.
+- Keep clear client error responses when undo fails due invalid current model
+  state.
+- HTTP DTOs stay in `vedenemo-web-api`.
+- Core undo result types stay pure JDK / Vedenemo-owned types.
+
+### CLI Scope
+
+- Update `suggestAzName` and its tests so digits after the first ASCII letter
+  are preserved.
+- Update `HttpCommandClient.undo()` and `UndoCommandResult` or equivalent CLI
+  result type so the CLI can read the richer undo response.
+- Update `VedenemoCliApp.undo()` to print operation-specific undo messages.
+- Keep unexpected undo response statuses visible to CLI users.
+
+### Tests / Verification
+
+Add focused model/core tests where practical:
+
+- `azName` validation accepts digits after the first ASCII letter.
+- `azName` validation still rejects names that start with a digit.
+- `azName` validation still rejects hyphens.
+- undo after create-entity reports the undone operation kind and target.
+- undo after create-attribute reports the undone operation kind and target.
+- undo with no command still reports nothing to undo.
+
+Add focused web API tests:
+
+- undo after create-entity returns `undoneCommand` and entity target fields.
+- undo after create-attribute returns `undoneCommand` and attribute target
+  fields.
+- undo with no command still returns `304`.
+
+Add focused CLI tests:
+
+- `Attribute 2` suggests `Attribute_2`.
+- `Address Line 1` suggests `Address_Line_1`.
+- leading digits are not used before the first ASCII letter.
+- undo after entity creation prints an entity-specific message.
+- undo after attribute creation prints an attribute-specific message that
+  includes the entity and model names.
+- `Nothing to undo.` remains unchanged.
+
+At minimum, run:
+
+```bash
+mvn -B clean verify
+```
+
+If practical, run a non-interactive local backend plus CLI smoke test for:
+
+- add model with numeric suffix
+- add entity with numeric suffix
+- select entity
+- add attribute with numeric suffix
+- undo attribute creation and verify specific undo output
+- undo entity creation and verify specific undo output
+- exit
+
+### Documentation
+
+After implementation:
+
+- Update `docs/cli-reference.md` to document numeric `azName` suggestions and
+  operation-specific undo output.
+- Update `docs/architecture_doc.md` if undo result shape or model naming rules
+  change in concrete architecture.
+
+Before updating `docs/architecture_doc.md`, read and follow
+`docs/architecture_doc_instructions.md`.
+
+### Resolved Planning Decisions
+
+- Digits after the first ASCII letter are valid for all `azName` values in
+  `ModelRoot`, `VEntity`, and `VAttribute`.
+- Use the recommended CLI undo wording.
+- Include the model name in attribute undo output so non-interactive logs remain
+  self-contained.
+- Use HTTP/API slug names, such as `create-entity` and `create-attribute`, as
+  stable command identifiers in backend undo responses.
+
+### Command Naming Options Considered
+
+The stable command naming scheme for undo responses was resolved after
+considering these options:
+
+Options:
+
+- HTTP/API slug names, such as `create-entity` and `create-attribute`.
+  - Pros: stable, language-neutral, already matches current command endpoint
+    names, good for logs and future serialized command history.
+  - Cons: not identical to Java type names, so core needs an explicit mapping.
+- Java-like command type names, such as `CreateEntityCommand` and
+  `CreateAttributeCommand`.
+  - Pros: maps directly to current Java records and is easy to produce from
+    core code.
+  - Cons: leaks implementation naming into HTTP/log output and is less stable
+    if Java classes are renamed.
+- Enum-style stable constants, such as `CREATE_ENTITY` and `CREATE_ATTRIBUTE`.
+  - Pros: simple to model in Java as an enum and stable if treated as API
+    values.
+  - Cons: less natural for URLs/logs and still needs formatting for display.
+- Domain action names, such as `entity-created` and `attribute-created`.
+  - Pros: describes the original command event clearly.
+  - Cons: can be slightly confusing in an undo response unless documented,
+    because the actual undo operation is removal.
+
+Chosen decision:
+
+- Use HTTP/API slug names, `create-entity` and `create-attribute`, in backend
+  undo responses. They are explicit stable Vedenemo-owned command identifiers
+  without tying the API to Java class names.
+
+### Planning Status
+
+All planning questions were resolved before execution.
+
+### Completion Notes
+
+- Promoted the task to `tasks/current-task.md` and executed it.
+- Updated shared `azName` validation so `ModelRoot`, `VEntity`, and
+  `VAttribute` allow ASCII digits after the first ASCII letter while still
+  rejecting leading digits and hyphens.
+- Updated CLI `azName` suggestions to preserve digit runs after the suggestion
+  has started with an ASCII letter.
+- Replaced coarse undo success reporting with richer core-owned `UndoResult`
+  metadata containing stable HTTP/API slug command identifiers and target
+  fields.
+- Updated `POST /sessions/{uuid}/commands/undo` to return operation and target
+  details on successful undo.
+- Updated CLI undo output to print entity-specific and attribute-specific
+  messages.
+- Added focused model/core, web API, and CLI tests.
+- Updated `docs/cli-reference.md` and `docs/architecture_doc.md`.
+- `mvn -B clean verify` passed during implementation.

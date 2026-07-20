@@ -506,6 +506,104 @@ Next steps: Review the implementation diff and commit if acceptable. A later
 task can add user-visible attribute deletion/edit operations with full undo
 records.
 
+## 2026-07-20 02:38 EEST
+
+Goal: Create a planning backlog task for improving CLI `azName` numeric
+suggestions and operation-specific undo feedback.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,240p' docs/architecture/module-map.md`
+- `sed -n '1,260p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 140 SESSION.md`
+- `tail -n 180 tasks/backlog.md`
+- `rg -n "suggestAzName|undoLatest|UndoResult|undo\\(" vedenemo-cli/src/main/java vedenemo-core/src/main/java vedenemo-web-api/src/main/java`
+- `sed -n '520,590p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '1,110p' vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `sed -n '1,80p' vedenemo-core/src/main/java/org/vedenemo/core/command/UndoResult.java`
+- `sed -n '60,95p' vedenemo-cli/src/main/java/org/vedenemo/cli/HttpCommandClient.java`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/backlog.md`
+
+Status: Added `Improve CLI azName Suggestions And Undo Feedback` to
+`tasks/backlog.md` as a planning draft. The task covers preserving digits in
+CLI `azName` suggestions after an initial ASCII letter and enriching undo
+responses so the CLI can print operation-specific undo messages.
+
+Next steps: Resolve the open planning questions about `azName` digit validity,
+undo wording, whether attribute undo output includes the model name, and stable
+command names in undo responses before promoting the task to
+`tasks/current-task.md`.
+
+## 2026-07-20 02:43 EEST
+
+Goal: Record resolved planning answers for CLI numeric `azName` suggestions and
+undo feedback, and elaborate the remaining command naming question.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,180p' tasks/current-task.md`
+- `sed -n '1528,1735p' tasks/backlog.md`
+- `tail -n 90 SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '1640,1755p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `git status --short --branch`
+
+Status: Updated the backlog task with resolved decisions: digits after the
+first ASCII letter are valid for all `azName` values, the recommended undo CLI
+wording is accepted, and attribute undo output should include the model name.
+Expanded the remaining command naming question with options and tradeoffs:
+HTTP/API slug names, Java-like command type names, enum-style constants, and
+domain action names. Recommended HTTP/API slug names.
+
+Next steps: Choose the stable command naming scheme for undo responses, then
+promote the task when ready to implement.
+
+## 2026-07-20 02:45 EEST
+
+Goal: Resolve the command naming scheme for the CLI numeric `azName` and undo
+feedback improvement task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1690,1760p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+
+Status: Updated the backlog task to use HTTP/API slug names, such as
+`create-entity` and `create-attribute`, as stable command identifiers in backend
+undo responses. The task now has all planning questions resolved and is ready
+to promote when implementation should begin.
+
+Next steps: Promote `Improve CLI azName Suggestions And Undo Feedback` to
+`tasks/current-task.md` when ready to execute.
+
 Next steps: Resume by validating the WSL2 toolchain and builds. Suggested order:
 check Java/Maven with `java -version`, `javac -version`, and `mvn -version`;
 run `mvn clean verify`; check Node/npm with `node -v` and `npm -v`; rerun
@@ -1160,6 +1258,72 @@ updates, and current architecture documentation updates.
 
 Next steps: Stage all changes, commit with a detailed message, push to
 `origin/main`, and verify clean local status.
+
+## 2026-07-20 02:53 EEST
+
+Goal: Execute the `Improve CLI azName Suggestions And Undo Feedback` task,
+including implementation, tests, documentation, task status updates, and smoke
+verification.
+
+Files changed:
+
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `docs/cli-reference.md`
+- `docs/architecture_doc.md`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelTextRules.java`
+- `vedenemo-model-api/src/test/java/org/vedenemo/core/model/ModelRootTest.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/UndoResult.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/session/SessionTest.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/SessionResourceTest.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/UndoCommandResult.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpCommandClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,240p' docs/architecture/module-map.md`
+- `sed -n '1,260p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1528,1770p' tasks/backlog.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelTextRules.java`
+- `sed -n '1,260p' vedenemo-model-api/src/test/java/org/vedenemo/core/model/ModelRootTest.java`
+- `sed -n '1,260p' vedenemo-model-api/src/test/java/org/vedenemo/core/model/VEntityTest.java`
+- `sed -n '1,240p' vedenemo-model-api/src/test/java/org/vedenemo/core/model/VAttributeTest.java`
+- `sed -n '1,120p' vedenemo-cli/src/main/java/org/vedenemo/cli/UndoCommandResult.java`
+- `rg -n "UndoResult|UndoCommandResult" vedenemo-*`
+- `mvn -B clean verify`
+- local backend plus CLI numeric suggestion/undo smoke test on port `18086`
+- `sed -n '1,220p' /tmp/vedenemo-undo-suggestion-smoke.out`
+- `git diff --check`
+- `git diff --stat`
+- `rg -n "Improve CLI azName|Status: planning|Status: executed|Completion Notes|Planning Status" tasks/backlog.md tasks/current-task.md | tail -n 30`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Implemented the improvement task. Shared `azName` validation now allows
+ASCII digits after the first ASCII letter while still rejecting leading digits
+and hyphens. CLI suggestions preserve numeric suffixes. Core undo now returns
+stable command slugs and target metadata; web undo responses serialize that
+metadata; CLI undo output reports entity-specific and attribute-specific
+messages. The backlog item is marked executed and retained as history.
+
+Verification: `mvn -B clean verify` passed. The first live smoke attempt failed
+inside the sandbox because localhost socket binding was blocked; rerunning the
+same backend plus CLI smoke test outside the sandbox passed. `git diff --check`
+reported no whitespace errors.
+
+Next steps: Review the implementation diff and commit if acceptable.
 
 ## 2026-07-19 13:43 EEST
 
@@ -2119,3 +2283,69 @@ updates.
 
 Next steps: Stage all changes, commit with a detailed message, push to
 `origin/main`, and verify clean local status.
+
+## 2026-07-20 02:53 EEST
+
+Goal: Execute the `Improve CLI azName Suggestions And Undo Feedback` task.
+
+Files changed:
+
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `docs/cli-reference.md`
+- `docs/architecture_doc.md`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelTextRules.java`
+- `vedenemo-model-api/src/test/java/org/vedenemo/core/model/ModelRootTest.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/UndoResult.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/session/SessionTest.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/SessionResourceTest.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/UndoCommandResult.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpCommandClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `mvn -B clean verify`
+- local backend plus CLI numeric suggestion/undo smoke test on port `18086`
+- `git diff --check`
+- project context reads required by `AGENTS.md`
+
+Status: Implemented. Shared `azName` validation allows digits after the first
+ASCII letter, CLI suggestions preserve numeric suffixes, undo responses carry
+stable slugs and target metadata, CLI undo output reports the operation undone,
+and the task is marked executed while retained in `tasks/backlog.md`.
+
+Verification: `mvn -B clean verify` passed. The live smoke test passed after
+rerunning outside the sandbox because localhost socket binding was blocked
+inside the sandbox. `git diff --check` passed.
+
+Next steps: Review and commit if acceptable.
+
+## 2026-07-20 03:01 EEST
+
+Goal: Commit and push the executed `Improve CLI azName Suggestions And Undo
+Feedback` task.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff --stat`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Preparing a detailed commit for the completed CLI `azName` suggestion
+and undo feedback work, including model validation, core undo metadata, web API
+serialization, CLI output, tests, docs, and task records.
+
+Next steps: Stage all changes, commit, push to `origin/main`, and verify the
+branch status.

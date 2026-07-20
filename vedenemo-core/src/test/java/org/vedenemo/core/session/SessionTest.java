@@ -86,6 +86,9 @@ final class SessionTest {
     void selectedModelAzNameUsesModelRootNameRules() {
         Session session = Session.create();
 
-        assertThrows(IllegalArgumentException.class, () -> session.selectModel("Example1"));
+        session.selectModel("Example1");
+
+        assertEquals("Example1", session.selectedModelAzName().orElseThrow());
+        assertThrows(IllegalArgumentException.class, () -> session.selectModel("1Example"));
     }
 }

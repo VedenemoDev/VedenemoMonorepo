@@ -32,6 +32,34 @@ final class ModelRootTest {
     }
 
     @Test
+    void acceptsDigitsAfterFirstLetterInAzName() {
+        ModelRoot modelRoot = ModelRoot.create("Example_2026", "Example Model", "1.0.0");
+        VEntity entity = new VEntity("Customer2", "Customer", modelRoot.version());
+        VAttribute attribute = new VAttribute("Address_Line_1", "Address Line 1", DataType.TEXT, modelRoot.version());
+
+        entity.addAttribute(attribute);
+        modelRoot.addEntity(entity);
+
+        assertEquals("Example_2026", modelRoot.azName());
+        assertEquals("Customer2", modelRoot.entities().getFirst().azName());
+        assertEquals("Address_Line_1", modelRoot.entities().getFirst().attributes().getFirst().azName());
+    }
+
+    @Test
+    void rejectsAzNameStartingWithDigit() {
+        assertThrows(IllegalArgumentException.class, () -> ModelRoot.create("2Example", "Example Model", "1.0.0"));
+        assertThrows(IllegalArgumentException.class, () -> new VEntity("2Customer", "Customer", ModelVersion.parse("1.0.0")));
+        assertThrows(IllegalArgumentException.class, () -> new VAttribute("2Name", "Name", DataType.TEXT, ModelVersion.parse("1.0.0")));
+    }
+
+    @Test
+    void rejectsHyphenInAzName() {
+        assertThrows(IllegalArgumentException.class, () -> ModelRoot.create("Example-Model", "Example Model", "1.0.0"));
+        assertThrows(IllegalArgumentException.class, () -> new VEntity("Customer-2", "Customer", ModelVersion.parse("1.0.0")));
+        assertThrows(IllegalArgumentException.class, () -> new VAttribute("Address-Line", "Address Line", DataType.TEXT, ModelVersion.parse("1.0.0")));
+    }
+
+    @Test
     void removesEntityByAzName() {
         ModelRoot modelRoot = ModelRoot.create("Example_Model", "Example Model", "1.0.0");
         VEntity entity = entity("Customer");

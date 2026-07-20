@@ -1,41 +1,37 @@
 # Current Task
 
-## Add VAttribute Commands And CLI Entity Context
+## Improve CLI azName Suggestions And Undo Feedback
 
 Status: executed.
 
 ### Goal
 
-Extend the existing command execution path so users can add `VAttribute` items
-to an existing `VEntity` through `VedenemoCli`, using the backend HTTP API in
-the same command-oriented style already used for adding entities to a model.
+Improve two CLI usability details:
 
-This task also adds the internal attribute removal operation needed to undo
-attribute creation. User-visible attribute removal as a separate edit operation
-is deferred until it can be recorded and undone as its own command.
+- `azName` suggestions should preserve useful numeric suffixes from visible
+  names, so `Attribute 2` suggests `Attribute_2` instead of `Attribute`.
+- `undo` output should describe what kind of operation was undone instead of
+  only printing `Undo completed.`
 
 ### Scope
 
-- Add `CreateAttributeCommand`.
-- Add internal `DeleteAttributeCommand` counterpart.
-- Update `CommandExecutor` so create-attribute commands add attributes to an
-  entity in the selected model.
-- Undo must remain stack-based and apply only to the latest successfully
-  executed command.
-- Undo of `CreateAttributeCommand` derives `DeleteAttributeCommand` at undo
-  time from the fully qualified target path stored in the create command.
-- Add `POST /sessions/{uuid}/commands/create-attribute`.
-- Add read-only listing endpoints:
-  - `GET /models/{modelAzName}/entities`
-  - `GET /models/{modelAzName}/entities/{entityAzName}/attributes`
-- Add CLI entity context and commands:
-  - `entities`
-  - `entity [N | azName]`
-  - `entity detach`
-  - `attributes`
-  - `attr add`
-- Attribute data type input accepts case-insensitive aliases and defaults blank
-  or missing input to `TEXT`.
+- Allow ASCII digits after the first ASCII letter for all `azName` values in
+  `ModelRoot`, `VEntity`, and `VAttribute`.
+- Keep `azName` starting-character validation unchanged: names must start with
+  an ASCII letter.
+- Keep hyphens invalid.
+- Update CLI `azName` suggestion behavior so digit runs are preserved after the
+  suggestion has started with an ASCII letter.
+- Enrich core undo results with stable HTTP/API slug command identifiers:
+  `create-entity` and `create-attribute`.
+- Update `POST /sessions/{uuid}/commands/undo` to return target details for a
+  successful undo.
+- Update CLI undo output:
+
+```text
+Undo completed: removed entity Customer from model Example_Model.
+Undo completed: removed attribute Email from entity Customer in model Example_Model.
+```
 
 ### Verification
 
@@ -47,22 +43,23 @@ mvn -B clean verify
 
 If practical, run a non-interactive local backend plus CLI smoke test for:
 
-- add model
-- add entity
+- add model with numeric suffix
+- add entity with numeric suffix
 - select entity
-- add attribute
-- list attributes
-- undo an attribute creation
+- add attribute with numeric suffix
+- undo attribute creation and verify specific undo output
+- undo entity creation and verify specific undo output
 - exit
 
 ### Completion Notes
 
-- Added `CreateAttributeCommand` and internal `DeleteAttributeCommand`.
-- Updated `CommandExecutor` to create attributes in the selected model/entity
-  and undo attribute creation by deriving the internal delete counterpart.
-- Added `POST /sessions/{uuid}/commands/create-attribute`.
-- Added read-only entity and attribute listing endpoints.
-- Added CLI entity context and `attr add` flow.
-- Added focused core, web API, and CLI tests.
+- Updated shared `azName` validation to allow ASCII digits after the first
+  ASCII letter while still rejecting leading digits and hyphens.
+- Updated CLI `azName` suggestions to preserve numeric suffixes.
+- Replaced generic undo success with richer undo result metadata using stable
+  HTTP/API slug names.
+- Updated the undo HTTP response and CLI output to report the undone operation
+  and target.
+- Added focused model/core, web API, and CLI tests.
 - Updated `docs/cli-reference.md` and `docs/architecture_doc.md`.
 - `mvn -B clean verify` passed.

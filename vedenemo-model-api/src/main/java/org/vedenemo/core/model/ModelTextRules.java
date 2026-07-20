@@ -18,8 +18,8 @@ final class ModelTextRules {
         }
         for (int index = 1; index < azName.length(); index++) {
             char value = azName.charAt(index);
-            if (!isAsciiLetter(value) && value != '_') {
-                throw new IllegalArgumentException("azName must contain only ASCII letters and underscores");
+            if (!isAsciiLetter(value) && !isAsciiDigit(value) && value != '_') {
+                throw new IllegalArgumentException("azName must contain only ASCII letters, digits, and underscores after the first character");
             }
         }
         return azName;
@@ -39,5 +39,9 @@ final class ModelTextRules {
 
     private static boolean isAsciiLetter(char value) {
         return (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z');
+    }
+
+    private static boolean isAsciiDigit(char value) {
+        return value >= '0' && value <= '9';
     }
 }

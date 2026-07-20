@@ -44,7 +44,7 @@ public final class CommandExecutor {
     private UndoResult undo(Command command) {
         if (command instanceof CreateEntityCommand createEntityCommand) {
             apply(new DeleteEntityCommand(createEntityCommand.modelAzName(), createEntityCommand.entityAzName()));
-            return UndoResult.UNDONE;
+            return UndoResult.undoneCreateEntity(createEntityCommand.modelAzName(), createEntityCommand.entityAzName());
         }
         if (command instanceof CreateAttributeCommand createAttributeCommand) {
             apply(new DeleteAttributeCommand(
@@ -52,7 +52,11 @@ public final class CommandExecutor {
                     createAttributeCommand.entityAzName(),
                     createAttributeCommand.attributeAzName()
             ));
-            return UndoResult.UNDONE;
+            return UndoResult.undoneCreateAttribute(
+                    createAttributeCommand.modelAzName(),
+                    createAttributeCommand.entityAzName(),
+                    createAttributeCommand.attributeAzName()
+            );
         }
         throw new IllegalStateException("command has no undo counterpart: " + command.getClass().getSimpleName());
     }

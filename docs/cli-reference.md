@@ -82,7 +82,9 @@ No models available.
 When no model is attached, adds a new model through the backend.
 
 The CLI asks for a visible name and then suggests an ASCII `azName`. Press
-Enter to accept the suggestion or type a replacement.
+Enter to accept the suggestion or type a replacement. Suggestions preserve
+digits after the first ASCII letter, so `Model 2026 Draft` suggests
+`Model_2026_Draft`.
 
 Example:
 
@@ -234,17 +236,19 @@ Select an entity before listing attributes.
 Adds a new attribute to the selected entity through the backend command API.
 
 The CLI asks for a visible name, suggests an ASCII `azName`, and asks for a data
-type. Press Enter at the data type prompt to use `TEXT`. Data type input accepts
-case-insensitive aliases such as `text`, `number`, `url`, and `data`.
+type. Suggestions preserve digits after the first ASCII letter, so
+`Attribute 2` suggests `Attribute_2`. Press Enter at the data type prompt to
+use `TEXT`. Data type input accepts case-insensitive aliases such as `text`,
+`number`, `url`, and `data`.
 
 Example:
 
 ```text
 VedenemoCli[Example_Model/Customer]>attr add
-Attribute visible name: Email Address
-Attribute azName [Email_Address]:
+Attribute visible name: Email Address 2
+Attribute azName [Email_Address_2]:
 Attribute data type [TEXT]: url
-Attribute Email_Address added.
+Attribute Email_Address_2 added.
 VedenemoCli[Example_Model/Customer]>
 ```
 
@@ -264,7 +268,14 @@ created through `attr add`.
 
 ```text
 VedenemoCli[Example_Model]>undo
-Undo completed.
+Undo completed: removed entity Customer from model Example_Model.
+```
+
+Attribute creation undo includes the model and entity context:
+
+```text
+VedenemoCli[Example_Model/Customer]>undo
+Undo completed: removed attribute Email from entity Customer in model Example_Model.
 ```
 
 If there is no command to undo:
