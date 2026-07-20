@@ -1,6 +1,7 @@
 package org.vedenemo.app;
 
 import org.vedenemo.core.command.CommandExecutor;
+import org.vedenemo.core.command.ModelCommandJournal;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.Session;
 import org.vedenemo.core.session.SessionManager;
@@ -23,7 +24,7 @@ public final class VedenemoApp {
     }
 
     public static CommandExecutor createCommandExecutor(Session session, ModelRegistry modelRegistry) {
-        return new CommandExecutor(new InMemoryModelStorage(), modelRegistry, session);
+        return new CommandExecutor(new InMemoryModelStorage(), modelRegistry, new ModelCommandJournal(), session);
     }
 
     public static ModelRegistry createModelRegistry() {
@@ -35,6 +36,10 @@ public final class VedenemoApp {
     }
 
     public static SessionManager createSessionManager(ModelRegistry modelRegistry) {
-        return new SessionManager(new InMemoryModelStorage(), modelRegistry);
+        return new SessionManager(new InMemoryModelStorage(), modelRegistry, new ModelCommandJournal());
+    }
+
+    public static SessionManager createSessionManager(ModelRegistry modelRegistry, ModelCommandJournal commandJournal) {
+        return new SessionManager(new InMemoryModelStorage(), modelRegistry, commandJournal);
     }
 }

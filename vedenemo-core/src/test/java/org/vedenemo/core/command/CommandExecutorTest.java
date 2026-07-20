@@ -28,6 +28,7 @@ final class CommandExecutorTest {
         assertEquals(fixture.modelRoot.version(), fixture.modelRoot.entities().getFirst().activeSince());
         assertTrue(fixture.modelRoot.entities().getFirst().attributes().isEmpty());
         assertEquals(1, fixture.session.commandHistory().size());
+        assertEquals(1, fixture.commandJournal.listForModel("Example_Model").size());
     }
 
     @Test
@@ -55,6 +56,7 @@ final class CommandExecutorTest {
 
         assertTrue(fixture.modelRoot.entities().isEmpty());
         assertTrue(fixture.session.commandHistory().isEmpty());
+        assertTrue(fixture.commandJournal.listForModel("Example_Model").isEmpty());
     }
 
     @Test
@@ -178,6 +180,8 @@ final class CommandExecutorTest {
         assertTrue(fixture.modelRoot.entities().getFirst().attributes().isEmpty());
         assertEquals(1, fixture.session.commandHistory().size());
         assertTrue(fixture.session.latestCommand().orElseThrow() instanceof CreateEntityCommand);
+        assertEquals(1, fixture.commandJournal.listForModel("Example_Model").size());
+        assertTrue(fixture.commandJournal.listForModel("Example_Model").getFirst() instanceof CreateEntityCommand);
     }
 
     @Test
@@ -215,11 +219,12 @@ final class CommandExecutorTest {
         ModelRoot modelRoot = ModelRoot.create("Example_Model", "Example Model", "1.2.3");
         modelRegistry.add(modelRoot);
         Session session = Session.create();
-        CommandExecutor executor = new CommandExecutor(new TestModelStorage(), modelRegistry, session);
-        return new Fixture(modelRoot, session, executor);
+        ModelCommandJournal commandJournal = new ModelCommandJournal();
+        CommandExecutor executor = new CommandExecutor(new TestModelStorage(), modelRegistry, commandJournal, session);
+        return new Fixture(modelRoot, session, executor, commandJournal);
     }
 
-    private record Fixture(ModelRoot modelRoot, Session session, CommandExecutor executor) {
+    private record Fixture(ModelRoot modelRoot, Session session, CommandExecutor executor, ModelCommandJournal commandJournal) {
     }
 
     private static final class TestModelStorage implements ModelStorage {

@@ -1,12 +1,15 @@
 package org.vedenemo.cli;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -15,6 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class VedenemoCliAppTest {
+
+    @TempDir
+    private Path tempDirectory;
 
     @Test
     void startsSessionShowsPromptAndCleansUpOnExit() {
@@ -55,6 +61,8 @@ final class VedenemoCliAppTest {
         assertTrue(result.output.contains("attributes - list attributes in the selected entity"));
         assertTrue(result.output.contains("attr add - add an attribute to the selected entity"));
         assertTrue(result.output.contains("undo - undo the latest backend command"));
+        assertTrue(result.output.contains("save [N | azName] [outputPath] - save a model to a .vdos file"));
+        assertTrue(result.output.contains("load <path> - load a model from a .vdos file"));
         assertTrue(result.output.contains("exit - end the session and exit"));
     }
 
@@ -459,7 +467,137 @@ final class VedenemoCliAppTest {
         assertTrue(result.output.contains("Unexpected response code: 500"));
     }
 
+    @Test
+    void saveWithoutArgumentUsesAttachedModelAndDefaultPromptPath() throws Exception {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.exportedScript = "vedenemo-script 1\n";
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                new TestCommandClient(),
+                "attach Example_Model\nsave\n\nexit\n",
+                tempDirectory
+        );
+
+        assertEquals("Example_Model", modelClient.exportedModelAzName);
+        assertEquals("vedenemo-script 1\n", Files.readString(tempDirectory.resolve("Example_Model.vdos"), StandardCharsets.UTF_8));
+        assertTrue(result.output.contains("Output file [Example_Model.vdos]: "));
+        assertTrue(result.output.contains("Saved model Example_Model to "));
+    }
+
+    @Test
+    void saveByListNumberUsesInlinePathAndAddsExtension() throws Exception {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.exportedScript = "script";
+
+        run(sessionClient, modelClient, new TestCommandClient(), "list\nsave 1 export-file\nexit\n", tempDirectory);
+
+        assertEquals("Example_Model", modelClient.exportedModelAzName);
+        assertEquals("script", Files.readString(tempDirectory.resolve("export-file.vdos"), StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void savePromptsBeforeOverwritingExistingFile() throws Exception {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.exportedScript = "new";
+        Files.writeString(tempDirectory.resolve("Example_Model.vdos"), "old", StandardCharsets.UTF_8);
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                new TestCommandClient(),
+                "attach Example_Model\nsave\n\ny\nexit\n",
+                tempDirectory
+        );
+
+        assertEquals("new", Files.readString(tempDirectory.resolve("Example_Model.vdos"), StandardCharsets.UTF_8));
+        assertTrue(result.output.contains("Overwrite? [y/N]: "));
+    }
+
+    @Test
+    void saveWithoutAttachedModelOrArgumentPrintsMessage() {
+        Result result = run(
+                new TestSessionClient(UUID.randomUUID()),
+                new TestModelClient(),
+                new TestCommandClient(),
+                "save\nexit\n",
+                tempDirectory
+        );
+
+        assertTrue(result.output.contains("Attach a model or provide a model number or azName before saving."));
+    }
+
+    @Test
+    void loadReadsFileAutoAddsExtensionImportsAndAttachesModel() throws Exception {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        Files.writeString(tempDirectory.resolve("example.vdos"), "vedenemo-script 1\n", StandardCharsets.UTF_8);
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                new TestCommandClient(),
+                "load example\nexit\n",
+                tempDirectory
+        );
+
+        assertEquals("vedenemo-script 1\n", modelClient.importedScript);
+        assertEquals("Imported_Model", sessionClient.selectedModelAzName);
+        assertTrue(result.output.contains("Loaded model Imported_Model from "));
+        assertTrue(result.output.contains("with 2 commands."));
+    }
+
+    @Test
+    void loadMissingFilePrintsMessage() {
+        Result result = run(
+                new TestSessionClient(UUID.randomUUID()),
+                new TestModelClient(),
+                new TestCommandClient(),
+                "load missing\nexit\n",
+                tempDirectory
+        );
+
+        assertTrue(result.output.contains("File not found: "));
+    }
+
+    @Test
+    void loadDuplicatePromptsForRenameAndRetries() throws Exception {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.importFailuresBeforeSuccess = 1;
+        Files.writeString(tempDirectory.resolve("example.vdos"), "script", StandardCharsets.UTF_8);
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                new TestCommandClient(),
+                "load example\nRenamed_Model\nexit\n",
+                tempDirectory
+        );
+
+        assertEquals("Renamed_Model", modelClient.importedOverride);
+        assertEquals("Renamed_Model", sessionClient.selectedModelAzName);
+        assertTrue(result.output.contains("New model azName for import, or blank to cancel: "));
+    }
+
     private static Result run(TestSessionClient sessionClient, TestModelClient modelClient, CommandClient commandClient, String input) {
+        return run(sessionClient, modelClient, commandClient, input, Path.of("").toAbsolutePath());
+    }
+
+    private static Result run(
+            TestSessionClient sessionClient,
+            TestModelClient modelClient,
+            CommandClient commandClient,
+            String input,
+            Path workingDirectory
+    ) {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         VedenemoCliApp app = new VedenemoCliApp(
                 sessionClient,
@@ -467,7 +605,8 @@ final class VedenemoCliAppTest {
                 commandClient,
                 new ByteArrayInputStream(input.getBytes(StandardCharsets.UTF_8)),
                 new PrintStream(output, true, StandardCharsets.UTF_8),
-                false
+                false,
+                workingDirectory
         );
         return new Result(app.run(), output.toString(StandardCharsets.UTF_8));
     }
@@ -513,6 +652,11 @@ final class VedenemoCliAppTest {
         private final List<EntitySummary> entities = new ArrayList<>();
         private final List<AttributeSummary> attributes = new ArrayList<>();
         private IOException addFailure;
+        private String exportedScript = "";
+        private String exportedModelAzName;
+        private String importedScript;
+        private String importedOverride;
+        private int importFailuresBeforeSuccess;
 
         @Override
         public List<ModelSummary> listModels() {
@@ -537,6 +681,25 @@ final class VedenemoCliAppTest {
         @Override
         public List<AttributeSummary> listAttributes(String modelAzName, String entityAzName) {
             return List.copyOf(attributes);
+        }
+
+        @Override
+        public String exportScript(String modelAzName) {
+            exportedModelAzName = modelAzName;
+            return exportedScript;
+        }
+
+        @Override
+        public ModelImportResult importScript(String script, String modelAzNameOverride) throws IOException {
+            importedScript = script;
+            importedOverride = modelAzNameOverride;
+            if (importFailuresBeforeSuccess > 0) {
+                importFailuresBeforeSuccess--;
+                throw new ModelAlreadyExistsException("model load failed with HTTP status 409: duplicate");
+            }
+            String modelAzName = modelAzNameOverride == null ? "Imported_Model" : modelAzNameOverride;
+            models.add(new ModelSummary(modelAzName, modelAzName, "1.0.0"));
+            return new ModelImportResult(modelAzName, 2);
         }
     }
 

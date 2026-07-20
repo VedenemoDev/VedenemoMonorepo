@@ -1780,3 +1780,381 @@ All planning questions were resolved before execution.
 - Added focused model/core, web API, and CLI tests.
 - Updated `docs/cli-reference.md` and `docs/architecture_doc.md`.
 - `mvn -B clean verify` passed during implementation.
+
+---
+
+## Add CLI Save And Load For Vedenemo Script Files
+
+Status: executed. Full task text retained here for history.
+
+### Goal
+
+Add `save` and `load` commands to `VedenemoCli` using a new text-based
+Vedenemo Script file format with the `.vdos` extension.
+
+`save` should export a selected model from the backend through HTTP, including
+the model metadata, full model structure, and executed command history, then
+write the result as UTF-8 text to a local file.
+
+`load` should read a `.vdos` file from the local filesystem and send it to the
+backend so the backend can recreate the model and command history.
+
+### Recommended Direction
+
+Use a script-like `.vdos` format, not a CLI-private data dump.
+
+The file should be human-readable, UTF-8, and stable enough that users can
+inspect and manually edit it when needed. It should also be backend-owned in
+meaning: the CLI should move `.vdos` text between local disk and HTTP endpoints,
+but should not contain the main replay/import rules.
+
+This is preferable to a CLI-owned data dump because:
+
+- command history already lives in backend session state, not in the CLI;
+- future database persistence should happen behind backend adapter/API layers;
+- load/replay behavior should be testable without the interactive CLI;
+- a script-like format can become the common interchange format for local files,
+  backend import/export, and later persistence migrations;
+- stable HTTP/API command slugs already exist for undo metadata and can also be
+  used as script command names.
+
+The CLI can still own local user interaction:
+
+- model target resolution from current attachment, list number, or `azName`;
+- output path prompting and `.vdos` extension handling;
+- UTF-8 file read/write;
+- friendly messages for missing models, invalid parameters, missing files, and
+  backend import/export errors.
+
+### Current Starting Point
+
+Current backend state:
+
+- `ModelRegistry` stores current `ModelRoot` instances.
+- `Session` records executed `Command` instances in order.
+- `CommandExecutor` can execute and undo command records.
+- HTTP currently exposes model listing, entity listing, attribute listing, and
+  command execution endpoints.
+- HTTP does not yet expose a model export endpoint that combines model metadata,
+  nested model structure, and command history.
+- HTTP does not yet expose a load/import endpoint.
+
+Current CLI state:
+
+- `VedenemoCliApp` tracks the attached model and latest `list` result.
+- `attach [N | azName]` already resolves models by latest list number or
+  case-insensitive `azName`.
+- `save` can reuse the same target resolution behavior.
+- `load` will need path handling and an HTTP client method for import.
+
+### Proposed `.vdos` Shape
+
+The first `.vdos` format should be line-oriented and intentionally simple.
+
+Recommended shape:
+
+```text
+vedenemo-script 1
+
+model azName=Example_Model visName="Example Model" version=1.0.0
+
+commands
+create-entity model=Example_Model entity=Customer visName="Customer" activeSince=1.0.0
+create-attribute model=Example_Model entity=Customer attribute=Email visName="Email" dataType=TEXT activeSince=1.0.0
+
+snapshot
+entity azName=Customer visName="Customer" activeSince=1.0.0 deprecatedSince=null
+attribute entity=Customer azName=Email visName="Email" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+```
+
+Guidelines:
+
+- The first line declares the format and version.
+- Command names use stable HTTP/API slugs, such as `create-entity` and
+  `create-attribute`.
+- The command section is authoritative for import/replay.
+- The snapshot section records the final model tree and is used for readability
+  and validation after replay.
+- Values are explicit key/value pairs so ordering is readable and extensions are
+  possible.
+- Text values are quoted and escaped when needed.
+- `visName` values are stored as UTF-8 text.
+- Model metadata is explicit.
+- Entity and attribute lifecycle version fields are explicit in the script.
+- The command list is the replayable source of how the model was built, while
+  the snapshot is checked against the replay result.
+
+Recommended initial implementation should include both:
+
+- a model snapshot section for readable current state and validation;
+- a command section that is authoritative for replay/import.
+
+That makes the file useful for humans while still keeping command history
+available for undo/replay-related development.
+
+Settled format decision details:
+
+- Command-script authoritative means the backend trusts and replays the command
+  lines to recreate the model. A snapshot, if present, is only a readable
+  comment/validation aid. This keeps one source of truth and fits undo/replay
+  semantics well, but the import can only recreate states expressible by known
+  commands.
+- Snapshot authoritative means the backend trusts the final model tree section
+  and command lines are informational history. This can load final state even if
+  the command list is incomplete, but it risks drift between the snapshot and
+  command history.
+- Both command and snapshot sections can be present with commands authoritative:
+  import replays commands and then validates that the resulting model matches
+  the snapshot. This is stricter and more useful for humans, but requires more
+  serializer/parser work in the first implementation.
+
+### Backend / HTTP Scope
+
+Add backend endpoints for export and import instead of requiring the CLI to
+compose or interpret the full format.
+
+Recommended endpoints:
+
+```text
+GET /models/{modelAzName}/script
+POST /models/script
+```
+
+Recommended export behavior:
+
+- Resolve `modelAzName` case-insensitively using existing model rules.
+- Return `404` if the model is not found.
+- Return UTF-8 `text/plain` `.vdos` content.
+- Include model metadata, all entities, all attributes, lifecycle version
+  fields, and command history for that model.
+- Read command history from the model-level command journal, not from the
+  current CLI session.
+
+Recommended import behavior:
+
+- Accept UTF-8 `.vdos` text.
+- Parse and validate the script server-side.
+- Recreate model state through Vedenemo-owned command/application services, not
+  by CLI-local object construction.
+- Return a structured result with imported model `azName`, command count, and
+  whether the model was created, replaced, or rejected.
+- If the script model `azName` already exists, reject first with a clear backend
+  error. The CLI should then prompt the user and offer to retry with a new
+  model `azName`.
+
+Implementation note:
+
+- `vedenemo-core` must remain pure JDK. If a reusable script parser/serializer is
+  needed, keep it Vedenemo-owned and JDK-only in an appropriate Vedenemo module.
+- `vedenemo-web-api` can handle HTTP content negotiation and DTO mapping.
+- Avoid adding JSON/YAML/TOML as the `.vdos` format unless explicitly chosen;
+  current direction is a Vedenemo-owned text script.
+
+### CLI `save` Scope
+
+Add command:
+
+```text
+save [N | azName] [outputPath]
+```
+
+Behavior:
+
+- If an argument is provided, resolve it as a latest-list number or model
+  `azName`, following `attach` conventions.
+- If no argument is provided, save the currently attached model.
+- If no argument and no attached model, print a friendly message and do nothing.
+- If the argument is invalid or cannot be resolved, print a friendly message and
+  do nothing.
+- After resolving the model, request the `.vdos` text from the backend export
+  endpoint.
+- Suggest output file name `<modelAzName>.vdos` in the CLI start/current working
+  directory.
+- If an output path is provided inline, use it after extension and overwrite
+  handling.
+- If no output path is provided inline, let the user accept the default or enter
+  another file name/path at the prompt.
+- If the user gives no extension, append `.vdos`.
+- If the user gives `.vdos`, do not duplicate it.
+- Write the file as UTF-8 text.
+- Report the saved path and model `azName`.
+- Handle write failures gracefully.
+
+Settled save command flow:
+
+- Prompt-only flow:
+  - `save`
+  - `save Customer_Model`
+  - `save 1`
+  - After model resolution, CLI prompts:
+
+```text
+Output file [Customer_Model.vdos]:
+```
+
+  This is simpler interactively and avoids ambiguity, but is weaker for scripts
+  and non-interactive usage.
+
+- Inline optional output path flow:
+  - `save`
+  - `save Customer_Model`
+  - `save 1`
+  - `save Customer_Model ./exports/customer.vdos`
+  - `save 1 ./exports/customer`
+
+  This is better for repeatable shell usage. It requires parsing two optional
+  arguments: the first model selector, the second output path. The output path
+  should not be treated as a model selector.
+
+- Hybrid flow:
+  - Support inline output path when provided.
+  - Otherwise prompt with the default `<modelAzName>.vdos`.
+
+  This is the selected flow. It gives good interactive ergonomics while still
+  supporting repeatable shell usage.
+
+### CLI `load` Scope
+
+Add command:
+
+```text
+load <path>
+```
+
+Behavior:
+
+- Accept either a fully qualified path or a path relative to the CLI current
+  working directory.
+- If no extension is given, append `.vdos` for convenience.
+- If the file is not found, print a friendly message and do nothing.
+- Read file as UTF-8 text.
+- Send the file content to the backend import endpoint.
+- Print imported model `azName`, command count, and backend result.
+- Automatically attach the CLI session to the imported model after a successful
+  load.
+
+### Command History Considerations
+
+This task should explicitly decide where command history comes from.
+
+Recommended:
+
+- Introduce a model-level command journal so backend export is independent of
+  CLI session lifetime.
+- The backend export endpoint reads command history from the model-level journal
+  and serializes only commands belonging to the target model.
+- The CLI should not reconstruct command history by comparing model snapshots.
+- Loaded commands are treated as persisted baseline state with no undo available
+  from the load operation.
+
+Current limitation:
+
+- `Session.commandHistory()` is session-scoped. If multiple sessions can modify
+  the same model, a pure session export may not contain the full model command
+  history. This task should address that by adding model-level command history
+  before relying on `.vdos` export.
+
+### Duplicate / Existing Model Handling
+
+The import path needs a deterministic behavior when the `.vdos` file contains a
+model `azName` already present in the backend.
+
+Options:
+
+- reject with a clear message;
+- prompt in the CLI to replace;
+- import under a new `azName`;
+- merge commands into the existing model.
+
+Recommended first version:
+
+- reject first with a clear backend error;
+- CLI should then ask whether the user wants to retry import using a new model
+  `azName`;
+- defer replace and merge until edit and persistence semantics are clearer.
+
+### Resolved Planning Decisions
+
+- `.vdos` should include both command lines and a final model snapshot, with
+  command lines authoritative. Import should replay commands and validate the
+  resulting model against the snapshot. This makes manual edits slightly harder
+  because both sections must stay consistent, but keeps replay semantics clean
+  and the file readable.
+- Backend export should use a model-level command journal instead of current
+  session command history.
+- Duplicate model `azName` on load should reject first, then offer the user a
+  rename retry flow.
+- After successful `load`, CLI should automatically attach to the loaded model.
+- Imported command history should be treated as baseline state with no undo
+  available from the load operation.
+- `save` should use a hybrid output path flow: accept an inline output path when
+  provided, otherwise prompt with editable default `<modelAzName>.vdos`.
+- `load` should auto-resolve a missing extension by appending `.vdos`.
+- Saving over an existing local file should prompt for overwrite confirmation.
+
+### Tests / Verification
+
+At minimum, implementation should add focused tests for:
+
+- `.vdos` serialization includes model metadata, entities, attributes, lifecycle
+  fields, and command lines.
+- command history export includes only commands for the selected model.
+- export of an unknown model returns a clear not-found response.
+- import of a valid `.vdos` file creates the model and replays commands.
+- import of a missing/invalid script reports a clear error.
+- duplicate model import follows the resolved rule.
+- CLI `save` with attached model uses the attached model when no argument is
+  provided.
+- CLI `save N` resolves from the latest model list.
+- CLI `save azName` resolves case-insensitively.
+- CLI output path handling appends `.vdos` only when needed.
+- CLI `load` handles missing files gracefully.
+- CLI `load` sends UTF-8 file content to the backend.
+
+At minimum, run:
+
+```bash
+mvn -B clean verify
+```
+
+If practical, run a local backend plus CLI smoke test:
+
+- create a model with at least one entity and one attribute;
+- run `save`;
+- verify a `.vdos` file is written as UTF-8 text;
+- start a clean backend or use an empty model name;
+- run `load`;
+- verify the model, entities, attributes, and command count are available.
+
+### Documentation
+
+After implementation:
+
+- Update `docs/cli-reference.md` with `save` and `load` usage.
+- Document `.vdos` file naming behavior and extension handling.
+- Document the initial `.vdos` text format with a short example.
+- Update `docs/architecture_doc.md` if new backend endpoints, script
+  serialization components, command history ownership, or load/import flows are
+  added.
+
+Before updating `docs/architecture_doc.md`, read and follow
+`docs/architecture_doc_instructions.md`.
+
+### Open Questions
+
+No open planning questions remain.
+
+### Completion Notes
+
+- Promoted the task to `tasks/current-task.md` and executed it.
+- Added backend-owned `.vdos` script import/export support in core.
+- Added model-level command journaling for model-targeting commands.
+- Added backend HTTP script export/import endpoints.
+- Added CLI `save [N | azName] [outputPath]` and `load <path>`.
+- Implemented UTF-8 file I/O, `.vdos` extension handling, overwrite
+  confirmation, duplicate-load rename retry, and auto-attach after load.
+- Treated loaded commands as baseline state with no current-session undo stack
+  entries.
+- Updated CLI and architecture documentation.
+- Added focused core, web API, and CLI tests.
+- `mvn -B clean verify` passed during implementation.

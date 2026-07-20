@@ -1,37 +1,53 @@
 # Current Task
 
-## Improve CLI azName Suggestions And Undo Feedback
+## Add CLI Save And Load For Vedenemo Script Files
 
 Status: executed.
 
 ### Goal
 
-Improve two CLI usability details:
+Add `save` and `load` commands to `VedenemoCli` using a new text-based
+Vedenemo Script file format with the `.vdos` extension.
 
-- `azName` suggestions should preserve useful numeric suffixes from visible
-  names, so `Attribute 2` suggests `Attribute_2` instead of `Attribute`.
-- `undo` output should describe what kind of operation was undone instead of
-  only printing `Undo completed.`
+`save` exports a selected model from the backend through HTTP, including model
+metadata, the full model structure, and executed command history, then writes
+the result as UTF-8 text to a local file.
+
+`load` reads a `.vdos` file from the local filesystem and sends it to the
+backend so the backend can recreate the model as baseline state.
 
 ### Scope
 
-- Allow ASCII digits after the first ASCII letter for all `azName` values in
-  `ModelRoot`, `VEntity`, and `VAttribute`.
-- Keep `azName` starting-character validation unchanged: names must start with
-  an ASCII letter.
-- Keep hyphens invalid.
-- Update CLI `azName` suggestion behavior so digit runs are preserved after the
-  suggestion has started with an ASCII letter.
-- Enrich core undo results with stable HTTP/API slug command identifiers:
-  `create-entity` and `create-attribute`.
-- Update `POST /sessions/{uuid}/commands/undo` to return target details for a
-  successful undo.
-- Update CLI undo output:
+- Introduce backend-owned `.vdos` script serialization and parsing.
+- Keep the CLI responsible only for model/path selection, UTF-8 file I/O, and
+  user-facing messages.
+- Use command lines plus a final model snapshot, with commands authoritative and
+  snapshot used for validation/readability.
+- Introduce model-level command history for export so `.vdos` output is not tied
+  to current CLI session lifetime.
+- Add HTTP endpoints:
 
 ```text
-Undo completed: removed entity Customer from model Example_Model.
-Undo completed: removed attribute Email from entity Customer in model Example_Model.
+GET /models/{modelAzName}/script
+POST /models/script
 ```
+
+- Add CLI commands:
+
+```text
+save [N | azName] [outputPath]
+load <path>
+```
+
+- Use hybrid save path handling: inline output path when provided, otherwise
+  prompt with editable default `<modelAzName>.vdos`.
+- Append `.vdos` to save/load paths when no extension is provided.
+- Prompt before overwriting an existing local save target.
+- On duplicate model `azName` during load, reject first and offer a rename retry
+  flow.
+- Automatically attach to a successfully loaded model.
+- Treat loaded commands as baseline state with no undo available from the load
+  operation.
 
 ### Verification
 
@@ -41,25 +57,30 @@ At minimum, run:
 mvn -B clean verify
 ```
 
-If practical, run a non-interactive local backend plus CLI smoke test for:
-
-- add model with numeric suffix
-- add entity with numeric suffix
-- select entity
-- add attribute with numeric suffix
-- undo attribute creation and verify specific undo output
-- undo entity creation and verify specific undo output
-- exit
+If practical, run a local backend plus CLI smoke test that creates a model,
+saves it, loads it, and verifies the loaded model data is available.
 
 ### Completion Notes
 
-- Updated shared `azName` validation to allow ASCII digits after the first
-  ASCII letter while still rejecting leading digits and hyphens.
-- Updated CLI `azName` suggestions to preserve numeric suffixes.
-- Replaced generic undo success with richer undo result metadata using stable
-  HTTP/API slug names.
-- Updated the undo HTTP response and CLI output to report the undone operation
-  and target.
-- Added focused model/core, web API, and CLI tests.
+- Added pure-JDK core `.vdos` script import/export support.
+- Added a model-level `ModelCommandJournal` so export uses model command history
+  instead of session-only undo history.
+- Updated command execution and undo so successful model-targeting commands are
+  recorded in the journal and undone commands are removed from it.
+- Added HTTP endpoints:
+
+```text
+GET /models/{modelAzName}/script
+POST /models/script
+```
+
+- Added CLI `save [N | azName] [outputPath]` with attached-model default,
+  list-number and `azName` target resolution, `.vdos` extension handling, prompt
+  fallback, UTF-8 writes, and overwrite confirmation.
+- Added CLI `load <path>` with `.vdos` extension handling, UTF-8 reads,
+  duplicate import rename retry, and automatic attach to the loaded model.
+- Loaded `.vdos` commands are imported as baseline model state and are not added
+  to the current session undo stack.
 - Updated `docs/cli-reference.md` and `docs/architecture_doc.md`.
+- Added focused core, web API, and CLI tests.
 - `mvn -B clean verify` passed.

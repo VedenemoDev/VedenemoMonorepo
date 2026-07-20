@@ -2,6 +2,7 @@ package org.vedenemo.web.api;
 
 import io.javalin.Javalin;
 import org.vedenemo.app.VedenemoApp;
+import org.vedenemo.core.command.ModelCommandJournal;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.SessionManager;
 import org.vedenemo.web.api.http.CorsSupport;
@@ -22,19 +23,30 @@ public final class VedenemoWebApi {
 
     public static Javalin create(WebApiConfig config) {
         ModelRegistry modelRegistry = VedenemoApp.createModelRegistry();
-        return create(config, modelRegistry, VedenemoApp.createSessionManager(modelRegistry));
+        ModelCommandJournal commandJournal = new ModelCommandJournal();
+        return create(config, modelRegistry, VedenemoApp.createSessionManager(modelRegistry, commandJournal), commandJournal);
     }
 
     public static Javalin create(WebApiConfig config, ModelRegistry modelRegistry) {
-        return create(config, modelRegistry, VedenemoApp.createSessionManager(modelRegistry));
+        ModelCommandJournal commandJournal = new ModelCommandJournal();
+        return create(config, modelRegistry, VedenemoApp.createSessionManager(modelRegistry, commandJournal), commandJournal);
     }
 
     public static Javalin create(WebApiConfig config, ModelRegistry modelRegistry, SessionManager sessionManager) {
+        return create(config, modelRegistry, sessionManager, sessionManager.commandJournal());
+    }
+
+    public static Javalin create(
+            WebApiConfig config,
+            ModelRegistry modelRegistry,
+            SessionManager sessionManager,
+            ModelCommandJournal commandJournal
+    ) {
         return Javalin.create(javalinConfig -> {
             javalinConfig.startup.showJavalinBanner = false;
             javalinConfig.routes.before(context -> CorsSupport.apply(context, config));
             javalinConfig.routes.options("/*", context -> context.status(204));
-            new ModelsResource(modelRegistry).register(javalinConfig.routes);
+            new ModelsResource(modelRegistry, commandJournal).register(javalinConfig.routes);
             new SessionResource(sessionManager, modelRegistry).register(javalinConfig.routes);
         });
     }

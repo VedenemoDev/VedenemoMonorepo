@@ -259,6 +259,69 @@ exists in the entity, the CLI prints the failure and keeps the current context:
 Attribute was not added: attribute add failed with HTTP status 400: ...
 ```
 
+### `save [N | azName] [outputPath]`
+
+Saves a model to a UTF-8 Vedenemo Script file with the `.vdos` extension.
+
+If no model selector is provided, `save` uses the currently attached model. If a
+selector is provided, it can be a model number from the latest `list` output or
+a case-insensitive model `azName`.
+
+If an output path is provided on the command line, the CLI uses it directly. If
+no output path is provided, the CLI prompts with an editable default based on
+the model `azName`:
+
+```text
+VedenemoCli[Example_Model]>save
+Output file [Example_Model.vdos]:
+Saved model Example_Model to /current/directory/Example_Model.vdos.
+```
+
+Examples:
+
+```text
+save
+save 1
+save Example_Model
+save Example_Model ./exports/example
+save 1 /tmp/example.vdos
+```
+
+If the selected output path has no extension, `.vdos` is appended. If the file
+already exists, the CLI asks before overwriting it.
+
+The `.vdos` content is backend-generated. It contains model metadata, an
+authoritative command section, and a snapshot section used for readability and
+validation.
+
+### `load <path>`
+
+Loads a model from a UTF-8 `.vdos` file and imports it through the backend.
+
+The path can be absolute or relative to the directory where the CLI was started.
+If the path has no extension, `.vdos` is appended.
+
+Example:
+
+```text
+VedenemoCli>load ./exports/example
+Attached to model Example_Model.
+Loaded model Example_Model from /current/directory/exports/example.vdos with 2 commands.
+VedenemoCli[Example_Model]>
+```
+
+After a successful load, the CLI automatically attaches to the loaded model.
+Loaded commands become baseline model state and are not added to the current
+session undo stack.
+
+If the backend rejects the load because the model `azName` already exists, the
+CLI asks for a replacement import `azName` or lets the user cancel:
+
+```text
+model load failed with HTTP status 409: ...
+New model azName for import, or blank to cancel:
+```
+
 ### `undo`
 
 Asks the backend to undo the latest executed command for the current session.

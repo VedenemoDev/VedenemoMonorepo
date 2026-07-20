@@ -2349,3 +2349,217 @@ serialization, CLI output, tests, docs, and task records.
 
 Next steps: Stage all changes, commit, push to `origin/main`, and verify the
 branch status.
+
+## 2026-07-20 16:41 EEST
+
+Goal: Plan CLI `save` and `load` support for `.vdos` Vedenemo Script files.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,240p' docs/architecture/module-map.md`
+- `sed -n '1,260p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/first-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `tail -n 220 tasks/backlog.md`
+- `rg -n "commands|models|sessions|snapshot|history|save|load|Command" vedenemo-core/src/main/java vedenemo-web-api/src/main/java vedenemo-cli/src/main/java`
+- `sed -n '1,260p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '1,260p' vedenemo-cli/src/main/java/org/vedenemo/cli/HttpCommandClient.java`
+- `sed -n '1,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/session/Session.java`
+- `sed -n '1,180p' vedenemo-core/src/main/java/org/vedenemo/core/command/CreateEntityCommand.java`
+- `sed -n '1,180p' vedenemo-core/src/main/java/org/vedenemo/core/command/CreateAttributeCommand.java`
+- `sed -n '1,220p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `sed -n '1,180p' vedenemo-cli/src/main/java/org/vedenemo/cli/CommandClient.java`
+- `nl -ba tasks/backlog.md | tail -n 140`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added the planning backlog item `Add CLI Save And Load For Vedenemo
+Script Files`. The task recommends a backend-owned, script-like `.vdos` format
+with CLI-local file handling and backend export/import endpoints, and records
+open questions for format authority, command history ownership, duplicate
+imports, attachment behavior, undo stack behavior, path arguments, extension
+completion, and overwrites.
+
+Next steps: Resolve the open planning questions before promoting the task to
+`tasks/current-task.md`.
+
+## 2026-07-20 17:23 EEST
+
+Goal: Settle the remaining `.vdos` save/load planning questions.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1786,2140p' tasks/backlog.md`
+- `sed -n '2140,2195p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Moved the final `.vdos` authority and `save` output path decisions into
+resolved planning decisions. The backlog task now records commands plus snapshot
+with commands authoritative, and hybrid `save` path handling. No open planning
+questions remain.
+
+Next steps: Review the settled planning task before promoting it to
+`tasks/current-task.md`.
+
+## 2026-07-20 17:36 EEST
+
+Goal: Clarify `.vdos` planning example lifecycle metadata.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1840,1935p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Updated the `.vdos` example in the save/load backlog task so entity and
+attribute lifecycle version fields are explicit. The example now shows both
+authoritative command lines and a validation/readability snapshot section.
+
+Next steps: Review the settled save/load planning task before promoting it to
+`tasks/current-task.md`.
+
+## 2026-07-20 17:48 EEST
+
+Goal: Remove stale open wording from the `.vdos` save planning task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `rg -n "Open design detail|remaining save command flow decision|No open planning questions|Settled save command flow" tasks/backlog.md`
+- `sed -n '1950,2025p' tasks/backlog.md`
+
+Status: Replaced stale open save-path and format-decision wording with settled
+hybrid save command flow and settled format decision text. The backlog task
+still states that no open planning questions remain.
+
+Next steps: Review the settled save/load planning task before promoting it to
+`tasks/current-task.md`.
+
+## 2026-07-20 18:08 EEST
+
+Goal: Execute the `.vdos` save/load task as the current task.
+
+Files changed:
+
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `docs/cli-reference.md`
+- `docs/architecture_doc.md`
+- `vedenemo-app/src/main/java/org/vedenemo/app/VedenemoApp.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/ModelCommandJournal.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptImportResult.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/session/SessionManager.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/ModelAlreadyExistsException.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/ModelClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/ModelImportResult.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- required project context reads from `docs/architecture/*`,
+  `docs/roadmap/first-milestone.md`, `tasks/current-task.md`,
+  `tasks/backlog.md`, and `SESSION.md`
+- focused source/test reads for CLI, core command/session, web resources, and
+  model API classes
+- `mvn -B test`
+- `mvn -B test -rf :vedenemo-core` (failed because sibling snapshot artifacts
+  were not installed outside the full reactor)
+- `mvn -B clean verify`
+- local backend plus CLI save/load smoke test on port `18087`
+- `git diff --check`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Implemented backend-owned `.vdos` save/load support. Core now owns
+script import/export and model-level command journaling. Web API exposes script
+export/import endpoints. CLI supports `save [N | azName] [outputPath]` and
+`load <path>` with UTF-8 file I/O, `.vdos` extension handling, overwrite
+confirmation, duplicate import rename retry, and auto-attach after load. The
+current task and historical backlog item are marked executed.
+
+Verification: `mvn -B clean verify` passed. The live smoke test passed after
+rerunning outside the sandbox because localhost socket binding was blocked
+inside the sandbox. `git diff --check` passed.
+
+Next steps: Review the implementation diff and commit if acceptable.
+
+## 2026-07-20 18:12 EEST
+
+Goal: Commit and push the executed `.vdos` save/load task.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff --stat`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Preparing a detailed commit containing backend-owned `.vdos` script
+import/export, model-level command journaling, web API script endpoints, CLI
+save/load commands, focused tests, documentation, and executed task records.
+
+Next steps: Stage all changes, commit with a detailed message, push to
+`origin/main`, and verify clean branch status.
+
+## 2026-07-20 17:08 EEST
+
+Goal: Update `.vdos` save/load planning decisions and elaborate remaining
+questions.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `rg -n "Add CLI Save And Load|Open Questions|Recommended first version" tasks/backlog.md`
+- `sed -n '1780,2110p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+
+Status: Updated the backlog task with resolved decisions for model-level command
+journals, duplicate import handling with rename retry, auto-attach after load,
+baseline load undo behavior, `.vdos` extension auto-resolution for load, and
+overwrite confirmation. Expanded the remaining questions about `.vdos` authority
+and `save` path argument flow with concrete options and recommendations.
+
+Next steps: Resolve the remaining two planning decisions before promoting the
+task to `tasks/current-task.md`.

@@ -32,6 +32,8 @@ end
 
 subgraph Core["Core"]
     CoreModule["vedenemo-core<br/>CommandExecutor, commands, undo"]
+    ScriptService["VedenemoScriptService<br/>.vdos import/export"]
+    CommandJournal["ModelCommandJournal<br/>model-level command history"]
     SessionManager["SessionManager<br/>process-local active sessions"]
     Session["Session<br/>UUID, selected model, command history"]
     ModelRegistry["ModelRegistry<br/>process-local known models"]
@@ -50,6 +52,7 @@ WebApi --> ModelsResource
 WebApi --> SessionResource
 WebApi --> AppRoot
 ModelsResource --> ModelRegistry
+ModelsResource --> ScriptService
 SessionResource --> SessionManager
 SessionResource --> ModelRegistry
 AppRoot --> CoreModule
@@ -58,6 +61,11 @@ AppRoot --> SessionManager
 AppRoot --> MemoryStorage
 SessionManager --> Session
 SessionManager --> CoreModule
+SessionManager --> CommandJournal
+CoreModule --> CommandJournal
+ScriptService --> ModelRegistry
+ScriptService --> CommandJournal
+ScriptService --> ModelApi
 ModelRegistry --> ModelApi
 CoreModule --> Spi
 CoreModule --> ModelApi
@@ -120,7 +128,8 @@ Dependencies:
 Core command module. It currently contains a sealed `Command` marker interface,
 `NoOpCommand`, `CreateEntityCommand`, `CreateAttributeCommand`, internal
 `DeleteEntityCommand` and `DeleteAttributeCommand` counterparts, `UndoResult`,
-`CommandExecutor`, `Session`, `SessionManager`, and `ModelRegistry`.
+`ModelCommandJournal`, `VedenemoScriptService`, `CommandExecutor`, `Session`,
+`SessionManager`, and `ModelRegistry`.
 
 `Session` represents a process-local user work session. It has a UUID, an
 optional selected model reference stored as `ModelRoot.azName`, execution-order
@@ -129,19 +138,41 @@ removal operation used by undo.
 
 `SessionManager` creates sessions and keeps active session-bound
 `CommandExecutor` instances in memory. Ending a session removes the active
-executor and session from the manager.
+executor and session from the manager. Each session manager owns a
+`ModelCommandJournal` shared by all command executors it creates.
+
+`ModelCommandJournal` is a process-local model-level command history. It stores
+model-targeting commands by model `azName` so export is not dependent on one
+active CLI session's undo stack. `NoOpCommand` is session-only and is not stored
+in the model journal.
 
 `CommandExecutor` is bound to exactly one active `Session` and the process-local
 `ModelRegistry`. It can execute `CreateEntityCommand` against the selected
 model and `CreateAttributeCommand` against an entity in the selected model.
-Successful commands are recorded in the session. Failed commands are not
-recorded. Undo is stack-based and only applies to the latest successful command:
-create-entity is undone through the internal `DeleteEntityCommand` inverse, and
-create-attribute is undone through the internal `DeleteAttributeCommand`
-inverse. Undo removes the original command from active session command history
-and returns a core-owned `UndoResult` containing a stable command identifier
+Successful commands are recorded in the session and in the model-level command
+journal. Failed commands are not recorded. Undo is stack-based and only applies
+to the latest successful command: create-entity is undone through the internal
+`DeleteEntityCommand` inverse, and create-attribute is undone through the
+internal `DeleteAttributeCommand` inverse. Undo removes the original command
+from active session command history and from the model-level command journal,
+then returns a core-owned `UndoResult` containing a stable command identifier
 such as `create-entity` or `create-attribute` plus the target model, entity, and
 attribute names needed by clients.
+
+`VedenemoScriptService` owns the current `.vdos` Vedenemo Script import/export
+format. The format is UTF-8 text with:
+
+- `vedenemo-script 1` header
+- one model metadata line
+- a `commands` section using stable command slugs such as `create-entity` and
+  `create-attribute`
+- a `snapshot` section containing the final entity/attribute tree and lifecycle
+  version metadata
+
+Commands are authoritative during import. The service replays the command
+section into a new `ModelRoot` and validates the result against the snapshot.
+Imported commands are stored as model-level baseline command history and are not
+added to any active session undo stack.
 
 `ModelRegistry` is the process-local registry of currently known models. It
 stores `ModelRoot` instances in insertion order and enforces case-insensitive
@@ -209,6 +240,10 @@ Current CLI behavior:
 - detaches the session from the current selected model
 - supports `undo` for the latest backend command and prints operation-specific
   undo output
+- supports `save [N | azName] [outputPath]`, which exports backend-generated
+  `.vdos` text for a model and writes it as UTF-8 to a local file
+- supports `load <path>`, which reads a UTF-8 `.vdos` file, imports it through
+  the backend, and attaches to the loaded model
 - supports `exit`
 - calls `DELETE /sessions/{uuid}` during normal exit and through a best-effort
   shutdown hook
@@ -230,6 +265,11 @@ and exposes:
 - `GET /models/{modelAzName}/entities/{entityAzName}/attributes`, which lists
   attributes in insertion order for one entity, including `DataType` and
   lifecycle version fields
+- `GET /models/{modelAzName}/script`, which exports one model as UTF-8
+  `text/plain` `.vdos` content using the model-level command journal and
+  current model snapshot
+- `POST /models/script`, which imports UTF-8 `.vdos` content as baseline model
+  state and returns the imported model `azName` and command count
 - `POST /sessions/start`, which creates a backend session and returns its UUID
 - `DELETE /sessions/{uuid}`, which ends/removes a backend session
 - `PUT /sessions/{uuid}/selected-model`, which selects an existing model for a

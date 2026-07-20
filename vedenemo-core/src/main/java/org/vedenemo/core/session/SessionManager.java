@@ -1,6 +1,7 @@
 package org.vedenemo.core.session;
 
 import org.vedenemo.core.command.CommandExecutor;
+import org.vedenemo.core.command.ModelCommandJournal;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.spi.storage.ModelStorage;
 
@@ -14,20 +15,26 @@ public final class SessionManager {
 
     private final ModelStorage modelStorage;
     private final ModelRegistry modelRegistry;
+    private final ModelCommandJournal commandJournal;
     private final Map<UUID, CommandExecutor> executorsBySessionId = new LinkedHashMap<>();
 
     public SessionManager(ModelStorage modelStorage) {
-        this(modelStorage, new ModelRegistry());
+        this(modelStorage, new ModelRegistry(), new ModelCommandJournal());
     }
 
     public SessionManager(ModelStorage modelStorage, ModelRegistry modelRegistry) {
+        this(modelStorage, modelRegistry, new ModelCommandJournal());
+    }
+
+    public SessionManager(ModelStorage modelStorage, ModelRegistry modelRegistry, ModelCommandJournal commandJournal) {
         this.modelStorage = Objects.requireNonNull(modelStorage, "modelStorage must not be null");
         this.modelRegistry = Objects.requireNonNull(modelRegistry, "modelRegistry must not be null");
+        this.commandJournal = Objects.requireNonNull(commandJournal, "commandJournal must not be null");
     }
 
     public synchronized Session startSession() {
         Session session = Session.create();
-        executorsBySessionId.put(session.id(), new CommandExecutor(modelStorage, modelRegistry, session));
+        executorsBySessionId.put(session.id(), new CommandExecutor(modelStorage, modelRegistry, commandJournal, session));
         return session;
     }
 
@@ -51,5 +58,9 @@ public final class SessionManager {
 
     public synchronized int activeSessionCount() {
         return executorsBySessionId.size();
+    }
+
+    public ModelCommandJournal commandJournal() {
+        return commandJournal;
     }
 }

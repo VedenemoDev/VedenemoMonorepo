@@ -3,11 +3,14 @@ package org.vedenemo.web.api.resource;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.router.JavalinDefaultRoutingApi;
+import org.vedenemo.core.command.ModelCommandJournal;
 import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
 import org.vedenemo.core.registry.DuplicateModelRootException;
 import org.vedenemo.core.registry.ModelRegistry;
+import org.vedenemo.core.script.VedenemoScriptImportResult;
+import org.vedenemo.core.script.VedenemoScriptService;
 
 import java.util.List;
 import java.util.Objects;
@@ -15,10 +18,16 @@ import java.util.Objects;
 public final class ModelsResource {
 
     private final ModelRegistry modelRegistry;
+    private final VedenemoScriptService scriptService;
     private final ObjectMapper objectMapper;
 
     public ModelsResource(ModelRegistry modelRegistry) {
+        this(modelRegistry, new ModelCommandJournal());
+    }
+
+    public ModelsResource(ModelRegistry modelRegistry, ModelCommandJournal commandJournal) {
         this.modelRegistry = Objects.requireNonNull(modelRegistry, "modelRegistry must not be null");
+        this.scriptService = new VedenemoScriptService(modelRegistry, Objects.requireNonNull(commandJournal, "commandJournal must not be null"));
         this.objectMapper = new ObjectMapper();
     }
 
@@ -70,6 +79,29 @@ public final class ModelsResource {
                     .map(AttributeResponse::from)
                     .toList();
             writeJson(context, 200, attributes);
+        });
+        routes.get("/models/{modelAzName}/script", context -> {
+            try {
+                String script = scriptService.exportModel(context.pathParam("modelAzName"));
+                context.status(200)
+                        .contentType("text/plain; charset=utf-8")
+                        .result(script);
+            } catch (IllegalArgumentException exception) {
+                writeJson(context, 404, new ErrorResponse(exception.getMessage()));
+            }
+        });
+        routes.post("/models/script", context -> {
+            try {
+                VedenemoScriptImportResult result = scriptService.importModel(
+                        context.body(),
+                        context.queryParam("modelAzName")
+                );
+                writeJson(context, 201, new ScriptImportResponse(result.modelAzName(), result.commandCount()));
+            } catch (IllegalStateException exception) {
+                writeJson(context, 409, new ErrorResponse(exception.getMessage()));
+            } catch (IllegalArgumentException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+            }
         });
     }
 
@@ -136,6 +168,9 @@ public final class ModelsResource {
                     attribute.deprecatedSince().map(Object::toString).orElse(null)
             );
         }
+    }
+
+    private record ScriptImportResponse(String modelAzName, int commandCount) {
     }
 
     private record ErrorResponse(String error) {

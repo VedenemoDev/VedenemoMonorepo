@@ -17,11 +17,22 @@ public final class CommandExecutor {
 
     private final ModelStorage modelStorage;
     private final ModelRegistry modelRegistry;
+    private final ModelCommandJournal commandJournal;
     private final Session session;
 
     public CommandExecutor(ModelStorage modelStorage, ModelRegistry modelRegistry, Session session) {
+        this(modelStorage, modelRegistry, new ModelCommandJournal(), session);
+    }
+
+    public CommandExecutor(
+            ModelStorage modelStorage,
+            ModelRegistry modelRegistry,
+            ModelCommandJournal commandJournal,
+            Session session
+    ) {
         this.modelStorage = Objects.requireNonNull(modelStorage, "modelStorage must not be null");
         this.modelRegistry = Objects.requireNonNull(modelRegistry, "modelRegistry must not be null");
+        this.commandJournal = Objects.requireNonNull(commandJournal, "commandJournal must not be null");
         this.session = Objects.requireNonNull(session, "session must not be null");
     }
 
@@ -29,6 +40,7 @@ public final class CommandExecutor {
         Objects.requireNonNull(command, "command must not be null");
         apply(command);
         session.record(command);
+        commandJournal.record(command);
     }
 
     public UndoResult undoLatest() {
@@ -38,6 +50,7 @@ public final class CommandExecutor {
         }
         UndoResult result = undo(latestCommand.orElseThrow());
         session.removeLatestCommand();
+        commandJournal.removeLatest(latestCommand.orElseThrow());
         return result;
     }
 
@@ -132,6 +145,10 @@ public final class CommandExecutor {
 
     public ModelRegistry modelRegistry() {
         return modelRegistry;
+    }
+
+    public ModelCommandJournal commandJournal() {
+        return commandJournal;
     }
 
     public Session session() {

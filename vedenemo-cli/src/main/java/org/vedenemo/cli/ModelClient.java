@@ -12,4 +12,8 @@ public interface ModelClient {
     List<EntitySummary> listEntities(String modelAzName) throws IOException, InterruptedException;
 
     List<AttributeSummary> listAttributes(String modelAzName, String entityAzName) throws IOException, InterruptedException;
+
+    String exportScript(String modelAzName) throws IOException, InterruptedException;
+
+    ModelImportResult importScript(String script, String modelAzNameOverride) throws IOException, InterruptedException;
 }

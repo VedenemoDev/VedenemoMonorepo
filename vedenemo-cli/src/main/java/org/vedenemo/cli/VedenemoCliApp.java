@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -21,6 +23,7 @@ public final class VedenemoCliApp {
     private final InputStream input;
     private final PrintStream output;
     private final boolean registerShutdownHook;
+    private final Path workingDirectory;
     private final AtomicReference<String> attachedModelAzName = new AtomicReference<>();
     private final AtomicReference<String> attachedEntityAzName = new AtomicReference<>();
     private List<ModelSummary> latestModels = List.of();
@@ -35,12 +38,25 @@ public final class VedenemoCliApp {
             PrintStream output,
             boolean registerShutdownHook
     ) {
+        this(sessionClient, modelClient, commandClient, input, output, registerShutdownHook, Path.of("").toAbsolutePath());
+    }
+
+    VedenemoCliApp(
+            SessionClient sessionClient,
+            ModelClient modelClient,
+            CommandClient commandClient,
+            InputStream input,
+            PrintStream output,
+            boolean registerShutdownHook,
+            Path workingDirectory
+    ) {
         this.sessionClient = Objects.requireNonNull(sessionClient, "sessionClient must not be null");
         this.modelClient = Objects.requireNonNull(modelClient, "modelClient must not be null");
         this.commandClient = Objects.requireNonNull(commandClient, "commandClient must not be null");
         this.input = Objects.requireNonNull(input, "input must not be null");
         this.output = Objects.requireNonNull(output, "output must not be null");
         this.registerShutdownHook = registerShutdownHook;
+        this.workingDirectory = Objects.requireNonNull(workingDirectory, "workingDirectory must not be null");
     }
 
     public int run() {
@@ -106,6 +122,10 @@ public final class VedenemoCliApp {
             handleAttributeCommand(sessionId, reader, line);
         } else if ("undo".equals(line)) {
             undo(sessionId);
+        } else if (line.equals("save") || line.startsWith("save ")) {
+            save(reader, line);
+        } else if (line.equals("load") || line.startsWith("load ")) {
+            load(sessionId, reader, line);
         } else if (line.startsWith("attach")) {
             attachModel(sessionId, reader, line);
         } else {
@@ -125,6 +145,8 @@ public final class VedenemoCliApp {
         output.println("  attributes - list attributes in the selected entity");
         output.println("  attr add - add an attribute to the selected entity");
         output.println("  undo - undo the latest backend command");
+        output.println("  save [N | azName] [outputPath] - save a model to a .vdos file");
+        output.println("  load <path> - load a model from a .vdos file");
         output.println("  help - show this help");
         output.println("  exit - end the session and exit");
     }
@@ -511,6 +533,115 @@ public final class VedenemoCliApp {
         }
     }
 
+    private void save(BufferedReader reader, String line) throws IOException, InterruptedException {
+        String argumentText = line.length() == "save".length() ? "" : line.substring("save".length()).trim();
+        List<String> arguments = splitArguments(argumentText);
+        if (arguments.size() > 2) {
+            output.println("Usage: save [N | azName] [outputPath]");
+            return;
+        }
+        Optional<ModelSummary> model = resolveSaveModel(arguments);
+        if (model.isEmpty()) {
+            return;
+        }
+        String script;
+        try {
+            script = modelClient.exportScript(model.orElseThrow().azName());
+        } catch (IOException exception) {
+            output.println(exception.getMessage());
+            return;
+        }
+        Path target = saveTargetPath(reader, model.orElseThrow(), arguments.size() == 2 ? arguments.get(1) : null);
+        if (target == null) {
+            return;
+        }
+        if (Files.exists(target)) {
+            output.print("File " + target + " exists. Overwrite? [y/N]: ");
+            output.flush();
+            String answer = reader.readLine();
+            if (!"y".equalsIgnoreCase(answer == null ? "" : answer.trim())) {
+                output.println("Save cancelled.");
+                return;
+            }
+        }
+        try {
+            Files.writeString(target, script, StandardCharsets.UTF_8);
+            output.println("Saved model " + model.orElseThrow().azName() + " to " + target + ".");
+        } catch (IOException exception) {
+            output.println("Save failed: " + exception.getMessage());
+        }
+    }
+
+    private Optional<ModelSummary> resolveSaveModel(List<String> arguments) throws InterruptedException {
+        if (arguments.isEmpty()) {
+            String modelAzName = attachedModelAzName.get();
+            if (modelAzName == null) {
+                output.println("Attach a model or provide a model number or azName before saving.");
+                return Optional.empty();
+            }
+            return resolveModel(modelAzName);
+        }
+        return resolveModel(arguments.getFirst());
+    }
+
+    private Path saveTargetPath(BufferedReader reader, ModelSummary model, String inlinePath) throws IOException {
+        String selectedPath = inlinePath;
+        if (selectedPath == null || selectedPath.isBlank()) {
+            output.print("Output file [" + model.azName() + ".vdos]: ");
+            output.flush();
+            String answer = reader.readLine();
+            selectedPath = answer == null || answer.isBlank() ? model.azName() + ".vdos" : answer.trim();
+        }
+        return resolvePathWithExtension(selectedPath);
+    }
+
+    private void load(UUID sessionId, BufferedReader reader, String line) throws IOException, InterruptedException {
+        String argument = line.length() == "load".length() ? "" : line.substring("load".length()).trim();
+        if (argument.isBlank()) {
+            output.println("Usage: load <path>");
+            return;
+        }
+        Path source = resolvePathWithExtension(argument);
+        if (!Files.exists(source)) {
+            output.println("File not found: " + source + ".");
+            return;
+        }
+        String script;
+        try {
+            script = Files.readString(source, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            output.println("Load failed: " + exception.getMessage());
+            return;
+        }
+        ModelImportResult result = importScriptWithRenamePrompt(reader, script, null);
+        if (result == null) {
+            return;
+        }
+        attachResolvedModel(sessionId, new ModelSummary(result.modelAzName(), result.modelAzName(), "1.0.0"));
+        latestModels = modelClient.listModels();
+        output.println("Loaded model " + result.modelAzName() + " from " + source + " with " + result.commandCount() + " commands.");
+    }
+
+    private ModelImportResult importScriptWithRenamePrompt(BufferedReader reader, String script, String modelAzNameOverride)
+            throws IOException, InterruptedException {
+        try {
+            return modelClient.importScript(script, modelAzNameOverride);
+        } catch (ModelAlreadyExistsException exception) {
+            output.println(exception.getMessage());
+            output.print("New model azName for import, or blank to cancel: ");
+            output.flush();
+            String answer = reader.readLine();
+            if (answer == null || answer.isBlank()) {
+                output.println("Load cancelled.");
+                return null;
+            }
+            return importScriptWithRenamePrompt(reader, script, answer.trim());
+        } catch (IOException exception) {
+            output.println(exception.getMessage());
+            return null;
+        }
+    }
+
     private String prompt() {
         String azName = attachedModelAzName.get();
         if (azName == null) {
@@ -553,6 +684,24 @@ public final class VedenemoCliApp {
         } catch (NumberFormatException exception) {
             return false;
         }
+    }
+
+    private Path resolvePathWithExtension(String value) {
+        Path path = Path.of(value.trim());
+        if (!path.isAbsolute()) {
+            path = workingDirectory.resolve(path);
+        }
+        if (path.getFileName() != null && path.getFileName().toString().indexOf('.') == -1) {
+            path = path.resolveSibling(path.getFileName() + ".vdos");
+        }
+        return path.normalize();
+    }
+
+    private static List<String> splitArguments(String value) {
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+        return List.of(value.trim().split("\\s+"));
     }
 
     private static String suggestAzName(String visName) {

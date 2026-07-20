@@ -136,10 +136,89 @@ final class ModelsResourceTest {
                 """, response.body());
     }
 
+    @Test
+    void exportScriptReturnsModelCommandsAndSnapshot() throws Exception {
+        post("/models/add", """
+                {"azName":"Example_Model","visName":"Example Model","version":"1.0.0"}
+                """);
+        String sessionId = startSession();
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+        post("/sessions/" + sessionId + "/commands/create-entity", """
+                {"entityAzName":"Customer","entityVisName":"Customer"}
+                """);
+        post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Customer","attributeAzName":"Email","attributeVisName":"Email","dataType":"TEXT"}
+                """);
+
+        HttpResponse<String> response = get("/models/Example_Model/script");
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("vedenemo-script 1"));
+        assertTrue(response.body().contains("create-entity model=Example_Model entity=Customer visName=\"Customer\" activeSince=1.0.0"));
+        assertTrue(response.body().contains("attribute entity=Customer azName=Email visName=\"Email\" dataType=TEXT activeSince=1.0.0 deprecatedSince=null"));
+    }
+
+    @Test
+    void importScriptCreatesModelAndReturnsCommandCount() throws Exception {
+        HttpResponse<String> response = postText("/models/script", """
+                vedenemo-script 1
+
+                model azName=Example_Model visName="Example Model" version=1.0.0
+
+                commands
+                create-entity model=Example_Model entity=Customer visName="Customer" activeSince=1.0.0
+                create-attribute model=Example_Model entity=Customer attribute=Email visName="Email" dataType=TEXT activeSince=1.0.0
+
+                snapshot
+                entity azName=Customer visName="Customer" activeSince=1.0.0 deprecatedSince=null
+                attribute entity=Customer azName=Email visName="Email" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+                """);
+
+        assertEquals(201, response.statusCode());
+        assertEquals("{\"modelAzName\":\"Example_Model\",\"commandCount\":2}", response.body());
+        assertTrue(modelRegistry.find("Example_Model").isPresent());
+    }
+
+    @Test
+    void duplicateScriptImportIsRejected() throws Exception {
+        modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+
+        HttpResponse<String> response = postText("/models/script", """
+                vedenemo-script 1
+
+                model azName=Example_Model visName="Example Model" version=1.0.0
+
+                commands
+
+                snapshot
+                """);
+
+        assertEquals(409, response.statusCode());
+        assertTrue(response.body().contains("model already exists"));
+    }
+
     private HttpResponse<String> post(String path, String body) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> postText(String path, String body) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
+                .header("Content-Type", "text/plain; charset=utf-8")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> put(String path, String body) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(body))
                 .build();
         return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     }
@@ -149,6 +228,11 @@ final class ModelsResourceTest {
                 .GET()
                 .build();
         return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private String startSession() throws IOException, InterruptedException {
+        HttpResponse<String> response = post("/sessions/start", "");
+        return response.body().replace("{\"sessionId\":\"", "").replace("\"}", "");
     }
 
     private static int availablePort() throws IOException {
