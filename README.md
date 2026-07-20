@@ -172,7 +172,3 @@ npm ci
 npm run build
 ```
 
-## Current milestone
-
-The project should compile and provide a safe foundation for later agentic development.
-It intentionally does not implement real Vedenemo modeling behavior yet.
