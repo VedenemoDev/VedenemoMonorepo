@@ -2538,6 +2538,29 @@ save/load commands, focused tests, documentation, and executed task records.
 Next steps: Stage all changes, commit with a detailed message, push to
 `origin/main`, and verify clean branch status.
 
+## 2026-07-20 18:41 EEST
+
+Goal: Update `README.md` to reflect the current implemented project state.
+
+Files changed:
+
+- `README.md`
+- `SESSION.md`
+
+Commands run:
+
+- required project context reads from `docs/architecture/*`,
+  `docs/roadmap/first-milestone.md`, `tasks/current-task.md`, and `SESSION.md`
+- `sed -n '1,260p' README.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Rewrote the README from the old initial-skeleton summary to the current
+state: backend modules, HTTP API surface, CLI commands, `.vdos` script files,
+local run commands, frontend build, and current Tailscale/Firebase connectivity.
+
+Next steps: Run lightweight checks, commit the README update, push to
+`origin/main`, and verify clean branch status.
+
 ## 2026-07-20 17:08 EEST
 
 Goal: Update `.vdos` save/load planning decisions and elaborate remaining
