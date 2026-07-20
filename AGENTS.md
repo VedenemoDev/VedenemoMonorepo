@@ -4,7 +4,8 @@
 
 Build Vedenemo incrementally while preserving strict architectural boundaries.
 
-The first goal is a compiling multi-module project skeleton.
+The current goal is to extend Vedenemo incrementally from the established
+multi-module backend, HTTP API, CLI, and `.vdos` script foundation.
 
 ## Priority order
 
@@ -23,7 +24,7 @@ Before making changes, read:
 - `docs/architecture/module-map.md`
 - `docs/architecture/coding-rules.md`
 - `docs/architecture/testing-strategy.md`
-- `docs/roadmap/first-milestone.md`
+- `docs/roadmap/current-milestone.md`
 - `tasks/current-task.md`
 
 ## Non-negotiable rules
@@ -89,22 +90,24 @@ Avoid:
 
 See:
 
+- `docs/roadmap/current-milestone.md`
 - `tasks/current-task.md`
 
 Current focus:
 
-- compiling Maven multi-module structure
-- minimal SPI abstraction
-- in-memory storage adapter
-- separate Vite frontend
+- preserving strict module boundaries while extending implemented model
+  authoring flows
+- keeping core model, command, undo, journal, and `.vdos` rules pure JDK
+- keeping HTTP DTOs and JSON handling in `vedenemo-web-api`
+- keeping CLI behavior as a thin HTTP/file-I/O client
+- keeping documentation synchronized with concrete implementation changes
 
 Do not yet implement:
 
-- REST APIs
 - WebSockets
 - databases
-- parser generators
-- persistence formats
+- authentication/authorization
+- parser generators beyond the current hand-written `.vdos` parser
 - distributed runtime
 
 ## Build commands

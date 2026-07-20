@@ -2561,6 +2561,35 @@ local run commands, frontend build, and current Tailscale/Firebase connectivity.
 Next steps: Run lightweight checks, commit the README update, push to
 `origin/main`, and verify clean branch status.
 
+## 2026-07-20 18:51 EEST
+
+Goal: Rename the roadmap milestone file and update it to current project state.
+
+Files changed:
+
+- `AGENTS.md`
+- `docs/roadmap/current-milestone.md`
+- `docs/roadmap/first-milestone.md`
+- `SESSION.md`
+
+Commands run:
+
+- required project context reads from `docs/architecture/*`,
+  `docs/roadmap/first-milestone.md`, `tasks/current-task.md`, and `SESSION.md`
+- `rg -n "first-milestone|current-milestone|First Milestone" .`
+- `mv docs/roadmap/first-milestone.md docs/roadmap/current-milestone.md`
+- `sed -n '1,140p' AGENTS.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Renamed `docs/roadmap/first-milestone.md` to
+`docs/roadmap/current-milestone.md` and rewrote it to describe the current
+backend, CLI, command journal, `.vdos`, and in-memory/process-local constraints.
+Updated `AGENTS.md` to read the renamed milestone and to remove stale initial
+skeleton phase guidance.
+
+Next steps: Run lightweight checks, commit, push to `origin/main`, and verify
+clean branch status.
+
 ## 2026-07-20 17:08 EEST
 
 Goal: Update `.vdos` save/load planning decisions and elaborate remaining
