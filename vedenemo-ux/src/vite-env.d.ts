@@ -8,4 +8,7 @@ declare module "@plantuml/core" {
   ): void;
 }
 
-declare module "@plantuml/core/viz-global.js";
+declare module "@plantuml/core/viz-global.js?url" {
+  const url: string;
+  export default url;
+}

@@ -2712,6 +2712,44 @@ large lazy PlantUML chunk and browser externalization warning for `url` in
 Next steps: User should re-test the diagram rendering in the browser; commit
 after confirmation.
 
+## 2026-07-21 21:10 EEST
+
+Goal: Fix UX PlantUML rendering timeout after browser reported `PlantUML
+renderer did not complete`.
+
+Files changed:
+
+- `vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts`
+- `vedenemo-ux/src/vite-env.d.ts`
+- `SESSION.md`
+
+Commands run:
+
+- required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- inspected `@plantuml/core` package README, browser examples, integration
+  notes, package metadata, and `viz-global.js`
+- `npm run build`
+- `git diff --check`
+- `git diff --stat`
+- `git status --short --branch`
+- `npm run dev -- --host 127.0.0.1`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Updated the UX PlantUML renderer adapter to load `viz-global.js` as a
+classic browser script asset through Vite before dynamically importing
+`@plantuml/core`. This matches the package examples and avoids bundling the
+Graphviz dependency as an ES module side-effect import.
+
+Verification: `npm run build` passed. The previous Vite warning about Node
+`url` browser externalization disappeared. The large PlantUML chunks remain
+expected for this dependency. Local Vite dev server is running at
+`http://127.0.0.1:5177/`.
+
+Next steps: User should retry visual diagram rendering in the browser and
+confirm whether the SVG now appears.
+
 ## 2026-07-21 18:09 EEST
 
 Goal: Add UX model selection labels, model-change WebSocket connection, and
