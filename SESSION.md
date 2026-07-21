@@ -2615,3 +2615,65 @@ and `save` path argument flow with concrete options and recommendations.
 
 Next steps: Resolve the remaining two planning decisions before promoting the
 task to `tasks/current-task.md`.
+
+## 2026-07-21 17:34 EEST
+
+Goal: Add a Vedenemo UX model dropdown populated from the backend at page load
+with a refresh button.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `SESSION.md`
+
+Commands run:
+
+- required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- `sed -n '1,260p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,320p' vedenemo-ux/src/styles.css`
+- `cat vedenemo-ux/package.json`
+- `cat vedenemo-ux/public/config.json`
+- `sed -n '1,220p' vedenemo-ux/src/main.tsx`
+- `npm run build`
+- `git status --short --branch`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check`
+- `npm run dev -- --host 127.0.0.1`
+
+Status: Added model list loading from `/models/list` after runtime config is
+loaded, a dropdown showing available models, refresh behavior, loading/error
+messages, selection preservation across refresh, and responsive styling.
+
+Verification: `npm run build` passed. `git diff --check` passed. The first Vite
+dev server attempt failed inside the sandbox because localhost socket binding
+was blocked; rerunning outside the sandbox started the server at
+`http://127.0.0.1:5173/`.
+
+Next steps: Review the UX in the browser and commit if acceptable.
+
+## 2026-07-21 17:39 EEST
+
+Goal: Commit and push the UX model dropdown and refresh button.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff --stat`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Preparing a commit for the UX changes that fetch models from the
+configured backend at page load, display them in a dropdown, preserve selection
+across refresh, show loading/error/empty states, and provide responsive styling.
+
+Next steps: Stage all changes, commit, push to `origin/main`, and verify clean
+branch status.

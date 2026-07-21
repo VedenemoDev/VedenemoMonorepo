@@ -1,9 +1,16 @@
 import { useEffect, useState } from "react";
 
 type PingState = "idle" | "loading" | "ok" | "error";
+type ModelLoadState = "idle" | "loading" | "ok" | "error";
 
 type RuntimeConfig = {
   apiBaseUrl?: string;
+};
+
+type ModelSummary = {
+  azName: string;
+  visName: string;
+  version: string;
 };
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
@@ -18,24 +25,52 @@ function normalizeBaseUrl(value: string): string {
   return value.replace(/\/+$/, "");
 }
 
+async function fetchModels(apiBaseUrl: string): Promise<ModelSummary[]> {
+  const response = await fetch(`${apiBaseUrl}/models/list`, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json() as Promise<ModelSummary[]>;
+}
+
 export function App() {
   const [apiBaseUrl, setApiBaseUrl] = useState("");
   const [pingState, setPingState] = useState<PingState>("idle");
   const [pingMessage, setPingMessage] = useState("Not checked");
+  const [modelLoadState, setModelLoadState] = useState<ModelLoadState>("idle");
+  const [modelMessage, setModelMessage] = useState("Models not loaded");
+  const [models, setModels] = useState<ModelSummary[]>([]);
+  const [selectedModelAzName, setSelectedModelAzName] = useState("");
 
   useEffect(() => {
     let cancelled = false;
 
     loadRuntimeConfig()
       .then((config) => {
-        if (!cancelled) {
-          setApiBaseUrl(normalizeBaseUrl(config.apiBaseUrl ?? ""));
+        const baseUrl = normalizeBaseUrl(config.apiBaseUrl ?? "");
+        if (cancelled) {
+          return;
+        }
+        setApiBaseUrl(baseUrl);
+        if (baseUrl) {
+          void refreshModels(baseUrl, () => cancelled);
+        } else {
+          setModelLoadState("error");
+          setModelMessage("Backend URL is not configured");
         }
       })
       .catch(() => {
         if (!cancelled) {
           setPingState("error");
           setPingMessage("Backend config unavailable");
+          setModelLoadState("error");
+          setModelMessage("Backend config unavailable");
         }
       });
 
@@ -43,6 +78,39 @@ export function App() {
       cancelled = true;
     };
   }, []);
+
+  async function refreshModels(baseUrl = apiBaseUrl, isCancelled: () => boolean = () => false) {
+    if (!baseUrl) {
+      setModelLoadState("error");
+      setModelMessage("Backend URL is not configured");
+      return;
+    }
+
+    setModelLoadState("loading");
+    setModelMessage("Loading models...");
+
+    try {
+      const nextModels = await fetchModels(baseUrl);
+      if (isCancelled()) {
+        return;
+      }
+      setModels(nextModels);
+      setSelectedModelAzName((current) => {
+        if (nextModels.some((model) => model.azName === current)) {
+          return current;
+        }
+        return nextModels[0]?.azName ?? "";
+      });
+      setModelLoadState("ok");
+      setModelMessage(nextModels.length === 0 ? "No models available" : `${nextModels.length} model${nextModels.length === 1 ? "" : "s"} loaded`);
+    } catch (error) {
+      if (isCancelled()) {
+        return;
+      }
+      setModelLoadState("error");
+      setModelMessage(error instanceof Error ? error.message : "Model refresh failed");
+    }
+  }
 
   async function pingBackend() {
     if (!apiBaseUrl) {
@@ -85,6 +153,31 @@ export function App() {
             Ping
           </button>
           <span className={`ping-status ping-status-${pingState}`}>{pingMessage}</span>
+        </div>
+        <div className="model-panel">
+          <label htmlFor="model-select">Model</label>
+          <div className="model-controls">
+            <select
+              id="model-select"
+              value={selectedModelAzName}
+              onChange={(event) => setSelectedModelAzName(event.target.value)}
+              disabled={modelLoadState === "loading" || models.length === 0}
+            >
+              {models.length === 0 ? (
+                <option value="">No models available</option>
+              ) : (
+                models.map((model) => (
+                  <option key={model.azName} value={model.azName}>
+                    {model.visName} ({model.azName}) version {model.version}
+                  </option>
+                ))
+              )}
+            </select>
+            <button type="button" onClick={() => void refreshModels()} disabled={modelLoadState === "loading"}>
+              Refresh
+            </button>
+          </div>
+          <span className={`model-status model-status-${modelLoadState}`}>{modelMessage}</span>
         </div>
         <p className="backend-url">{apiBaseUrl || "Backend URL is not configured"}</p>
       </section>

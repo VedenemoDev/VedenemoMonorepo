@@ -31,7 +31,8 @@ body {
   margin-top: 1.5rem;
 }
 
-.ping-panel button {
+.ping-panel button,
+.model-controls button {
   min-width: 5rem;
   padding: 0.55rem 0.9rem;
   border: 1px solid #1f2937;
@@ -42,7 +43,8 @@ body {
   cursor: pointer;
 }
 
-.ping-panel button:disabled {
+.ping-panel button:disabled,
+.model-controls button:disabled {
   cursor: progress;
   opacity: 0.7;
 }
@@ -59,8 +61,67 @@ body {
   color: #b91c1c;
 }
 
+.model-panel {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.model-panel label {
+  font-weight: 700;
+}
+
+.model-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.model-controls select {
+  min-width: 0;
+  flex: 1;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #9ca3af;
+  border-radius: 0.375rem;
+  background: #fff;
+  color: #111827;
+  font: inherit;
+}
+
+.model-controls select:disabled {
+  color: #6b7280;
+  background: #f3f4f6;
+}
+
+.model-status {
+  color: #4b5563;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.model-status-ok {
+  color: #047857;
+}
+
+.model-status-error {
+  color: #b91c1c;
+}
+
 .backend-url {
   overflow-wrap: anywhere;
   color: #4b5563;
   font-size: 0.9rem;
+}
+
+@media (max-width: 36rem) {
+  .model-controls,
+  .ping-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .model-controls button,
+  .ping-panel button {
+    width: 100%;
+  }
 }
