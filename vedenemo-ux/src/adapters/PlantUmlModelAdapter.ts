@@ -14,6 +14,7 @@ export class PlantUmlModelAdapter {
     const lines = [
       "@startuml",
       "hide circle",
+      "hide empty members",
       `title ${plantUmlText(modelAzName)}`,
       "",
     ];

@@ -2810,6 +2810,36 @@ Verification: `npm run build` passed. `git diff --check` passed.
 
 Next steps: Review the rendered diagram in the browser and commit if accepted.
 
+## 2026-07-21 22:50 EEST
+
+Goal: Hide empty member compartment separators from UX-rendered PlantUML entity
+diagrams.
+
+Files changed:
+
+- `vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `SESSION.md`
+
+Commands run:
+
+- required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- inspected `PlantUmlModelAdapter`
+- `npm run build`
+- `git diff --check`
+- `git diff -- vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added PlantUML `hide empty members` to generated diagrams so empty
+member compartments and their separator lines are suppressed while existing
+attribute rows remain visible.
+
+Verification: `npm run build` passed. `git diff --check` passed.
+
+Next steps: Review the rendered diagram in the browser and commit if accepted.
+
 ## 2026-07-21 18:09 EEST
 
 Goal: Add UX model selection labels, model-change WebSocket connection, and
