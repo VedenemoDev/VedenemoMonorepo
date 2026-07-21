@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ModelChangeEventAdapter } from "./adapters/ModelChangeEventAdapter";
+import { PlantUmlModelAdapter } from "./adapters/PlantUmlModelAdapter";
 
 type PingState = "idle" | "loading" | "ok" | "error";
 type ModelLoadState = "idle" | "loading" | "ok" | "error";
+type ModelConnectionState = "disconnected" | "connecting" | "connected" | "error";
 
 type RuntimeConfig = {
   apiBaseUrl?: string;
@@ -40,6 +43,9 @@ async function fetchModels(apiBaseUrl: string): Promise<ModelSummary[]> {
 }
 
 export function App() {
+  const eventAdapterRef = useRef(new ModelChangeEventAdapter());
+  const plantUmlAdapterRef = useRef(new PlantUmlModelAdapter());
+  const selectedModelAzNameRef = useRef("");
   const [apiBaseUrl, setApiBaseUrl] = useState("");
   const [pingState, setPingState] = useState<PingState>("idle");
   const [pingMessage, setPingMessage] = useState("Not checked");
@@ -47,6 +53,13 @@ export function App() {
   const [modelMessage, setModelMessage] = useState("Models not loaded");
   const [models, setModels] = useState<ModelSummary[]>([]);
   const [selectedModelAzName, setSelectedModelAzName] = useState("");
+  const [modelConnectionState, setModelConnectionState] = useState<ModelConnectionState>("disconnected");
+  const [modelConnectionMessage, setModelConnectionMessage] = useState("Disconnected");
+  const [plantUmlText, setPlantUmlText] = useState("Select model and connect to show PlantUML.");
+
+  useEffect(() => {
+    selectedModelAzNameRef.current = selectedModelAzName;
+  }, [selectedModelAzName]);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +92,18 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      eventAdapterRef.current.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (modelConnectionState === "connected" && selectedModelAzName) {
+      void renderSelectedModel(selectedModelAzName);
+    }
+  }, [modelConnectionState, selectedModelAzName]);
+
   async function refreshModels(baseUrl = apiBaseUrl, isCancelled: () => boolean = () => false) {
     if (!baseUrl) {
       setModelLoadState("error");
@@ -110,6 +135,68 @@ export function App() {
       setModelLoadState("error");
       setModelMessage(error instanceof Error ? error.message : "Model refresh failed");
     }
+  }
+
+  async function renderSelectedModel(modelAzName = selectedModelAzName) {
+    if (!apiBaseUrl) {
+      setPlantUmlText("Backend URL is not configured.");
+      return;
+    }
+    if (!modelAzName) {
+      setPlantUmlText("Select model and connect to show PlantUML.");
+      return;
+    }
+
+    try {
+      setPlantUmlText(await plantUmlAdapterRef.current.renderModel(apiBaseUrl, modelAzName));
+    } catch (error) {
+      setPlantUmlText(error instanceof Error ? `PlantUML render failed: ${error.message}` : "PlantUML render failed.");
+    }
+  }
+
+  async function toggleModelConnection() {
+    if (modelConnectionState === "connected" || modelConnectionState === "connecting") {
+      eventAdapterRef.current.disconnect();
+      setModelConnectionState("disconnected");
+      setModelConnectionMessage("Disconnected");
+      return;
+    }
+
+    if (!apiBaseUrl) {
+      setModelConnectionState("error");
+      setModelConnectionMessage("Backend URL is not configured");
+      return;
+    }
+    if (!selectedModelAzName) {
+      setModelConnectionState("error");
+      setModelConnectionMessage("Select model before connecting");
+      return;
+    }
+
+    setModelConnectionState("connecting");
+    setModelConnectionMessage("Connecting...");
+    await renderSelectedModel(selectedModelAzName);
+
+    eventAdapterRef.current.connect(apiBaseUrl, {
+      onOpen: () => {
+        setModelConnectionState("connected");
+        setModelConnectionMessage("Connected");
+      },
+      onClose: () => {
+        setModelConnectionState("disconnected");
+        setModelConnectionMessage("Disconnected");
+      },
+      onError: (message) => {
+        setModelConnectionState("error");
+        setModelConnectionMessage(message);
+      },
+      onModelChanged: (modelAzName) => {
+        void refreshModels();
+        if (modelAzName.toLowerCase() === selectedModelAzNameRef.current.toLowerCase()) {
+          void renderSelectedModel(modelAzName);
+        }
+      },
+    });
   }
 
   async function pingBackend() {
@@ -155,7 +242,7 @@ export function App() {
           <span className={`ping-status ping-status-${pingState}`}>{pingMessage}</span>
         </div>
         <div className="model-panel">
-          <label htmlFor="model-select">Model</label>
+          <label htmlFor="model-select">Select model</label>
           <div className="model-controls">
             <select
               id="model-select"
@@ -174,10 +261,25 @@ export function App() {
               )}
             </select>
             <button type="button" onClick={() => void refreshModels()} disabled={modelLoadState === "loading"}>
-              Refresh
+              Refresh model list
+            </button>
+            <button
+              type="button"
+              className="connect-button"
+              onClick={() => void toggleModelConnection()}
+              disabled={modelConnectionState === "connecting"}
+            >
+              {modelConnectionState === "connected" ? "Disconnect" : "Connect"}
             </button>
           </div>
           <span className={`model-status model-status-${modelLoadState}`}>{modelMessage}</span>
+          <span className={`connection-status connection-status-${modelConnectionState}`}>{modelConnectionMessage}</span>
+          <textarea
+            className="plantuml-output"
+            aria-label="PlantUML model representation"
+            value={plantUmlText}
+            readOnly
+          />
         </div>
         <p className="backend-url">{apiBaseUrl || "Backend URL is not configured"}</p>
       </section>

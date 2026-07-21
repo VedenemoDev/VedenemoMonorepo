@@ -17,12 +17,15 @@ flowchart TB
 subgraph UX["Frontend"]
     ViteUX["vedenemo-ux<br/>React + Vite"]
     RuntimeConfig["public/config.json<br/>runtime API base URL"]
+    UXModelEvents["ModelChangeEventAdapter<br/>browser WebSocket listener"]
+    UXPlantUml["PlantUmlModelAdapter<br/>model-to-PlantUML text"]
 end
 
 subgraph Web["Web API Runtime"]
     WebApi["vedenemo-web-api<br/>Javalin executable jar"]
     ModelsResource["ModelsResource<br/>ping/add/list/read model endpoints"]
     SessionResource["SessionResource<br/>session lifecycle, selected model, and command endpoints"]
+    ModelEvents["ModelChangeBroadcaster<br/>/models/events WebSocket"]
 end
 
 subgraph App["Application Assembly"]
@@ -47,14 +50,21 @@ end
 
 ViteUX --> RuntimeConfig
 ViteUX -->|fetch /models/ping| WebApi
+ViteUX -->|fetch model data| UXPlantUml
+ViteUX -->|connect/disconnect| UXModelEvents
+UXPlantUml -->|GET model/entity/attribute APIs| WebApi
+UXModelEvents -->|WebSocket /models/events| WebApi
 Cli -->|HTTP model and session APIs| WebApi
 WebApi --> ModelsResource
 WebApi --> SessionResource
+WebApi --> ModelEvents
 WebApi --> AppRoot
 ModelsResource --> ModelRegistry
 ModelsResource --> ScriptService
+ModelsResource --> ModelEvents
 SessionResource --> SessionManager
 SessionResource --> ModelRegistry
+SessionResource --> ModelEvents
 AppRoot --> CoreModule
 AppRoot --> ModelRegistry
 AppRoot --> SessionManager
@@ -270,6 +280,8 @@ and exposes:
   current model snapshot
 - `POST /models/script`, which imports UTF-8 `.vdos` content as baseline model
   state and returns the imported model `azName` and command count
+- `GET /models/events` as a WebSocket endpoint that emits model change events
+  to connected clients
 - `POST /sessions/start`, which creates a backend session and returns its UUID
 - `DELETE /sessions/{uuid}`, which ends/removes a backend session
 - `PUT /sessions/{uuid}/selected-model`, which selects an existing model for a
@@ -288,6 +300,18 @@ and exposes:
 HTTP JSON parsing and response serialization are kept in this module. Jackson is
 used here as an adapter/runtime dependency and does not leak into core or model
 APIs.
+
+`ModelChangeBroadcaster` is a web-runtime adapter for browser model-change
+listening. It owns the Javalin WebSocket endpoint and broadcasts UTF-8 JSON
+messages such as:
+
+```json
+{"type":"model-changed","modelAzName":"Example_Model","occurredAt":"2026-07-21T15:00:00Z"}
+```
+
+Model changes are broadcast after successful model creation, `.vdos` import,
+entity creation, attribute creation, and undo operations. The event stream is a
+process-local runtime notification channel; it is not durable persistence.
 
 Runtime configuration is read from environment variables:
 
@@ -308,16 +332,32 @@ Dependencies:
 ### `vedenemo-ux`
 
 Vite React application. It loads `/config.json` at runtime and uses
-`apiBaseUrl` to call the backend ping endpoint.
+`apiBaseUrl` to call backend HTTP endpoints and connect to the backend model
+event WebSocket.
 
 Current user-facing behavior:
 
 - renders a minimal deployment check page
 - shows the configured backend URL
 - includes a Ping button that calls `{apiBaseUrl}/models/ping`
+- fetches available models from `{apiBaseUrl}/models/list` at page load
+- provides a Refresh model list button
+- lets the user select a model from a dropdown
+- provides a Connect/Disconnect toggle for `{apiBaseUrl}/models/events`
+- refreshes the selected model view when backend model-change events arrive
+- renders the selected model as ASCII PlantUML class diagram text in a read-only
+  text area
 
 The default runtime config in `vedenemo-ux/public/config.json` points to a
 Tailscale HTTPS backend URL.
+
+Frontend adapter responsibilities:
+
+- `ModelChangeEventAdapter` owns browser WebSocket connection lifecycle and
+  translates backend model-change messages into callbacks.
+- `PlantUmlModelAdapter` reads the selected model through existing HTTP model,
+  entity, and attribute endpoints and transforms `VEntity` instances to PlantUML
+  classes and `VAttribute` instances to class attributes.
 
 ## Runtime Flows
 
@@ -465,18 +505,28 @@ sequenceDiagram
     Sessions-->>CLI: 200 undo response with command slug and target details
 ```
 
-### UX Ping
+### UX Model Selection And PlantUML Rendering
 
 ```mermaid
 sequenceDiagram
     participant UX as vedenemo-ux
     participant Config as /config.json
     participant API as vedenemo-web-api
+    participant Events as /models/events WebSocket
 
     UX->>Config: fetch runtime config
     Config-->>UX: apiBaseUrl
+    UX->>API: GET /models/list
+    API-->>UX: model summaries
     UX->>API: GET /models/ping
     API-->>UX: {"status":"ok"}
+    UX->>Events: connect
+    Events-->>UX: connected
+    UX->>API: GET /models/{modelAzName}/entities
+    UX->>API: GET /models/{modelAzName}/entities/{entityAzName}/attributes
+    UX->>UX: render PlantUML text
+    Events-->>UX: model-changed
+    UX->>API: refresh selected model data
 ```
 
 ## CI and Deployment
@@ -521,4 +571,5 @@ The current implementation does not yet contain:
 - user-visible deletion/edit commands for entities or attributes
 - generic command envelope or command replay persistence
 - durable persistence
-- parser, scripting, plugin, or visualization implementations
+- graphical PlantUML rendering beyond the current text representation
+- parser generator based `.vdos` grammar tooling

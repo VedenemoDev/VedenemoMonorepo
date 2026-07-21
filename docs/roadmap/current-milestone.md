@@ -27,10 +27,11 @@ The repository currently provides:
 - Stack-based undo for the latest executed command in the active session.
 - Model-level command journal for model-targeting commands.
 - Backend-owned `.vdos` Vedenemo Script export/import.
-- Javalin web API for model listing, model details, sessions, commands, undo,
-  and `.vdos` script import/export.
+- Javalin web API for model listing, model details, model-change WebSocket
+  events, sessions, commands, undo, and `.vdos` script import/export.
 - HTTP-backed interactive `VedenemoCli`.
-- Separate Vite/TypeScript frontend skeleton.
+- Separate Vite/TypeScript frontend with model selection, model-change
+  connection, and PlantUML text rendering.
 - Backend and frontend GitHub Actions workflows.
 
 ## Done Criteria For This Milestone
@@ -42,6 +43,7 @@ The repository currently provides:
 - Core-owned model and command rules stay independent of web, CLI, storage, and
   frontend modules.
 - The web API can run locally as an executable JAR.
+- The web API can emit process-local model-change events over WebSocket.
 - `VedenemoCli` can create a session, add/list/attach models, create entities,
   create attributes, undo the latest session command, save `.vdos` files, and
   load `.vdos` files.
@@ -68,7 +70,8 @@ The repository currently provides:
   exist as undo counterparts.
 - No database persistence adapter is implemented yet.
 - No authentication/authorization is implemented for the local web API.
-- No WebSocket/SSE runtime is implemented.
+- WebSocket model-change events are process-local runtime notifications, not
+  durable event storage.
 - No production parser-generator based `.vdos` grammar tooling is implemented.
 
 ## Near-Term Direction

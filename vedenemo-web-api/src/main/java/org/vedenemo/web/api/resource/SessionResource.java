@@ -11,6 +11,7 @@ import org.vedenemo.core.model.DataType;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.Session;
 import org.vedenemo.core.session.SessionManager;
+import org.vedenemo.web.api.events.ModelChangeBroadcaster;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -20,11 +21,21 @@ public final class SessionResource {
 
     private final SessionManager sessionManager;
     private final ModelRegistry modelRegistry;
+    private final ModelChangeBroadcaster modelChangeBroadcaster;
     private final ObjectMapper objectMapper;
 
     public SessionResource(SessionManager sessionManager, ModelRegistry modelRegistry) {
+        this(sessionManager, modelRegistry, new ModelChangeBroadcaster());
+    }
+
+    public SessionResource(
+            SessionManager sessionManager,
+            ModelRegistry modelRegistry,
+            ModelChangeBroadcaster modelChangeBroadcaster
+    ) {
         this.sessionManager = Objects.requireNonNull(sessionManager, "sessionManager must not be null");
         this.modelRegistry = Objects.requireNonNull(modelRegistry, "modelRegistry must not be null");
+        this.modelChangeBroadcaster = Objects.requireNonNull(modelChangeBroadcaster, "modelChangeBroadcaster must not be null");
         this.objectMapper = new ObjectMapper();
     }
 
@@ -121,6 +132,7 @@ public final class SessionResource {
                         request.entityAzName(),
                         request.entityVisName()
                 ));
+                modelChangeBroadcaster.broadcastModelChanged(selectedModelAzName.orElseThrow());
             } catch (JsonProcessingException | IllegalArgumentException | IllegalStateException | NullPointerException exception) {
                 writeJson(context, 400, new ErrorResponse(exception.getMessage()));
                 return;
@@ -155,6 +167,7 @@ public final class SessionResource {
                         request.attributeVisName(),
                         dataType
                 ));
+                modelChangeBroadcaster.broadcastModelChanged(selectedModelAzName.orElseThrow());
             } catch (JsonProcessingException | IllegalArgumentException | IllegalStateException | NullPointerException exception) {
                 writeJson(context, 400, new ErrorResponse(exception.getMessage()));
                 return;
@@ -183,6 +196,7 @@ public final class SessionResource {
                     context.status(304);
                     return;
                 }
+                modelChangeBroadcaster.broadcastModelChanged(result.modelAzName());
             } catch (IllegalArgumentException | IllegalStateException exception) {
                 writeJson(context, 400, new ErrorResponse(exception.getMessage()));
                 return;

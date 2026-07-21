@@ -18,9 +18,15 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.WebSocket;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ModelsResourceTest {
@@ -197,6 +203,41 @@ final class ModelsResourceTest {
 
         assertEquals(409, response.statusCode());
         assertTrue(response.body().contains("model already exists"));
+    }
+
+    @Test
+    void modelEventsWebSocketReceivesModelChangeEvents() throws Exception {
+        LinkedBlockingQueue<String> messages = new LinkedBlockingQueue<>();
+        WebSocket webSocket = httpClient.newWebSocketBuilder()
+                .buildAsync(URI.create(baseUrl.replace("http://", "ws://") + "/models/events"), new WebSocket.Listener() {
+                    @Override
+                    public void onOpen(WebSocket webSocket) {
+                        webSocket.request(1);
+                    }
+
+                    @Override
+                    public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+                        messages.add(data.toString());
+                        webSocket.request(1);
+                        return CompletableFuture.completedFuture(null);
+                    }
+                })
+                .join();
+
+        String connected = messages.poll(5, TimeUnit.SECONDS);
+        assertNotNull(connected);
+        assertTrue(connected.contains("\"type\":\"connected\""));
+
+        post("/models/add", """
+                {"azName":"Example_Model","visName":"Example Model","version":"1.0.0"}
+                """);
+
+        String event = messages.poll(5, TimeUnit.SECONDS);
+        assertNotNull(event);
+        assertTrue(event.contains("\"type\":\"model-changed\""));
+        assertTrue(event.contains("\"modelAzName\":\"Example_Model\""));
+
+        webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "done").join();
     }
 
     private HttpResponse<String> post(String path, String body) throws IOException, InterruptedException {

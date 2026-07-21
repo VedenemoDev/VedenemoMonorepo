@@ -11,6 +11,7 @@ import org.vedenemo.core.registry.DuplicateModelRootException;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.script.VedenemoScriptImportResult;
 import org.vedenemo.core.script.VedenemoScriptService;
+import org.vedenemo.web.api.events.ModelChangeBroadcaster;
 
 import java.util.List;
 import java.util.Objects;
@@ -19,15 +20,25 @@ public final class ModelsResource {
 
     private final ModelRegistry modelRegistry;
     private final VedenemoScriptService scriptService;
+    private final ModelChangeBroadcaster modelChangeBroadcaster;
     private final ObjectMapper objectMapper;
 
     public ModelsResource(ModelRegistry modelRegistry) {
-        this(modelRegistry, new ModelCommandJournal());
+        this(modelRegistry, new ModelCommandJournal(), new ModelChangeBroadcaster());
     }
 
     public ModelsResource(ModelRegistry modelRegistry, ModelCommandJournal commandJournal) {
+        this(modelRegistry, commandJournal, new ModelChangeBroadcaster());
+    }
+
+    public ModelsResource(
+            ModelRegistry modelRegistry,
+            ModelCommandJournal commandJournal,
+            ModelChangeBroadcaster modelChangeBroadcaster
+    ) {
         this.modelRegistry = Objects.requireNonNull(modelRegistry, "modelRegistry must not be null");
         this.scriptService = new VedenemoScriptService(modelRegistry, Objects.requireNonNull(commandJournal, "commandJournal must not be null"));
+        this.modelChangeBroadcaster = Objects.requireNonNull(modelChangeBroadcaster, "modelChangeBroadcaster must not be null");
         this.objectMapper = new ObjectMapper();
     }
 
@@ -40,6 +51,7 @@ public final class ModelsResource {
             try {
                 AddModelRequest request = objectMapper.readValue(context.body(), AddModelRequest.class);
                 ModelRoot modelRoot = modelRegistry.add(ModelRoot.create(request.azName(), request.visName(), request.version()));
+                modelChangeBroadcaster.broadcastModelChanged(modelRoot.azName());
                 writeJson(context, 201, ModelRootResponse.from(modelRoot));
             } catch (JsonProcessingException | IllegalArgumentException exception) {
                 writeJson(context, 400, new ErrorResponse(exception.getMessage()));
@@ -96,6 +108,7 @@ public final class ModelsResource {
                         context.body(),
                         context.queryParam("modelAzName")
                 );
+                modelChangeBroadcaster.broadcastModelChanged(result.modelAzName());
                 writeJson(context, 201, new ScriptImportResponse(result.modelAzName(), result.commandCount()));
             } catch (IllegalStateException exception) {
                 writeJson(context, 409, new ErrorResponse(exception.getMessage()));

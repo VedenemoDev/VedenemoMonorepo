@@ -2677,3 +2677,73 @@ across refresh, show loading/error/empty states, and provide responsive styling.
 
 Next steps: Stage all changes, commit, push to `origin/main`, and verify clean
 branch status.
+
+## 2026-07-21 18:09 EEST
+
+Goal: Add UX model selection labels, model-change WebSocket connection, and
+PlantUML text rendering for the selected model.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/roadmap/current-milestone.md`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/events/ModelChangeBroadcaster.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/adapters/ModelChangeEventAdapter.ts`
+- `vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `vedenemo-ux/src/styles.css`
+- `SESSION.md`
+
+Commands run:
+
+- required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- inspected web API routing, dependencies, Javalin WebSocket APIs, current UX,
+  model resources, command execution, and model command journal
+- `npm run build`
+- `mvn -B clean verify`
+- `git diff --check`
+- `git status --short --branch`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added a web API `ModelChangeBroadcaster` adapter with
+`/models/events` WebSocket support and broadcasts after model add, `.vdos`
+import, entity creation, attribute creation, and undo. Updated the UX labels,
+added a Connect/Disconnect toggle, added WebSocket and PlantUML adapters, and
+rendered the selected model as read-only PlantUML class diagram text.
+
+Verification: `npm run build` passed. `mvn -B clean verify` passed, including a
+WebSocket model-change event test. `git diff --check` passed.
+
+Next steps: Start the Vite dev server for local review and commit if
+acceptable.
+
+## 2026-07-21 18:12 EEST
+
+Goal: Commit and push the UX model event connection and PlantUML text rendering
+work.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff --stat`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Preparing a detailed commit for the backend WebSocket model-change
+adapter, UX Connect/Disconnect flow, PlantUML model text adapter, documentation
+updates, and WebSocket endpoint test.
+
+Next steps: Stage all changes, commit, push to `origin/main`, verify clean
+branch status, and stop the local Vite dev server if still running.

@@ -17,10 +17,11 @@ development, command-flow testing, and shaping the core model/API boundaries.
 - Stack-based undo for the latest successful command in the current session.
 - Model-level command journal used by Vedenemo Script export.
 - Backend-owned `.vdos` Vedenemo Script import/export.
-- Javalin HTTP API for models, sessions, commands, undo, and script import/export.
+- Javalin HTTP/WebSocket API for models, model-change events, sessions,
+  commands, undo, and script import/export.
 - HTTP-backed interactive `VedenemoCli`.
 - In-memory storage adapter.
-- Separate Vite/TypeScript UX skeleton.
+- Separate Vite/TypeScript UX with model selection and PlantUML text rendering.
 - GitHub Actions workflows for backend and frontend.
 
 Not currently implemented:
@@ -28,7 +29,7 @@ Not currently implemented:
 - Database persistence.
 - Distributed runtime.
 - REST API authentication.
-- WebSockets/SSE.
+- Durable event streaming or cross-process model-change notifications.
 - Production-grade script grammar tooling.
 
 ## Repository Layout
@@ -113,6 +114,7 @@ Current API surface:
 GET    /models/ping
 POST   /models/add
 GET    /models/list
+WS     /models/events
 GET    /models/{modelAzName}/entities
 GET    /models/{modelAzName}/entities/{entityAzName}/attributes
 GET    /models/{modelAzName}/script
