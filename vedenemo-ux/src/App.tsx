@@ -16,6 +16,8 @@ type ModelSummary = {
   version: string;
 };
 
+const PLANTUML_TARGET_ID = "plantuml-diagram";
+
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   const response = await fetch("/config.json", { cache: "no-store" });
   if (!response.ok) {
@@ -56,7 +58,7 @@ export function App() {
   const [selectedModelAzName, setSelectedModelAzName] = useState("");
   const [modelConnectionState, setModelConnectionState] = useState<ModelConnectionState>("disconnected");
   const [modelConnectionMessage, setModelConnectionMessage] = useState("Disconnected");
-  const [diagramSvg, setDiagramSvg] = useState("");
+  const [diagramHasContent, setDiagramHasContent] = useState(false);
   const [diagramMessage, setDiagramMessage] = useState("Select model and connect to show diagram.");
 
   useEffect(() => {
@@ -141,33 +143,35 @@ export function App() {
 
   async function renderSelectedModel(modelAzName = selectedModelAzName) {
     if (!apiBaseUrl) {
-      setDiagramSvg("");
+      setDiagramHasContent(false);
       setDiagramMessage("Backend URL is not configured.");
       return;
     }
     if (!modelAzName) {
-      setDiagramSvg("");
+      setDiagramHasContent(false);
       setDiagramMessage("Select model and connect to show diagram.");
       return;
     }
 
     try {
+      setDiagramHasContent(false);
       setDiagramMessage("Rendering diagram...");
       const plantUmlSource = await plantUmlAdapterRef.current.renderModel(apiBaseUrl, modelAzName);
-      setDiagramSvg(await renderPlantUmlSvg(plantUmlSource));
+      await renderPlantUmlSvg(plantUmlSource);
+      setDiagramHasContent(true);
       setDiagramMessage("Diagram rendered");
     } catch (error) {
-      setDiagramSvg("");
+      setDiagramHasContent(false);
       setDiagramMessage(error instanceof Error ? `Diagram render failed: ${error.message}` : "Diagram render failed.");
     }
   }
 
-  async function renderPlantUmlSvg(plantUmlSource: string): Promise<string> {
+  async function renderPlantUmlSvg(plantUmlSource: string): Promise<void> {
     if (plantUmlDiagramRendererRef.current === null) {
       const module = await import("./adapters/PlantUmlDiagramRendererAdapter");
       plantUmlDiagramRendererRef.current = new module.PlantUmlDiagramRendererAdapter();
     }
-    return plantUmlDiagramRendererRef.current.renderSvg(plantUmlSource);
+    return plantUmlDiagramRendererRef.current.renderSvg(plantUmlSource, PLANTUML_TARGET_ID);
   }
 
   async function toggleModelConnection() {
@@ -292,9 +296,8 @@ export function App() {
           <span className={`connection-status connection-status-${modelConnectionState}`}>{modelConnectionMessage}</span>
           <span className="diagram-status">{diagramMessage}</span>
           <div className="diagram-viewport" aria-label="PlantUML class diagram">
-            {diagramSvg ? (
-              <div className="diagram-svg" dangerouslySetInnerHTML={{ __html: diagramSvg }} />
-            ) : (
+            <div id={PLANTUML_TARGET_ID} className="diagram-svg" />
+            {!diagramHasContent && (
               <div className="diagram-placeholder">{diagramMessage}</div>
             )}
           </div>

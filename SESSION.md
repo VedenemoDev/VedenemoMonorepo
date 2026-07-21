@@ -2678,6 +2678,40 @@ across refresh, show loading/error/empty states, and provide responsive styling.
 Next steps: Stage all changes, commit, push to `origin/main`, and verify clean
 branch status.
 
+## 2026-07-21 21:01 EEST
+
+Goal: Fix UX PlantUML visual rendering stuck at `Rendering diagram...`.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts`
+- `vedenemo-ux/src/vite-env.d.ts`
+- `SESSION.md`
+
+Commands run:
+
+- inspected `@plantuml/core` README/demo files and current renderer code
+- `npm run build`
+- `git diff --check`
+- `git status --short --branch`
+- `git diff --stat`
+- `npm run dev -- --host 127.0.0.1`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Switched the renderer adapter from `renderToString` callbacks to the
+package-demonstrated DOM `render(lines, targetId)` path, using a persistent
+diagram target, mutation observer completion detection, and timeout fallback.
+The UI no longer waits forever on a callback that does not fire.
+
+Verification: `npm run build` passed. `git diff --check` passed. The local Vite
+dev server is running at `http://127.0.0.1:5176/`. Vite still reports the known
+large lazy PlantUML chunk and browser externalization warning for `url` in
+`viz-global.js`.
+
+Next steps: User should re-test the diagram rendering in the browser; commit
+after confirmation.
+
 ## 2026-07-21 18:09 EEST
 
 Goal: Add UX model selection labels, model-change WebSocket connection, and

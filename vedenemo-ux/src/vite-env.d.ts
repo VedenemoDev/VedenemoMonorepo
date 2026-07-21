@@ -1,10 +1,9 @@
 /// <reference types="vite/client" />
 
 declare module "@plantuml/core" {
-  export function renderToString(
+  export function render(
     lines: string[],
-    onSuccess: (svg: string) => void,
-    onError: (message: string) => void,
+    targetId: string,
     options?: { dark?: boolean },
   ): void;
 }
