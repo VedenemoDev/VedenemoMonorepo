@@ -13,6 +13,7 @@ export class PlantUmlModelAdapter {
     const entities = await fetchJson<EntitySummary[]>(`${apiBaseUrl}/models/${encodeURIComponent(modelAzName)}/entities`);
     const lines = [
       "@startuml",
+      "hide circle",
       `title ${plantUmlText(modelAzName)}`,
       "",
     ];

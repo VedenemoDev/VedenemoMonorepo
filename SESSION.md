@@ -2782,6 +2782,34 @@ Verification: `npm run build` passed. `git diff --check` passed.
 Next steps: Review the simplified visual diagram output in the browser and
 commit if accepted.
 
+## 2026-07-21 22:27 EEST
+
+Goal: Hide the PlantUML class spot marker from UX-rendered entity diagrams.
+
+Files changed:
+
+- `vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `SESSION.md`
+
+Commands run:
+
+- required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- inspected `PlantUmlModelAdapter`
+- `npm run build`
+- `git diff --check`
+- `git diff -- vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added the PlantUML `hide circle` directive to generated diagrams so
+entity boxes no longer show the class-specific `C` marker.
+
+Verification: `npm run build` passed. `git diff --check` passed.
+
+Next steps: Review the rendered diagram in the browser and commit if accepted.
+
 ## 2026-07-21 18:09 EEST
 
 Goal: Add UX model selection labels, model-change WebSocket connection, and
