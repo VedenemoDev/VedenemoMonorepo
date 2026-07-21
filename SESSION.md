@@ -2835,6 +2835,38 @@ Verification: `git diff --check` passed.
 
 Next steps: Review the new backlog history entries and commit if accepted.
 
+## 2026-07-21 22:57 EEST
+
+Goal: Use the model visual name in UX PlantUML diagram titles.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `SESSION.md`
+
+Commands run:
+
+- required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- inspected `PlantUmlModelAdapter`, `App`, and model web API routes
+- `npm run build`
+- `git diff --check`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Updated the UX to pass the selected model visual name into
+`PlantUmlModelAdapter`. Generated diagram titles now use `visName (azName)`
+when the names differ and just the visual name when they match.
+
+Verification: `npm run build` passed. `git diff --check` passed.
+
+Next steps: Review the rendered diagram title in the browser and commit if
+accepted.
+
 ## 2026-07-21 22:50 EEST
 
 Goal: Hide empty member compartment separators from UX-rendered PlantUML entity

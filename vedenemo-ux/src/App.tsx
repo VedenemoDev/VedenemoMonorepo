@@ -156,7 +156,12 @@ export function App() {
     try {
       setDiagramHasContent(false);
       setDiagramMessage("Rendering diagram...");
-      const plantUmlSource = await plantUmlAdapterRef.current.renderModel(apiBaseUrl, modelAzName);
+      const selectedModel = models.find((model) => model.azName.toLocaleLowerCase() === modelAzName.toLocaleLowerCase());
+      const plantUmlSource = await plantUmlAdapterRef.current.renderModel(
+        apiBaseUrl,
+        modelAzName,
+        selectedModel?.visName,
+      );
       await renderPlantUmlSvg(plantUmlSource);
       setDiagramHasContent(true);
       setDiagramMessage("Diagram rendered");

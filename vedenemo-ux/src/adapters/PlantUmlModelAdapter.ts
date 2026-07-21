@@ -9,13 +9,13 @@ type AttributeSummary = {
 };
 
 export class PlantUmlModelAdapter {
-  async renderModel(apiBaseUrl: string, modelAzName: string): Promise<string> {
+  async renderModel(apiBaseUrl: string, modelAzName: string, modelVisName = modelAzName): Promise<string> {
     const entities = await fetchJson<EntitySummary[]>(`${apiBaseUrl}/models/${encodeURIComponent(modelAzName)}/entities`);
     const lines = [
       "@startuml",
       "hide circle",
       "hide empty members",
-      `title ${plantUmlText(modelAzName)}`,
+      `title ${plantUmlText(modelTitle(modelAzName, modelVisName))}`,
       "",
     ];
 
@@ -58,4 +58,8 @@ function identifier(value: string): string {
 
 function plantUmlText(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function modelTitle(azName: string, visName: string): string {
+  return visName === azName ? visName : `${visName} (${azName})`;
 }
