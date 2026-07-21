@@ -2747,3 +2747,73 @@ updates, and WebSocket endpoint test.
 
 Next steps: Stage all changes, commit, push to `origin/main`, verify clean
 branch status, and stop the local Vite dev server if still running.
+
+## 2026-07-21 20:46 EEST
+
+Goal: Replace UX PlantUML text output with browser-rendered visual PlantUML
+class diagrams.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/roadmap/current-milestone.md`
+- `vedenemo-ux/package.json`
+- `vedenemo-ux/package-lock.json`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts`
+- `vedenemo-ux/src/styles.css`
+- `vedenemo-ux/src/vite-env.d.ts`
+- `SESSION.md`
+
+Commands run:
+
+- required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- `npm install @plantuml/core@1.2026.6`
+- inspected `@plantuml/core` package files and README
+- `npm run build`
+- `git diff --check`
+- `git status --short --branch`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added `@plantuml/core`, introduced a lazy-loaded
+`PlantUmlDiagramRendererAdapter`, replaced the read-only PlantUML source
+textarea with an SVG diagram viewport, and styled the viewport with scrollbars
+for large automatically laid out diagrams. Updated docs from PlantUML text
+rendering to PlantUML SVG rendering.
+
+Verification: `npm run build` passed. `git diff --check` passed. Vite warns that
+the lazy PlantUML renderer chunk is large; the main app chunk remains small.
+`npm install` reported one high severity advisory in the UX dependency tree.
+
+Next steps: Start the Vite dev server for local review and evaluate the npm
+audit finding before commit.
+
+## 2026-07-21 20:51 EEST
+
+Goal: Commit and push visual PlantUML SVG rendering for the UX.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `npm audit`
+- `git status --short --branch`
+- `git diff --stat`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Preparing a commit for the `@plantuml/core` UX dependency,
+lazy-loaded PlantUML SVG renderer adapter, scrollable diagram viewport, and
+documentation updates. `npm audit` reports one high severity advisory affecting
+`vite` versions `8.0.0` through `8.0.15`; the suggested fix is `vite@8.1.5`
+via `npm audit fix --force`, which is outside the current dependency range and
+was not applied.
+
+Next steps: Stage all changes, commit, push to `origin/main`, and verify clean
+branch status.

@@ -44,6 +44,7 @@ async function fetchModels(apiBaseUrl: string): Promise<ModelSummary[]> {
 
 export function App() {
   const eventAdapterRef = useRef(new ModelChangeEventAdapter());
+  const plantUmlDiagramRendererRef = useRef<import("./adapters/PlantUmlDiagramRendererAdapter").PlantUmlDiagramRendererAdapter | null>(null);
   const plantUmlAdapterRef = useRef(new PlantUmlModelAdapter());
   const selectedModelAzNameRef = useRef("");
   const [apiBaseUrl, setApiBaseUrl] = useState("");
@@ -55,7 +56,8 @@ export function App() {
   const [selectedModelAzName, setSelectedModelAzName] = useState("");
   const [modelConnectionState, setModelConnectionState] = useState<ModelConnectionState>("disconnected");
   const [modelConnectionMessage, setModelConnectionMessage] = useState("Disconnected");
-  const [plantUmlText, setPlantUmlText] = useState("Select model and connect to show PlantUML.");
+  const [diagramSvg, setDiagramSvg] = useState("");
+  const [diagramMessage, setDiagramMessage] = useState("Select model and connect to show diagram.");
 
   useEffect(() => {
     selectedModelAzNameRef.current = selectedModelAzName;
@@ -139,19 +141,33 @@ export function App() {
 
   async function renderSelectedModel(modelAzName = selectedModelAzName) {
     if (!apiBaseUrl) {
-      setPlantUmlText("Backend URL is not configured.");
+      setDiagramSvg("");
+      setDiagramMessage("Backend URL is not configured.");
       return;
     }
     if (!modelAzName) {
-      setPlantUmlText("Select model and connect to show PlantUML.");
+      setDiagramSvg("");
+      setDiagramMessage("Select model and connect to show diagram.");
       return;
     }
 
     try {
-      setPlantUmlText(await plantUmlAdapterRef.current.renderModel(apiBaseUrl, modelAzName));
+      setDiagramMessage("Rendering diagram...");
+      const plantUmlSource = await plantUmlAdapterRef.current.renderModel(apiBaseUrl, modelAzName);
+      setDiagramSvg(await renderPlantUmlSvg(plantUmlSource));
+      setDiagramMessage("Diagram rendered");
     } catch (error) {
-      setPlantUmlText(error instanceof Error ? `PlantUML render failed: ${error.message}` : "PlantUML render failed.");
+      setDiagramSvg("");
+      setDiagramMessage(error instanceof Error ? `Diagram render failed: ${error.message}` : "Diagram render failed.");
     }
+  }
+
+  async function renderPlantUmlSvg(plantUmlSource: string): Promise<string> {
+    if (plantUmlDiagramRendererRef.current === null) {
+      const module = await import("./adapters/PlantUmlDiagramRendererAdapter");
+      plantUmlDiagramRendererRef.current = new module.PlantUmlDiagramRendererAdapter();
+    }
+    return plantUmlDiagramRendererRef.current.renderSvg(plantUmlSource);
   }
 
   async function toggleModelConnection() {
@@ -274,12 +290,14 @@ export function App() {
           </div>
           <span className={`model-status model-status-${modelLoadState}`}>{modelMessage}</span>
           <span className={`connection-status connection-status-${modelConnectionState}`}>{modelConnectionMessage}</span>
-          <textarea
-            className="plantuml-output"
-            aria-label="PlantUML model representation"
-            value={plantUmlText}
-            readOnly
-          />
+          <span className="diagram-status">{diagramMessage}</span>
+          <div className="diagram-viewport" aria-label="PlantUML class diagram">
+            {diagramSvg ? (
+              <div className="diagram-svg" dangerouslySetInnerHTML={{ __html: diagramSvg }} />
+            ) : (
+              <div className="diagram-placeholder">{diagramMessage}</div>
+            )}
+          </div>
         </div>
         <p className="backend-url">{apiBaseUrl || "Backend URL is not configured"}</p>
       </section>

@@ -21,7 +21,7 @@ development, command-flow testing, and shaping the core model/API boundaries.
   commands, undo, and script import/export.
 - HTTP-backed interactive `VedenemoCli`.
 - In-memory storage adapter.
-- Separate Vite/TypeScript UX with model selection and PlantUML text rendering.
+- Separate Vite/TypeScript UX with model selection and PlantUML SVG rendering.
 - GitHub Actions workflows for backend and frontend.
 
 Not currently implemented:

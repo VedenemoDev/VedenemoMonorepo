@@ -18,7 +18,8 @@ subgraph UX["Frontend"]
     ViteUX["vedenemo-ux<br/>React + Vite"]
     RuntimeConfig["public/config.json<br/>runtime API base URL"]
     UXModelEvents["ModelChangeEventAdapter<br/>browser WebSocket listener"]
-    UXPlantUml["PlantUmlModelAdapter<br/>model-to-PlantUML text"]
+    UXPlantUml["PlantUmlModelAdapter<br/>model-to-PlantUML source"]
+    UXPlantUmlRenderer["PlantUmlDiagramRendererAdapter<br/>lazy PlantUML SVG renderer"]
 end
 
 subgraph Web["Web API Runtime"]
@@ -52,6 +53,7 @@ ViteUX --> RuntimeConfig
 ViteUX -->|fetch /models/ping| WebApi
 ViteUX -->|fetch model data| UXPlantUml
 ViteUX -->|connect/disconnect| UXModelEvents
+ViteUX -->|lazy render diagram| UXPlantUmlRenderer
 UXPlantUml -->|GET model/entity/attribute APIs| WebApi
 UXModelEvents -->|WebSocket /models/events| WebApi
 Cli -->|HTTP model and session APIs| WebApi
@@ -345,8 +347,8 @@ Current user-facing behavior:
 - lets the user select a model from a dropdown
 - provides a Connect/Disconnect toggle for `{apiBaseUrl}/models/events`
 - refreshes the selected model view when backend model-change events arrive
-- renders the selected model as ASCII PlantUML class diagram text in a read-only
-  text area
+- renders the selected model as an automatically laid out PlantUML SVG class
+  diagram in a scrollable viewport
 
 The default runtime config in `vedenemo-ux/public/config.json` points to a
 Tailscale HTTPS backend URL.
@@ -358,6 +360,9 @@ Frontend adapter responsibilities:
 - `PlantUmlModelAdapter` reads the selected model through existing HTTP model,
   entity, and attribute endpoints and transforms `VEntity` instances to PlantUML
   classes and `VAttribute` instances to class attributes.
+- `PlantUmlDiagramRendererAdapter` lazy-loads `@plantuml/core` and renders the
+  generated PlantUML source to SVG in the browser. The heavy renderer chunk is
+  loaded only when a diagram is rendered.
 
 ## Runtime Flows
 
@@ -524,7 +529,7 @@ sequenceDiagram
     Events-->>UX: connected
     UX->>API: GET /models/{modelAzName}/entities
     UX->>API: GET /models/{modelAzName}/entities/{entityAzName}/attributes
-    UX->>UX: render PlantUML text
+    UX->>UX: lazy-load PlantUML renderer and render SVG
     Events-->>UX: model-changed
     UX->>API: refresh selected model data
 ```
@@ -571,5 +576,4 @@ The current implementation does not yet contain:
 - user-visible deletion/edit commands for entities or attributes
 - generic command envelope or command replay persistence
 - durable persistence
-- graphical PlantUML rendering beyond the current text representation
 - parser generator based `.vdos` grammar tooling

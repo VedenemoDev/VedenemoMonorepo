@@ -31,7 +31,7 @@ The repository currently provides:
   events, sessions, commands, undo, and `.vdos` script import/export.
 - HTTP-backed interactive `VedenemoCli`.
 - Separate Vite/TypeScript frontend with model selection, model-change
-  connection, and PlantUML text rendering.
+  connection, and PlantUML SVG rendering.
 - Backend and frontend GitHub Actions workflows.
 
 ## Done Criteria For This Milestone
