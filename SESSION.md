@@ -2810,6 +2810,31 @@ Verification: `npm run build` passed. `git diff --check` passed.
 
 Next steps: Review the rendered diagram in the browser and commit if accepted.
 
+## 2026-07-21 22:54 EEST
+
+Goal: Add backlog history entries for directly implemented UX changes.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- inspected `tasks/backlog.md`, recent git log, and `SESSION.md`
+- `git diff --check`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added short executed backlog entries for the UX model selector,
+WebSocket connection and PlantUML text output, visual PlantUML rendering and
+renderer fixes, simplified model diagram content, and hidden PlantUML
+class-specific diagram chrome.
+
+Verification: `git diff --check` passed.
+
+Next steps: Review the new backlog history entries and commit if accepted.
+
 ## 2026-07-21 22:50 EEST
 
 Goal: Hide empty member compartment separators from UX-rendered PlantUML entity

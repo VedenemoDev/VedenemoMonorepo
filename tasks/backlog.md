@@ -2158,3 +2158,98 @@ No open planning questions remain.
 - Updated CLI and architecture documentation.
 - Added focused core, web API, and CLI tests.
 - `mvn -B clean verify` passed during implementation.
+
+## Add UX Model Selector And Refresh
+
+Status: executed. Short historical task entry added after implementation.
+
+### Goal
+
+Add a UX control for selecting the active model from backend data and refreshing
+the available model list.
+
+### Completion Notes
+
+- Added a model dropdown populated from the backend at page load.
+- Added a `Refresh model list` action to reload available models.
+- Changed the model selector label to `Select model`.
+- Committed as `34f4c1f Add UX model selector with refresh`.
+
+## Add UX Model Event Connection And PlantUML Text Output
+
+Status: executed. Short historical task entry added after implementation.
+
+### Goal
+
+Allow the UX to connect to backend model-change events and show the selected
+model as a PlantUML class-diagram text representation.
+
+### Completion Notes
+
+- Added backend `/models/events` WebSocket support through an adapter layer.
+- Added a UX `Connect` / `Disconnect` toggle for listening to model changes.
+- Added `PlantUmlModelAdapter` to transform `VEntity` values to PlantUML
+  classes and `VAttribute` values to class attributes.
+- Initially displayed the generated PlantUML as plain ASCII text.
+- Committed as `993bc5d Add UX model event connection and PlantUML text`.
+
+## Render PlantUML Diagrams Visually In UX
+
+Status: executed. Short historical task entry added after implementation.
+
+### Goal
+
+Replace plain PlantUML text output with visual, scrollable diagram rendering in
+the UX.
+
+### Completion Notes
+
+- Added `@plantuml/core` to render PlantUML diagrams in the browser.
+- Added `PlantUmlDiagramRendererAdapter`.
+- Replaced the text area with a scrollable visual diagram viewport.
+- Kept the renderer lazy-loaded so the initial UX bundle remains smaller.
+- Fixed browser rendering follow-ups:
+  - switched from `renderToString` to DOM rendering with completion detection;
+  - loaded `viz-global.js` as a classic browser script asset before importing
+    `@plantuml/core`.
+- Committed as:
+  - `8a9d1ab Render PlantUML diagrams visually in UX`
+  - `66f4e4a Fix UX PlantUML diagram rendering`
+  - `6741247 Load PlantUML Graphviz dependency as browser script`
+
+## Simplify UX PlantUML Model Content
+
+Status: executed. Short historical task entry added after implementation.
+
+### Goal
+
+Keep the visual model diagram focused on user-authored model content instead of
+internal metadata.
+
+### Completion Notes
+
+- Removed entity `azName`, `activeSince`, and `deprecatedSince` rows from
+  generated class bodies.
+- Kept entity `azName` only as the internal PlantUML identifier needed for
+  stable rendering.
+- Rendered attribute rows with attribute `visName` instead of `azName`.
+- Kept the attribute data type visible.
+- Committed as `c0a33ae Simplify UX PlantUML model content`.
+
+## Hide PlantUML Class-Specific Diagram Chrome
+
+Status: executed. Short historical task entry added after implementation.
+
+### Goal
+
+Keep using PlantUML class-box layout while avoiding visual markers that imply
+Vedenemo entities are implementation classes.
+
+### Completion Notes
+
+- Added `hide circle` to remove the class-specific `C` marker.
+- Added `hide empty members` to suppress empty member compartments and their
+  separator lines while keeping real attribute rows visible.
+- Committed as:
+  - `9c288d7 Hide class marker in UX PlantUML diagrams`
+  - `d301de7 Hide empty PlantUML member compartments`
