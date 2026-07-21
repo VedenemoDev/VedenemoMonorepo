@@ -1,16 +1,11 @@
 type EntitySummary = {
   azName: string;
   visName: string;
-  activeSince: string;
-  deprecatedSince: string | null;
 };
 
 type AttributeSummary = {
-  azName: string;
   visName: string;
   dataType: string;
-  activeSince: string;
-  deprecatedSince: string | null;
 };
 
 export class PlantUmlModelAdapter {
@@ -24,18 +19,12 @@ export class PlantUmlModelAdapter {
 
     for (const entity of entities) {
       lines.push(`class ${identifier(entity.azName)} as "${plantUmlText(entity.visName)}" {`);
-      lines.push(`  .. ${plantUmlText(entity.azName)} ..`);
-      lines.push(`  activeSince : ${plantUmlText(entity.activeSince)}`);
-      if (entity.deprecatedSince !== null) {
-        lines.push(`  deprecatedSince : ${plantUmlText(entity.deprecatedSince)}`);
-      }
-
       const attributes = await fetchJson<AttributeSummary[]>(
         `${apiBaseUrl}/models/${encodeURIComponent(modelAzName)}/entities/${encodeURIComponent(entity.azName)}/attributes`,
       );
 
       for (const attribute of attributes) {
-        lines.push(`  ${plantUmlText(attribute.azName)} : ${plantUmlText(attribute.dataType)}`);
+        lines.push(`  ${plantUmlText(attribute.visName)} : ${plantUmlText(attribute.dataType)}`);
       }
 
       lines.push("}");

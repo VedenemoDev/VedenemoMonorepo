@@ -2750,6 +2750,38 @@ expected for this dependency. Local Vite dev server is running at
 Next steps: User should retry visual diagram rendering in the browser and
 confirm whether the SVG now appears.
 
+## 2026-07-21 22:02 EEST
+
+Goal: Hide lifecycle metadata from the UX PlantUML diagram and prefer visual
+attribute names.
+
+Files changed:
+
+- `vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `SESSION.md`
+
+Commands run:
+
+- required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- inspected UX PlantUML adapter and web API entity/attribute DTO mappings
+- `npm run build`
+- `git diff --check`
+- `git diff -- vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Updated the PlantUML model adapter so class bodies no longer include
+entity `azName`, `activeSince`, or `deprecatedSince` metadata. Attribute rows
+now use attribute `visName` with the data type, leaving only user-authored
+attributes in the visual model content.
+
+Verification: `npm run build` passed. `git diff --check` passed.
+
+Next steps: Review the simplified visual diagram output in the browser and
+commit if accepted.
+
 ## 2026-07-21 18:09 EEST
 
 Goal: Add UX model selection labels, model-change WebSocket connection, and
