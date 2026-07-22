@@ -3265,3 +3265,47 @@ Current status and next steps:
 - `mvn -B clean verify`, `npm run build`, `git diff --check`, and the
   backend+CLI `ping` smoke test passed. Vite still reports the existing large
   PlantUML/Viz chunk warning.
+
+## 2026-07-23 00:04 EEST
+
+Session goal: add terminal CLI `.vedenemo` snapshot listing and snapshot-number
+loading for `.vdos` files.
+
+Files changed:
+
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- `mvn -B -pl vedenemo-cli test` (failed because sibling
+  `vedenemo-command-console` was not in the isolated reactor)
+- `mvn -B -pl vedenemo-cli -am test`
+- `mvn -B clean verify`
+- backend+CLI smoke test that created a model, saved it to `.vedenemo`, ran
+  `snapshots`, and loaded by snapshot number with a duplicate-import rename
+- `git diff --check`
+- `git status --short`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added terminal-only `snapshots` command that lists `.vedenemo/*.vdos` files
+  in deterministic file-name order.
+- `load` still accepts direct paths, including numeric file names when no
+  snapshot list is active.
+- `load <number>` resolves against the latest `snapshots` list when available.
+- Bare relative `load <name>` now prefers `.vedenemo/<name>.vdos` when present,
+  then falls back to the CLI working directory behavior.
+- Updated CLI docs, README, living architecture doc, and backlog.
+- Focused CLI reactor tests, full Maven verification, whitespace check, and the
+  real backend+CLI snapshot smoke test passed.

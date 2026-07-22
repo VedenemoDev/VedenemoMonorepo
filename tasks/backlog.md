@@ -1,5 +1,33 @@
 # Backlog
 
+## Add Terminal CLI Snapshot Listing For Local Vedenemo Scripts
+
+Status: executed.
+
+### Goal
+
+Make the real terminal CLI easier to use with local `.vdos` files stored under
+a `.vedenemo` directory.
+
+### Scope
+
+- Add `snapshots` to list `.vdos` files from the CLI working directory's
+  `.vedenemo` subdirectory.
+- Keep `load <path>` working as before.
+- Allow `load <number>` to load from the latest `snapshots` list.
+- Prefer `.vedenemo/<name>.vdos` for bare relative `load <name>` when that file
+  exists.
+- Keep browser `/console` behavior unchanged because it has no local file
+  access.
+
+### Completion Notes
+
+- Added deterministic, numeric `.vedenemo/*.vdos` snapshot listing in
+  `vedenemo-cli`.
+- Added snapshot-number and `.vedenemo` default lookup support for terminal
+  `load`.
+- Added focused CLI tests and updated CLI/architecture documentation.
+
 ## Move Backend Ping From UX Button To CLI Console Command
 
 Status: executed.

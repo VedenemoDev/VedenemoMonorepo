@@ -71,7 +71,8 @@ final class VedenemoCliAppTest {
         assertTrue(result.output.contains("attr add - add an attribute to the selected entity"));
         assertTrue(result.output.contains("undo - undo the latest backend command"));
         assertTrue(result.output.contains("save [N | azName] [outputPath] - save a model to a .vdos file"));
-        assertTrue(result.output.contains("load <path> - load a model from a .vdos file"));
+        assertTrue(result.output.contains("snapshots - list .vdos files from the .vedenemo directory"));
+        assertTrue(result.output.contains("load <path | snapshot-number> - load a model from a .vdos file"));
         assertTrue(result.output.contains("exit - end the session and exit"));
     }
 
@@ -571,6 +572,112 @@ final class VedenemoCliAppTest {
         assertEquals("Imported_Model", sessionClient.selectedModelAzName);
         assertTrue(result.output.contains("Loaded model Imported_Model from "));
         assertTrue(result.output.contains("with 2 commands."));
+    }
+
+    @Test
+    void snapshotsListsVdosFilesFromVedenemoDirectory() throws Exception {
+        Path snapshotDirectory = Files.createDirectory(tempDirectory.resolve(".vedenemo"));
+        Files.writeString(snapshotDirectory.resolve("zeta.vdos"), "zeta", StandardCharsets.UTF_8);
+        Files.writeString(snapshotDirectory.resolve("Alpha.vdos"), "alpha", StandardCharsets.UTF_8);
+        Files.writeString(snapshotDirectory.resolve("notes.txt"), "notes", StandardCharsets.UTF_8);
+
+        Result result = run(
+                new TestSessionClient(UUID.randomUUID()),
+                new TestModelClient(),
+                new TestCommandClient(),
+                "snapshots\nexit\n",
+                tempDirectory
+        );
+
+        assertTrue(result.output.contains("1. Alpha.vdos"));
+        assertTrue(result.output.contains("2. zeta.vdos"));
+        assertTrue(!result.output.contains("notes.txt"));
+    }
+
+    @Test
+    void snapshotsReportsMissingDirectory() {
+        Result result = run(
+                new TestSessionClient(UUID.randomUUID()),
+                new TestModelClient(),
+                new TestCommandClient(),
+                "snapshots\nexit\n",
+                tempDirectory
+        );
+
+        assertTrue(result.output.contains("No .vedenemo directory found at " + tempDirectory.resolve(".vedenemo") + "."));
+    }
+
+    @Test
+    void loadBySnapshotNumberUsesLatestSnapshotList() throws Exception {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        Path snapshotDirectory = Files.createDirectory(tempDirectory.resolve(".vedenemo"));
+        Files.writeString(snapshotDirectory.resolve("Beta.vdos"), "beta-script", StandardCharsets.UTF_8);
+        Files.writeString(snapshotDirectory.resolve("Alpha.vdos"), "alpha-script", StandardCharsets.UTF_8);
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                new TestCommandClient(),
+                "snapshots\nload 2\nexit\n",
+                tempDirectory
+        );
+
+        assertEquals("beta-script", modelClient.importedScript);
+        assertEquals("Imported_Model", sessionClient.selectedModelAzName);
+        assertTrue(result.output.contains("Loaded model Imported_Model from " + snapshotDirectory.resolve("Beta.vdos")));
+    }
+
+    @Test
+    void loadNumericFileNameWorksWithoutSnapshotList() throws Exception {
+        TestModelClient modelClient = new TestModelClient();
+        Files.writeString(tempDirectory.resolve("1.vdos"), "number-script", StandardCharsets.UTF_8);
+
+        run(
+                new TestSessionClient(UUID.randomUUID()),
+                modelClient,
+                new TestCommandClient(),
+                "load 1\nexit\n",
+                tempDirectory
+        );
+
+        assertEquals("number-script", modelClient.importedScript);
+    }
+
+    @Test
+    void loadBareNamePrefersVedenemoDirectoryWhenSnapshotExists() throws Exception {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        Path snapshotDirectory = Files.createDirectory(tempDirectory.resolve(".vedenemo"));
+        Files.writeString(tempDirectory.resolve("Levykokoelma.vdos"), "root-script", StandardCharsets.UTF_8);
+        Files.writeString(snapshotDirectory.resolve("Levykokoelma.vdos"), "snapshot-script", StandardCharsets.UTF_8);
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                new TestCommandClient(),
+                "load Levykokoelma\nexit\n",
+                tempDirectory
+        );
+
+        assertEquals("snapshot-script", modelClient.importedScript);
+        assertTrue(result.output.contains("Loaded model Imported_Model from " + snapshotDirectory.resolve("Levykokoelma.vdos")));
+    }
+
+    @Test
+    void loadBareNameFallsBackToWorkingDirectory() throws Exception {
+        TestModelClient modelClient = new TestModelClient();
+        Files.writeString(tempDirectory.resolve("example.vdos"), "root-script", StandardCharsets.UTF_8);
+
+        run(
+                new TestSessionClient(UUID.randomUUID()),
+                modelClient,
+                new TestCommandClient(),
+                "load example\nexit\n",
+                tempDirectory
+        );
+
+        assertEquals("root-script", modelClient.importedScript);
     }
 
     @Test

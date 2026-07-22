@@ -305,12 +305,45 @@ The `.vdos` content is backend-generated. It contains model metadata, an
 authoritative command section, and a snapshot section used for readability and
 validation.
 
-### `load <path>`
+### `snapshots`
+
+Lists UTF-8 `.vdos` files from the `.vedenemo` directory under the directory
+where the CLI was started. The list is sorted by file name and can be used by
+number with `load`.
+
+Example:
+
+```text
+VedenemoCli>snapshots
+1. Levykokoelma.vdos
+2. Sales_Model.vdos
+```
+
+If `.vedenemo` does not exist, the CLI prints:
+
+```text
+No .vedenemo directory found at /current/directory/.vedenemo.
+```
+
+### `load <path | snapshot-number>`
 
 Loads a model from a UTF-8 `.vdos` file and imports it through the backend.
 
 The path can be absolute or relative to the directory where the CLI was started.
-If the path has no extension, `.vdos` is appended.
+If the path has no extension, `.vdos` is appended. For bare relative names,
+the CLI first checks `.vedenemo`, so `load Levykokoelma` loads
+`.vedenemo/Levykokoelma.vdos` when that file exists.
+
+After running `snapshots`, a numeric argument loads from the latest snapshot
+list:
+
+```text
+VedenemoCli>snapshots
+1. Levykokoelma.vdos
+VedenemoCli>load 1
+Attached to model Levykokoelma.
+Loaded model Levykokoelma from /current/directory/.vedenemo/Levykokoelma.vdos with 2 commands.
+```
 
 Example:
 

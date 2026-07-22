@@ -211,13 +211,15 @@ attributes
 attr add
 undo
 save [N | azName] [outputPath]
-load <path>
+snapshots
+load <path | snapshot-number>
 exit
 ```
 
 The CLI can create models, create entities and attributes through backend
 commands, undo the latest session command, save a model to a UTF-8 `.vdos`
-Vedenemo Script file, and load a `.vdos` file back through the backend.
+Vedenemo Script file, list `.vdos` snapshots from `.vedenemo`, and load a
+`.vdos` file back through the backend.
 
 See [docs/cli-reference.md](docs/cli-reference.md) for full command usage and
 examples.

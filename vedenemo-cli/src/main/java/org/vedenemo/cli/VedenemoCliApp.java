@@ -17,6 +17,8 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -26,6 +28,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public final class VedenemoCliApp {
 
+    private static final String SNAPSHOT_DIRECTORY = ".vedenemo";
+
     private final SessionClient sessionClient;
     private final ModelClient modelClient;
     private final CommandClient commandClient;
@@ -33,6 +37,7 @@ public final class VedenemoCliApp {
     private final PrintStream output;
     private final boolean registerShutdownHook;
     private final Path workingDirectory;
+    private List<Path> latestSnapshotFiles = List.of();
 
     public VedenemoCliApp(
             SessionClient sessionClient,
@@ -125,6 +130,8 @@ public final class VedenemoCliApp {
             executeSharedConsoleCommand(consoleSession, line);
         } else if (line.startsWith("attr")) {
             handleAttributeCommand(consoleSession, reader, line);
+        } else if ("snapshots".equals(line)) {
+            snapshots();
         } else if (line.equals("save") || line.startsWith("save ")) {
             save(consoleSession, reader, line);
         } else if (line.equals("load") || line.startsWith("load ")) {
@@ -157,7 +164,8 @@ public final class VedenemoCliApp {
         output.println("  attr add - add an attribute to the selected entity");
         output.println("  undo - undo the latest backend command");
         output.println("  save [N | azName] [outputPath] - save a model to a .vdos file");
-        output.println("  load <path> - load a model from a .vdos file");
+        output.println("  snapshots - list .vdos files from the .vedenemo directory");
+        output.println("  load <path | snapshot-number> - load a model from a .vdos file");
         output.println("  help - show this help");
         output.println("  exit - end the session and exit");
     }
@@ -371,6 +379,23 @@ public final class VedenemoCliApp {
         }
     }
 
+    private void snapshots() {
+        Path snapshotDirectory = snapshotDirectory();
+        if (!Files.isDirectory(snapshotDirectory)) {
+            latestSnapshotFiles = List.of();
+            output.println("No .vedenemo directory found at " + snapshotDirectory + ".");
+            return;
+        }
+        latestSnapshotFiles = listSnapshotFiles(snapshotDirectory);
+        if (latestSnapshotFiles.isEmpty()) {
+            output.println("No .vdos snapshots found in " + snapshotDirectory + ".");
+            return;
+        }
+        for (int index = 0; index < latestSnapshotFiles.size(); index++) {
+            output.println((index + 1) + ". " + latestSnapshotFiles.get(index).getFileName());
+        }
+    }
+
     private void save(ConsoleSession consoleSession, BufferedReader reader, String line) throws IOException, InterruptedException {
         String argumentText = line.length() == "save".length() ? "" : line.substring("save".length()).trim();
         List<String> arguments = splitArguments(argumentText);
@@ -439,7 +464,11 @@ public final class VedenemoCliApp {
             output.println("Usage: load <path>");
             return;
         }
-        Path source = resolvePathWithExtension(argument);
+        Optional<Path> sourcePath = resolveLoadSource(argument);
+        if (sourcePath.isEmpty()) {
+            return;
+        }
+        Path source = sourcePath.orElseThrow();
         if (!Files.exists(source)) {
             output.println("File not found: " + source + ".");
             return;
@@ -459,6 +488,30 @@ public final class VedenemoCliApp {
         consoleSession.refreshModels();
         output.println("Attached to model " + result.modelAzName() + ".");
         output.println("Loaded model " + result.modelAzName() + " from " + source + " with " + result.commandCount() + " commands.");
+    }
+
+    private Optional<Path> resolveLoadSource(String argument) {
+        if (isPositiveInteger(argument) && !latestSnapshotFiles.isEmpty()) {
+            int index = Integer.parseInt(argument) - 1;
+            if (index < 0 || index >= latestSnapshotFiles.size()) {
+                output.println("No snapshot found for list number " + argument + ".");
+                return Optional.empty();
+            }
+            return Optional.of(latestSnapshotFiles.get(index));
+        }
+        return Optional.of(resolveLoadPath(argument));
+    }
+
+    private Path resolveLoadPath(String value) {
+        Path enteredPath = Path.of(value.trim());
+        Path resolvedPath = resolvePathWithExtension(value);
+        if (!enteredPath.isAbsolute() && enteredPath.getParent() == null) {
+            Path snapshotPath = resolvePathWithExtension(snapshotDirectory().resolve(value.trim()).toString());
+            if (Files.exists(snapshotPath)) {
+                return snapshotPath;
+            }
+        }
+        return resolvedPath;
     }
 
     private ModelImportResult importScriptWithRenamePrompt(BufferedReader reader, String script, String modelAzNameOverride)
@@ -522,6 +575,25 @@ public final class VedenemoCliApp {
             path = path.resolveSibling(path.getFileName() + ".vdos");
         }
         return path.normalize();
+    }
+
+    private Path snapshotDirectory() {
+        return workingDirectory.resolve(SNAPSHOT_DIRECTORY).normalize();
+    }
+
+    private static List<Path> listSnapshotFiles(Path snapshotDirectory) {
+        ArrayList<Path> files = new ArrayList<>();
+        try (var directoryStream = Files.newDirectoryStream(snapshotDirectory)) {
+            for (Path path : directoryStream) {
+                if (Files.isRegularFile(path) && path.getFileName().toString().toLowerCase().endsWith(".vdos")) {
+                    files.add(path.normalize());
+                }
+            }
+        } catch (IOException exception) {
+            return List.of();
+        }
+        files.sort(Comparator.comparing(path -> path.getFileName().toString(), String.CASE_INSENSITIVE_ORDER));
+        return List.copyOf(files);
     }
 
     private static List<String> splitArguments(String value) {

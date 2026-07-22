@@ -288,8 +288,11 @@ Current CLI behavior:
   undo output
 - supports `save [N | azName] [outputPath]`, which exports backend-generated
   `.vdos` text for a model and writes it as UTF-8 to a local file
-- supports `load <path>`, which reads a UTF-8 `.vdos` file, imports it through
-  the backend, and attaches to the loaded model
+- supports `snapshots`, which lists `.vdos` files from a local `.vedenemo`
+  directory for numbered terminal loading
+- supports `load <path | snapshot-number>`, which reads a UTF-8 `.vdos` file,
+  prefers `.vedenemo` for bare relative names when a matching file exists,
+  imports the file through the backend, and attaches to the loaded model
 - supports `exit`
 - calls `DELETE /sessions/{uuid}` during normal exit and through a best-effort
   shutdown hook
