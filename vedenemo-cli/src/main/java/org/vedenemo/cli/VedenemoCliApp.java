@@ -145,6 +145,7 @@ public final class VedenemoCliApp {
 
     private void printHelp() {
         output.println("Available commands:");
+        output.println("  ping - check backend connectivity");
         output.println("  list - list existing models");
         output.println("  add - add a new model");
         output.println("  attach [N | azName] - attach to a listed model");

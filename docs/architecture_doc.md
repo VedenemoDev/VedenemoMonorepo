@@ -54,7 +54,6 @@ subgraph Adapters["Adapters"]
 end
 
 ViteUX --> RuntimeConfig
-ViteUX -->|fetch /models/ping| WebApi
 ViteUX -->|fetch model data| UXPlantUml
 ViteUX -->|connect/disconnect| UXModelEvents
 ViteUX -->|lazy render diagram| UXPlantUmlRenderer
@@ -391,7 +390,6 @@ Current user-facing behavior:
 
 - renders a minimal deployment check page
 - shows the configured backend URL
-- includes a Ping button that calls `{apiBaseUrl}/models/ping`
 - fetches available models from `{apiBaseUrl}/models/list` at page load
 - provides a Refresh model list button
 - lets the user select a model from a dropdown
@@ -580,8 +578,6 @@ sequenceDiagram
     Config-->>UX: apiBaseUrl
     UX->>API: GET /models/list
     API-->>UX: model summaries
-    UX->>API: GET /models/ping
-    API-->>UX: {"status":"ok"}
     UX->>Events: connect
     Events-->>UX: connected
     UX->>API: GET /models/{modelAzName}/entities

@@ -46,6 +46,17 @@ public final class HttpModelClient implements ModelClient {
     }
 
     @Override
+    public void ping() throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/models/ping"))
+                .GET()
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("backend ping failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+    }
+
+    @Override
     public List<ModelSummary> listModels() throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/models/list"))
                 .GET()

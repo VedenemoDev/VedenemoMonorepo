@@ -22,6 +22,10 @@ final class InProcessConsoleModelClient implements ModelClient {
     }
 
     @Override
+    public void ping() {
+    }
+
+    @Override
     public List<ModelSummary> listModels() {
         return modelRegistry.list().stream()
                 .map(model -> new ModelSummary(model.azName(), model.visName(), model.version().toString()))

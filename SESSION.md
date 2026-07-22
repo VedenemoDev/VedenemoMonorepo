@@ -3216,3 +3216,52 @@ Current status and next steps:
 - `mvn -B clean verify` passed.
 - The backend+CLI smoke test passed when run outside the socket-restricted
   sandbox.
+
+## 2026-07-22 22:40 EEST
+
+Session goal: remove the UX Ping button and move backend connectivity checking
+to a shared CLI/virtual-console `ping` command.
+
+Files changed:
+
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/ModelClient.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleModelClient.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ConsoleResourceTest.java`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- `mvn -B clean verify`
+- `npm run build` in `vedenemo-ux`
+- backend+CLI smoke test for `ping` against the built web API jar, rerun outside
+  the socket-restricted sandbox after local binding was denied
+- `git diff --check`
+- `git status --short`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added shared `ping` command handling in `vedenemo-command-console`.
+- Terminal CLI `ping` calls `GET /models/ping` through `HttpModelClient`.
+- Web console `ping` uses the in-process console adapter and returns the same
+  `Backend responded OK.` output.
+- Removed the main UX Ping button, status state, fetch helper, and styles.
+- Added the requested executed backlog item and updated current behavior docs.
+- `mvn -B clean verify`, `npm run build`, `git diff --check`, and the
+  backend+CLI `ping` smoke test passed. Vite still reports the existing large
+  PlantUML/Viz chunk warning.

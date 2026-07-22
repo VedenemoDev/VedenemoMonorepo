@@ -24,14 +24,6 @@ body {
   border-radius: 1rem;
 }
 
-.ping-panel {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-}
-
-.ping-panel button,
 .model-controls button,
 .console-input-row button {
   min-width: 5rem;
@@ -44,23 +36,10 @@ body {
   cursor: pointer;
 }
 
-.ping-panel button:disabled,
 .model-controls button:disabled,
 .console-input-row button:disabled {
   cursor: progress;
   opacity: 0.7;
-}
-
-.ping-status {
-  font-weight: 600;
-}
-
-.ping-status-ok {
-  color: #047857;
-}
-
-.ping-status-error {
-  color: #b91c1c;
 }
 
 .model-panel {
@@ -273,7 +252,6 @@ body {
 
 @media (max-width: 36rem) {
   .model-controls,
-  .ping-panel,
   .console-header,
   .console-input-row {
     align-items: stretch;
@@ -289,7 +267,6 @@ body {
   }
 
   .model-controls button,
-  .ping-panel button,
   .console-link,
   .secondary-link,
   .console-input-row button {

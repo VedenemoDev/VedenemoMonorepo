@@ -82,6 +82,8 @@ public final class ConsoleSession {
         try {
             if ("help".equals(trimmed)) {
                 printHelp(output);
+            } else if ("ping".equals(trimmed)) {
+                ping(output);
             } else if ("list".equals(trimmed)) {
                 listModels(output);
             } else if ("entities".equals(trimmed)) {
@@ -133,6 +135,7 @@ public final class ConsoleSession {
 
     private void printHelp(List<String> output) {
         output.add("Available commands:");
+        output.add("  ping - check backend connectivity");
         output.add("  list - list existing models");
         output.add("  attach [N | azName] - attach to a listed model");
         output.add("  detach - detach from the current model");
@@ -144,6 +147,11 @@ public final class ConsoleSession {
         output.add("  save [N | azName] [outputPath] - not supported in the web console");
         output.add("  load <path> - not supported in the web console");
         output.add("  help - show this help");
+    }
+
+    private void ping(List<String> output) throws IOException, InterruptedException {
+        modelClient.ping();
+        output.add("Backend responded OK.");
     }
 
     private void listModels(List<String> output) throws IOException, InterruptedException {

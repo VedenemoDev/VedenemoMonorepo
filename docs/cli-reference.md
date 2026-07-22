@@ -55,6 +55,17 @@ VedenemoCli[Example_Model/Customer]>
 
 ## Commands
 
+### `ping`
+
+Checks backend connectivity through `GET /models/ping`.
+
+Example:
+
+```text
+VedenemoCli>ping
+Backend responded OK.
+```
+
 ### `help`
 
 Prints the available commands.

@@ -189,6 +189,13 @@ VEDENEMO_API_BASE_URL=http://127.0.0.1:18080 \
   java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli
 ```
 
+Inside the CLI, `ping` checks backend connectivity through `GET /models/ping`:
+
+```text
+VedenemoCli>ping
+Backend responded OK.
+```
+
 Current CLI commands:
 
 ```text
@@ -292,7 +299,8 @@ https://vedenemo-wsl.tail64b6af.ts.net
 https://vedenemo-ux-prod.web.app/
 ```
 
-- The Firebase UX ping call works through the Tailscale HTTPS backend URL.
+- Backend connectivity can be checked with `curl /models/ping`, the terminal
+  CLI `ping` command, or the `/console` virtual CLI `ping` command.
 
 The browser that opens the Firebase UX must have access to the same Tailscale
 tailnet. Firebase Hosting itself is not part of the tailnet; the browser reaches

@@ -59,6 +59,7 @@ final class VedenemoCliAppTest {
     void helpPrintsAvailableCommands() {
         Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), new TestCommandClient(), "help\nexit\n");
 
+        assertTrue(result.output.contains("ping - check backend connectivity"));
         assertTrue(result.output.contains("list - list existing models"));
         assertTrue(result.output.contains("add - add a new model"));
         assertTrue(result.output.contains("attach [N | azName] - attach to a listed model"));
@@ -72,6 +73,16 @@ final class VedenemoCliAppTest {
         assertTrue(result.output.contains("save [N | azName] [outputPath] - save a model to a .vdos file"));
         assertTrue(result.output.contains("load <path> - load a model from a .vdos file"));
         assertTrue(result.output.contains("exit - end the session and exit"));
+    }
+
+    @Test
+    void pingPrintsBackendOkMessage() {
+        TestModelClient modelClient = new TestModelClient();
+
+        Result result = run(new TestSessionClient(UUID.randomUUID()), modelClient, new TestCommandClient(), "ping\nexit\n");
+
+        assertTrue(modelClient.pingCalled);
+        assertTrue(result.output.contains("Backend responded OK."));
     }
 
     @Test
@@ -659,12 +670,18 @@ final class VedenemoCliAppTest {
         private final List<ModelSummary> models = new ArrayList<>();
         private final List<EntitySummary> entities = new ArrayList<>();
         private final List<AttributeSummary> attributes = new ArrayList<>();
+        private boolean pingCalled;
         private IOException addFailure;
         private String exportedScript = "";
         private String exportedModelAzName;
         private String importedScript;
         private String importedOverride;
         private int importFailuresBeforeSuccess;
+
+        @Override
+        public void ping() {
+            pingCalled = true;
+        }
 
         @Override
         public List<ModelSummary> listModels() {

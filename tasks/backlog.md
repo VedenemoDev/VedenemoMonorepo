@@ -1,5 +1,33 @@
 # Backlog
 
+## Move Backend Ping From UX Button To CLI Console Command
+
+Status: executed.
+
+### Goal
+
+Remove the main UX Ping button and expose backend connectivity checks through
+the CLI command surface instead.
+
+### Scope
+
+- Remove the Ping button, status text, and related fetch/state helpers from
+  `vedenemo-ux`.
+- Add a shared `ping` command to `vedenemo-command-console` so both terminal
+  `VedenemoCli` and the `/console` virtual CLI can use it.
+- Keep the existing `GET /models/ping` endpoint available as the backend health
+  endpoint used by the command.
+- Update CLI/help documentation and focused tests.
+
+### Completion Notes
+
+- Added `ModelClient.ping()` and shared `ConsoleSession` handling for `ping`.
+- Terminal CLI `ping` calls `GET /models/ping` through `HttpModelClient`.
+- Web console `ping` runs through the in-process console adapter and returns
+  the same user-facing OK message.
+- Removed the main-page UX Ping button and related state/styles.
+- Added focused shared-console, terminal CLI, and web console endpoint tests.
+
 ## Create ModelRoot Entity And Model Registry
 
 Status: executed. Full task text retained here for history.

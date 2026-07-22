@@ -47,6 +47,28 @@ final class ConsoleResourceTest {
     }
 
     @Test
+    void executesPingCommandThroughConsoleSession() throws Exception {
+        Javalin app = VedenemoWebApi.create(testConfig(), new ModelRegistry());
+        try {
+            start(app);
+            URI baseUri = URI.create("http://127.0.0.1:" + app.port());
+            HttpResponse<String> start = post(baseUri.resolve("/console/sessions"), "{}");
+            String sessionId = extract(start.body(), "sessionId");
+
+            HttpResponse<String> command = post(
+                    baseUri.resolve("/console/sessions/" + sessionId + "/commands"),
+                    "{\"command\":\"ping\"}"
+            );
+
+            assertEquals(201, start.statusCode());
+            assertEquals(200, command.statusCode());
+            assertTrue(command.body().contains("Backend responded OK."));
+        } finally {
+            app.stop();
+        }
+    }
+
+    @Test
     void startsConsoleSessionAttachedToConnectedModelAndRejectsSaveAsText() throws Exception {
         ModelRegistry modelRegistry = new ModelRegistry();
         modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));

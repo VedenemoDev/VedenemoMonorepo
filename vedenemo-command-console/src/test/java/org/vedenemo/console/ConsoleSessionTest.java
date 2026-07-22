@@ -52,8 +52,32 @@ final class ConsoleSessionTest {
         assertEquals(List.of("Command 'load' is not supported in the web console because it requires local file access."), loadResult.outputLines());
     }
 
+    @Test
+    void pingChecksBackendThroughSharedModelClient() {
+        TestModelClient modelClient = new TestModelClient();
+        ConsoleSession session = new ConsoleSession(
+                UUID.randomUUID(),
+                modelClient,
+                new TestSessionClient(),
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsole()
+        );
+
+        ConsoleCommandResult result = session.execute("ping");
+
+        assertEquals(ConsoleCommandResult.Status.OK, result.status());
+        assertEquals(List.of("Backend responded OK."), result.outputLines());
+        assertTrue(modelClient.pingCalled);
+    }
+
     private static final class TestModelClient implements ModelClient {
         private final List<ModelSummary> models = new ArrayList<>();
+        private boolean pingCalled;
+
+        @Override
+        public void ping() {
+            pingCalled = true;
+        }
 
         @Override
         public List<ModelSummary> listModels() {

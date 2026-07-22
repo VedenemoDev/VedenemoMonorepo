@@ -5,6 +5,8 @@ import java.util.List;
 
 public interface ModelClient {
 
+    void ping() throws IOException, InterruptedException;
+
     List<ModelSummary> listModels() throws IOException, InterruptedException;
 
     ModelSummary addModel(String azName, String visName, String version) throws IOException, InterruptedException;
