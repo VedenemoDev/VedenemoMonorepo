@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { ModelChangeEventAdapter } from "./adapters/ModelChangeEventAdapter";
 import { PlantUmlModelAdapter } from "./adapters/PlantUmlModelAdapter";
 
 type PingState = "idle" | "loading" | "ok" | "error";
 type ModelLoadState = "idle" | "loading" | "ok" | "error";
 type ModelConnectionState = "disconnected" | "connecting" | "connected" | "error";
+type ConsoleStatus = "loading" | "ready" | "error";
 
 type RuntimeConfig = {
   apiBaseUrl?: string;
@@ -16,7 +17,22 @@ type ModelSummary = {
   version: string;
 };
 
+type ConsoleSessionResponse = {
+  sessionId: string;
+  backendSessionId: string;
+  prompt: string;
+  attachedModelAzName?: string | null;
+};
+
+type ConsoleCommandResponse = {
+  status: string;
+  outputLines: string[];
+  prompt: string;
+  attachedModelAzName?: string | null;
+};
+
 const PLANTUML_TARGET_ID = "plantuml-diagram";
+const CONNECTED_MODEL_STORAGE_KEY = "vedenemo.connectedModelAzName";
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   const response = await fetch("/config.json", { cache: "no-store" });
@@ -44,7 +60,168 @@ async function fetchModels(apiBaseUrl: string): Promise<ModelSummary[]> {
   return response.json() as Promise<ModelSummary[]>;
 }
 
+function readConnectedModelAzName(): string {
+  const queryValue = new URLSearchParams(window.location.search).get("connectedModelAzName");
+  if (queryValue) {
+    return queryValue;
+  }
+  return window.sessionStorage.getItem(CONNECTED_MODEL_STORAGE_KEY) ?? "";
+}
+
+function ConsolePage() {
+  const sessionIdRef = useRef("");
+  const apiBaseUrlRef = useRef("");
+  const [apiBaseUrl, setApiBaseUrl] = useState("");
+  const [session, setSession] = useState<ConsoleSessionResponse | null>(null);
+  const [status, setStatus] = useState<ConsoleStatus>("loading");
+  const [statusMessage, setStatusMessage] = useState("Starting console session...");
+  const [history, setHistory] = useState<string[]>([]);
+  const [command, setCommand] = useState("");
+  const [isExecuting, setIsExecuting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    loadRuntimeConfig()
+      .then(async (config) => {
+        const baseUrl = normalizeBaseUrl(config.apiBaseUrl ?? "");
+        if (!baseUrl) {
+          throw new Error("Backend URL is not configured");
+        }
+        const connectedModelAzName = readConnectedModelAzName();
+        const response = await fetch(`${baseUrl}/console/sessions`, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ connectedModelAzName: connectedModelAzName || null }),
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const body = (await response.json()) as ConsoleSessionResponse;
+        if (cancelled) {
+          void fetch(`${baseUrl}/console/sessions/${body.sessionId}`, { method: "DELETE" });
+          return;
+        }
+        sessionIdRef.current = body.sessionId;
+        apiBaseUrlRef.current = baseUrl;
+        setApiBaseUrl(baseUrl);
+        setSession(body);
+        setStatus("ready");
+        setStatusMessage(body.attachedModelAzName ? `Attached to ${body.attachedModelAzName}` : "No model attached");
+        setHistory([
+          "Vedenemo web console",
+          body.attachedModelAzName ? `Attached model: ${body.attachedModelAzName}` : "No connected model was provided.",
+        ]);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setStatus("error");
+          setStatusMessage(error instanceof Error ? error.message : "Console session start failed");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      const sessionId = sessionIdRef.current;
+      const baseUrl = apiBaseUrlRef.current;
+      if (baseUrl && sessionId) {
+        void fetch(`${baseUrl}/console/sessions/${sessionId}`, { method: "DELETE" });
+      }
+    };
+  }, []);
+
+  async function executeConsoleCommand(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!apiBaseUrl || !session || isExecuting) {
+      return;
+    }
+
+    const trimmedCommand = command.trim();
+    if (!trimmedCommand) {
+      return;
+    }
+
+    setCommand("");
+    setIsExecuting(true);
+    setHistory((current) => [...current, `${session.prompt} ${trimmedCommand}`]);
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/console/sessions/${session.sessionId}/commands`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ command: trimmedCommand }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const body = (await response.json()) as ConsoleCommandResponse;
+      setSession((current) => current === null
+        ? current
+        : {
+            ...current,
+            prompt: body.prompt,
+            attachedModelAzName: body.attachedModelAzName,
+          });
+      setHistory((current) => [...current, ...body.outputLines]);
+      setStatusMessage(body.attachedModelAzName ? `Attached to ${body.attachedModelAzName}` : "No model attached");
+    } catch (error) {
+      setHistory((current) => [...current, error instanceof Error ? error.message : "Command failed"]);
+      setStatus("error");
+      setStatusMessage(error instanceof Error ? error.message : "Command failed");
+    } finally {
+      setIsExecuting(false);
+    }
+  }
+
+  return (
+    <main className="console-shell">
+      <header className="console-header">
+        <div>
+          <h1>Vedenemo Console</h1>
+          <span className={`console-status console-status-${status}`}>{statusMessage}</span>
+        </div>
+        <a className="secondary-link" href="/">
+          Model diagram
+        </a>
+      </header>
+      <section className="console-surface" aria-label="Vedenemo virtual CLI">
+        <div className="console-output" aria-live="polite">
+          {history.map((line, index) => (
+            <div key={`${index}-${line}`} className="console-line">
+              {line || "\u00a0"}
+            </div>
+          ))}
+        </div>
+        <form className="console-input-row" onSubmit={(event) => void executeConsoleCommand(event)}>
+          <label htmlFor="console-command">{session?.prompt ?? "VedenemoCli>"}</label>
+          <input
+            id="console-command"
+            value={command}
+            onChange={(event) => setCommand(event.target.value)}
+            disabled={status === "loading" || isExecuting || session === null}
+            autoComplete="off"
+            autoFocus
+          />
+          <button type="submit" disabled={status === "loading" || isExecuting || session === null}>
+            Run
+          </button>
+        </form>
+      </section>
+    </main>
+  );
+}
+
 export function App() {
+  if (window.location.pathname === "/console") {
+    return <ConsolePage />;
+  }
+
   const eventAdapterRef = useRef(new ModelChangeEventAdapter());
   const plantUmlDiagramRendererRef = useRef<import("./adapters/PlantUmlDiagramRendererAdapter").PlantUmlDiagramRendererAdapter | null>(null);
   const plantUmlAdapterRef = useRef(new PlantUmlModelAdapter());
@@ -206,10 +383,12 @@ export function App() {
       onOpen: () => {
         setModelConnectionState("connected");
         setModelConnectionMessage("Connected");
+        window.sessionStorage.setItem(CONNECTED_MODEL_STORAGE_KEY, selectedModelAzName);
       },
       onClose: () => {
         setModelConnectionState("disconnected");
         setModelConnectionMessage("Disconnected");
+        window.sessionStorage.removeItem(CONNECTED_MODEL_STORAGE_KEY);
       },
       onError: (message) => {
         setModelConnectionState("error");
@@ -296,6 +475,14 @@ export function App() {
             >
               {modelConnectionState === "connected" ? "Disconnect" : "Connect"}
             </button>
+            <a
+              className="console-link"
+              href={modelConnectionState === "connected" && selectedModelAzName
+                ? `/console?connectedModelAzName=${encodeURIComponent(selectedModelAzName)}`
+                : "/console"}
+            >
+              Console
+            </a>
           </div>
           <span className={`model-status model-status-${modelLoadState}`}>{modelMessage}</span>
           <span className={`connection-status connection-status-${modelConnectionState}`}>{modelConnectionMessage}</span>

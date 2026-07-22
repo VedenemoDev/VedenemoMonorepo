@@ -1,5 +1,7 @@
 package org.vedenemo.cli;
 
+import org.vedenemo.console.SessionClient;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;

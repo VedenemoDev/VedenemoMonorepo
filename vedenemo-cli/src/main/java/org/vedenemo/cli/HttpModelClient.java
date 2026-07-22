@@ -1,5 +1,11 @@
 package org.vedenemo.cli;
 
+import org.vedenemo.console.AttributeSummary;
+import org.vedenemo.console.EntitySummary;
+import org.vedenemo.console.ModelClient;
+import org.vedenemo.console.ModelImportResult;
+import org.vedenemo.console.ModelSummary;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;

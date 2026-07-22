@@ -15,6 +15,7 @@
         <module>vedenemo-core-spi</module>
         <module>vedenemo-core</module>
         <module>vedenemo-storage-memory</module>
+        <module>vedenemo-command-console</module>
         <module>vedenemo-cli</module>
         <module>vedenemo-app</module>
         <module>vedenemo-web-api</module>

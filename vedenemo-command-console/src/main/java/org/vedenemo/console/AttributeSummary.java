@@ -1,4 +1,4 @@
-package org.vedenemo.cli;
+package org.vedenemo.console;
 
 public record AttributeSummary(
         String azName,

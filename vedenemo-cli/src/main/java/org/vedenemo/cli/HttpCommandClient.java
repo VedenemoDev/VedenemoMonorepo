@@ -1,5 +1,8 @@
 package org.vedenemo.cli;
 
+import org.vedenemo.console.CommandClient;
+import org.vedenemo.console.UndoCommandResult;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;

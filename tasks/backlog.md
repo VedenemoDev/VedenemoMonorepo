@@ -2253,3 +2253,233 @@ Vedenemo entities are implementation classes.
 - Committed as:
   - `9c288d7 Hide class marker in UX PlantUML diagrams`
   - `d301de7 Hide empty PlantUML member compartments`
+
+## Refactor CLI For Shared Terminal And Web Console Use
+
+Status: executed.
+
+### Goal
+
+Refactor the current `VedenemoCli` command handling so the same command behavior
+can be used from two frontends:
+
+- the existing terminal CLI;
+- a virtual CLI exposed in the UX at `/console`.
+
+The web console should feel like a CLI session in the browser, but it must not
+run the Java CLI process or duplicate CLI command behavior in TypeScript. Common
+command parsing, session-oriented command execution, and user-facing output
+formatting should be Vedenemo-owned Java code that can be used by both terminal
+and web entry points.
+
+### Architecture Direction
+
+Recommended implementation direction:
+
+- Extract reusable CLI behavior from `vedenemo-cli` into a Vedenemo-owned Java
+  component.
+- Keep terminal-specific concerns in the terminal CLI:
+  - stdin/stdout loop;
+  - local filesystem access;
+  - interactive prompts tied to terminal input.
+- Keep web-console-specific concerns in the web API / UX:
+  - HTTP request/response lifecycle;
+  - browser console session identity;
+  - browser UI rendering and command input history.
+- Do not make the browser spawn or talk to a Java CLI process.
+- Do not add dependencies from `vedenemo-core` to CLI, web API, UX, or adapter
+  modules.
+
+Resolved implementation placement decision:
+
+- Use Option B: introduce a new Vedenemo-owned module such as
+  `vedenemo-cli-api` / `vedenemo-command-console` for shared command behavior,
+  used by both `vedenemo-cli` and `vedenemo-web-api`.
+
+This avoids making the web API depend on terminal CLI packaging and keeps the
+module name aligned with the shared responsibility.
+
+### Shared Command Behavior
+
+The shared component should own:
+
+- command-line parsing for existing CLI commands;
+- command dispatch;
+- command result objects or rendered output lines;
+- active session/model context used by CLI-like workflows;
+- common backend HTTP client behavior if current CLI remains an HTTP client.
+
+The shared component should not directly own:
+
+- terminal input/output;
+- browser UI rendering;
+- local file picker or browser file APIs;
+- local filesystem access unless abstracted behind a capability interface.
+
+### Capability Differences
+
+The terminal CLI has local filesystem capability. The web console does not.
+
+For the first version, the virtual CLI must reject filesystem-dependent
+commands with a clear message:
+
+```text
+Command 'save' is not supported in the web console because it requires local file access.
+Command 'load' is not supported in the web console because it requires local file access.
+```
+
+The shared command behavior should make this explicit through a capability or
+execution-context check instead of ad hoc command-name checks in the UX.
+
+Resolved unsupported-command behavior:
+
+- For the first version, unsupported `save` and `load` in the web console return
+  plain text output only. No separate structured unsupported-capability status is
+  needed yet.
+
+Future work can later add browser upload/download workflows for `.vdos` files,
+but that is intentionally out of scope for this first web console task.
+
+### Web API Scope
+
+Add backend endpoints for browser console sessions. Exact route names can be
+adjusted during implementation, but the first version should likely include:
+
+```text
+POST /console/sessions
+POST /console/sessions/{sessionId}/commands
+DELETE /console/sessions/{sessionId}
+```
+
+Behavior:
+
+- `POST /console/sessions` starts a CLI-like web console session and returns a
+  console session id.
+- `POST /console/sessions/{sessionId}/commands` executes one submitted command
+  line and returns command output and status.
+- `DELETE /console/sessions/{sessionId}` ends the console session.
+- Invalid/missing session ids return clear client errors.
+- Command failures should return structured status and readable output.
+
+Resolved session design:
+
+- Use a console-session wrapper with its own browser-facing console session id.
+- The console-session wrapper internally owns or links a backend model-editing
+  session.
+- Do not directly expose generic backend edit session ids as the browser console
+  session identity.
+
+Elaboration:
+
+- Directly exposing an existing backend edit session id would make the browser
+  console thinner, but it also means browser UI state, CLI-like last-list
+  numbering, attached model context, and future console-specific capability
+  flags all live directly on the same session concept used by non-console API
+  clients.
+- A console-session wrapper gives the web console its own session id and
+  lifecycle. Internally it can create, own, or link an existing backend edit
+  session. This keeps web-console behavior isolated while still reusing the
+  existing model-editing session behavior under the hood.
+- The wrapper approach is more explicit if later the web console needs command
+  history display, input history, capability flags, default attached model
+  behavior, or browser-specific output shaping.
+
+Resolved initial model-binding behavior:
+
+- When opening `/console`, the UX should pass the currently connected model
+  `azName` if the UX is connected to model change events for a selected model.
+- The web console session should automatically attach/bind to that connected
+  model at session start.
+- If the UX is not connected to any model, the web console session starts with
+  no attached model.
+- The first version should not auto-attach merely because a model is selected in
+  the dropdown; it should only auto-attach when there is an active model
+  connection.
+
+### UX Scope
+
+Add a `/console` route or subpath to the Vite UX.
+
+First version behavior:
+
+- use a separate full-page console view rather than sharing the existing model
+  selector layout;
+- show a terminal-like command history area;
+- show an input for one command at a time;
+- submit commands to the backend console command endpoint;
+- append command output to the history;
+- keep enough browser-side state for display and command input history;
+- start a console session when the page opens;
+- end or abandon the console session gracefully when possible.
+
+The `/console` page does not need to support:
+
+- local `.vdos` save/load;
+- terminal emulation beyond the basic command/output interaction;
+- streaming output;
+- WebSocket command execution.
+
+HTTP request/response is sufficient for the first implementation.
+
+### Tests / Verification
+
+At minimum, implementation should add tests for:
+
+- shared command behavior executes representative existing commands consistently
+  for terminal and web-console use;
+- virtual CLI rejects `save` and `load` with the agreed unsupported message;
+- web console session creation succeeds;
+- executing a command through a web console session returns readable output;
+- invalid console session id returns a clear client error;
+- UX build succeeds.
+
+At minimum, run:
+
+```bash
+mvn -B clean verify
+cd vedenemo-ux
+npm run build
+```
+
+### Documentation
+
+After implementation:
+
+- Update `docs/cli-reference.md` if command behavior or wording changes.
+- Update `README.md` if local UX usage now includes `/console`.
+- Update `docs/architecture_doc.md` because this changes CLI/web API/UX runtime
+  structure and introduces a new shared command-flow boundary.
+
+Before updating `docs/architecture_doc.md`, read and follow
+`docs/architecture_doc_instructions.md`.
+
+### Open Questions
+
+No open planning questions remain.
+
+### Completion Notes
+
+- Added `vedenemo-command-console` as the shared Java command-flow module used
+  by both terminal CLI adapters and the web API virtual console.
+- Refactored terminal CLI DTO/client interfaces into the shared module while
+  keeping terminal stdin/stdout and local `.vdos` file access in
+  `vedenemo-cli`.
+- Added browser console-session HTTP endpoints:
+
+```text
+POST /console/sessions
+POST /console/sessions/{sessionId}/commands
+DELETE /console/sessions/{sessionId}
+```
+
+- Added a browser-facing console-session wrapper id that owns an internal
+  backend edit session id.
+- Added `/console` as a separate full-page UX console with command history and
+  one-command-at-a-time execution through HTTP.
+- The main UX passes the actively connected model `azName` to `/console`; when
+  no model connection is active, the console starts unattached.
+- Web console `save` and `load` return the agreed plain text unsupported local
+  file access messages.
+- Added focused shared-console and web API tests.
+- `npm run build` in `vedenemo-ux` passed.
+- `mvn -B clean verify` passed.

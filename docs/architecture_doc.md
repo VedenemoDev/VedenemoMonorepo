@@ -20,18 +20,22 @@ subgraph UX["Frontend"]
     UXModelEvents["ModelChangeEventAdapter<br/>browser WebSocket listener"]
     UXPlantUml["PlantUmlModelAdapter<br/>model-to-PlantUML source"]
     UXPlantUmlRenderer["PlantUmlDiagramRendererAdapter<br/>lazy PlantUML SVG renderer"]
+    UXConsole["/console<br/>browser virtual CLI"]
 end
 
 subgraph Web["Web API Runtime"]
     WebApi["vedenemo-web-api<br/>Javalin executable jar"]
     ModelsResource["ModelsResource<br/>ping/add/list/read model endpoints"]
     SessionResource["SessionResource<br/>session lifecycle, selected model, and command endpoints"]
+    ConsoleResource["ConsoleResource<br/>browser console-session endpoints"]
+    ConsoleRegistry["WebConsoleSessionRegistry<br/>browser session wrapper"]
     ModelEvents["ModelChangeBroadcaster<br/>/models/events WebSocket"]
 end
 
 subgraph App["Application Assembly"]
     AppRoot["vedenemo-app<br/>composition root"]
     Cli["vedenemo-cli<br/>HTTP-backed interactive CLI"]
+    CommandConsole["vedenemo-command-console<br/>shared CLI-like command flow"]
 end
 
 subgraph Core["Core"]
@@ -54,13 +58,21 @@ ViteUX -->|fetch /models/ping| WebApi
 ViteUX -->|fetch model data| UXPlantUml
 ViteUX -->|connect/disconnect| UXModelEvents
 ViteUX -->|lazy render diagram| UXPlantUmlRenderer
+ViteUX --> UXConsole
 UXPlantUml -->|GET model/entity/attribute APIs| WebApi
 UXModelEvents -->|WebSocket /models/events| WebApi
+UXConsole -->|HTTP console commands| WebApi
 Cli -->|HTTP model and session APIs| WebApi
+Cli --> CommandConsole
 WebApi --> ModelsResource
 WebApi --> SessionResource
+WebApi --> ConsoleResource
 WebApi --> ModelEvents
 WebApi --> AppRoot
+ConsoleResource --> ConsoleRegistry
+ConsoleRegistry --> CommandConsole
+ConsoleRegistry --> SessionManager
+ConsoleRegistry --> ModelRegistry
 ModelsResource --> ModelRegistry
 ModelsResource --> ScriptService
 ModelsResource --> ModelEvents
@@ -222,12 +234,35 @@ Dependencies:
 - `vedenemo-core`
 - `vedenemo-storage-memory`
 
+### `vedenemo-command-console`
+
+Shared CLI-like command-flow module. It contains the session-oriented command
+dispatcher, prompt rendering, command result type, terminal/web capability
+flags, and Vedenemo-owned client DTO/interfaces used by command frontends.
+
+The module is intentionally UI-neutral:
+
+- it does not read terminal stdin or write terminal stdout;
+- it does not render browser UI;
+- it does not perform local filesystem access;
+- it rejects filesystem-dependent commands such as `save` and `load` when used
+  with web-console capabilities.
+
+Terminal CLI adapters and web API in-process adapters implement the shared
+client interfaces so both entry points use the same command behavior.
+
+Dependencies:
+
+- Java JDK
+
 ### `vedenemo-cli`
 
 Minimal command-line entry point. It reads the backend base URL from
 `VEDENEMO_API_BASE_URL`, defaulting to `http://127.0.0.1:8080`, creates a
 backend session through `POST /sessions/start`, and enters an interactive prompt
-loop.
+loop. Common CLI-like command DTOs and command-session behavior are supplied by
+`vedenemo-command-console`; terminal input/output, prompts that ask for missing
+arguments, and local `.vdos` file access remain in `vedenemo-cli`.
 
 Current CLI behavior:
 
@@ -262,6 +297,7 @@ Current CLI behavior:
 
 Dependencies:
 
+- `vedenemo-command-console`
 - Java JDK
 
 ### `vedenemo-web-api`
@@ -298,10 +334,23 @@ and exposes:
 - `POST /sessions/{uuid}/commands/undo`, which undoes the latest command for
   the active backend session and returns the undone command slug plus target
   details, or returns `304` when nothing can be undone
+- `POST /console/sessions`, which creates a browser-facing console session
+  wrapper and an internal backend edit session
+- `POST /console/sessions/{sessionId}/commands`, which executes one CLI-like
+  command line through the shared console module and returns output lines,
+  status, prompt, and attached model context
+- `DELETE /console/sessions/{sessionId}`, which ends the browser-facing console
+  session and its owned backend edit session
 
 HTTP JSON parsing and response serialization are kept in this module. Jackson is
 used here as an adapter/runtime dependency and does not leak into core or model
 APIs.
+
+`WebConsoleSessionRegistry` owns browser-facing console session ids. Each
+console session wraps a `vedenemo-command-console` `ConsoleSession`, which in
+turn owns or links one backend edit session UUID. This keeps web-console browser
+state separate from the generic backend session API while reusing existing
+model-editing behavior under the hood.
 
 `ModelChangeBroadcaster` is a web-runtime adapter for browser model-change
 listening. It owns the Javalin WebSocket endpoint and broadcasts UTF-8 JSON
@@ -324,6 +373,7 @@ Runtime configuration is read from environment variables:
 Dependencies:
 
 - `vedenemo-app`
+- `vedenemo-command-console`
 - `vedenemo-core`
 - Javalin
 - Jackson Databind
@@ -349,6 +399,11 @@ Current user-facing behavior:
 - refreshes the selected model view when backend model-change events arrive
 - renders the selected model as an automatically laid out PlantUML SVG class
   diagram in a scrollable viewport
+- exposes `/console` as a separate full-page virtual CLI that starts a backend
+  console session, appends command output to a terminal-like history, and runs
+  one command at a time through `{apiBaseUrl}/console/sessions`
+- passes the connected model `azName` into `/console` only when the main UX has
+  an active model event connection
 
 The default runtime config in `vedenemo-ux/public/config.json` points to a
 Tailscale HTTPS backend URL.
@@ -376,6 +431,7 @@ sequenceDiagram
     participant App as VedenemoApp
     participant Models as ModelsResource
     participant Sessions as SessionResource
+    participant Console as ConsoleResource
 
     Main->>Config: fromEnvironment(System.getenv())
     Main->>App: createModelRegistry()
@@ -383,6 +439,7 @@ sequenceDiagram
     Main->>Javalin: create(config)
     Javalin->>Models: register model routes
     Javalin->>Sessions: register session routes
+    Javalin->>Console: register console session routes
     Main->>Javalin: start(host, port)
 ```
 
@@ -534,6 +591,38 @@ sequenceDiagram
     UX->>API: refresh selected model data
 ```
 
+### Web Console Command Execution
+
+```mermaid
+sequenceDiagram
+    participant UX as vedenemo-ux /console
+    participant API as vedenemo-web-api
+    participant Resource as ConsoleResource
+    participant Registry as WebConsoleSessionRegistry
+    participant Console as ConsoleSession
+    participant Manager as SessionManager
+
+    UX->>API: POST /console/sessions
+    API->>Resource: route request
+    Resource->>Registry: startSession(connectedModelAzName?)
+    Registry->>Manager: startSession()
+    Registry->>Console: create shared console session
+    Resource-->>UX: 201 console session id, prompt, attached model
+
+    UX->>API: POST /console/sessions/{sessionId}/commands
+    API->>Resource: route request
+    Resource->>Registry: find browser console session
+    Resource->>Console: execute(command line)
+    Console-->>Resource: status, output lines, prompt
+    Resource-->>UX: 200 command response
+
+    UX->>API: DELETE /console/sessions/{sessionId}
+    API->>Resource: route request
+    Resource->>Registry: endSession(sessionId)
+    Registry->>Manager: endSession(backend session UUID)
+    Resource-->>UX: 204
+```
+
 ## CI and Deployment
 
 GitHub Actions contains separate backend and frontend CI workflows:
@@ -564,6 +653,8 @@ override `public/config.json` from the `VEDENEMO_API_BASE_URL` GitHub variable.
 - HTTP framework and JSON dependencies are isolated in `vedenemo-web-api`.
 - The CLI talks to the backend through JDK HTTP client APIs and does not import
   Javalin, Jackson, or Vedenemo core types.
+- Shared CLI-like command behavior lives in `vedenemo-command-console`; terminal
+  and browser entry points provide their own transport/UI adapters.
 - Application assembly is explicit constructor wiring, currently in
   `vedenemo-app`, `vedenemo-cli`, and the web API runtime.
 - The current model registry and session manager are process-local and not

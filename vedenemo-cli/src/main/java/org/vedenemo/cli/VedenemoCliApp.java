@@ -1,5 +1,14 @@
 package org.vedenemo.cli;
 
+import org.vedenemo.console.CommandClient;
+import org.vedenemo.console.ConsoleCapabilities;
+import org.vedenemo.console.ConsoleCommandResult;
+import org.vedenemo.console.ConsoleSession;
+import org.vedenemo.console.ModelClient;
+import org.vedenemo.console.ModelImportResult;
+import org.vedenemo.console.ModelSummary;
+import org.vedenemo.console.SessionClient;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,11 +33,6 @@ public final class VedenemoCliApp {
     private final PrintStream output;
     private final boolean registerShutdownHook;
     private final Path workingDirectory;
-    private final AtomicReference<String> attachedModelAzName = new AtomicReference<>();
-    private final AtomicReference<String> attachedEntityAzName = new AtomicReference<>();
-    private List<ModelSummary> latestModels = List.of();
-    private List<EntitySummary> latestEntities = List.of();
-    private List<AttributeSummary> latestAttributes = List.of();
 
     public VedenemoCliApp(
             SessionClient sessionClient,
@@ -84,8 +88,15 @@ public final class VedenemoCliApp {
 
     private void runPromptLoop(UUID sessionId) throws IOException, InterruptedException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
+        ConsoleSession consoleSession = new ConsoleSession(
+                sessionId,
+                modelClient,
+                sessionClient,
+                commandClient,
+                ConsoleCapabilities.terminal()
+        );
         while (true) {
-            output.print(prompt());
+            output.print(consoleSession.prompt());
             output.flush();
             String line = reader.readLine();
             if (line == null) {
@@ -99,37 +110,36 @@ public final class VedenemoCliApp {
             if ("exit".equals(trimmed)) {
                 break;
             }
-            handleCommand(sessionId, reader, trimmed);
+            handleCommand(consoleSession, reader, trimmed);
         }
     }
 
-    private void handleCommand(UUID sessionId, BufferedReader reader, String line) throws IOException, InterruptedException {
+    private void handleCommand(ConsoleSession consoleSession, BufferedReader reader, String line) throws IOException, InterruptedException {
         if ("help".equals(line)) {
             printHelp();
-        } else if ("list".equals(line)) {
-            listModels();
-        } else if ("entities".equals(line)) {
-            listEntities();
-        } else if ("attributes".equals(line)) {
-            listAttributes();
         } else if ("add".equals(line)) {
-            add(sessionId, reader);
-        } else if ("detach".equals(line)) {
-            detachModel(sessionId);
+            add(consoleSession, reader);
         } else if (line.startsWith("entity")) {
-            handleEntityCommand(reader, line);
+            handleEntityCommand(consoleSession, reader, line);
+        } else if ("attributes".equals(line)) {
+            executeSharedConsoleCommand(consoleSession, line);
         } else if (line.startsWith("attr")) {
-            handleAttributeCommand(sessionId, reader, line);
-        } else if ("undo".equals(line)) {
-            undo(sessionId);
+            handleAttributeCommand(consoleSession, reader, line);
         } else if (line.equals("save") || line.startsWith("save ")) {
-            save(reader, line);
+            save(consoleSession, reader, line);
         } else if (line.equals("load") || line.startsWith("load ")) {
-            load(sessionId, reader, line);
+            load(consoleSession, reader, line);
         } else if (line.startsWith("attach")) {
-            attachModel(sessionId, reader, line);
+            attachModel(consoleSession, reader, line);
         } else {
-            output.println("Unknown command: " + line);
+            executeSharedConsoleCommand(consoleSession, line);
+        }
+    }
+
+    private void executeSharedConsoleCommand(ConsoleSession consoleSession, String line) {
+        ConsoleCommandResult result = consoleSession.execute(line);
+        for (String outputLine : result.outputLines()) {
+            output.println(outputLine);
         }
     }
 
@@ -151,78 +161,7 @@ public final class VedenemoCliApp {
         output.println("  exit - end the session and exit");
     }
 
-    private void listModels() throws InterruptedException {
-        try {
-            latestModels = modelClient.listModels();
-            if (latestModels.isEmpty()) {
-                output.println("No models available.");
-                return;
-            }
-            for (int index = 0; index < latestModels.size(); index++) {
-                ModelSummary model = latestModels.get(index);
-                output.println((index + 1) + ". " + model.visName() + " (" + model.azName() + ") version " + model.version());
-            }
-        } catch (IOException exception) {
-            output.println(exception.getMessage());
-        }
-    }
-
-    private void listEntities() throws InterruptedException {
-        String modelAzName = attachedModelAzName.get();
-        if (modelAzName == null) {
-            output.println("Attach a model before listing entities.");
-            return;
-        }
-        try {
-            latestEntities = modelClient.listEntities(modelAzName);
-            if (latestEntities.isEmpty()) {
-                output.println("No entities available.");
-                return;
-            }
-            for (int index = 0; index < latestEntities.size(); index++) {
-                EntitySummary entity = latestEntities.get(index);
-                output.println((index + 1) + ". " + entity.visName() + " (" + entity.azName() + ") active since " + entity.activeSince());
-            }
-        } catch (IOException exception) {
-            output.println(exception.getMessage());
-        }
-    }
-
-    private void listAttributes() throws InterruptedException {
-        String modelAzName = attachedModelAzName.get();
-        String entityAzName = attachedEntityAzName.get();
-        if (modelAzName == null) {
-            output.println("Attach a model before listing attributes.");
-            return;
-        }
-        if (entityAzName == null) {
-            output.println("Select an entity before listing attributes.");
-            return;
-        }
-        try {
-            latestAttributes = modelClient.listAttributes(modelAzName, entityAzName);
-            if (latestAttributes.isEmpty()) {
-                output.println("No attributes available.");
-                return;
-            }
-            for (int index = 0; index < latestAttributes.size(); index++) {
-                AttributeSummary attribute = latestAttributes.get(index);
-                output.println((index + 1) + ". "
-                        + attribute.visName()
-                        + " ("
-                        + attribute.azName()
-                        + ") type "
-                        + attribute.dataType()
-                        + " active since "
-                        + attribute.activeSince()
-                        + deprecatedSuffix(attribute.deprecatedSince()));
-            }
-        } catch (IOException exception) {
-            output.println(exception.getMessage());
-        }
-    }
-
-    private void attachModel(UUID sessionId, BufferedReader reader, String line) throws IOException, InterruptedException {
+    private void attachModel(ConsoleSession consoleSession, BufferedReader reader, String line) throws IOException, InterruptedException {
         String argument = line.length() == "attach".length() ? "" : line.substring("attach".length()).trim();
         if (argument.isEmpty()) {
             output.print("Model number or azName: ");
@@ -234,25 +173,22 @@ public final class VedenemoCliApp {
             }
             argument = answer.trim();
         }
-        Optional<ModelSummary> model = resolveModel(argument);
-        if (model.isEmpty()) {
-            return;
-        }
-        attachResolvedModel(sessionId, model.orElseThrow());
+        executeSharedConsoleCommand(consoleSession, "attach " + argument);
     }
 
-    private Optional<ModelSummary> resolveModel(String argument) throws InterruptedException {
+    private Optional<ModelSummary> resolveModel(ConsoleSession consoleSession, String argument) throws InterruptedException {
         if (isPositiveInteger(argument)) {
-            if (latestModels.isEmpty()) {
+            List<ModelSummary> models = consoleSession.latestModels();
+            if (models.isEmpty()) {
                 output.println("Run list first before attaching by number.");
                 return Optional.empty();
             }
             int index = Integer.parseInt(argument) - 1;
-            if (index < 0 || index >= latestModels.size()) {
+            if (index < 0 || index >= models.size()) {
                 output.println("No model found for list number " + argument + ".");
                 return Optional.empty();
             }
-            return Optional.of(latestModels.get(index));
+            return Optional.of(models.get(index));
         }
         try {
             List<ModelSummary> models = modelClient.listModels();
@@ -269,15 +205,15 @@ public final class VedenemoCliApp {
         }
     }
 
-    private void add(UUID sessionId, BufferedReader reader) throws IOException, InterruptedException {
-        if (attachedModelAzName.get() == null) {
-            addModel(sessionId, reader);
+    private void add(ConsoleSession consoleSession, BufferedReader reader) throws IOException, InterruptedException {
+        if (consoleSession.attachedModelAzName().isEmpty()) {
+            addModel(consoleSession, reader);
         } else {
-            addEntity(sessionId, reader);
+            addEntity(consoleSession, reader);
         }
     }
 
-    private void addModel(UUID sessionId, BufferedReader reader) throws IOException, InterruptedException {
+    private void addModel(ConsoleSession consoleSession, BufferedReader reader) throws IOException, InterruptedException {
         output.print("Model visible name: ");
         output.flush();
         String visName = reader.readLine();
@@ -309,15 +245,16 @@ public final class VedenemoCliApp {
         }
         try {
             ModelSummary created = modelClient.addModel(azName, visName, "1.0.0");
-            attachResolvedModel(sessionId, created);
-            latestModels = modelClient.listModels();
+            consoleSession.attachInitialModel(created.azName());
+            consoleSession.refreshModels();
+            output.println("Attached to model " + created.azName() + ".");
             output.println("Added and attached model " + created.azName() + ".");
         } catch (IOException exception) {
             output.println(exception.getMessage());
         }
     }
 
-    private void addEntity(UUID sessionId, BufferedReader reader) throws IOException, InterruptedException {
+    private void addEntity(ConsoleSession consoleSession, BufferedReader reader) throws IOException, InterruptedException {
         output.print("Entity visible name: ");
         output.flush();
         String visName = reader.readLine();
@@ -348,58 +285,16 @@ public final class VedenemoCliApp {
             azName = enteredAzName.trim();
         }
         try {
-            commandClient.createEntity(sessionId, azName, visName);
+            commandClient.createEntity(consoleSession.backendSessionId(), azName, visName);
             output.println("Entity " + azName + " added.");
         } catch (IOException exception) {
             output.println(exception.getMessage());
         }
     }
 
-    private void attachResolvedModel(UUID sessionId, ModelSummary model) throws InterruptedException {
-        try {
-            sessionClient.selectModel(sessionId, model.azName());
-            attachedModelAzName.set(model.azName());
-            attachedEntityAzName.set(null);
-            latestEntities = List.of();
-            latestAttributes = List.of();
-            output.println("Attached to model " + model.azName() + ".");
-        } catch (IOException exception) {
-            output.println(exception.getMessage());
-        }
-    }
-
-    private void detachModel(UUID sessionId) throws InterruptedException {
-        if (attachedModelAzName.get() == null) {
-            output.println("No model is currently attached.");
-            return;
-        }
-        try {
-            sessionClient.clearSelectedModel(sessionId);
-            attachedModelAzName.set(null);
-            attachedEntityAzName.set(null);
-            latestEntities = List.of();
-            latestAttributes = List.of();
-            output.println("Detached from model.");
-        } catch (IOException exception) {
-            output.println(exception.getMessage());
-        }
-    }
-
-    private void handleEntityCommand(BufferedReader reader, String line) throws IOException, InterruptedException {
-        if ("entity detach".equals(line)) {
-            detachEntity();
-            return;
-        }
+    private void handleEntityCommand(ConsoleSession consoleSession, BufferedReader reader, String line) throws IOException, InterruptedException {
         if (!line.equals("entity") && !line.startsWith("entity ")) {
             output.println("Unknown command: " + line);
-            return;
-        }
-        selectEntity(reader, line);
-    }
-
-    private void selectEntity(BufferedReader reader, String line) throws IOException, InterruptedException {
-        if (attachedModelAzName.get() == null) {
-            output.println("Attach a model before selecting an entity.");
             return;
         }
         String argument = line.length() == "entity".length() ? "" : line.substring("entity".length()).trim();
@@ -413,68 +308,24 @@ public final class VedenemoCliApp {
             }
             argument = answer.trim();
         }
-        Optional<EntitySummary> entity = resolveEntity(argument);
-        if (entity.isEmpty()) {
-            return;
-        }
-        attachedEntityAzName.set(entity.orElseThrow().azName());
-        latestAttributes = List.of();
-        output.println("Selected entity " + entity.orElseThrow().azName() + ".");
+        executeSharedConsoleCommand(consoleSession, "entity " + argument);
     }
 
-    private Optional<EntitySummary> resolveEntity(String argument) throws InterruptedException {
-        if (isPositiveInteger(argument)) {
-            if (latestEntities.isEmpty()) {
-                output.println("Run entities first before selecting by number.");
-                return Optional.empty();
-            }
-            int index = Integer.parseInt(argument) - 1;
-            if (index < 0 || index >= latestEntities.size()) {
-                output.println("No entity found for list number " + argument + ".");
-                return Optional.empty();
-            }
-            return Optional.of(latestEntities.get(index));
-        }
-        try {
-            List<EntitySummary> entities = modelClient.listEntities(attachedModelAzName.get());
-            return entities.stream()
-                    .filter(entity -> entity.azName().equalsIgnoreCase(argument))
-                    .findFirst()
-                    .or(() -> {
-                        output.println("No entity found with azName " + argument + ".");
-                        return Optional.empty();
-                    });
-        } catch (IOException exception) {
-            output.println(exception.getMessage());
-            return Optional.empty();
-        }
-    }
-
-    private void detachEntity() {
-        if (attachedEntityAzName.get() == null) {
-            output.println("No entity is currently selected.");
-            return;
-        }
-        attachedEntityAzName.set(null);
-        latestAttributes = List.of();
-        output.println("Entity detached.");
-    }
-
-    private void handleAttributeCommand(UUID sessionId, BufferedReader reader, String line) throws IOException, InterruptedException {
+    private void handleAttributeCommand(ConsoleSession consoleSession, BufferedReader reader, String line) throws IOException, InterruptedException {
         if ("attr add".equals(line)) {
-            addAttribute(sessionId, reader);
+            addAttribute(consoleSession, reader);
         } else {
             output.println("Unknown command: " + line);
         }
     }
 
-    private void addAttribute(UUID sessionId, BufferedReader reader) throws IOException, InterruptedException {
-        String entityAzName = attachedEntityAzName.get();
-        if (attachedModelAzName.get() == null) {
+    private void addAttribute(ConsoleSession consoleSession, BufferedReader reader) throws IOException, InterruptedException {
+        Optional<String> entityAzName = consoleSession.attachedEntityAzName();
+        if (consoleSession.attachedModelAzName().isEmpty()) {
             output.println("Attach a model before adding an attribute.");
             return;
         }
-        if (entityAzName == null) {
+        if (entityAzName.isEmpty()) {
             output.println("Select an entity before adding an attribute.");
             return;
         }
@@ -512,35 +363,21 @@ public final class VedenemoCliApp {
         String enteredDataType = reader.readLine();
         String dataType = normalizeDataTypeInput(enteredDataType);
         try {
-            commandClient.createAttribute(sessionId, entityAzName, azName, visName, dataType);
-            latestAttributes = List.of();
+            commandClient.createAttribute(consoleSession.backendSessionId(), entityAzName.orElseThrow(), azName, visName, dataType);
             output.println("Attribute " + azName + " added.");
         } catch (IOException exception) {
             output.println("Attribute was not added: " + exception.getMessage() + ".");
         }
     }
 
-    private void undo(UUID sessionId) throws InterruptedException {
-        try {
-            UndoCommandResult result = commandClient.undo(sessionId);
-            if (result.isNothingToUndo()) {
-                output.println("Nothing to undo.");
-            } else {
-                output.println(undoMessage(result));
-            }
-        } catch (IOException exception) {
-            output.println(exception.getMessage());
-        }
-    }
-
-    private void save(BufferedReader reader, String line) throws IOException, InterruptedException {
+    private void save(ConsoleSession consoleSession, BufferedReader reader, String line) throws IOException, InterruptedException {
         String argumentText = line.length() == "save".length() ? "" : line.substring("save".length()).trim();
         List<String> arguments = splitArguments(argumentText);
         if (arguments.size() > 2) {
             output.println("Usage: save [N | azName] [outputPath]");
             return;
         }
-        Optional<ModelSummary> model = resolveSaveModel(arguments);
+        Optional<ModelSummary> model = resolveSaveModel(consoleSession, arguments);
         if (model.isEmpty()) {
             return;
         }
@@ -572,16 +409,16 @@ public final class VedenemoCliApp {
         }
     }
 
-    private Optional<ModelSummary> resolveSaveModel(List<String> arguments) throws InterruptedException {
+    private Optional<ModelSummary> resolveSaveModel(ConsoleSession consoleSession, List<String> arguments) throws InterruptedException {
         if (arguments.isEmpty()) {
-            String modelAzName = attachedModelAzName.get();
-            if (modelAzName == null) {
+            Optional<String> modelAzName = consoleSession.attachedModelAzName();
+            if (modelAzName.isEmpty()) {
                 output.println("Attach a model or provide a model number or azName before saving.");
                 return Optional.empty();
             }
-            return resolveModel(modelAzName);
+            return resolveModel(consoleSession, modelAzName.orElseThrow());
         }
-        return resolveModel(arguments.getFirst());
+        return resolveModel(consoleSession, arguments.getFirst());
     }
 
     private Path saveTargetPath(BufferedReader reader, ModelSummary model, String inlinePath) throws IOException {
@@ -595,7 +432,7 @@ public final class VedenemoCliApp {
         return resolvePathWithExtension(selectedPath);
     }
 
-    private void load(UUID sessionId, BufferedReader reader, String line) throws IOException, InterruptedException {
+    private void load(ConsoleSession consoleSession, BufferedReader reader, String line) throws IOException, InterruptedException {
         String argument = line.length() == "load".length() ? "" : line.substring("load".length()).trim();
         if (argument.isBlank()) {
             output.println("Usage: load <path>");
@@ -617,8 +454,9 @@ public final class VedenemoCliApp {
         if (result == null) {
             return;
         }
-        attachResolvedModel(sessionId, new ModelSummary(result.modelAzName(), result.modelAzName(), "1.0.0"));
-        latestModels = modelClient.listModels();
+        consoleSession.attachInitialModel(result.modelAzName());
+        consoleSession.refreshModels();
+        output.println("Attached to model " + result.modelAzName() + ".");
         output.println("Loaded model " + result.modelAzName() + " from " + source + " with " + result.commandCount() + " commands.");
     }
 
@@ -640,18 +478,6 @@ public final class VedenemoCliApp {
             output.println(exception.getMessage());
             return null;
         }
-    }
-
-    private String prompt() {
-        String azName = attachedModelAzName.get();
-        if (azName == null) {
-            return "VedenemoCli>";
-        }
-        String entityAzName = attachedEntityAzName.get();
-        if (entityAzName == null) {
-            return "VedenemoCli[" + azName + "]>";
-        }
-        return "VedenemoCli[" + azName + "/" + entityAzName + "]>";
     }
 
     private void cleanup(AtomicReference<UUID> activeSessionId, AtomicBoolean cleanedUp) {
@@ -750,28 +576,4 @@ public final class VedenemoCliApp {
         };
     }
 
-    private static String deprecatedSuffix(String deprecatedSince) {
-        if (deprecatedSince == null) {
-            return "";
-        }
-        return " deprecated since " + deprecatedSince;
-    }
-
-    private static String undoMessage(UndoCommandResult result) {
-        return switch (result.undoneCommand()) {
-            case "create-entity" -> "Undo completed: removed entity "
-                    + result.entityAzName()
-                    + " from model "
-                    + result.modelAzName()
-                    + ".";
-            case "create-attribute" -> "Undo completed: removed attribute "
-                    + result.attributeAzName()
-                    + " from entity "
-                    + result.entityAzName()
-                    + " in model "
-                    + result.modelAzName()
-                    + ".";
-            default -> "Undo completed.";
-        };
-    }
 }

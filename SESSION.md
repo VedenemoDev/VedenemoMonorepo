@@ -2867,6 +2867,115 @@ Verification: `npm run build` passed. `git diff --check` passed.
 Next steps: Review the rendered diagram title in the browser and commit if
 accepted.
 
+## 2026-07-22 11:27 EEST
+
+Goal: Add planning backlog item for shared terminal CLI and UX web console.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- inspected recent backlog entries
+- `git diff --check`
+- `git diff --stat`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added planning backlog item `Refactor CLI For Shared Terminal And Web
+Console Use`, covering shared CLI behavior extraction, UX `/console`, web API
+console sessions, unsupported web-console handling for `save` and `load`, tests,
+documentation updates, and open planning questions.
+
+Verification: `git diff --check` passed.
+
+Next steps: Review and answer the planning questions before executing the task.
+
+## 2026-07-22 11:39 EEST
+
+Goal: Resolve shared CLI/web console module placement planning question.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- inspected `tasks/backlog.md`
+- `git diff --check`
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Updated the web console planning backlog item to select Option B:
+introduce a new Vedenemo-owned shared command module used by both
+`vedenemo-cli` and `vedenemo-web-api`. Removed that topic from the open
+questions and renumbered the remaining questions.
+
+Verification: `git diff --check` passed.
+
+Next steps: User should answer the remaining web console planning questions.
+
+## 2026-07-22 11:48 EEST
+
+Goal: Update web console planning with capability and initial model-binding
+decisions.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- inspected the web console backlog item
+- `git diff --check`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Added backlog elaboration for the console-session wrapper versus direct
+backend session-id choice. Recorded that `/console` should auto-bind to the
+currently connected model when the UX has an active model connection, start
+unattached otherwise, and return plain text only for unsupported `save` and
+`load`.
+
+Verification: `git diff --check` passed.
+
+Next steps: User should decide whether to use a console-session wrapper or
+direct backend session ids, and whether `/console` should be integrated with the
+existing model selector layout or be a separate full-page console view.
+
+## 2026-07-22 11:51 EEST
+
+Goal: Resolve remaining web console planning questions.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- inspected the web console backlog item
+- `git diff --check`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Status: Updated the web console backlog item to use a console-session wrapper
+with its own browser-facing session id, internally owning or linking a backend
+model-editing session. Also recorded that `/console` should be a separate
+full-page console view for the first version. Marked the task as having no open
+planning questions.
+
+Verification: `git diff --check` passed.
+
+Next steps: Review the planning item and commit if accepted.
+
 ## 2026-07-21 22:50 EEST
 
 Goal: Hide empty member compartment separators from UX-rendered PlantUML entity
@@ -3036,3 +3145,74 @@ was not applied.
 
 Next steps: Stage all changes, commit, push to `origin/main`, and verify clean
 branch status.
+## 2026-07-22 12:07 EEST
+
+Session goal: implement the planned shared terminal/web CLI command behavior and
+add a virtual CLI page at `/console`.
+
+Files changed:
+
+- Added new Maven module `vedenemo-command-console` with shared console command
+  session behavior, DTOs, client interfaces, capability flags, and tests.
+- Refactored `vedenemo-cli` to use shared console DTO/client interfaces while
+  keeping terminal prompts and local `.vdos` file access in the CLI module.
+- Added web API console in-process adapters, browser-facing console-session
+  wrapper registry, `ConsoleResource`, and web API tests.
+- Updated `vedenemo-ux/src/App.tsx` and `vedenemo-ux/src/styles.css` with a
+  separate `/console` page and a main-page Console link.
+- Updated `README.md`, `docs/architecture_doc.md`, `tasks/current-task.md`, and
+  `tasks/backlog.md`.
+
+Commands run:
+
+- `npm run build` in `vedenemo-ux`
+- `mvn -B clean verify`
+- `mvn -B clean verify`
+- `npm run build` in `vedenemo-ux`
+- `mvn -B clean verify` (failed after first terminal delegation refactor due
+  `attributes` being routed through the `attr` prefix branch)
+- `mvn -B clean verify`
+- `mvn -B clean verify`
+- `git diff --check`
+- `git status --short`
+- `git diff --stat`
+- `npm run dev -- --host 127.0.0.1` in `vedenemo-ux`
+
+Current status and next steps:
+
+- Implemented the shared command-flow module and browser virtual CLI endpoints.
+- `/console` starts a backend console session, executes one command per HTTP
+  request, displays command history, and best-effort deletes the session on
+  page cleanup.
+- The browser console receives the connected model `azName` from the main UX
+  only when the model event connection is active.
+- Web console `save` and `load` return the planned unsupported local file
+  access messages.
+- Frontend build passed; final backend Maven verification passed. Vite still
+  reports the existing large PlantUML/Viz chunk warning.
+- UX dev server is running at `http://127.0.0.1:5178/`.
+
+## 2026-07-22 12:42 EEST
+
+Session goal: fix terminal CLI startup failure after introducing
+`vedenemo-command-console`.
+
+Files changed:
+
+- Updated `vedenemo-cli/pom.xml` so the Maven build unpacks
+  `vedenemo-command-console` classes into `vedenemo-cli/target/classes`.
+
+Commands run:
+
+- `java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli`
+- `mvn -B clean verify`
+- backend+CLI smoke test using
+  `java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli`
+
+Current status and next steps:
+
+- The previous `NoClassDefFoundError:
+  org/vedenemo/console/CommandClient` is fixed.
+- `mvn -B clean verify` passed.
+- The backend+CLI smoke test passed when run outside the socket-restricted
+  sandbox.

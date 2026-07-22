@@ -1,4 +1,4 @@
-package org.vedenemo.cli;
+package org.vedenemo.console;
 
 import java.io.IOException;
 import java.util.UUID;

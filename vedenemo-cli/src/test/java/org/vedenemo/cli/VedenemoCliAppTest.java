@@ -1,5 +1,13 @@
 package org.vedenemo.cli;
 
+import org.vedenemo.console.AttributeSummary;
+import org.vedenemo.console.CommandClient;
+import org.vedenemo.console.EntitySummary;
+import org.vedenemo.console.ModelClient;
+import org.vedenemo.console.ModelImportResult;
+import org.vedenemo.console.ModelSummary;
+import org.vedenemo.console.SessionClient;
+import org.vedenemo.console.UndoCommandResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

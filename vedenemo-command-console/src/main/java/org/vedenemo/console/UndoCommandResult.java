@@ -1,4 +1,4 @@
-package org.vedenemo.cli;
+package org.vedenemo.console;
 
 import java.util.Objects;
 

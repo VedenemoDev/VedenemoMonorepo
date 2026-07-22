@@ -1,86 +1,55 @@
 # Current Task
 
-## Add CLI Save And Load For Vedenemo Script Files
+## Refactor CLI For Shared Terminal And Web Console Use
 
 Status: executed.
 
 ### Goal
 
-Add `save` and `load` commands to `VedenemoCli` using a new text-based
-Vedenemo Script file format with the `.vdos` extension.
+Refactor CLI-like command handling so it can be used from both:
 
-`save` exports a selected model from the backend through HTTP, including model
-metadata, the full model structure, and executed command history, then writes
-the result as UTF-8 text to a local file.
+- the existing terminal `VedenemoCli`;
+- a virtual CLI exposed in the UX at `/console`.
 
-`load` reads a `.vdos` file from the local filesystem and sends it to the
-backend so the backend can recreate the model as baseline state.
+The web console must not spawn the Java CLI process or duplicate command
+behavior in TypeScript. Shared command parsing, session-oriented command
+execution, and user-facing output belong in Vedenemo-owned Java code.
 
 ### Scope
 
-- Introduce backend-owned `.vdos` script serialization and parsing.
-- Keep the CLI responsible only for model/path selection, UTF-8 file I/O, and
-  user-facing messages.
-- Use command lines plus a final model snapshot, with commands authoritative and
-  snapshot used for validation/readability.
-- Introduce model-level command history for export so `.vdos` output is not tied
-  to current CLI session lifetime.
-- Add HTTP endpoints:
+- Add a shared Java module for CLI-like command behavior.
+- Keep terminal stdin/stdout and local file access in `vedenemo-cli`.
+- Keep browser console session identity and UI rendering in `vedenemo-web-api`
+  and `vedenemo-ux`.
+- Add backend console-session endpoints:
 
 ```text
-GET /models/{modelAzName}/script
-POST /models/script
+POST /console/sessions
+POST /console/sessions/{sessionId}/commands
+DELETE /console/sessions/{sessionId}
 ```
 
-- Add CLI commands:
-
-```text
-save [N | azName] [outputPath]
-load <path>
-```
-
-- Use hybrid save path handling: inline output path when provided, otherwise
-  prompt with editable default `<modelAzName>.vdos`.
-- Append `.vdos` to save/load paths when no extension is provided.
-- Prompt before overwriting an existing local save target.
-- On duplicate model `azName` during load, reject first and offer a rename retry
-  flow.
-- Automatically attach to a successfully loaded model.
-- Treat loaded commands as baseline state with no undo available from the load
-  operation.
-
-### Verification
-
-At minimum, run:
-
-```bash
-mvn -B clean verify
-```
-
-If practical, run a local backend plus CLI smoke test that creates a model,
-saves it, loads it, and verifies the loaded model data is available.
+- Use a browser-facing console-session wrapper id that owns an internal backend
+  edit session id.
+- Add a separate full-page UX route at `/console`.
+- Auto-bind the web console to the currently connected model only when the main
+  UX has an active model connection.
+- Return plain text unsupported messages for `save` and `load` in the web
+  console.
 
 ### Completion Notes
 
-- Added pure-JDK core `.vdos` script import/export support.
-- Added a model-level `ModelCommandJournal` so export uses model command history
-  instead of session-only undo history.
-- Updated command execution and undo so successful model-targeting commands are
-  recorded in the journal and undone commands are removed from it.
-- Added HTTP endpoints:
-
-```text
-GET /models/{modelAzName}/script
-POST /models/script
-```
-
-- Added CLI `save [N | azName] [outputPath]` with attached-model default,
-  list-number and `azName` target resolution, `.vdos` extension handling, prompt
-  fallback, UTF-8 writes, and overwrite confirmation.
-- Added CLI `load <path>` with `.vdos` extension handling, UTF-8 reads,
-  duplicate import rename retry, and automatic attach to the loaded model.
-- Loaded `.vdos` commands are imported as baseline model state and are not added
-  to the current session undo stack.
-- Updated `docs/cli-reference.md` and `docs/architecture_doc.md`.
-- Added focused core, web API, and CLI tests.
+- Added `vedenemo-command-console` as the shared command-flow module.
+- Refactored terminal CLI client DTO/interfaces into the shared module.
+- Added web API console-session registry, in-process console adapters, and
+  `/console/sessions` endpoints.
+- Added `/console` in the Vite UX with terminal-like history, command input,
+  session startup, command execution, and best-effort session cleanup.
+- The main UX now links to `/console` and passes the active connected model
+  `azName` when connected.
+- Web console `save` and `load` return clear unsupported local file access
+  messages.
+- Updated implementation architecture and README documentation.
+- Added focused shared-console and web API tests.
+- `npm run build` in `vedenemo-ux` passed.
 - `mvn -B clean verify` passed.

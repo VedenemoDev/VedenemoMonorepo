@@ -5,9 +5,11 @@ import org.vedenemo.app.VedenemoApp;
 import org.vedenemo.core.command.ModelCommandJournal;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.SessionManager;
+import org.vedenemo.web.api.console.WebConsoleSessionRegistryFactory;
 import org.vedenemo.web.api.events.ModelChangeBroadcaster;
 import org.vedenemo.web.api.http.CorsSupport;
 import org.vedenemo.web.api.http.WebApiConfig;
+import org.vedenemo.web.api.resource.ConsoleResource;
 import org.vedenemo.web.api.resource.ModelsResource;
 import org.vedenemo.web.api.resource.SessionResource;
 
@@ -51,6 +53,11 @@ public final class VedenemoWebApi {
             modelChangeBroadcaster.register(javalinConfig.routes);
             new ModelsResource(modelRegistry, commandJournal, modelChangeBroadcaster).register(javalinConfig.routes);
             new SessionResource(sessionManager, modelRegistry, modelChangeBroadcaster).register(javalinConfig.routes);
+            new ConsoleResource(WebConsoleSessionRegistryFactory.create(
+                    sessionManager,
+                    modelRegistry,
+                    modelChangeBroadcaster
+            )).register(javalinConfig.routes);
         });
     }
 }

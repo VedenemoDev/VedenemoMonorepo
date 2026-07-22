@@ -18,10 +18,13 @@ development, command-flow testing, and shaping the core model/API boundaries.
 - Model-level command journal used by Vedenemo Script export.
 - Backend-owned `.vdos` Vedenemo Script import/export.
 - Javalin HTTP/WebSocket API for models, model-change events, sessions,
-  commands, undo, and script import/export.
+  commands, undo, script import/export, and browser console sessions.
+- Shared Java command-flow module for terminal and browser CLI-like command
+  behavior.
 - HTTP-backed interactive `VedenemoCli`.
 - In-memory storage adapter.
-- Separate Vite/TypeScript UX with model selection and PlantUML SVG rendering.
+- Separate Vite/TypeScript UX with model selection, PlantUML SVG rendering, and
+  a full-page browser console at `/console`.
 - GitHub Actions workflows for backend and frontend.
 
 Not currently implemented:
@@ -40,9 +43,10 @@ vedenemo-core-spi        Core-facing SPI ports. Pure JDK plus Vedenemo modules.
 vedenemo-core            Commands, sessions, undo, command journal, .vdos logic.
 vedenemo-storage-memory  Initial in-memory ModelStorage adapter.
 vedenemo-app             Application composition root.
+vedenemo-command-console Shared CLI-like command session behavior.
 vedenemo-web-api         Javalin HTTP backend executable jar.
 vedenemo-cli             HTTP-backed interactive CLI.
-vedenemo-ux              Separate React + Vite frontend skeleton.
+vedenemo-ux              Separate React + Vite frontend.
 docs/                    Architecture, roadmap, and CLI reference docs.
 tasks/                   Current task and historical backlog.
 ```
@@ -127,6 +131,10 @@ DELETE /sessions/{uuid}/selected-model
 POST   /sessions/{uuid}/commands/create-entity
 POST   /sessions/{uuid}/commands/create-attribute
 POST   /sessions/{uuid}/commands/undo
+
+POST   /console/sessions
+POST   /console/sessions/{sessionId}/commands
+DELETE /console/sessions/{sessionId}
 ```
 
 Session example:
@@ -206,6 +214,29 @@ Vedenemo Script file, and load a `.vdos` file back through the backend.
 
 See [docs/cli-reference.md](docs/cli-reference.md) for full command usage and
 examples.
+
+## Run The UX Locally
+
+Build first:
+
+```bash
+cd vedenemo-ux
+npm ci
+npm run build
+```
+
+For local development, start the backend and then run the Vite dev server:
+
+```bash
+cd vedenemo-ux
+npm run dev
+```
+
+The main page shows model selection and the PlantUML diagram. The browser
+console is available at `/console`; if opened from the main page while a model
+is connected, it starts attached to that model. Browser console `save` and
+`load` commands are currently rejected because they require local filesystem
+access.
 
 ## Vedenemo Script Files
 
