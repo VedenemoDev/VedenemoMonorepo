@@ -3555,3 +3555,41 @@ Current status and next steps:
   participating-entity navigation references.
 - `git diff --check` passed. No code tests were run because this was a
   planning/documentation-only change.
+
+## 2026-07-24 01:53 EEST
+
+Session goal: incorporate additional user answers to association backlog open
+questions.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- `rg -n "=> Answer:" tasks/backlog.md`
+- `sed -n '90,345p' tasks/backlog.md`
+- `nl -ba tasks/backlog.md | sed -n '35,345p'`
+- `git diff --check`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Resolved remaining answered questions about canonical-only association
+  commands, rejecting `0..0`, sealed subtype names, association `azName`
+  prompting/suggestions, model/entity-scoped API views, context-sensitive CLI
+  association listing, first-version relation navigability, code-level
+  association object references, `.vdos` snapshot references, and model-wide
+  association `azName` namespace.
+- Added follow-up open questions for association `azName` suggestion inputs,
+  directed role/label requirements, entity-scoped API grouping, relation-end
+  role-name uniqueness, and whether entity-held association references should be
+  explicitly serialized or reconstructed from model-root association
+  definitions.
+- `git diff --check` passed. No code tests were run because this was a
+  planning/documentation-only change.

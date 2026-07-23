@@ -52,6 +52,9 @@ after the model-level association path is proven end to end.
   - `relation`: solid line between entities.
 - Directed ownership/reference diagrams do not need arrowheads because the
   diamond marks which end is the source/referrer/owner.
+- Do not add alias commands in the first version. Use only canonical association
+  command keywords at first, and add aliases later only if usage experience
+  justifies them.
 
 ### Rationale
 
@@ -100,11 +103,6 @@ The first slice should still move through the existing vertical path:
   - Cost: risks two definitions drifting unless there is a single relation
     identity behind both ends.
 
-### Open Questions
-
-- Should `owns` be accepted as a command alias for `assoc add ownership`, or
-  should the first version require only the canonical `ownership` keyword? => Answer: Let's skip alias command(s) at this point, and use only canonical form. Adding them later on based on usage experiences, if needed.
-
 ## Add Cardinality Value Object
 
 Status: planning.
@@ -139,11 +137,7 @@ number.
 - Accept shorthand `*` as `0..*`.
 - Normalize `1..1` to `1`.
 - Default blank interactive prompt input to `1`.
-
-### Open Questions
-
-- Should `0..0` be rejected as meaningless for associations, or accepted as a
-  valid but unusual cardinality? => Answer: Let's reject, as I really cannot see use case for that cardinality.
+- Reject `0..0` cardinality as meaningless for associations.
 
 ## Add Directed Model Associations
 
@@ -180,6 +174,10 @@ association objects from one entity to another.
 ### Resolved Decisions
 
 - Implement `Association` as a sealed interface.
+- Use concrete sealed subtype names:
+  - `OwnershipAssociation`
+  - `ReferenceAssociation`
+  - `RelationAssociation`
 - Start with a single `associations` command for listing associations.
 - Support source and target entity selection by both latest entity-list number
   and exact `azName`, mirroring existing attach/entity selection behavior.
@@ -192,6 +190,12 @@ association objects from one entity to another.
 - Existing `.vdos` files containing only entities and value attributes remain
   valid after association support is added. Association sections are additive,
   not mandatory.
+- Ask for association `azName` as the last association-creation prompt.
+- Build a unique `azName` suggestion from the referenced entities and other
+  association data. The user can accept the suggestion, edit it, or enter a
+  fully manual unique `azName`.
+- Association `azName` values share one model-wide namespace across all
+  association kinds in the first implementation.
 
 ### Pondering
 
@@ -211,10 +215,11 @@ introduced later if generated APIs or UI views need field-like navigation.
 
 ### Open Questions
 
-- What concrete sealed subtype names should be used, for example
-  `OwnershipAssociation`, `ReferenceAssociation`, and `RelationAssociation`? => Answer: Those names sound fine.
-- Should association `azName` be user-entered directly, derived from role/source
-  and target suggestions, or optional for directed associations? => Answer: Let's ask azName as last information, and trying to build suggestion for it that is unique inside model based on the referenced entities and other data, so user can either accept suggested name, or modify it, or write totally manually own name (which of course must be also unique inside model).
+- Which association fields should participate in the suggested `azName` for
+  directed associations: source entity, target entity, role/label, kind, or some
+  deterministic subset?
+- Should directed associations require a role/label, or can `visName` alone
+  carry the user-visible meaning in the first version?
 
 ## Expose Directed Associations In API, UX, And Diagrams
 
@@ -246,6 +251,15 @@ console, CLI, UX, and PlantUML rendering surfaces.
   - relation as a solid line.
 - Directed ownership/reference rendering does not need arrowheads in the first
   version.
+- Add both model-scoped and entity-scoped association API views in the first API
+  slice:
+  - model-scoped: list all associations for a model.
+  - entity-scoped: list associations touching one entity.
+- The CLI `associations` command should list associations related to the
+  selected entity when an entity is selected, and all model associations when no
+  entity is selected.
+- Association list output must state its context in the title, because the
+  prompt alone is not explicit enough.
 
 ### Pondering
 
@@ -261,16 +275,15 @@ The earlier model-scoped versus entity-scoped API question means:
 - entity-scoped API: list only associations touching one entity, for example
   `GET /models/{modelAzName}/entities/{entityAzName}/associations`.
 
-The first implementation can start model-scoped to match `ModelRoot` ownership.
-Entity-scoped views can be added later if the UX, dynamic REST API, or generated
-instance API needs faster local navigation.
+The first implementation should include both model-scoped and entity-scoped
+views. `ModelRoot` remains the ownership boundary, while entity-scoped views
+are convenience projections for CLI, UX, generated APIs, and focused
+inspection.
 
 ### Open Questions
 
-- Should the first API include only model-scoped association endpoints, or also
-  entity-scoped convenience views? => Answer: Let's have both.
-- Should the CLI `associations` command list all model associations only, or
-  filter to the currently selected entity when an entity is selected? => Answer: Only selected entity related, but of course all when no entity selected. Of course in the list title must inform also the context, in addition to command prompt format (which is not too explicit).
+- Should the entity-scoped API include separate incoming/outgoing grouping, or
+  return one ordered list with source/target fields?
 
 ## Add True Bidirectional Relations
 
@@ -300,6 +313,12 @@ to end.
 - Participating entities may also hold direct references to associations that
   touch them for navigation efficiency. This is an implementation convenience;
   `ModelRoot` remains the ownership boundary.
+- First-version relations should keep both ends navigable at model/code level.
+- Participating entities should store association object references at code
+  level. `.vdos` snapshots should store only association `azName` references,
+  not object references.
+- All association kinds should share the same model-wide `azName` namespace in
+  the first implementation.
 - Association classes are expected to be useful later, but they are explicitly
   out of scope for the first association/relation implementation.
 
@@ -316,9 +335,8 @@ and `Course`, rather than adding arbitrary attributes to relations.
 The earlier non-navigable-end question was about model/code semantics, not only
 visual rendering. A non-navigable end would mean the relation exists in the
 model but generated APIs or instance navigation would not expose traversal from
-that end. Since Vedenemo is early and the current preference is direct
-participating-entity references, the first relation implementation should
-probably make both ends navigable and postpone non-navigable ends.
+that end. First-version relations keep both ends navigable and postpone
+non-navigable ends.
 
 The earlier relation identity question was about whether a relation needs its
 own stable `azName`/identifier in addition to its end role names. The current
@@ -328,11 +346,11 @@ Role names identify the ends, not the relation itself.
 
 ### Open Questions
 
-- Should first-version relations require both ends to be navigable at model/code
-  level? => Answer: Let's keep both end navigable
-- Should participating entities store association object references, association
-  `azName` references, or derived read-only views backed by `ModelRoot`? => Answer: Association object references at code level, but at vdos-snapshot level of course only azName references.
-- Should all association kinds share the same model-wide `azName` namespace? => Answer: Let's at start use the same model-wide namespace
+- Should relation end role names be unique within the relation only, or also
+  constrained per participating entity?
+- Should `.vdos` list participating-entity association references explicitly in
+  snapshots, or should those references be reconstructed from model-root
+  association definitions during import?
 
 ## Make CLI Commands Case-Insensitive And Add Console Input History
 
