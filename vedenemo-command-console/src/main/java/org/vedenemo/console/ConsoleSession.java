@@ -79,31 +79,32 @@ public final class ConsoleSession {
         if (trimmed.isEmpty()) {
             return ConsoleCommandResult.ok(List.of());
         }
+        String command = commandName(trimmed).toLowerCase();
         try {
-            if ("help".equals(trimmed)) {
+            if ("help".equals(command) && commandOnly(trimmed)) {
                 printHelp(output);
-            } else if ("ping".equals(trimmed)) {
+            } else if ("ping".equals(command) && commandOnly(trimmed)) {
                 ping(output);
-            } else if ("list".equals(trimmed)) {
+            } else if ("list".equals(command) && commandOnly(trimmed)) {
                 listModels(output);
-            } else if ("entities".equals(trimmed)) {
+            } else if ("entities".equals(command) && commandOnly(trimmed)) {
                 listEntities(output);
-            } else if ("attributes".equals(trimmed)) {
+            } else if ("attributes".equals(command) && commandOnly(trimmed)) {
                 listAttributes(output);
-            } else if ("detach".equals(trimmed)) {
+            } else if ("detach".equals(command) && commandOnly(trimmed)) {
                 detachModel(output);
-            } else if (trimmed.startsWith("attach")) {
+            } else if ("attach".equals(command)) {
                 attachModel(trimmed, output);
-            } else if (trimmed.startsWith("entity")) {
+            } else if ("entity".equals(command)) {
                 handleEntityCommand(trimmed, output);
-            } else if ("undo".equals(trimmed)) {
+            } else if ("undo".equals(command) && commandOnly(trimmed)) {
                 undo(output);
-            } else if (trimmed.equals("save") || trimmed.startsWith("save ")) {
+            } else if ("save".equals(command)) {
                 unsupportedFileCommand("save", output);
-            } else if (trimmed.equals("load") || trimmed.startsWith("load ")) {
+            } else if ("load".equals(command)) {
                 unsupportedFileCommand("load", output);
-            } else if ("add".equals(trimmed) || trimmed.startsWith("attr")) {
-                output.add("Command '" + commandName(trimmed) + "' requires interactive terminal prompts and is not supported in the web console yet.");
+            } else if ("add".equals(command) || "attr".equals(command)) {
+                output.add("Command '" + command + "' requires interactive terminal prompts and is not supported in the web console yet.");
                 return ConsoleCommandResult.error(output);
             } else {
                 output.add("Unknown command: " + trimmed);
@@ -195,7 +196,7 @@ public final class ConsoleSession {
         }
         List<ModelSummary> models = modelClient.listModels();
         return models.stream()
-                .filter(model -> model.azName().equalsIgnoreCase(argument))
+                .filter(model -> model.azName().equals(argument))
                 .findFirst()
                 .or(() -> {
                     output.add("No model found with azName " + argument + ".");
@@ -241,12 +242,8 @@ public final class ConsoleSession {
     }
 
     private void handleEntityCommand(String line, List<String> output) throws IOException, InterruptedException {
-        if ("entity detach".equals(line)) {
+        if ("detach".equals(argumentText(line, "entity").toLowerCase())) {
             detachEntity(output);
-            return;
-        }
-        if (!line.equals("entity") && !line.startsWith("entity ")) {
-            output.add("Unknown command: " + line);
             return;
         }
         selectEntity(line, output);
@@ -286,7 +283,7 @@ public final class ConsoleSession {
         }
         List<EntitySummary> entities = modelClient.listEntities(attachedModelAzName);
         return entities.stream()
-                .filter(entity -> entity.azName().equalsIgnoreCase(argument))
+                .filter(entity -> entity.azName().equals(argument))
                 .findFirst()
                 .or(() -> {
                     output.add("No entity found with azName " + argument + ".");
@@ -352,6 +349,14 @@ public final class ConsoleSession {
     private static String commandName(String value) {
         int spaceIndex = value.indexOf(' ');
         return spaceIndex < 0 ? value : value.substring(0, spaceIndex);
+    }
+
+    private static boolean commandOnly(String value) {
+        return value.indexOf(' ') < 0;
+    }
+
+    private static String argumentText(String line, String command) {
+        return line.length() == command.length() ? "" : line.substring(command.length()).trim();
     }
 
     private static boolean isPositiveInteger(String value) {

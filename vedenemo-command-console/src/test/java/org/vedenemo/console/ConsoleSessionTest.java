@@ -36,6 +36,28 @@ final class ConsoleSessionTest {
     }
 
     @Test
+    void commandWordsAreCaseInsensitiveButAzNameParametersAreCaseSensitive() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        TestSessionClient sessionClient = new TestSessionClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsole()
+        );
+
+        ConsoleCommandResult attachResult = session.execute("AtTaCh Example_Model");
+        ConsoleCommandResult wrongCaseResult = session.execute("attach example_model");
+
+        assertEquals(ConsoleCommandResult.Status.OK, attachResult.status());
+        assertEquals("Example_Model", sessionClient.selectedModelAzName);
+        assertEquals(ConsoleCommandResult.Status.OK, wrongCaseResult.status());
+        assertEquals(List.of("No model found with azName example_model."), wrongCaseResult.outputLines());
+    }
+
+    @Test
     void rejectsSaveAndLoadAsPlainTextInWebConsole() {
         ConsoleSession session = new ConsoleSession(
                 UUID.randomUUID(),

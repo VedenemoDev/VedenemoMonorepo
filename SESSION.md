@@ -3309,3 +3309,146 @@ Current status and next steps:
 - Updated CLI docs, README, living architecture doc, and backlog.
 - Focused CLI reactor tests, full Maven verification, whitespace check, and the
   real backend+CLI snapshot smoke test passed.
+
+## 2026-07-23 12:34 EEST
+
+Session goal: make normal and virtual CLI command words case-insensitive while
+keeping parameters case-sensitive, and add browser console in-session command
+history navigation.
+
+Files changed:
+
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `vedenemo-ux/src/App.tsx`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- `mvn -B clean verify`
+- `npm run build` in `vedenemo-ux`
+- `npm run build` in `vedenemo-ux`
+- `git diff --check`
+- `git status --short`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Shared console and terminal CLI command dispatch now match command words
+  case-insensitively.
+- Model and entity `azName` parameter matching remains case-sensitive.
+- Browser `/console` keeps command input history only in current page/session
+  state and supports Arrow Up, Arrow Down, Ctrl+P, and Ctrl+N navigation.
+- Added focused Java tests and updated current behavior documentation.
+- `mvn -B clean verify`, `npm run build`, and `git diff --check` passed. Vite
+  still reports the existing large PlantUML/Viz chunk warning.
+
+## 2026-07-23 12:55 EEST
+
+Session goal: correct normal terminal CLI command-history navigation after the
+browser console history change.
+
+Files changed:
+
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- `mvn -B clean verify`
+- `npm run build` in `vedenemo-ux`
+- Real TTY CLI smoke test against a temporary backend on port 18089, including
+  Arrow Up, Ctrl+P, and Ctrl+N command-history navigation
+- `ps -ef`
+- `git status --short`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Normal terminal CLI now uses a TTY-backed input reader for interactive
+  sessions, with per-process command history navigable by Arrow Up, Arrow Down,
+  Ctrl+P, and Ctrl+N.
+- Piped and test input keeps the buffered reader path, so scripted CLI use is
+  unchanged.
+- Full Maven verification and UX production build passed. Vite still reports
+  the existing large PlantUML/Viz chunk warning.
+
+## 2026-07-23 13:03 EEST
+
+Session goal: recover context after interrupted TTY CLI testing and harden
+terminal restoration before handing manual testing back to the user.
+
+Files changed:
+
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- `tail -n 220 tasks/backlog.md`
+- `git diff --stat`
+- targeted `git diff`/`sed`/`rg` inspection of CLI, shared console, UX, docs,
+  backlog, and tests
+- `mvn -B clean verify`
+- `npm run build` in `vedenemo-ux`
+- `git diff --check`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Confirmed the interrupted worktree contains the case-insensitive command-word
+  changes, browser console input history, terminal CLI input history, and
+  related documentation/backlog/session updates from the prior sessions.
+- Hardened terminal CLI raw-mode cleanup by making terminal restoration
+  idempotent and registering a reader-scoped JVM shutdown hook while the TTY
+  reader is active.
+- `mvn -B clean verify`, `npm run build`, and `git diff --check` passed.
+- Real TTY history testing was intentionally not rerun in this session because
+  the user will test that manually after the previous terminal corruption.
+
+## 2026-07-23 13:11 EEST
+
+Session goal: fix terminal CLI prompt indentation after enabling interactive
+command-history input.
+
+Files changed:
+
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `SESSION.md`
+
+Commands run:
+
+- `rg -n "stty raw|TerminalCliInputReader|output.println\\(\\)" vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `mvn -B -pl vedenemo-cli -am test`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Replaced terminal `stty raw -echo` mode with non-canonical no-echo input mode
+  (`stty -icanon -echo min 1 time 0`) so command input remains character-based
+  while newline output processing keeps prompts left-aligned.
+- Focused CLI reactor tests passed.
+- Real TTY prompt alignment and command-history behavior remain for user manual
+  verification.

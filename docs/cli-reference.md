@@ -55,6 +55,14 @@ VedenemoCli[Example_Model/Customer]>
 
 ## Commands
 
+Command words are case-insensitive. Parameters remain case-sensitive, so
+`attach Example_Model` and `attach example_model` are different model
+identifiers.
+
+In a real terminal session, the main command prompt keeps input history for the
+current CLI process only. Arrow Up and Ctrl+P navigate to previous commands;
+Arrow Down and Ctrl+N navigate forward.
+
 ### `ping`
 
 Checks backend connectivity through `GET /models/ping`.

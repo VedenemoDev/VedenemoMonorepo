@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { ModelChangeEventAdapter } from "./adapters/ModelChangeEventAdapter";
 import { PlantUmlModelAdapter } from "./adapters/PlantUmlModelAdapter";
 
@@ -75,6 +75,8 @@ function ConsolePage() {
   const [status, setStatus] = useState<ConsoleStatus>("loading");
   const [statusMessage, setStatusMessage] = useState("Starting console session...");
   const [history, setHistory] = useState<string[]>([]);
+  const [commandHistory, setCommandHistory] = useState<string[]>([]);
+  const [commandHistoryIndex, setCommandHistoryIndex] = useState(0);
   const [command, setCommand] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
 
@@ -144,6 +146,8 @@ function ConsolePage() {
     }
 
     setCommand("");
+    setCommandHistory((current) => [...current, trimmedCommand]);
+    setCommandHistoryIndex(commandHistory.length + 1);
     setIsExecuting(true);
     setHistory((current) => [...current, `${session.prompt} ${trimmedCommand}`]);
 
@@ -178,6 +182,27 @@ function ConsolePage() {
     }
   }
 
+  function navigateCommandHistory(event: KeyboardEvent<HTMLInputElement>) {
+    const isPrevious = event.key === "ArrowUp" || (event.ctrlKey && event.key.toLowerCase() === "p");
+    const isNext = event.key === "ArrowDown" || (event.ctrlKey && event.key.toLowerCase() === "n");
+    if (!isPrevious && !isNext) {
+      return;
+    }
+    if (commandHistory.length === 0) {
+      return;
+    }
+    event.preventDefault();
+    if (isPrevious) {
+      const nextIndex = Math.max(0, commandHistoryIndex - 1);
+      setCommandHistoryIndex(nextIndex);
+      setCommand(commandHistory[nextIndex]);
+      return;
+    }
+    const nextIndex = Math.min(commandHistory.length, commandHistoryIndex + 1);
+    setCommandHistoryIndex(nextIndex);
+    setCommand(nextIndex === commandHistory.length ? "" : commandHistory[nextIndex]);
+  }
+
   return (
     <main className="console-shell">
       <header className="console-header">
@@ -202,7 +227,11 @@ function ConsolePage() {
           <input
             id="console-command"
             value={command}
-            onChange={(event) => setCommand(event.target.value)}
+            onChange={(event) => {
+              setCommand(event.target.value);
+              setCommandHistoryIndex(commandHistory.length);
+            }}
+            onKeyDown={navigateCommandHistory}
             disabled={status === "loading" || isExecuting || session === null}
             autoComplete="off"
             autoFocus

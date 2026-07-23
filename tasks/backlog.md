@@ -1,5 +1,34 @@
 # Backlog
 
+## Make CLI Commands Case-Insensitive And Add Console Input History
+
+Status: executed.
+
+### Goal
+
+Improve normal and virtual CLI console ergonomics without changing command
+parameters.
+
+### Scope
+
+- Treat command words case-insensitively in both terminal `VedenemoCli` and the
+  browser `/console`.
+- Keep parameters case-sensitive; do not normalize model, entity, file, or other
+  argument casing.
+- Keep terminal and browser console command input history only for the current
+  console session.
+- Support previous-command navigation with Arrow Up and Ctrl+P.
+- Support next-command navigation with Arrow Down and Ctrl+N.
+
+### Completion Notes
+
+- Updated shared console and terminal CLI command dispatch to normalize command
+  words only.
+- Tightened model/entity `azName` parameter matching to remain case-sensitive.
+- Added in-session terminal CLI command input history for real TTY use.
+- Added in-session browser console input history in React state.
+- Added focused Java tests and updated user-facing docs.
+
 ## Add Terminal CLI Snapshot Listing For Local Vedenemo Scripts
 
 Status: executed.

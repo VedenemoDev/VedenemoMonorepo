@@ -10,10 +10,12 @@ import org.vedenemo.console.ModelSummary;
 import org.vedenemo.console.SessionClient;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -92,7 +94,6 @@ public final class VedenemoCliApp {
     }
 
     private void runPromptLoop(UUID sessionId) throws IOException, InterruptedException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
         ConsoleSession consoleSession = new ConsoleSession(
                 sessionId,
                 modelClient,
@@ -100,43 +101,55 @@ public final class VedenemoCliApp {
                 commandClient,
                 ConsoleCapabilities.terminal()
         );
-        while (true) {
-            output.print(consoleSession.prompt());
-            output.flush();
-            String line = reader.readLine();
-            if (line == null) {
-                break;
+        try (CliInputReader reader = createInputReader()) {
+            while (true) {
+                String line = reader.readCommandLine(consoleSession.prompt());
+                if (line == null) {
+                    break;
+                }
+                String trimmed = line.trim();
+                if (trimmed.isEmpty()) {
+                    output.println();
+                    continue;
+                }
+                if ("exit".equals(commandName(trimmed).toLowerCase()) && commandOnly(trimmed)) {
+                    break;
+                }
+                handleCommand(consoleSession, reader, trimmed);
             }
-            String trimmed = line.trim();
-            if (trimmed.isEmpty()) {
-                output.println();
-                continue;
-            }
-            if ("exit".equals(trimmed)) {
-                break;
-            }
-            handleCommand(consoleSession, reader, trimmed);
         }
     }
 
-    private void handleCommand(ConsoleSession consoleSession, BufferedReader reader, String line) throws IOException, InterruptedException {
-        if ("help".equals(line)) {
+    private CliInputReader createInputReader() {
+        if (input == System.in && System.console() != null) {
+            try {
+                return new TerminalCliInputReader(output);
+            } catch (IOException exception) {
+                output.println("Terminal line editing disabled: " + exception.getMessage());
+            }
+        }
+        return new BufferedCliInputReader(input, output);
+    }
+
+    private void handleCommand(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
+        String command = commandName(line).toLowerCase();
+        if ("help".equals(command) && commandOnly(line)) {
             printHelp();
-        } else if ("add".equals(line)) {
+        } else if ("add".equals(command) && commandOnly(line)) {
             add(consoleSession, reader);
-        } else if (line.startsWith("entity")) {
+        } else if ("entity".equals(command)) {
             handleEntityCommand(consoleSession, reader, line);
-        } else if ("attributes".equals(line)) {
+        } else if ("attributes".equals(command) && commandOnly(line)) {
             executeSharedConsoleCommand(consoleSession, line);
-        } else if (line.startsWith("attr")) {
+        } else if ("attr".equals(command)) {
             handleAttributeCommand(consoleSession, reader, line);
-        } else if ("snapshots".equals(line)) {
+        } else if ("snapshots".equals(command) && commandOnly(line)) {
             snapshots();
-        } else if (line.equals("save") || line.startsWith("save ")) {
+        } else if ("save".equals(command)) {
             save(consoleSession, reader, line);
-        } else if (line.equals("load") || line.startsWith("load ")) {
+        } else if ("load".equals(command)) {
             load(consoleSession, reader, line);
-        } else if (line.startsWith("attach")) {
+        } else if ("attach".equals(command)) {
             attachModel(consoleSession, reader, line);
         } else {
             executeSharedConsoleCommand(consoleSession, line);
@@ -170,12 +183,10 @@ public final class VedenemoCliApp {
         output.println("  exit - end the session and exit");
     }
 
-    private void attachModel(ConsoleSession consoleSession, BufferedReader reader, String line) throws IOException, InterruptedException {
+    private void attachModel(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
         String argument = line.length() == "attach".length() ? "" : line.substring("attach".length()).trim();
         if (argument.isEmpty()) {
-            output.print("Model number or azName: ");
-            output.flush();
-            String answer = reader.readLine();
+            String answer = reader.readLine("Model number or azName: ");
             if (answer == null || answer.trim().isEmpty()) {
                 output.println("No model identifier entered.");
                 return;
@@ -202,7 +213,7 @@ public final class VedenemoCliApp {
         try {
             List<ModelSummary> models = modelClient.listModels();
             return models.stream()
-                    .filter(model -> model.azName().equalsIgnoreCase(argument))
+                    .filter(model -> model.azName().equals(argument))
                     .findFirst()
                     .or(() -> {
                         output.println("No model found with azName " + argument + ".");
@@ -214,7 +225,7 @@ public final class VedenemoCliApp {
         }
     }
 
-    private void add(ConsoleSession consoleSession, BufferedReader reader) throws IOException, InterruptedException {
+    private void add(ConsoleSession consoleSession, CliInputReader reader) throws IOException, InterruptedException {
         if (consoleSession.attachedModelAzName().isEmpty()) {
             addModel(consoleSession, reader);
         } else {
@@ -222,10 +233,8 @@ public final class VedenemoCliApp {
         }
     }
 
-    private void addModel(ConsoleSession consoleSession, BufferedReader reader) throws IOException, InterruptedException {
-        output.print("Model visible name: ");
-        output.flush();
-        String visName = reader.readLine();
+    private void addModel(ConsoleSession consoleSession, CliInputReader reader) throws IOException, InterruptedException {
+        String visName = reader.readLine("Model visible name: ");
         if (visName == null || visName.isBlank()) {
             output.println("Model visible name is required.");
             return;
@@ -233,24 +242,23 @@ public final class VedenemoCliApp {
         String suggestion = suggestAzName(visName);
         String azName;
         if (suggestion == null) {
-            output.print("Model azName: ");
-        } else {
-            output.print("Model azName [" + suggestion + "]: ");
-        }
-        output.flush();
-        String enteredAzName = reader.readLine();
-        if (enteredAzName == null) {
-            output.println("Model azName is required.");
-            return;
-        }
-        if (enteredAzName.isBlank()) {
-            if (suggestion == null) {
+            String enteredAzName = reader.readLine("Model azName: ");
+            if (enteredAzName == null) {
                 output.println("Model azName is required.");
                 return;
             }
-            azName = suggestion;
-        } else {
             azName = enteredAzName.trim();
+        } else {
+            String enteredAzName = reader.readLine("Model azName [" + suggestion + "]: ");
+            if (enteredAzName == null) {
+                output.println("Model azName is required.");
+                return;
+            }
+            azName = enteredAzName.isBlank() ? suggestion : enteredAzName.trim();
+        }
+        if (azName.isBlank()) {
+            output.println("Model azName is required.");
+            return;
         }
         try {
             ModelSummary created = modelClient.addModel(azName, visName, "1.0.0");
@@ -263,10 +271,8 @@ public final class VedenemoCliApp {
         }
     }
 
-    private void addEntity(ConsoleSession consoleSession, BufferedReader reader) throws IOException, InterruptedException {
-        output.print("Entity visible name: ");
-        output.flush();
-        String visName = reader.readLine();
+    private void addEntity(ConsoleSession consoleSession, CliInputReader reader) throws IOException, InterruptedException {
+        String visName = reader.readLine("Entity visible name: ");
         if (visName == null || visName.isBlank()) {
             output.println("Entity visible name is required.");
             return;
@@ -274,24 +280,23 @@ public final class VedenemoCliApp {
         String suggestion = suggestAzName(visName);
         String azName;
         if (suggestion == null) {
-            output.print("Entity azName: ");
-        } else {
-            output.print("Entity azName [" + suggestion + "]: ");
-        }
-        output.flush();
-        String enteredAzName = reader.readLine();
-        if (enteredAzName == null) {
-            output.println("Entity azName is required.");
-            return;
-        }
-        if (enteredAzName.isBlank()) {
-            if (suggestion == null) {
+            String enteredAzName = reader.readLine("Entity azName: ");
+            if (enteredAzName == null) {
                 output.println("Entity azName is required.");
                 return;
             }
-            azName = suggestion;
-        } else {
             azName = enteredAzName.trim();
+        } else {
+            String enteredAzName = reader.readLine("Entity azName [" + suggestion + "]: ");
+            if (enteredAzName == null) {
+                output.println("Entity azName is required.");
+                return;
+            }
+            azName = enteredAzName.isBlank() ? suggestion : enteredAzName.trim();
+        }
+        if (azName.isBlank()) {
+            output.println("Entity azName is required.");
+            return;
         }
         try {
             commandClient.createEntity(consoleSession.backendSessionId(), azName, visName);
@@ -301,16 +306,10 @@ public final class VedenemoCliApp {
         }
     }
 
-    private void handleEntityCommand(ConsoleSession consoleSession, BufferedReader reader, String line) throws IOException, InterruptedException {
-        if (!line.equals("entity") && !line.startsWith("entity ")) {
-            output.println("Unknown command: " + line);
-            return;
-        }
+    private void handleEntityCommand(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
         String argument = line.length() == "entity".length() ? "" : line.substring("entity".length()).trim();
         if (argument.isEmpty()) {
-            output.print("Entity number or azName: ");
-            output.flush();
-            String answer = reader.readLine();
+            String answer = reader.readLine("Entity number or azName: ");
             if (answer == null || answer.trim().isEmpty()) {
                 output.println("No entity identifier entered.");
                 return;
@@ -320,15 +319,15 @@ public final class VedenemoCliApp {
         executeSharedConsoleCommand(consoleSession, "entity " + argument);
     }
 
-    private void handleAttributeCommand(ConsoleSession consoleSession, BufferedReader reader, String line) throws IOException, InterruptedException {
-        if ("attr add".equals(line)) {
+    private void handleAttributeCommand(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
+        if ("add".equals(argumentText(line, "attr").toLowerCase())) {
             addAttribute(consoleSession, reader);
         } else {
             output.println("Unknown command: " + line);
         }
     }
 
-    private void addAttribute(ConsoleSession consoleSession, BufferedReader reader) throws IOException, InterruptedException {
+    private void addAttribute(ConsoleSession consoleSession, CliInputReader reader) throws IOException, InterruptedException {
         Optional<String> entityAzName = consoleSession.attachedEntityAzName();
         if (consoleSession.attachedModelAzName().isEmpty()) {
             output.println("Attach a model before adding an attribute.");
@@ -338,9 +337,7 @@ public final class VedenemoCliApp {
             output.println("Select an entity before adding an attribute.");
             return;
         }
-        output.print("Attribute visible name: ");
-        output.flush();
-        String visName = reader.readLine();
+        String visName = reader.readLine("Attribute visible name: ");
         if (visName == null || visName.isBlank()) {
             output.println("Attribute visible name is required.");
             return;
@@ -348,28 +345,25 @@ public final class VedenemoCliApp {
         String suggestion = suggestAzName(visName);
         String azName;
         if (suggestion == null) {
-            output.print("Attribute azName: ");
-        } else {
-            output.print("Attribute azName [" + suggestion + "]: ");
-        }
-        output.flush();
-        String enteredAzName = reader.readLine();
-        if (enteredAzName == null) {
-            output.println("Attribute azName is required.");
-            return;
-        }
-        if (enteredAzName.isBlank()) {
-            if (suggestion == null) {
+            String enteredAzName = reader.readLine("Attribute azName: ");
+            if (enteredAzName == null) {
                 output.println("Attribute azName is required.");
                 return;
             }
-            azName = suggestion;
-        } else {
             azName = enteredAzName.trim();
+        } else {
+            String enteredAzName = reader.readLine("Attribute azName [" + suggestion + "]: ");
+            if (enteredAzName == null) {
+                output.println("Attribute azName is required.");
+                return;
+            }
+            azName = enteredAzName.isBlank() ? suggestion : enteredAzName.trim();
         }
-        output.print("Attribute data type [TEXT]: ");
-        output.flush();
-        String enteredDataType = reader.readLine();
+        if (azName.isBlank()) {
+            output.println("Attribute azName is required.");
+            return;
+        }
+        String enteredDataType = reader.readLine("Attribute data type [TEXT]: ");
         String dataType = normalizeDataTypeInput(enteredDataType);
         try {
             commandClient.createAttribute(consoleSession.backendSessionId(), entityAzName.orElseThrow(), azName, visName, dataType);
@@ -396,7 +390,7 @@ public final class VedenemoCliApp {
         }
     }
 
-    private void save(ConsoleSession consoleSession, BufferedReader reader, String line) throws IOException, InterruptedException {
+    private void save(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
         String argumentText = line.length() == "save".length() ? "" : line.substring("save".length()).trim();
         List<String> arguments = splitArguments(argumentText);
         if (arguments.size() > 2) {
@@ -419,9 +413,7 @@ public final class VedenemoCliApp {
             return;
         }
         if (Files.exists(target)) {
-            output.print("File " + target + " exists. Overwrite? [y/N]: ");
-            output.flush();
-            String answer = reader.readLine();
+            String answer = reader.readLine("File " + target + " exists. Overwrite? [y/N]: ");
             if (!"y".equalsIgnoreCase(answer == null ? "" : answer.trim())) {
                 output.println("Save cancelled.");
                 return;
@@ -447,18 +439,16 @@ public final class VedenemoCliApp {
         return resolveModel(consoleSession, arguments.getFirst());
     }
 
-    private Path saveTargetPath(BufferedReader reader, ModelSummary model, String inlinePath) throws IOException {
+    private Path saveTargetPath(CliInputReader reader, ModelSummary model, String inlinePath) throws IOException {
         String selectedPath = inlinePath;
         if (selectedPath == null || selectedPath.isBlank()) {
-            output.print("Output file [" + model.azName() + ".vdos]: ");
-            output.flush();
-            String answer = reader.readLine();
+            String answer = reader.readLine("Output file [" + model.azName() + ".vdos]: ");
             selectedPath = answer == null || answer.isBlank() ? model.azName() + ".vdos" : answer.trim();
         }
         return resolvePathWithExtension(selectedPath);
     }
 
-    private void load(ConsoleSession consoleSession, BufferedReader reader, String line) throws IOException, InterruptedException {
+    private void load(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
         String argument = line.length() == "load".length() ? "" : line.substring("load".length()).trim();
         if (argument.isBlank()) {
             output.println("Usage: load <path>");
@@ -514,15 +504,13 @@ public final class VedenemoCliApp {
         return resolvedPath;
     }
 
-    private ModelImportResult importScriptWithRenamePrompt(BufferedReader reader, String script, String modelAzNameOverride)
+    private ModelImportResult importScriptWithRenamePrompt(CliInputReader reader, String script, String modelAzNameOverride)
             throws IOException, InterruptedException {
         try {
             return modelClient.importScript(script, modelAzNameOverride);
         } catch (ModelAlreadyExistsException exception) {
             output.println(exception.getMessage());
-            output.print("New model azName for import, or blank to cancel: ");
-            output.flush();
-            String answer = reader.readLine();
+            String answer = reader.readLine("New model azName for import, or blank to cancel: ");
             if (answer == null || answer.isBlank()) {
                 output.println("Load cancelled.");
                 return null;
@@ -564,6 +552,19 @@ public final class VedenemoCliApp {
         } catch (NumberFormatException exception) {
             return false;
         }
+    }
+
+    private static String commandName(String value) {
+        int spaceIndex = value.indexOf(' ');
+        return spaceIndex < 0 ? value : value.substring(0, spaceIndex);
+    }
+
+    private static boolean commandOnly(String value) {
+        return value.indexOf(' ') < 0;
+    }
+
+    private static String argumentText(String line, String command) {
+        return line.length() == command.length() ? "" : line.substring(command.length()).trim();
     }
 
     private Path resolvePathWithExtension(String value) {
@@ -647,6 +648,204 @@ public final class VedenemoCliApp {
             case "data" -> "DATA";
             default -> value.trim();
         };
+    }
+
+    private interface CliInputReader extends Closeable {
+        String readCommandLine(String prompt) throws IOException;
+
+        String readLine(String prompt) throws IOException;
+    }
+
+    private static final class BufferedCliInputReader implements CliInputReader {
+        private final BufferedReader reader;
+        private final PrintStream output;
+
+        private BufferedCliInputReader(InputStream input, PrintStream output) {
+            this.reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
+            this.output = output;
+        }
+
+        @Override
+        public String readCommandLine(String prompt) throws IOException {
+            return readLine(prompt);
+        }
+
+        @Override
+        public String readLine(String prompt) throws IOException {
+            output.print(prompt);
+            output.flush();
+            return reader.readLine();
+        }
+
+        @Override
+        public void close() throws IOException {
+            reader.close();
+        }
+    }
+
+    private static final class TerminalCliInputReader implements CliInputReader {
+        private static final char BACKSPACE = 8;
+        private static final char DELETE = 127;
+        private static final char CTRL_D = 4;
+        private static final char CTRL_N = 14;
+        private static final char CTRL_P = 16;
+        private static final char ESCAPE = 27;
+
+        private final PrintStream output;
+        private final InputStream terminalInput;
+        private final Reader terminalReader;
+        private final List<String> commandHistory = new ArrayList<>();
+        private final String savedTerminalSettings;
+        private final AtomicBoolean restored = new AtomicBoolean(false);
+        private final Thread terminalRestoreHook;
+        private int commandHistoryIndex;
+
+        private TerminalCliInputReader(PrintStream output) throws IOException {
+            this.output = output;
+            this.terminalInput = Files.newInputStream(Path.of("/dev/tty"));
+            this.terminalReader = new InputStreamReader(terminalInput, StandardCharsets.UTF_8);
+            this.savedTerminalSettings = runStty("stty -g < /dev/tty");
+            runStty("stty -icanon -echo min 1 time 0 < /dev/tty");
+            this.terminalRestoreHook = new Thread(this::restoreTerminal);
+            Runtime.getRuntime().addShutdownHook(terminalRestoreHook);
+        }
+
+        @Override
+        public String readCommandLine(String prompt) throws IOException {
+            String line = readInteractiveLine(prompt, true);
+            if (line != null && !line.isBlank()) {
+                commandHistory.add(line);
+                commandHistoryIndex = commandHistory.size();
+            }
+            return line;
+        }
+
+        @Override
+        public String readLine(String prompt) throws IOException {
+            return readInteractiveLine(prompt, false);
+        }
+
+        @Override
+        public void close() throws IOException {
+            try {
+                restoreTerminal();
+                try {
+                    Runtime.getRuntime().removeShutdownHook(terminalRestoreHook);
+                } catch (IllegalStateException exception) {
+                    // JVM shutdown is already in progress, so the hook registry cannot be changed.
+                }
+            } finally {
+                terminalReader.close();
+                terminalInput.close();
+            }
+        }
+
+        private void restoreTerminal() {
+            if (!restored.compareAndSet(false, true)) {
+                return;
+            }
+            try {
+                runStty("stty " + savedTerminalSettings + " < /dev/tty");
+            } catch (IOException exception) {
+                output.println("Terminal settings restore failed: " + exception.getMessage());
+            }
+        }
+
+        private String readInteractiveLine(String prompt, boolean historyEnabled) throws IOException {
+            StringBuilder buffer = new StringBuilder();
+            if (historyEnabled) {
+                commandHistoryIndex = commandHistory.size();
+            }
+            output.print(prompt);
+            output.flush();
+            while (true) {
+                int value = terminalReader.read();
+                if (value < 0) {
+                    return null;
+                }
+                char character = (char) value;
+                if (character == '\r' || character == '\n') {
+                    output.println();
+                    return buffer.toString();
+                }
+                if (character == CTRL_D && buffer.isEmpty()) {
+                    output.println();
+                    return null;
+                }
+                if (historyEnabled && character == CTRL_P) {
+                    replaceWithHistoryEntry(prompt, buffer, -1);
+                    continue;
+                }
+                if (historyEnabled && character == CTRL_N) {
+                    replaceWithHistoryEntry(prompt, buffer, 1);
+                    continue;
+                }
+                if (character == ESCAPE && historyEnabled) {
+                    handleEscapeSequence(prompt, buffer);
+                    continue;
+                }
+                if (character == BACKSPACE || character == DELETE) {
+                    if (!buffer.isEmpty()) {
+                        buffer.deleteCharAt(buffer.length() - 1);
+                        output.print("\b \b");
+                        output.flush();
+                    }
+                    continue;
+                }
+                if (character >= 32 && character != DELETE) {
+                    buffer.append(character);
+                    output.print(character);
+                    output.flush();
+                }
+            }
+        }
+
+        private void handleEscapeSequence(String prompt, StringBuilder buffer) throws IOException {
+            int second = terminalReader.read();
+            int third = terminalReader.read();
+            if (second == '[' && third == 'A') {
+                replaceWithHistoryEntry(prompt, buffer, -1);
+            } else if (second == '[' && third == 'B') {
+                replaceWithHistoryEntry(prompt, buffer, 1);
+            }
+        }
+
+        private void replaceWithHistoryEntry(String prompt, StringBuilder buffer, int direction) {
+            if (commandHistory.isEmpty()) {
+                return;
+            }
+            if (direction < 0) {
+                commandHistoryIndex = Math.max(0, commandHistoryIndex - 1);
+            } else {
+                commandHistoryIndex = Math.min(commandHistory.size(), commandHistoryIndex + 1);
+            }
+            buffer.setLength(0);
+            if (commandHistoryIndex < commandHistory.size()) {
+                buffer.append(commandHistory.get(commandHistoryIndex));
+            }
+            output.print("\r");
+            output.print(prompt);
+            output.print(buffer);
+            output.print("\033[K");
+            output.flush();
+        }
+
+        private static String runStty(String command) throws IOException {
+            try {
+                Process process = new ProcessBuilder("sh", "-c", command)
+                        .redirectErrorStream(true)
+                        .start();
+                String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+                int exitCode = process.waitFor();
+                if (exitCode != 0) {
+                    throw new IOException("stty failed: " + output);
+                }
+                return output;
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new IOException("stty interrupted", exception);
+            }
+        }
     }
 
 }

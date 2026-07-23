@@ -196,6 +196,10 @@ VedenemoCli>ping
 Backend responded OK.
 ```
 
+Command words are case-insensitive while parameters remain case-sensitive. In a
+real terminal session, Arrow Up/Ctrl+P and Arrow Down/Ctrl+N walk command input
+history for the current CLI process only.
+
 Current CLI commands:
 
 ```text
@@ -219,7 +223,8 @@ exit
 The CLI can create models, create entities and attributes through backend
 commands, undo the latest session command, save a model to a UTF-8 `.vdos`
 Vedenemo Script file, list `.vdos` snapshots from `.vedenemo`, and load a
-`.vdos` file back through the backend.
+`.vdos` file back through the backend. Command words are case-insensitive;
+parameters such as model and entity `azName` values remain case-sensitive.
 
 See [docs/cli-reference.md](docs/cli-reference.md) for full command usage and
 examples.

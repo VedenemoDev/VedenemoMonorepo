@@ -271,6 +271,11 @@ Current CLI behavior:
 - prompts with `VedenemoCli[modelAzName/entityAzName]>` when a model is
   attached and an entity is selected
 - treats an empty line as an empty echo plus a new prompt
+- treats command words case-insensitively while preserving case-sensitive
+  parameter text
+- keeps terminal command input history for the current CLI process only when
+  attached to a real TTY, navigable with Arrow Up, Arrow Down, Ctrl+P, and
+  Ctrl+N
 - supports `help`
 - lists current backend models with `list`
 - adds a new backend model with `add`, using version `1.0.0`
@@ -405,6 +410,8 @@ Current user-facing behavior:
   one command at a time through `{apiBaseUrl}/console/sessions`
 - passes the connected model `azName` into `/console` only when the main UX has
   an active model event connection
+- keeps browser console command input history for the current console page
+  session only, navigable with Arrow Up, Arrow Down, Ctrl+P, and Ctrl+N
 
 The default runtime config in `vedenemo-ux/public/config.json` points to a
 Tailscale HTTPS backend URL.

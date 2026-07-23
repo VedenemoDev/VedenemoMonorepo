@@ -131,6 +131,21 @@ final class VedenemoCliAppTest {
     }
 
     @Test
+    void commandWordsAreCaseInsensitiveButAzNameParametersAreCaseSensitive() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "LiSt\nAtTaCh Example_Model\nDeTaCh\nattach example_model\nEXIT\n");
+
+        assertEquals(null, sessionClient.selectedModelAzName);
+        assertTrue(result.output.contains("1. Example Model (Example_Model) version 1.0.0"));
+        assertTrue(result.output.contains("Attached to model Example_Model."));
+        assertTrue(result.output.contains("Detached from model."));
+        assertTrue(result.output.contains("No model found with azName example_model."));
+    }
+
+    @Test
     void attachWithoutArgumentAsksForIdentifier() {
         TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
         TestModelClient modelClient = new TestModelClient();
