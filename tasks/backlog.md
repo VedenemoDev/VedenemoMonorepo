@@ -75,14 +75,14 @@ The first slice should still move through the existing vertical path:
 ### Open Questions
 
 - Should `owns` initially enforce lifecycle behavior, or only record ownership
-  intent until delete/edit workflows exist?
+  intent until delete/edit workflows exist? => Answer: No ownership does not really affect model itself, as it actually describes behaviour of model instance created based in the model. I.e. model is metamodel for model instance. Therefore owns relation at model level is only meant to record the ownership. 
 - Should association ends be stored by target entity `azName`, a stable entity
-  id introduced later, or an internal handle?
-- Should associations live directly under `ModelRoot` in insertion order?
+  id introduced later, or an internal handle? => Answer: At this point azName of the target entity suffices as identifier.
+- Should associations live directly under `ModelRoot` in insertion order? => Answer: Ok, to live directly under Model root. Natural insertion order for association is after entities are added, in order to confirm integrity of the model. That of course later sets modification restrictions, as entity that is referenced by an association cannot deleted before association end attached to entity is released from that entity end,
 - What should the command wording be: `assoc add`, `owns add`,
-  `references add`, or another command shape?
-- How should `.vdos` name the new concepts while remaining readable and stable?
-- Should PlantUML render `owns` differently from `references` immediately?
+  `references add`, or another command shape? => Answer: `assoc add relation`, `assoc add ownership`, `assoc add reference`
+- How should `.vdos` name the new concepts while remaining readable and stable? => Answer: Just using similar naming practises. For commands section `create-association`, and for snapshot section `association`.
+- Should PlantUML render `owns` differently from `references` immediately? => Answer: Black diamond marking ownership, and non-filled diamond for marking normal non-owning reference. No need for arrows, as diamond already tell which entity is referee end and which entity is referred end. Relation is just a solid line between entities.
 
 ## Add Cardinality Value Object
 
@@ -116,9 +116,9 @@ number.
 ### Open Questions
 
 - Should shorthand `*` be accepted as `0..*`, or should the first version require
-  explicit lower bounds?
-- Should `1..1` normalize to `1`?
-- Should blank input default to `1` or `0..1` in interactive prompts?
+  explicit lower bounds? => Answer: Shorthand * is OK
+- Should `1..1` normalize to `1`? => Answer: Let's normalize to `1`
+- Should blank input default to `1` or `0..1` in interactive prompts? => Answer: Let's default to `1`
 
 ## Add Directed Model Associations
 
@@ -171,15 +171,15 @@ be introduced later if generated APIs or UI views need field-like navigation.
 ### Open Questions
 
 - Should the first command be `assoc add`, `owns add`, `references add`, or a
-  prompt-driven `assoc add` that asks for kind?
+  prompt-driven `assoc add` that asks for kind? => Answer: Already answered earlier. But in addition to answered alternatives, let's implement also pure `assoc add` when kind is asked separately. Other wise each command starts with `assoc add` + type as told already above.
 - Should source and target entity selection support both latest entity-list
-  numbers and exact `azName`, like current attach/entity selection?
+  numbers and exact `azName`, like current attach/entity selection? => Answer: Let's support both
 - Should directed associations be listed by a new `associations` command, by
-  entity-scoped commands, or both?
+  entity-scoped commands, or both? => Answer: Let's start with single `associations` command for that purposes.
 - Should `Association` be a sealed interface immediately, or should the first
-  directed implementation be one class with `AssociationKind`?
+  directed implementation be one class with `AssociationKind`? => Answer: Sealed interface
 - What compatibility behavior is required for existing `.vdos` files that only
-  contain value attributes?
+  contain value attributes? => Answer: I do not understand question, as vdos files containing only entities and attributes is also valid in future context also after associations are added.
 
 ## Expose Directed Associations In API, UX, And Diagrams
 
@@ -211,11 +211,11 @@ client contract.
 ### Open Questions
 
 - Should the main UX display associations only as edges in the PlantUML diagram,
-  or also as an inspectable list/table?
+  or also as an inspectable list/table? => Answer: At 1st instan just edges are enough.
 - Should `owns` render as composition-like and `references` as a normal
-  directed association in PlantUML?
+  directed association in PlantUML? => Answer: This was already answered, so ows is composition i.e. black diamond, and references is hollow diamond (and no arrow needed)
 - Should association APIs be model-scoped only, or should entity-scoped
-  association views be added at the same time?
+  association views be added at the same time? => Answer: Please elaborate this question more.
 
 ## Add True Bidirectional Relations
 
@@ -252,11 +252,11 @@ and `Course`, rather than adding arbitrary attributes to relations.
 ### Open Questions
 
 - Should relations live directly under `ModelRoot`, or be reachable from both
-  participating entities?
-- Should relation ends be allowed to be non-navigable?
-- Should relation names be required, or can role names identify the relation?
-- How should relation identity be represented in `.vdos` and future persistence?
-- When should association classes be introduced, if ever?
+  participating entities? => Answer: Association object can live directory under model root, but those should be also navigable via references from the participating entities only. For me feels that direct reference is cheap price compared to always do search by azName at ModelRoot-level. We can discuss still more if you have other views on the matter.
+- Should relation ends be allowed to be non-navigable? => Answer: Do you mean visually, or at model level at code?
+- Should relation names be required, or can role names identify the relation? => Answer: Require relation names. Roles are IMHO reserved for ends...aren't they=
+- How should relation identity be represented in `.vdos` and future persistence? => Answer: I already answered something about this in the text above, but please elaborate more, it the answer there was not enough,
+- When should association classes be introduced, if ever? => Answer: Association class will surely have their place later on, but not now.
 
 ## Make CLI Commands Case-Insensitive And Add Console Input History
 
