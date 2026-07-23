@@ -13,17 +13,45 @@ straight to full UML associations.
 
 Use three user-facing semantic categories:
 
-- `owns`: a directed association where the source conceptually controls the
-  target's lifecycle.
-- `references`: a directed association where source and target have independent
+- `ownership`: a directed association where the source conceptually owns the
+  target in model-instance semantics.
+- `reference`: a directed association where source and target have independent
   lifecycles.
 - `relation`: a bidirectional association with one identity and two named ends.
 
 The preferred implementation direction is to introduce a separate model-level
 association object, not to model associations as attributes. The first
 implementation should still be narrow: support directed associations for
-`owns` and `references`, then add true bidirectional `relation` support after
-the model-level association path is proven end to end.
+`ownership` and `reference`, then add true bidirectional `relation` support
+after the model-level association path is proven end to end.
+
+### Resolved Decisions
+
+- Ownership at the model/metamodel level records ownership intent only. It does
+  not directly enforce lifecycle behavior in the model object itself, because
+  lifecycle behavior applies to model instances created from the metamodel.
+- Entity references inside association ends may use target entity `azName` for
+  the current phase. A separate stable entity id or handle is not required yet.
+- Associations live directly under `ModelRoot`.
+- Association insertion order should be natural creation order. Since
+  associations are added after entities, creation can validate that referenced
+  entities exist.
+- Later entity modification/deletion restrictions should respect association
+  integrity: an entity referenced by an association cannot be removed before the
+  association end is released or the association is removed.
+- Command wording should use:
+  - `assoc add ownership`
+  - `assoc add reference`
+  - `assoc add relation`
+- `.vdos` should use current naming style:
+  - command section: `create-association`
+  - snapshot section: `association`
+- PlantUML rendering should distinguish association kinds immediately:
+  - `ownership`: black diamond at the owner/source end.
+  - `reference`: hollow diamond at the referring/source end.
+  - `relation`: solid line between entities.
+- Directed ownership/reference diagrams do not need arrowheads because the
+  diamond marks which end is the source/referrer/owner.
 
 ### Rationale
 
@@ -74,15 +102,8 @@ The first slice should still move through the existing vertical path:
 
 ### Open Questions
 
-- Should `owns` initially enforce lifecycle behavior, or only record ownership
-  intent until delete/edit workflows exist? => Answer: No ownership does not really affect model itself, as it actually describes behaviour of model instance created based in the model. I.e. model is metamodel for model instance. Therefore owns relation at model level is only meant to record the ownership. 
-- Should association ends be stored by target entity `azName`, a stable entity
-  id introduced later, or an internal handle? => Answer: At this point azName of the target entity suffices as identifier.
-- Should associations live directly under `ModelRoot` in insertion order? => Answer: Ok, to live directly under Model root. Natural insertion order for association is after entities are added, in order to confirm integrity of the model. That of course later sets modification restrictions, as entity that is referenced by an association cannot deleted before association end attached to entity is released from that entity end,
-- What should the command wording be: `assoc add`, `owns add`,
-  `references add`, or another command shape? => Answer: `assoc add relation`, `assoc add ownership`, `assoc add reference`
-- How should `.vdos` name the new concepts while remaining readable and stable? => Answer: Just using similar naming practises. For commands section `create-association`, and for snapshot section `association`.
-- Should PlantUML render `owns` differently from `references` immediately? => Answer: Black diamond marking ownership, and non-filled diamond for marking normal non-owning reference. No need for arrows, as diamond already tell which entity is referee end and which entity is referred end. Relation is just a solid line between entities.
+- Should `owns` be accepted as a command alias for `assoc add ownership`, or
+  should the first version require only the canonical `ownership` keyword?
 
 ## Add Cardinality Value Object
 
@@ -113,12 +134,16 @@ bounded ranges cannot be represented well by a fixed enum. The wildcard upper
 bound should be explicit in code rather than represented by an arbitrary magic
 number.
 
+### Resolved Decisions
+
+- Accept shorthand `*` as `0..*`.
+- Normalize `1..1` to `1`.
+- Default blank interactive prompt input to `1`.
+
 ### Open Questions
 
-- Should shorthand `*` be accepted as `0..*`, or should the first version require
-  explicit lower bounds? => Answer: Shorthand * is OK
-- Should `1..1` normalize to `1`? => Answer: Let's normalize to `1`
-- Should blank input default to `1` or `0..1` in interactive prompts? => Answer: Let's default to `1`
+- Should `0..0` be rejected as meaningless for associations, or accepted as a
+  valid but unusual cardinality?
 
 ## Add Directed Model Associations
 
@@ -131,7 +156,7 @@ association objects from one entity to another.
 
 ### Scope
 
-- Add a model-level association collection, probably owned by `ModelRoot`.
+- Add a model-level association collection owned by `ModelRoot`.
 - A directed association should include:
   - `azName`
   - `visName`
@@ -140,7 +165,7 @@ association objects from one entity to another.
   - source role name if needed
   - target role name or label
   - cardinality
-  - kind: `OWNS` or `REFERENCES`
+  - kind: `OWNERSHIP` or `REFERENCE`
   - lifecycle version metadata
 - Preserve current value attribute behavior for existing `DataType` attributes;
   value attributes remain entity-owned attributes.
@@ -152,34 +177,44 @@ association objects from one entity to another.
 - Extend shared console behavior and terminal CLI prompts.
 - Keep browser `/console` using shared Java command behavior.
 
+### Resolved Decisions
+
+- Implement `Association` as a sealed interface.
+- Start with a single `associations` command for listing associations.
+- Support source and target entity selection by both latest entity-list number
+  and exact `azName`, mirroring existing attach/entity selection behavior.
+- Support both explicit kind-specific commands and a prompt-driven generic
+  command:
+  - `assoc add ownership`
+  - `assoc add reference`
+  - `assoc add relation`
+  - `assoc add`, which prompts for kind separately
+- Existing `.vdos` files containing only entities and value attributes remain
+  valid after association support is added. Association sections are additive,
+  not mandatory.
+
 ### Pondering
 
-`owns` and `references` should probably share one internal directed association
-structure initially, with a small kind enum distinguishing lifecycle semantics.
-That keeps the first implementation smaller while still recording the user's
-intent and keeping relationships as first-class model elements.
+`ownership` and `reference` should probably share one internal directed
+association structure initially, with a small kind enum distinguishing lifecycle
+semantics. That keeps the first implementation smaller while still recording
+the user's intent and keeping relationships as first-class model elements.
 
 The implementation should avoid enforcing cascade delete or containment
 lifecycle rules until user-visible delete/edit commands are available. Until
-then, `owns` can be a model semantic and rendering/API signal rather than a
+then, `ownership` can be a model semantic and rendering/API signal rather than a
 runtime deletion rule.
 
-Associations should be rendered in diagrams as arrows or lines with labels,
-rather than as pseudo-fields inside entity boxes. Entity-local projections can
-be introduced later if generated APIs or UI views need field-like navigation.
+Associations should be rendered in diagrams as lines with labels, rather than
+as pseudo-fields inside entity boxes. Entity-local projections can be
+introduced later if generated APIs or UI views need field-like navigation.
 
 ### Open Questions
 
-- Should the first command be `assoc add`, `owns add`, `references add`, or a
-  prompt-driven `assoc add` that asks for kind? => Answer: Already answered earlier. But in addition to answered alternatives, let's implement also pure `assoc add` when kind is asked separately. Other wise each command starts with `assoc add` + type as told already above.
-- Should source and target entity selection support both latest entity-list
-  numbers and exact `azName`, like current attach/entity selection? => Answer: Let's support both
-- Should directed associations be listed by a new `associations` command, by
-  entity-scoped commands, or both? => Answer: Let's start with single `associations` command for that purposes.
-- Should `Association` be a sealed interface immediately, or should the first
-  directed implementation be one class with `AssociationKind`? => Answer: Sealed interface
-- What compatibility behavior is required for existing `.vdos` files that only
-  contain value attributes? => Answer: I do not understand question, as vdos files containing only entities and attributes is also valid in future context also after associations are added.
+- What concrete sealed subtype names should be used, for example
+  `OwnershipAssociation`, `ReferenceAssociation`, and `RelationAssociation`?
+- Should association `azName` be user-entered directly, derived from role/source
+  and target suggestions, or optional for directed associations?
 
 ## Expose Directed Associations In API, UX, And Diagrams
 
@@ -194,12 +229,23 @@ console, CLI, UX, and PlantUML rendering surfaces.
 
 - Return model-level associations from API endpoints with source entity, target
   entity, role/label, cardinality, kind, and lifecycle fields.
-- Render `owns` and `references` differently enough in PlantUML to communicate
-  intent.
+- Render `ownership` and `reference` differently enough in PlantUML to
+  communicate intent.
 - Update the browser model view so association edges are visible without
   hand-authored diagrams.
 - Update CLI and web console output so users can inspect directed associations.
 - Add focused tests for DTO shape and rendered textual output.
+
+### Resolved Decisions
+
+- The first UX rendering only needs PlantUML diagram edges. No separate
+  inspectable association list/table is required in the initial UX.
+- PlantUML should render:
+  - ownership as composition with a black diamond.
+  - reference as aggregation-like with a hollow diamond.
+  - relation as a solid line.
+- Directed ownership/reference rendering does not need arrowheads in the first
+  version.
 
 ### Pondering
 
@@ -208,14 +254,23 @@ response section rather than extending attribute responses with optional
 association fields. That keeps value attributes and associations distinct in the
 client contract.
 
+The earlier model-scoped versus entity-scoped API question means:
+
+- model-scoped API: list all associations for a model, for example
+  `GET /models/{modelAzName}/associations`;
+- entity-scoped API: list only associations touching one entity, for example
+  `GET /models/{modelAzName}/entities/{entityAzName}/associations`.
+
+The first implementation can start model-scoped to match `ModelRoot` ownership.
+Entity-scoped views can be added later if the UX, dynamic REST API, or generated
+instance API needs faster local navigation.
+
 ### Open Questions
 
-- Should the main UX display associations only as edges in the PlantUML diagram,
-  or also as an inspectable list/table? => Answer: At 1st instan just edges are enough.
-- Should `owns` render as composition-like and `references` as a normal
-  directed association in PlantUML? => Answer: This was already answered, so ows is composition i.e. black diamond, and references is hollow diamond (and no arrow needed)
-- Should association APIs be model-scoped only, or should entity-scoped
-  association views be added at the same time? => Answer: Please elaborate this question more.
+- Should the first API include only model-scoped association endpoints, or also
+  entity-scoped convenience views?
+- Should the CLI `associations` command list all model associations only, or
+  filter to the currently selected entity when an entity is selected?
 
 ## Add True Bidirectional Relations
 
@@ -234,10 +289,19 @@ to end.
   - entity identifier
   - role name
   - cardinality
-  - navigability if needed
 - Prevent the two ends from drifting into contradictory independent references.
 - Add command execution, undo, model journal recording, `.vdos` support, HTTP
   DTOs, CLI/console flows, tests, and diagram rendering.
+
+### Resolved Decisions
+
+- Relation names are required. Role names are reserved for relation ends.
+- Relation objects live directly under `ModelRoot`.
+- Participating entities may also hold direct references to associations that
+  touch them for navigation efficiency. This is an implementation convenience;
+  `ModelRoot` remains the ownership boundary.
+- Association classes are expected to be useful later, but they are explicitly
+  out of scope for the first association/relation implementation.
 
 ### Pondering
 
@@ -249,14 +313,26 @@ Many-to-many relationships with data should probably be modeled as an explicit
 entity in the first implementation, for example `Enrollment` between `Student`
 and `Course`, rather than adding arbitrary attributes to relations.
 
+The earlier non-navigable-end question was about model/code semantics, not only
+visual rendering. A non-navigable end would mean the relation exists in the
+model but generated APIs or instance navigation would not expose traversal from
+that end. Since Vedenemo is early and the current preference is direct
+participating-entity references, the first relation implementation should
+probably make both ends navigable and postpone non-navigable ends.
+
+The earlier relation identity question was about whether a relation needs its
+own stable `azName`/identifier in addition to its end role names. The current
+direction is: yes, relation names are required, so `.vdos` and future
+persistence should identify a relation by its own association/relation `azName`.
+Role names identify the ends, not the relation itself.
+
 ### Open Questions
 
-- Should relations live directly under `ModelRoot`, or be reachable from both
-  participating entities? => Answer: Association object can live directory under model root, but those should be also navigable via references from the participating entities only. For me feels that direct reference is cheap price compared to always do search by azName at ModelRoot-level. We can discuss still more if you have other views on the matter.
-- Should relation ends be allowed to be non-navigable? => Answer: Do you mean visually, or at model level at code?
-- Should relation names be required, or can role names identify the relation? => Answer: Require relation names. Roles are IMHO reserved for ends...aren't they=
-- How should relation identity be represented in `.vdos` and future persistence? => Answer: I already answered something about this in the text above, but please elaborate more, it the answer there was not enough,
-- When should association classes be introduced, if ever? => Answer: Association class will surely have their place later on, but not now.
+- Should first-version relations require both ends to be navigable at model/code
+  level?
+- Should participating entities store association object references, association
+  `azName` references, or derived read-only views backed by `ModelRoot`?
+- Should all association kinds share the same model-wide `azName` namespace?
 
 ## Make CLI Commands Case-Insensitive And Add Console Input History
 

@@ -85,7 +85,7 @@ preserving the established boundaries:
 - add persistence adapters behind Vedenemo-owned interfaces when persistence is
   introduced;
 - plan association modeling in phases, starting with cardinality and directed
-  model-level associations for `owns`/`references` before adding true
+  model-level associations for `ownership`/`reference` before adding true
   bidirectional `relation` support;
 - keep relationship semantics explicit in pure model/core code while keeping
   HTTP DTOs, CLI prompts, UX rendering, and `.vdos` text handling in their

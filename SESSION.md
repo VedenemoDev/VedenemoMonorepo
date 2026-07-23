@@ -3519,3 +3519,39 @@ Current status and next steps:
   bidirectional `relation` support.
 - `git diff --check` passed. No code tests were run because this was a
   planning/documentation-only change.
+
+## 2026-07-24 01:33 EEST
+
+Session goal: incorporate user answers to association backlog open questions
+and refine remaining questions.
+
+Files changed:
+
+- `docs/roadmap/current-milestone.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- `rg -n "=> Answer:" tasks/backlog.md`
+- `sed -n '1,290p' tasks/backlog.md`
+- `git diff --check`
+- `git diff --stat`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Converted answered association-planning questions into resolved decisions.
+- Canonicalized association wording around `ownership`, `reference`, and
+  `relation`.
+- Added clarifying text for model-scoped versus entity-scoped association APIs,
+  relation-end navigability, and relation identity.
+- Added new remaining open questions for alias support, cardinality `0..0`,
+  concrete sealed subtype names, association naming, API/CLI filtering, and
+  participating-entity navigation references.
+- `git diff --check` passed. No code tests were run because this was a
+  planning/documentation-only change.
