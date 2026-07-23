@@ -103,7 +103,7 @@ The first slice should still move through the existing vertical path:
 ### Open Questions
 
 - Should `owns` be accepted as a command alias for `assoc add ownership`, or
-  should the first version require only the canonical `ownership` keyword?
+  should the first version require only the canonical `ownership` keyword? => Answer: Let's skip alias command(s) at this point, and use only canonical form. Adding them later on based on usage experiences, if needed.
 
 ## Add Cardinality Value Object
 
@@ -143,7 +143,7 @@ number.
 ### Open Questions
 
 - Should `0..0` be rejected as meaningless for associations, or accepted as a
-  valid but unusual cardinality?
+  valid but unusual cardinality? => Answer: Let's reject, as I really cannot see use case for that cardinality.
 
 ## Add Directed Model Associations
 
@@ -212,9 +212,9 @@ introduced later if generated APIs or UI views need field-like navigation.
 ### Open Questions
 
 - What concrete sealed subtype names should be used, for example
-  `OwnershipAssociation`, `ReferenceAssociation`, and `RelationAssociation`?
+  `OwnershipAssociation`, `ReferenceAssociation`, and `RelationAssociation`? => Answer: Those names sound fine.
 - Should association `azName` be user-entered directly, derived from role/source
-  and target suggestions, or optional for directed associations?
+  and target suggestions, or optional for directed associations? => Answer: Let's ask azName as last information, and trying to build suggestion for it that is unique inside model based on the referenced entities and other data, so user can either accept suggested name, or modify it, or write totally manually own name (which of course must be also unique inside model).
 
 ## Expose Directed Associations In API, UX, And Diagrams
 
@@ -268,9 +268,9 @@ instance API needs faster local navigation.
 ### Open Questions
 
 - Should the first API include only model-scoped association endpoints, or also
-  entity-scoped convenience views?
+  entity-scoped convenience views? => Answer: Let's have both.
 - Should the CLI `associations` command list all model associations only, or
-  filter to the currently selected entity when an entity is selected?
+  filter to the currently selected entity when an entity is selected? => Answer: Only selected entity related, but of course all when no entity selected. Of course in the list title must inform also the context, in addition to command prompt format (which is not too explicit).
 
 ## Add True Bidirectional Relations
 
@@ -329,10 +329,10 @@ Role names identify the ends, not the relation itself.
 ### Open Questions
 
 - Should first-version relations require both ends to be navigable at model/code
-  level?
+  level? => Answer: Let's keep both end navigable
 - Should participating entities store association object references, association
-  `azName` references, or derived read-only views backed by `ModelRoot`?
-- Should all association kinds share the same model-wide `azName` namespace?
+  `azName` references, or derived read-only views backed by `ModelRoot`? => Answer: Association object references at code level, but at vdos-snapshot level of course only azName references.
+- Should all association kinds share the same model-wide `azName` namespace? => Answer: Let's at start use the same model-wide namespace
 
 ## Make CLI Commands Case-Insensitive And Add Console Input History
 
