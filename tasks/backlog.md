@@ -1,5 +1,244 @@
 # Backlog
 
+## Plan Association Semantics For Vedenemo Models
+
+Status: planning.
+
+### Goal
+
+Define the first coherent relationship model for Vedenemo without jumping
+straight to full UML associations.
+
+### Current Direction
+
+Use three user-facing semantic categories:
+
+- `owns`: a directed association where the source conceptually controls the
+  target's lifecycle.
+- `references`: a directed association where source and target have independent
+  lifecycles.
+- `relation`: a bidirectional association with one identity and two named ends.
+
+The near-term implementation direction is to introduce directed reference
+attributes first, covering `owns` and `references`, and defer true
+bidirectional `relation` support until the directed model is proven end to end.
+
+### Rationale
+
+Vedenemo currently has a complete vertical slice for entities and attributes:
+
+- pure model objects in `vedenemo-model-api`;
+- command execution and undo in `vedenemo-core`;
+- `.vdos` command/snapshot export and import;
+- HTTP endpoints and DTOs in `vedenemo-web-api`;
+- shared terminal/browser console command behavior;
+- terminal CLI and UX rendering paths.
+
+Adding a directed reference attribute fits this shape better than introducing a
+separate association hierarchy immediately. It allows relationship modeling to
+move through the existing command, undo, journal, `.vdos`, HTTP, CLI, console,
+and PlantUML paths with limited new surface area.
+
+### Alternatives Considered
+
+- Model all relationships as a standalone `Association` hierarchy from the
+  beginning.
+  - Benefit: closer to UML and leaves room for association identity,
+    bidirectionality, association classes, and richer metadata.
+  - Cost: larger first step across model, commands, scripts, API, CLI, UX,
+    validation, undo, and rendering.
+
+- Treat associations only as normal attributes with a `REFERENCE` data type.
+  - Benefit: small implementation change.
+  - Cost: weak semantics; target entity, cardinality, ownership, and future
+    bidirectionality would become bolted-on metadata instead of explicit model
+    concepts.
+
+- Generate inverse references automatically for bidirectional relationships.
+  - Benefit: convenient authoring.
+  - Cost: risks two definitions drifting unless there is a single relation
+    identity behind both ends.
+
+### Open Questions
+
+- Should `owns` initially enforce lifecycle behavior, or only record ownership
+  intent until delete/edit workflows exist?
+- Should reference targets be stored by target entity `azName`, a stable entity
+  id introduced later, or an internal handle?
+- Should directed reference attributes live in the same collection as value
+  attributes, or should entities expose separate value/reference collections?
+- What should the command wording be: `ref add`, `assoc add`, or an extended
+  `attr add` flow?
+- How should `.vdos` name the new concepts while remaining readable and stable?
+- Should PlantUML render `owns` differently from `references` immediately?
+
+## Add Cardinality Value Object
+
+Status: planning.
+
+### Goal
+
+Introduce a pure JDK cardinality/multiplicity model that can be reused by
+directed reference attributes and later bidirectional relations.
+
+### Scope
+
+- Add a Vedenemo-owned cardinality value object in the model layer.
+- Support UML-like forms:
+  - `1`
+  - `0..1`
+  - `0..*`
+  - `1..*`
+  - bounded ranges such as `2..5`
+- Validate lower and upper bounds deterministically.
+- Preserve a stable textual representation for `.vdos`, API responses, CLI
+  output, and diagrams.
+
+### Pondering
+
+The likely model is a small immutable value object rather than an enum, because
+bounded ranges cannot be represented well by a fixed enum. The wildcard upper
+bound should be explicit in code rather than represented by an arbitrary magic
+number.
+
+### Open Questions
+
+- Should shorthand `*` be accepted as `0..*`, or should the first version require
+  explicit lower bounds?
+- Should `1..1` normalize to `1`?
+- Should blank input default to `1` or `0..1` in interactive prompts?
+
+## Add Directed Reference Attributes
+
+Status: planning.
+
+### Goal
+
+Add the first implemented association capability by extending attributes to
+support directed references from one entity to another.
+
+### Scope
+
+- Represent value attributes and reference attributes explicitly in the pure
+  model layer.
+- A directed reference attribute should include:
+  - `azName`
+  - `visName`
+  - source entity through containment in the owning entity
+  - target entity identifier
+  - cardinality
+  - kind: `OWNS` or `REFERENCES`
+  - lifecycle version metadata
+- Preserve current value attribute behavior for existing `DataType` attributes.
+- Keep `azName` uniqueness rules clear when value and reference attributes share
+  an entity.
+- Add command execution, undo, model journal recording, and tests.
+- Extend `.vdos` export/import and snapshot validation.
+- Extend HTTP DTOs and endpoints without leaking JSON/web types into core.
+- Extend shared console behavior and terminal CLI prompts.
+- Keep browser `/console` using shared Java command behavior.
+
+### Pondering
+
+`owns` and `references` should probably share one internal directed reference
+structure initially, with a small kind enum distinguishing lifecycle semantics.
+That keeps the first implementation small while still recording the user's
+intent.
+
+The implementation should avoid enforcing cascade delete or containment
+lifecycle rules until user-visible delete/edit commands are available. Until
+then, `owns` can be a model semantic and rendering/API signal rather than a
+runtime deletion rule.
+
+### Open Questions
+
+- Should the first command be `ref add`, `assoc add`, or `attr ref add`?
+- Should target entity selection support both latest entity-list numbers and
+  exact `azName`, like current attach/entity selection?
+- Should directed references be listed by `attributes`, a new `references`
+  command, or both?
+- Should existing `VAttribute` become a sealed interface with
+  `ValueAttribute`/`ReferenceAttribute`, or should the current class grow a
+  kind field?
+- What compatibility behavior is required for existing `.vdos` files that only
+  contain value attributes?
+
+## Expose Directed References In API, UX, And Diagrams
+
+Status: planning.
+
+### Goal
+
+Make directed reference attributes visible and usable across existing HTTP,
+console, CLI, UX, and PlantUML rendering surfaces.
+
+### Scope
+
+- Return reference attributes from attribute listing APIs with target entity,
+  cardinality, kind, and lifecycle fields.
+- Render `owns` and `references` differently enough in PlantUML to communicate
+  intent.
+- Update the browser model view so reference attributes or relationship edges
+  are visible without hand-authored diagrams.
+- Update CLI and web console output so users can inspect directed references.
+- Add focused tests for DTO shape and rendered textual output.
+
+### Pondering
+
+The API may either extend the existing attribute response with optional fields
+or introduce a discriminated response shape. A discriminated shape is cleaner
+for clients, but it changes more code at once. Optional fields are a smaller
+step but can blur invariants.
+
+### Open Questions
+
+- Should the main UX display references inline under entities, as edges in the
+  PlantUML diagram, or both?
+- Should `owns` render as composition-like and `references` as a normal
+  directed association in PlantUML?
+- Should APIs use `kind: VALUE | REFERENCE` plus reference fields, or separate
+  collections?
+
+## Add True Bidirectional Relations
+
+Status: planning.
+
+### Goal
+
+Introduce `relation` as a first-class bidirectional model element only after
+directed reference attributes are implemented and validated end to end.
+
+### Scope
+
+- Model a relation as one identity with two named ends.
+- Each relation end should include:
+  - entity identifier
+  - role name
+  - cardinality
+  - navigability if needed
+- Prevent the two ends from drifting into contradictory independent references.
+- Add command execution, undo, model journal recording, `.vdos` support, HTTP
+  DTOs, CLI/console flows, tests, and diagram rendering.
+
+### Pondering
+
+`relation` should not merely generate two unrelated reference attributes. The
+main value of a relation is that Vedenemo can understand that both navigable
+ends describe one modeled relationship.
+
+Many-to-many relationships with data should probably be modeled as an explicit
+entity in the first implementation, for example `Enrollment` between `Student`
+and `Course`, rather than adding arbitrary attributes to relations.
+
+### Open Questions
+
+- Should relations live directly under `ModelRoot`, or be reachable from both
+  participating entities?
+- Should relation ends be allowed to be non-navigable?
+- Should relation names be required, or can role names identify the relation?
+- How should relation identity be represented in `.vdos` and future persistence?
+- When should association classes be introduced, if ever?
+
 ## Make CLI Commands Case-Insensitive And Add Console Input History
 
 Status: executed.

@@ -84,5 +84,11 @@ preserving the established boundaries:
 - keep CLI behavior as a thin HTTP/file-I/O client;
 - add persistence adapters behind Vedenemo-owned interfaces when persistence is
   introduced;
+- plan association modeling in phases, starting with cardinality and directed
+  reference attributes for `owns`/`references` before adding true
+  bidirectional `relation` support;
+- keep relationship semantics explicit in pure model/core code while keeping
+  HTTP DTOs, CLI prompts, UX rendering, and `.vdos` text handling in their
+  existing module boundaries;
 - keep current architecture documentation synchronized when module boundaries,
   command flows, API endpoints, or script behavior changes.

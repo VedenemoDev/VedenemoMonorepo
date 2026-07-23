@@ -3452,3 +3452,36 @@ Current status and next steps:
 - Focused CLI reactor tests passed.
 - Real TTY prompt alignment and command-history behavior remain for user manual
   verification.
+
+## 2026-07-23 13:48 EEST
+
+Session goal: add phased planning backlog items for association modeling and
+update the current milestone direction.
+
+Files changed:
+
+- `docs/roadmap/current-milestone.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- `sed -n '1,180p' tasks/backlog.md`
+- `git diff --check`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added separate planning backlog items for association semantics, cardinality,
+  directed reference attributes, API/UX/diagram exposure, and later true
+  bidirectional relations.
+- Preserved alternatives, rationale, pondering, and open questions in the
+  backlog items.
+- Updated the current milestone near-term direction to point toward phased
+  association modeling while preserving existing module boundaries.
+- `git diff --check` passed. No code tests were run because this was a
+  planning/documentation-only change.
