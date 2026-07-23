@@ -19,9 +19,11 @@ Use three user-facing semantic categories:
   lifecycles.
 - `relation`: a bidirectional association with one identity and two named ends.
 
-The near-term implementation direction is to introduce directed reference
-attributes first, covering `owns` and `references`, and defer true
-bidirectional `relation` support until the directed model is proven end to end.
+The preferred implementation direction is to introduce a separate model-level
+association object, not to model associations as attributes. The first
+implementation should still be narrow: support directed associations for
+`owns` and `references`, then add true bidirectional `relation` support after
+the model-level association path is proven end to end.
 
 ### Rationale
 
@@ -34,19 +36,30 @@ Vedenemo currently has a complete vertical slice for entities and attributes:
 - shared terminal/browser console command behavior;
 - terminal CLI and UX rendering paths.
 
-Adding a directed reference attribute fits this shape better than introducing a
-separate association hierarchy immediately. It allows relationship modeling to
-move through the existing command, undo, journal, `.vdos`, HTTP, CLI, console,
-and PlantUML paths with limited new surface area.
+Introducing associations as model-owned elements requires more code than adding
+reference attributes, but it keeps relationships from being forced into an
+attribute-shaped model. It gives associations their own identity, maps naturally
+to diagrams as arrows or lines with labels, and leaves a cleaner path toward
+bidirectional relations and later association classes.
+
+The first slice should still move through the existing vertical path:
+
+- pure model objects in `vedenemo-model-api`;
+- command execution and undo in `vedenemo-core`;
+- `.vdos` command/snapshot export and import;
+- HTTP endpoints and DTOs in `vedenemo-web-api`;
+- shared terminal/browser console command behavior;
+- terminal CLI and UX rendering paths.
 
 ### Alternatives Considered
 
-- Model all relationships as a standalone `Association` hierarchy from the
-  beginning.
-  - Benefit: closer to UML and leaves room for association identity,
-    bidirectionality, association classes, and richer metadata.
-  - Cost: larger first step across model, commands, scripts, API, CLI, UX,
-    validation, undo, and rendering.
+- Add directed reference attributes first.
+  - Benefit: smaller first implementation because entities already own
+    attributes and the current command/API/CLI flow already creates and lists
+    attributes.
+  - Cost: risks making relationships subordinate to entity fields when the
+    intended model semantics may need association identity, diagram edges,
+    bidirectionality, and future association classes.
 
 - Treat associations only as normal attributes with a `REFERENCE` data type.
   - Benefit: small implementation change.
@@ -63,12 +76,11 @@ and PlantUML paths with limited new surface area.
 
 - Should `owns` initially enforce lifecycle behavior, or only record ownership
   intent until delete/edit workflows exist?
-- Should reference targets be stored by target entity `azName`, a stable entity
+- Should association ends be stored by target entity `azName`, a stable entity
   id introduced later, or an internal handle?
-- Should directed reference attributes live in the same collection as value
-  attributes, or should entities expose separate value/reference collections?
-- What should the command wording be: `ref add`, `assoc add`, or an extended
-  `attr add` flow?
+- Should associations live directly under `ModelRoot` in insertion order?
+- What should the command wording be: `assoc add`, `owns add`,
+  `references add`, or another command shape?
 - How should `.vdos` name the new concepts while remaining readable and stable?
 - Should PlantUML render `owns` differently from `references` immediately?
 
@@ -79,7 +91,7 @@ Status: planning.
 ### Goal
 
 Introduce a pure JDK cardinality/multiplicity model that can be reused by
-directed reference attributes and later bidirectional relations.
+directed model-level associations and later bidirectional relations.
 
 ### Scope
 
@@ -108,30 +120,32 @@ number.
 - Should `1..1` normalize to `1`?
 - Should blank input default to `1` or `0..1` in interactive prompts?
 
-## Add Directed Reference Attributes
+## Add Directed Model Associations
 
 Status: planning.
 
 ### Goal
 
-Add the first implemented association capability by extending attributes to
-support directed references from one entity to another.
+Add the first implemented association capability as separate model-level
+association objects from one entity to another.
 
 ### Scope
 
-- Represent value attributes and reference attributes explicitly in the pure
-  model layer.
-- A directed reference attribute should include:
+- Add a model-level association collection, probably owned by `ModelRoot`.
+- A directed association should include:
   - `azName`
   - `visName`
-  - source entity through containment in the owning entity
+  - source entity identifier
   - target entity identifier
+  - source role name if needed
+  - target role name or label
   - cardinality
   - kind: `OWNS` or `REFERENCES`
   - lifecycle version metadata
-- Preserve current value attribute behavior for existing `DataType` attributes.
-- Keep `azName` uniqueness rules clear when value and reference attributes share
-  an entity.
+- Preserve current value attribute behavior for existing `DataType` attributes;
+  value attributes remain entity-owned attributes.
+- Keep association `azName` uniqueness rules clear, likely model-wide and
+  case-insensitive like entity names.
 - Add command execution, undo, model journal recording, and tests.
 - Extend `.vdos` export/import and snapshot validation.
 - Extend HTTP DTOs and endpoints without leaking JSON/web types into core.
@@ -140,64 +154,68 @@ support directed references from one entity to another.
 
 ### Pondering
 
-`owns` and `references` should probably share one internal directed reference
+`owns` and `references` should probably share one internal directed association
 structure initially, with a small kind enum distinguishing lifecycle semantics.
-That keeps the first implementation small while still recording the user's
-intent.
+That keeps the first implementation smaller while still recording the user's
+intent and keeping relationships as first-class model elements.
 
 The implementation should avoid enforcing cascade delete or containment
 lifecycle rules until user-visible delete/edit commands are available. Until
 then, `owns` can be a model semantic and rendering/API signal rather than a
 runtime deletion rule.
 
+Associations should be rendered in diagrams as arrows or lines with labels,
+rather than as pseudo-fields inside entity boxes. Entity-local projections can
+be introduced later if generated APIs or UI views need field-like navigation.
+
 ### Open Questions
 
-- Should the first command be `ref add`, `assoc add`, or `attr ref add`?
-- Should target entity selection support both latest entity-list numbers and
-  exact `azName`, like current attach/entity selection?
-- Should directed references be listed by `attributes`, a new `references`
-  command, or both?
-- Should existing `VAttribute` become a sealed interface with
-  `ValueAttribute`/`ReferenceAttribute`, or should the current class grow a
-  kind field?
+- Should the first command be `assoc add`, `owns add`, `references add`, or a
+  prompt-driven `assoc add` that asks for kind?
+- Should source and target entity selection support both latest entity-list
+  numbers and exact `azName`, like current attach/entity selection?
+- Should directed associations be listed by a new `associations` command, by
+  entity-scoped commands, or both?
+- Should `Association` be a sealed interface immediately, or should the first
+  directed implementation be one class with `AssociationKind`?
 - What compatibility behavior is required for existing `.vdos` files that only
   contain value attributes?
 
-## Expose Directed References In API, UX, And Diagrams
+## Expose Directed Associations In API, UX, And Diagrams
 
 Status: planning.
 
 ### Goal
 
-Make directed reference attributes visible and usable across existing HTTP,
+Make directed model-level associations visible and usable across existing HTTP,
 console, CLI, UX, and PlantUML rendering surfaces.
 
 ### Scope
 
-- Return reference attributes from attribute listing APIs with target entity,
-  cardinality, kind, and lifecycle fields.
+- Return model-level associations from API endpoints with source entity, target
+  entity, role/label, cardinality, kind, and lifecycle fields.
 - Render `owns` and `references` differently enough in PlantUML to communicate
   intent.
-- Update the browser model view so reference attributes or relationship edges
-  are visible without hand-authored diagrams.
-- Update CLI and web console output so users can inspect directed references.
+- Update the browser model view so association edges are visible without
+  hand-authored diagrams.
+- Update CLI and web console output so users can inspect directed associations.
 - Add focused tests for DTO shape and rendered textual output.
 
 ### Pondering
 
-The API may either extend the existing attribute response with optional fields
-or introduce a discriminated response shape. A discriminated shape is cleaner
-for clients, but it changes more code at once. Optional fields are a smaller
-step but can blur invariants.
+The API should likely use separate association endpoints or a model-detail
+response section rather than extending attribute responses with optional
+association fields. That keeps value attributes and associations distinct in the
+client contract.
 
 ### Open Questions
 
-- Should the main UX display references inline under entities, as edges in the
-  PlantUML diagram, or both?
+- Should the main UX display associations only as edges in the PlantUML diagram,
+  or also as an inspectable list/table?
 - Should `owns` render as composition-like and `references` as a normal
   directed association in PlantUML?
-- Should APIs use `kind: VALUE | REFERENCE` plus reference fields, or separate
-  collections?
+- Should association APIs be model-scoped only, or should entity-scoped
+  association views be added at the same time?
 
 ## Add True Bidirectional Relations
 
@@ -205,8 +223,9 @@ Status: planning.
 
 ### Goal
 
-Introduce `relation` as a first-class bidirectional model element only after
-directed reference attributes are implemented and validated end to end.
+Introduce `relation` as a first-class bidirectional model-level association
+only after directed model-level associations are implemented and validated end
+to end.
 
 ### Scope
 

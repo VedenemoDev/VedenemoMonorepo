@@ -3485,3 +3485,37 @@ Current status and next steps:
   association modeling while preserving existing module boundaries.
 - `git diff --check` passed. No code tests were run because this was a
   planning/documentation-only change.
+
+## 2026-07-23 15:46 EEST
+
+Session goal: revise association planning to prefer separate model-level
+association objects instead of directed reference attributes.
+
+Files changed:
+
+- `docs/roadmap/current-milestone.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- `sed -n '1,320p' tasks/backlog.md`
+- `git diff --check`
+- `git diff --stat`
+- `git diff -- tasks/backlog.md docs/roadmap/current-milestone.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Revised association planning so model-level `Association` objects are the
+  preferred direction.
+- Kept directed reference attributes and `REFERENCE` data type approaches as
+  alternatives considered.
+- Updated the milestone near-term direction to start with cardinality and
+  directed model-level associations for `owns`/`references`, then later true
+  bidirectional `relation` support.
+- `git diff --check` passed. No code tests were run because this was a
+  planning/documentation-only change.
