@@ -30,7 +30,7 @@ export class PlantUmlModelAdapter {
       "@startuml",
       "hide circle",
       "hide empty members",
-      `title ${plantUmlText(modelTitle(modelAzName, modelVisName))}`,
+      `title ${plantUmlText(modelVisName)}`,
       "",
     ];
 
@@ -81,10 +81,6 @@ function identifier(value: string): string {
 
 function plantUmlText(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-}
-
-function modelTitle(azName: string, visName: string): string {
-  return visName === azName ? visName : `${visName} (${azName})`;
 }
 
 function associationOperator(kind: AssociationSummary["kind"]): string {

@@ -438,14 +438,15 @@ event WebSocket.
 
 Current user-facing behavior:
 
-- shows the configured backend URL
 - fetches available models from `{apiBaseUrl}/models/list` at page load
+- shows the number of available models after model list refresh
 - provides a Refresh model list button
 - lets the user select a model from a dropdown
 - provides a Connect/Disconnect toggle for `{apiBaseUrl}/models/events`
 - refreshes the selected model view when backend model-change events arrive
 - renders the selected model as an automatically laid out PlantUML SVG class
   diagram in a scrollable viewport
+- shows transient diagram rendering status below the diagram viewport
 - exposes `/console` as a separate full-page virtual CLI that starts a backend
   console session, appends command output to a terminal-like history, and runs
   one command or prompt answer at a time through

@@ -104,20 +104,6 @@ body {
   color: #b91c1c;
 }
 
-.connection-status {
-  color: #4b5563;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.connection-status-connected {
-  color: #047857;
-}
-
-.connection-status-error {
-  color: #b91c1c;
-}
-
 .diagram-status {
   color: #4b5563;
   font-size: 0.9rem;
@@ -152,12 +138,6 @@ body {
   place-items: center;
   color: #6b7280;
   font-weight: 600;
-}
-
-.backend-url {
-  overflow-wrap: anywhere;
-  color: #4b5563;
-  font-size: 0.9rem;
 }
 
 .console-shell {

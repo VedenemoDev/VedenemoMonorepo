@@ -4046,3 +4046,36 @@ Current status and next steps:
   console behavior, including old `help` output and old `assoc add` rejection.
 - The observed issue is a backend deployment/runtime version mismatch, not a
   Firebase Hosting artifact problem.
+
+## 2026-07-25 01:27 EEST
+
+Session goal: make minor main UX text and status presentation changes.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `vedenemo-ux/src/styles.css`
+- `docs/architecture_doc.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- UX source and documentation inspection with `sed` and `rg`
+- `npm run build`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Main UX no longer displays the configured backend URL or Connected/
+  Disconnected status label.
+- Model list status now says models are available instead of loaded.
+- Diagram render status appears below the diagram viewport and successful
+  render status clears after a short timeout.
+- The diagram canvas uses only the single empty-state prompt, and PlantUML
+  titles show only model `visName`.
+- UX build and diff whitespace checks passed.

@@ -32,6 +32,8 @@ type ConsoleCommandResponse = {
 
 const PLANTUML_TARGET_ID = "plantuml-diagram";
 const CONNECTED_MODEL_STORAGE_KEY = "vedenemo.connectedModelAzName";
+const DIAGRAM_EMPTY_MESSAGE = "Select model and connect to show diagram.";
+const DIAGRAM_RENDERED_MESSAGE = "Diagram rendered";
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   const response = await fetch("/config.json", { cache: "no-store" });
@@ -302,9 +304,8 @@ export function App() {
   const [models, setModels] = useState<ModelSummary[]>([]);
   const [selectedModelAzName, setSelectedModelAzName] = useState("");
   const [modelConnectionState, setModelConnectionState] = useState<ModelConnectionState>("disconnected");
-  const [modelConnectionMessage, setModelConnectionMessage] = useState("Disconnected");
   const [diagramHasContent, setDiagramHasContent] = useState(false);
-  const [diagramMessage, setDiagramMessage] = useState("Select model and connect to show diagram.");
+  const [diagramMessage, setDiagramMessage] = useState(DIAGRAM_EMPTY_MESSAGE);
 
   useEffect(() => {
     selectedModelAzNameRef.current = selectedModelAzName;
@@ -351,6 +352,16 @@ export function App() {
     }
   }, [modelConnectionState, selectedModelAzName]);
 
+  useEffect(() => {
+    if (diagramMessage !== DIAGRAM_RENDERED_MESSAGE) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      setDiagramMessage("");
+    }, 1800);
+    return () => window.clearTimeout(timeoutId);
+  }, [diagramMessage]);
+
   async function refreshModels(baseUrl = apiBaseUrl, isCancelled: () => boolean = () => false) {
     if (!baseUrl) {
       setModelLoadState("error");
@@ -374,7 +385,7 @@ export function App() {
         return nextModels[0]?.azName ?? "";
       });
       setModelLoadState("ok");
-      setModelMessage(nextModels.length === 0 ? "No models available" : `${nextModels.length} model${nextModels.length === 1 ? "" : "s"} loaded`);
+      setModelMessage(nextModels.length === 0 ? "No models available" : `${nextModels.length} model${nextModels.length === 1 ? "" : "s"} available`);
     } catch (error) {
       if (isCancelled()) {
         return;
@@ -392,7 +403,7 @@ export function App() {
     }
     if (!modelAzName) {
       setDiagramHasContent(false);
-      setDiagramMessage("Select model and connect to show diagram.");
+      setDiagramMessage(DIAGRAM_EMPTY_MESSAGE);
       return;
     }
 
@@ -407,7 +418,7 @@ export function App() {
       );
       await renderPlantUmlSvg(plantUmlSource);
       setDiagramHasContent(true);
-      setDiagramMessage("Diagram rendered");
+      setDiagramMessage(DIAGRAM_RENDERED_MESSAGE);
     } catch (error) {
       setDiagramHasContent(false);
       setDiagramMessage(error instanceof Error ? `Diagram render failed: ${error.message}` : "Diagram render failed.");
@@ -426,39 +437,35 @@ export function App() {
     if (modelConnectionState === "connected" || modelConnectionState === "connecting") {
       eventAdapterRef.current.disconnect();
       setModelConnectionState("disconnected");
-      setModelConnectionMessage("Disconnected");
       return;
     }
 
     if (!apiBaseUrl) {
       setModelConnectionState("error");
-      setModelConnectionMessage("Backend URL is not configured");
+      setDiagramMessage("Backend URL is not configured");
       return;
     }
     if (!selectedModelAzName) {
       setModelConnectionState("error");
-      setModelConnectionMessage("Select model before connecting");
+      setDiagramMessage("Select model before connecting");
       return;
     }
 
     setModelConnectionState("connecting");
-    setModelConnectionMessage("Connecting...");
     await renderSelectedModel(selectedModelAzName);
 
     eventAdapterRef.current.connect(apiBaseUrl, {
       onOpen: () => {
         setModelConnectionState("connected");
-        setModelConnectionMessage("Connected");
         window.sessionStorage.setItem(CONNECTED_MODEL_STORAGE_KEY, selectedModelAzName);
       },
       onClose: () => {
         setModelConnectionState("disconnected");
-        setModelConnectionMessage("Disconnected");
         window.sessionStorage.removeItem(CONNECTED_MODEL_STORAGE_KEY);
       },
       onError: (message) => {
         setModelConnectionState("error");
-        setModelConnectionMessage(message);
+        setDiagramMessage(message);
       },
       onModelChanged: (modelAzName) => {
         void refreshModels();
@@ -468,6 +475,9 @@ export function App() {
       },
     });
   }
+
+  const footerDiagramMessage = diagramMessage === DIAGRAM_EMPTY_MESSAGE ? "" : diagramMessage;
+  const showDiagramPlaceholder = !diagramHasContent && diagramMessage === DIAGRAM_EMPTY_MESSAGE;
 
   return (
     <main className="app-shell">
@@ -512,16 +522,14 @@ export function App() {
             </a>
           </div>
           <span className={`model-status model-status-${modelLoadState}`}>{modelMessage}</span>
-          <span className={`connection-status connection-status-${modelConnectionState}`}>{modelConnectionMessage}</span>
-          <span className="diagram-status">{diagramMessage}</span>
           <div className="diagram-viewport" aria-label="PlantUML class diagram">
             <div id={PLANTUML_TARGET_ID} className="diagram-svg" />
-            {!diagramHasContent && (
-              <div className="diagram-placeholder">{diagramMessage}</div>
+            {showDiagramPlaceholder && (
+              <div className="diagram-placeholder">{DIAGRAM_EMPTY_MESSAGE}</div>
             )}
           </div>
+          {footerDiagramMessage && <span className="diagram-status">{footerDiagramMessage}</span>}
         </div>
-        <p className="backend-url">{apiBaseUrl || "Backend URL is not configured"}</p>
       </section>
     </main>
   );
