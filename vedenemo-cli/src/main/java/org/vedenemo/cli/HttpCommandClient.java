@@ -78,19 +78,27 @@ public final class HttpCommandClient implements CommandClient {
             String associationVisName,
             String sourceEntityAzName,
             String targetEntityAzName,
-            String cardinality
+            String cardinality,
+            String sourceRoleName,
+            String targetRoleName,
+            String sourceCardinality,
+            String targetCardinality
     ) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/sessions/" + sessionId + "/commands/create-association"))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString("""
-                        {"kind":"%s","associationAzName":"%s","associationVisName":"%s","sourceEntityAzName":"%s","targetEntityAzName":"%s","cardinality":"%s"}\
+                        {"kind":"%s","associationAzName":"%s","associationVisName":"%s","sourceEntityAzName":"%s","targetEntityAzName":"%s","cardinality":"%s","sourceRoleName":%s,"targetRoleName":%s,"sourceCardinality":%s,"targetCardinality":%s}\
                         """.formatted(
                         escapeJson(kind),
                         escapeJson(associationAzName),
                         escapeJson(associationVisName),
                         escapeJson(sourceEntityAzName),
                         escapeJson(targetEntityAzName),
-                        escapeJson(cardinality)
+                        escapeJson(cardinality),
+                        jsonStringOrNull(sourceRoleName),
+                        jsonStringOrNull(targetRoleName),
+                        jsonStringOrNull(sourceCardinality),
+                        jsonStringOrNull(targetCardinality)
                 )))
                 .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -124,5 +132,12 @@ public final class HttpCommandClient implements CommandClient {
 
     private static String escapeJson(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private static String jsonStringOrNull(String value) {
+        if (value == null) {
+            return "null";
+        }
+        return "\"" + escapeJson(value) + "\"";
     }
 }

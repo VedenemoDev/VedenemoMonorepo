@@ -378,6 +378,31 @@ final class SessionResourceTest {
     }
 
     @Test
+    void createRelationCommandAddsRelationToSelectedModel() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addEntity(new VEntity("Student", "Student", modelRoot.version()));
+        modelRoot.addEntity(new VEntity("Course", "Course", modelRoot.version()));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/create-association", """
+                {"kind":"relation","associationAzName":"Student_Course","associationVisName":"enrollment","sourceEntityAzName":"Student","targetEntityAzName":"Course","sourceRoleName":"student","targetRoleName":"course","sourceCardinality":"0..*","targetCardinality":"1..*"}
+                """);
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("\"kind\":\"RELATION\""));
+        assertTrue(response.body().contains("\"sourceRoleName\":\"student\""));
+        assertTrue(response.body().contains("\"targetCardinality\":\"1..*\""));
+        assertEquals("Student_Course", modelRoot.associations().getFirst().azName());
+        assertEquals("student", modelRoot.associations().getFirst().sourceRoleName());
+        assertEquals("course", modelRoot.associations().getFirst().targetRoleName());
+        assertEquals("0..*", modelRoot.associations().getFirst().sourceCardinality().toString());
+        assertEquals("1..*", modelRoot.associations().getFirst().targetCardinality().toString());
+    }
+
+    @Test
     void undoCommandRemovesPreviouslyCreatedAssociation() throws Exception {
         ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
         modelRoot.addEntity(new VEntity("Customer", "Customer", modelRoot.version()));

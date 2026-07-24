@@ -70,6 +70,7 @@ final class VedenemoCliAppTest {
         assertTrue(result.output.contains("entity detach - clear the selected entity"));
         assertTrue(result.output.contains("attributes - list attributes in the selected entity"));
         assertTrue(result.output.contains("attr add - add an attribute to the selected entity"));
+        assertTrue(result.output.contains("assoc add [ownership | reference | relation] - add an association or relation"));
         assertTrue(result.output.contains("undo - undo the latest backend command"));
         assertTrue(result.output.contains("save [N | azName] [outputPath] - save a model to a .vdos file"));
         assertTrue(result.output.contains("snapshots - list .vdos files from the .vedenemo directory"));
@@ -530,6 +531,35 @@ final class VedenemoCliAppTest {
     }
 
     @Test
+    void assocAddRelationCreatesRelationWithPromptedEnds() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Student", "Student", "1.0.0", null));
+        modelClient.entities.add(new EntitySummary("Course", "Course", "1.0.0", null));
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                commandClient,
+                "attach Example_Model\nentities\nassoc add relation\n1\nstudent\n0..*\n2\ncourse\n1..*\nenrollment\n\nexit\n"
+        );
+
+        assertEquals("relation", commandClient.createdAssociationKind);
+        assertEquals("Student_enrollment", commandClient.createdAssociationAzName);
+        assertEquals("enrollment", commandClient.createdAssociationVisName);
+        assertEquals("Student", commandClient.createdAssociationSourceEntityAzName);
+        assertEquals("Course", commandClient.createdAssociationTargetEntityAzName);
+        assertEquals("1..*", commandClient.createdAssociationCardinality);
+        assertEquals("student", commandClient.createdAssociationSourceRoleName);
+        assertEquals("course", commandClient.createdAssociationTargetRoleName);
+        assertEquals("0..*", commandClient.createdAssociationSourceCardinality);
+        assertEquals("1..*", commandClient.createdAssociationTargetCardinality);
+        assertTrue(result.output.contains("Relation Student_enrollment added."));
+    }
+
+    @Test
     void saveWithoutArgumentUsesAttachedModelAndDefaultPromptPath() throws Exception {
         TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
         TestModelClient modelClient = new TestModelClient();
@@ -906,6 +936,10 @@ final class VedenemoCliAppTest {
         private String createdAssociationSourceEntityAzName;
         private String createdAssociationTargetEntityAzName;
         private String createdAssociationCardinality;
+        private String createdAssociationSourceRoleName;
+        private String createdAssociationTargetRoleName;
+        private String createdAssociationSourceCardinality;
+        private String createdAssociationTargetCardinality;
         private boolean undoCalled;
         private UndoCommandResult undoResult = UndoCommandResult.undone(
                 "create-entity",
@@ -954,7 +988,11 @@ final class VedenemoCliAppTest {
                 String associationVisName,
                 String sourceEntityAzName,
                 String targetEntityAzName,
-                String cardinality
+                String cardinality,
+                String sourceRoleName,
+                String targetRoleName,
+                String sourceCardinality,
+                String targetCardinality
         ) {
             createdAssociationKind = kind;
             createdAssociationAzName = associationAzName;
@@ -962,6 +1000,10 @@ final class VedenemoCliAppTest {
             createdAssociationSourceEntityAzName = sourceEntityAzName;
             createdAssociationTargetEntityAzName = targetEntityAzName;
             createdAssociationCardinality = cardinality;
+            createdAssociationSourceRoleName = sourceRoleName;
+            createdAssociationTargetRoleName = targetRoleName;
+            createdAssociationSourceCardinality = sourceCardinality;
+            createdAssociationTargetCardinality = targetCardinality;
         }
 
         @Override

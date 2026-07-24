@@ -200,33 +200,43 @@ public final class SessionResource {
             CreateAssociationRequest request;
             AssociationKind kind;
             Cardinality cardinality;
+            CreateAssociationCommand command;
             try {
                 request = objectMapper.readValue(context.body(), CreateAssociationRequest.class);
                 kind = parseAssociationKind(request.kind());
                 cardinality = request.cardinality() == null || request.cardinality().isBlank()
                         ? Cardinality.parse("1")
                         : Cardinality.parse(request.cardinality());
-                executor.orElseThrow().execute(new CreateAssociationCommand(
+                command = new CreateAssociationCommand(
                         selectedModelAzName.orElseThrow(),
                         kind,
                         request.associationAzName(),
                         request.associationVisName(),
                         request.sourceEntityAzName(),
                         request.targetEntityAzName(),
-                        cardinality
-                ));
+                        cardinality,
+                        request.sourceRoleName(),
+                        request.targetRoleName(),
+                        parseOptionalCardinality(request.sourceCardinality()),
+                        parseOptionalCardinality(request.targetCardinality())
+                );
+                executor.orElseThrow().execute(command);
                 modelChangeBroadcaster.broadcastModelChanged(selectedModelAzName.orElseThrow());
             } catch (JsonProcessingException | IllegalArgumentException | IllegalStateException | NullPointerException exception) {
                 writeJson(context, 400, new ErrorResponse(exception.getMessage()));
                 return;
             }
             writeJson(context, 200, new AssociationResponse(
-                    request.associationAzName(),
-                    request.associationVisName(),
-                    kind.name(),
-                    request.sourceEntityAzName(),
-                    request.targetEntityAzName(),
-                    cardinality.toString()
+                    command.associationAzName(),
+                    command.associationVisName(),
+                    command.kind().name(),
+                    command.sourceEntityAzName(),
+                    command.targetEntityAzName(),
+                    command.cardinality().toString(),
+                    command.sourceRoleName(),
+                    command.targetRoleName(),
+                    command.sourceCardinality() == null ? null : command.sourceCardinality().toString(),
+                    command.targetCardinality() == null ? null : command.targetCardinality().toString()
             ));
         });
         routes.post("/sessions/{uuid}/commands/undo", context -> {
@@ -285,7 +295,11 @@ public final class SessionResource {
             String associationVisName,
             String sourceEntityAzName,
             String targetEntityAzName,
-            String cardinality
+            String cardinality,
+            String sourceRoleName,
+            String targetRoleName,
+            String sourceCardinality,
+            String targetCardinality
     ) {
     }
 
@@ -301,7 +315,11 @@ public final class SessionResource {
             String kind,
             String sourceEntityAzName,
             String targetEntityAzName,
-            String cardinality
+            String cardinality,
+            String sourceRoleName,
+            String targetRoleName,
+            String sourceCardinality,
+            String targetCardinality
     ) {
     }
 
@@ -356,7 +374,15 @@ public final class SessionResource {
         return switch (value.trim().toLowerCase()) {
             case "ownership" -> AssociationKind.OWNERSHIP;
             case "reference" -> AssociationKind.REFERENCE;
+            case "relation" -> AssociationKind.RELATION;
             default -> throw new IllegalArgumentException("unsupported association kind: " + value);
         };
+    }
+
+    private static Cardinality parseOptionalCardinality(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return Cardinality.parse(value);
     }
 }

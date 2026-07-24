@@ -231,6 +231,33 @@ final class CommandExecutorTest {
     }
 
     @Test
+    void createRelationCommandAddsRelationWithNamedEndsToSelectedModel() {
+        Fixture fixture = fixtureWithSelectedModelAndTwoEntities();
+
+        fixture.executor.execute(new CreateAssociationCommand(
+                "Example_Model",
+                AssociationKind.RELATION,
+                "Customer_Order",
+                "orders",
+                "Customer",
+                "Order",
+                null,
+                "customer",
+                "order",
+                Cardinality.parse("1"),
+                Cardinality.parse("0..*")
+        ));
+
+        assertEquals(1, fixture.modelRoot.associations().size());
+        assertEquals(AssociationKind.RELATION, fixture.modelRoot.associations().getFirst().kind());
+        assertEquals("customer", fixture.modelRoot.associations().getFirst().sourceRoleName());
+        assertEquals("order", fixture.modelRoot.associations().getFirst().targetRoleName());
+        assertEquals(Cardinality.parse("1"), fixture.modelRoot.associations().getFirst().sourceCardinality());
+        assertEquals(Cardinality.parse("0..*"), fixture.modelRoot.associations().getFirst().targetCardinality());
+        assertEquals(3, fixture.session.commandHistory().size());
+    }
+
+    @Test
     void createAssociationCommandRequiresExistingEndpoints() {
         Fixture fixture = fixtureWithSelectedModelAndEntity();
 

@@ -2,7 +2,7 @@ package org.vedenemo.core.model;
 
 import java.util.Optional;
 
-public sealed interface Association permits OwnershipAssociation, ReferenceAssociation {
+public sealed interface Association permits OwnershipAssociation, ReferenceAssociation, RelationAssociation {
 
     String azName();
 
@@ -13,6 +13,22 @@ public sealed interface Association permits OwnershipAssociation, ReferenceAssoc
     String targetEntityAzName();
 
     Cardinality cardinality();
+
+    default String sourceRoleName() {
+        return null;
+    }
+
+    default String targetRoleName() {
+        return null;
+    }
+
+    default Cardinality sourceCardinality() {
+        return null;
+    }
+
+    default Cardinality targetCardinality() {
+        return cardinality();
+    }
 
     ModelVersion activeSince();
 

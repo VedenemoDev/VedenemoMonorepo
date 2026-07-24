@@ -45,6 +45,37 @@ final class AssociationTest {
     }
 
     @Test
+    void relationAssociationExposesTwoNamedEnds() {
+        RelationAssociation association = new RelationAssociation(
+                "Student_Course",
+                "enrollment",
+                new RelationEnd("Student", "student", Cardinality.parse("0..*")),
+                new RelationEnd("Course", "course", Cardinality.parse("1..*")),
+                VERSION
+        );
+
+        assertEquals(AssociationKind.RELATION, association.kind());
+        assertEquals("Student", association.sourceEntityAzName());
+        assertEquals("Course", association.targetEntityAzName());
+        assertEquals("student", association.sourceRoleName());
+        assertEquals("course", association.targetRoleName());
+        assertEquals(Cardinality.parse("0..*"), association.sourceCardinality());
+        assertEquals(Cardinality.parse("1..*"), association.targetCardinality());
+        assertEquals(Cardinality.parse("1..*"), association.cardinality());
+    }
+
+    @Test
+    void relationAssociationRejectsMatchingRoleNames() {
+        assertThrows(IllegalArgumentException.class, () -> new RelationAssociation(
+                "Student_Course",
+                "enrollment",
+                new RelationEnd("Student", "same", Cardinality.parse("0..*")),
+                new RelationEnd("Course", "same", Cardinality.parse("1..*")),
+                VERSION
+        ));
+    }
+
+    @Test
     void rejectsInvalidAssociationData() {
         assertThrows(IllegalArgumentException.class, () -> new OwnershipAssociation(
                 "1Invalid",

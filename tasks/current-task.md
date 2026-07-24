@@ -1,55 +1,47 @@
 # Current Task
 
-## Implement Directed Model Associations
+## Implement True Bidirectional Relations
 
 Status: executed.
 
 ### Goal
 
-Implement the first vertical slice of Vedenemo model-level associations while
-preserving strict module boundaries.
+Add first-class bidirectional `relation` support on top of the implemented
+model-level association path while preserving strict module boundaries.
 
 ### Scope
 
-- Add pure model cardinality support.
-- Add first-class directed ownership/reference associations under `ModelRoot`.
-- Add core command execution, undo, and model journal support for association
-  creation.
-- Extend `.vdos` export/import and snapshot validation with additive
-  association sections.
-- Expose model-scoped and entity-scoped association views through HTTP.
-- Extend shared console/terminal CLI inspection with `associations`.
-- Add terminal CLI prompt flow for `assoc add`, `assoc add ownership`, and
-  `assoc add reference`.
-- Render ownership/reference associations as PlantUML edges in the UX.
+- Add relation model objects as one association identity with two named ends.
+- Preserve existing ownership/reference behavior and `.vdos` compatibility.
+- Extend `CreateAssociationCommand`, undo, journal, `.vdos`, HTTP DTOs, shared
+  console, terminal CLI, and UX PlantUML rendering for `relation`.
+- Require each relation end to provide entity identifier, role name, and
+  cardinality.
+- Keep relation handling in pure model/core code and keep JSON/HTTP parsing in
+  `vedenemo-web-api`.
 
 ### Completion Notes
 
-- Added `Cardinality`, `Association`, `AssociationKind`,
-  `OwnershipAssociation`, and `ReferenceAssociation` to `vedenemo-model-api`.
-- `ModelRoot` now owns ordered model-level associations and validates
-  association endpoints against existing entities.
-- Added `CreateAssociationCommand`, `DeleteAssociationCommand`, undo result
-  metadata, and model journal handling in `vedenemo-core`.
-- `.vdos` now exports/imports `create-association` command lines and
-  `association` snapshot lines. Older scripts without associations remain
-  valid.
-- Added HTTP endpoints:
-  - `GET /models/{modelAzName}/associations`
-  - `GET /models/{modelAzName}/entities/{entityAzName}/associations`
-  - `POST /sessions/{uuid}/commands/create-association`
-- Added shared association summaries and console association listing.
-- Added terminal CLI association creation prompts.
-- Updated UX PlantUML source generation to render ownership as `*--` and
-  reference as `o--`.
+- Added `RelationEnd` and `RelationAssociation` to `vedenemo-model-api`.
+- Extended `AssociationKind` with `RELATION` and added end role/cardinality
+  accessors to the association API.
+- `CreateAssociationCommand` now supports relation-specific source and target
+  role/cardinality fields while keeping directed ownership/reference commands
+  compatible.
+- `.vdos` export/import writes relation end fields only for `RELATION`
+  associations and validates those fields during import.
+- HTTP association DTOs and `POST /sessions/{uuid}/commands/create-association`
+  now carry nullable relation end role/cardinality fields.
+- Shared console and terminal CLI support `assoc add relation`; association
+  listing shows relation roles and end cardinalities.
+- UX PlantUML rendering now draws relations as solid undirected lines with role
+  and cardinality labels on both ends.
 - Updated README, CLI reference, implementation architecture documentation,
   backlog status, and persisted implementation plan.
-- `mvn -B verify` passed.
-- `npm run build` passed after rerunning with permission because Vite writes
-  temporary files under `node_modules`.
+- `mvn -B clean verify` passed.
+- `npm run build` passed.
 
 ### Next Steps
 
-- Keep `Add True Bidirectional Relations` as the next backlog item.
-- Implement relation only after this directed-association slice has been
-  reviewed and exercised end to end.
+- Review relation authoring and round-trip behavior through the Firebase UX.
+- Continue with the next backlog item after relation behavior is accepted.

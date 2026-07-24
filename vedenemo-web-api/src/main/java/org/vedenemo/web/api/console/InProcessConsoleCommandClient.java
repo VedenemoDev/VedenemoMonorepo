@@ -64,7 +64,11 @@ final class InProcessConsoleCommandClient implements CommandClient {
             String associationVisName,
             String sourceEntityAzName,
             String targetEntityAzName,
-            String cardinality
+            String cardinality,
+            String sourceRoleName,
+            String targetRoleName,
+            String sourceCardinality,
+            String targetCardinality
     ) throws IOException {
         CommandExecutor executor = executor(sessionId);
         String modelAzName = selectedModelAzName(executor);
@@ -75,7 +79,11 @@ final class InProcessConsoleCommandClient implements CommandClient {
                 associationVisName,
                 sourceEntityAzName,
                 targetEntityAzName,
-                cardinality == null || cardinality.isBlank() ? Cardinality.parse("1") : Cardinality.parse(cardinality)
+                cardinality == null || cardinality.isBlank() ? Cardinality.parse("1") : Cardinality.parse(cardinality),
+                sourceRoleName,
+                targetRoleName,
+                parseOptionalCardinality(sourceCardinality),
+                parseOptionalCardinality(targetCardinality)
         ));
         modelChangeBroadcaster.broadcastModelChanged(modelAzName);
     }
@@ -129,7 +137,15 @@ final class InProcessConsoleCommandClient implements CommandClient {
         return switch (value.trim().toLowerCase()) {
             case "ownership" -> AssociationKind.OWNERSHIP;
             case "reference" -> AssociationKind.REFERENCE;
+            case "relation" -> AssociationKind.RELATION;
             default -> throw new IllegalArgumentException("unsupported association kind: " + value);
         };
+    }
+
+    private static Cardinality parseOptionalCardinality(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return Cardinality.parse(value);
     }
 }

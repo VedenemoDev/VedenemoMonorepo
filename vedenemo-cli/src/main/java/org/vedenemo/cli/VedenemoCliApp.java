@@ -182,7 +182,7 @@ public final class VedenemoCliApp {
         output.println("  attributes - list attributes in the selected entity");
         output.println("  attr add - add an attribute to the selected entity");
         output.println("  associations - list model associations, or selected entity associations");
-        output.println("  assoc add [ownership | reference] - add a directed association");
+        output.println("  assoc add [ownership | reference | relation] - add an association or relation");
         output.println("  undo - undo the latest backend command");
         output.println("  save [N | azName] [outputPath] - save a model to a .vdos file");
         output.println("  snapshots - list .vdos files from the .vedenemo directory");
@@ -338,11 +338,11 @@ public final class VedenemoCliApp {
     private void handleAssociationCommand(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
         List<String> arguments = splitArguments(argumentText(line, "assoc"));
         if (arguments.isEmpty() || !"add".equalsIgnoreCase(arguments.getFirst())) {
-            output.println("Usage: assoc add [ownership | reference]");
+            output.println("Usage: assoc add [ownership | reference | relation]");
             return;
         }
         if (arguments.size() > 2) {
-            output.println("Usage: assoc add [ownership | reference]");
+            output.println("Usage: assoc add [ownership | reference | relation]");
             return;
         }
         String kind = arguments.size() == 2 ? normalizeAssociationKind(arguments.get(1)) : null;
@@ -355,10 +355,10 @@ public final class VedenemoCliApp {
             return;
         }
         if ("relation".equals(kind)) {
-            output.println("Association kind relation is not implemented yet.");
-            return;
+            addRelation(consoleSession, reader);
+        } else {
+            addAssociation(consoleSession, reader, kind);
         }
-        addAssociation(consoleSession, reader, kind);
     }
 
     private void addAssociation(ConsoleSession consoleSession, CliInputReader reader, String kind) throws IOException, InterruptedException {
@@ -401,12 +401,83 @@ public final class VedenemoCliApp {
                     visName,
                     source,
                     target,
-                    cardinality
+                    cardinality,
+                    null,
+                    null,
+                    null,
+                    null
             );
             output.println("Association " + azName + " added.");
         } catch (IOException exception) {
             output.println("Association was not added: " + exception.getMessage() + ".");
         }
+    }
+
+    private void addRelation(ConsoleSession consoleSession, CliInputReader reader) throws IOException, InterruptedException {
+        Optional<String> modelAzName = consoleSession.attachedModelAzName();
+        if (modelAzName.isEmpty()) {
+            output.println("Attach a model before adding a relation.");
+            return;
+        }
+        String source = readEntityReference(consoleSession, reader, "First end entity number or azName: ");
+        if (source == null) {
+            return;
+        }
+        String sourceRole = reader.readLine("First end role name: ");
+        if (sourceRole == null || sourceRole.isBlank()) {
+            output.println("First end role name is required.");
+            return;
+        }
+        String sourceCardinality = readCardinality(reader, "First end cardinality [1]: ");
+        String target = readEntityReference(consoleSession, reader, "Second end entity number or azName: ");
+        if (target == null) {
+            return;
+        }
+        String targetRole = reader.readLine("Second end role name: ");
+        if (targetRole == null || targetRole.isBlank()) {
+            output.println("Second end role name is required.");
+            return;
+        }
+        String targetCardinality = readCardinality(reader, "Second end cardinality [1]: ");
+        String visName = reader.readLine("Relation visible name: ");
+        if (visName == null || visName.isBlank()) {
+            output.println("Relation visible name is required.");
+            return;
+        }
+        String suggestion = suggestAssociationAzName(modelAzName.orElseThrow(), "relation", source, target, visName);
+        String enteredAzName = reader.readLine("Relation azName [" + suggestion + "]: ");
+        if (enteredAzName == null) {
+            output.println("Relation azName is required.");
+            return;
+        }
+        String azName = enteredAzName.isBlank() ? suggestion : enteredAzName.trim();
+        if (azName.isBlank()) {
+            output.println("Relation azName is required.");
+            return;
+        }
+        try {
+            commandClient.createAssociation(
+                    consoleSession.backendSessionId(),
+                    "relation",
+                    azName,
+                    visName,
+                    source,
+                    target,
+                    targetCardinality,
+                    sourceRole.trim(),
+                    targetRole.trim(),
+                    sourceCardinality,
+                    targetCardinality
+            );
+            output.println("Relation " + azName + " added.");
+        } catch (IOException exception) {
+            output.println("Relation was not added: " + exception.getMessage() + ".");
+        }
+    }
+
+    private String readCardinality(CliInputReader reader, String prompt) throws IOException {
+        String value = reader.readLine(prompt);
+        return value == null || value.isBlank() ? "1" : value.trim();
     }
 
     private String readEntityReference(ConsoleSession consoleSession, CliInputReader reader, String prompt) throws IOException {

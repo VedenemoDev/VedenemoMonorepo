@@ -164,7 +164,7 @@ final class ModelsResourceTest {
         assertEquals(200, modelResponse.statusCode());
         assertEquals(modelResponse.body(), entityResponse.body());
         assertEquals("""
-                [{"azName":"Customer_Orders","visName":"orders","kind":"OWNERSHIP","sourceEntityAzName":"Customer","targetEntityAzName":"Order","cardinality":"0..*","activeSince":"1.0.0","deprecatedSince":null}]\
+                [{"azName":"Customer_Orders","visName":"orders","kind":"OWNERSHIP","sourceEntityAzName":"Customer","targetEntityAzName":"Order","cardinality":"0..*","sourceRoleName":null,"targetRoleName":null,"sourceCardinality":null,"targetCardinality":"0..*","activeSince":"1.0.0","deprecatedSince":null}]\
                 """, modelResponse.body());
     }
 

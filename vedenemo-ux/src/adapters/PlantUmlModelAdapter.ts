@@ -10,10 +10,14 @@ type AttributeSummary = {
 
 type AssociationSummary = {
   visName: string;
-  kind: "OWNERSHIP" | "REFERENCE";
+  kind: "OWNERSHIP" | "REFERENCE" | "RELATION";
   sourceEntityAzName: string;
   targetEntityAzName: string;
   cardinality: string;
+  sourceRoleName: string | null;
+  targetRoleName: string | null;
+  sourceCardinality: string | null;
+  targetCardinality: string | null;
 };
 
 export class PlantUmlModelAdapter {
@@ -45,11 +49,7 @@ export class PlantUmlModelAdapter {
     }
 
     for (const association of associations) {
-      lines.push(
-        `${identifier(association.sourceEntityAzName)} ${associationOperator(association.kind)} ${identifier(association.targetEntityAzName)} : "${plantUmlText(
-          association.visName,
-        )}" ${plantUmlText(association.cardinality)}`,
-      );
+      lines.push(associationLine(association));
     }
 
     if (associations.length > 0) {
@@ -93,5 +93,20 @@ function associationOperator(kind: AssociationSummary["kind"]): string {
       return "*--";
     case "REFERENCE":
       return "o--";
+    case "RELATION":
+      return "--";
   }
+}
+
+function associationLine(association: AssociationSummary): string {
+  if (association.kind === "RELATION") {
+    const sourceLabel = association.sourceRoleName === null ? "" : `"${plantUmlText(association.sourceRoleName)} ${plantUmlText(association.sourceCardinality ?? "")}" `;
+    const targetLabel = association.targetRoleName === null ? "" : ` "${plantUmlText(association.targetRoleName)} ${plantUmlText(association.targetCardinality ?? "")}"`;
+    return `${identifier(association.sourceEntityAzName)} ${sourceLabel}${associationOperator(association.kind)}${targetLabel} ${identifier(
+      association.targetEntityAzName,
+    )} : "${plantUmlText(association.visName)}"`;
+  }
+  return `${identifier(association.sourceEntityAzName)} ${associationOperator(association.kind)} ${identifier(
+    association.targetEntityAzName,
+  )} : "${plantUmlText(association.visName)}" ${plantUmlText(association.cardinality)}`;
 }

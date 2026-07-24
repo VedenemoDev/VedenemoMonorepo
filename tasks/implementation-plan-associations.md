@@ -1,6 +1,6 @@
 # Association Implementation Plan
 
-Status: active.
+Status: executed.
 
 This plan persists the association implementation sequence so work can resume
 cleanly in a new Codex session.
@@ -66,7 +66,7 @@ Status: completed.
 
 ## Step 6: Bidirectional Relation Slice
 
-Status: pending.
+Status: completed.
 
 - Add true bidirectional `relation` after directed associations work end to end.
 - Model a relation as one identity with two named ends.

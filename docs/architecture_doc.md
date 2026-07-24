@@ -121,6 +121,9 @@ Shared model API module. It currently contains:
 - `OwnershipAssociation` and `ReferenceAssociation`, directed associations
   with `azName`, `visName`, source entity `azName`, target entity `azName`,
   `Cardinality`, and lifecycle version metadata
+- `RelationAssociation` and `RelationEnd`, which model a bidirectional
+  relation as one association identity with two named ends; each end has an
+  entity `azName`, role name, and `Cardinality`
 
 `ModelRoot`, `VEntity`, and `VAttribute` share the same `azName` rule: the name
 must start with an ASCII letter and then contain only ASCII letters, ASCII
@@ -135,9 +138,10 @@ model is under construction.
 `ModelRoot` preserves entity and association insertion order. It enforces entity
 `azName` uniqueness and association `azName` uniqueness case-insensitively in
 separate model-level namespaces. Association creation validates that source and
-target entities already exist. Entities and associations are exposed as
-read-only snapshot lists and can be removed while a model is under construction
-or while undo applies an inverse command.
+target entities already exist. Relations validate both named ends through the
+same model-level association collection. Entities and associations are exposed
+as read-only snapshot lists and can be removed while a model is under
+construction or while undo applies an inverse command.
 
 `Versionable` requires `activeSince`. `deprecatedSince` is optional, but when it
 is present it must be strictly later than `activeSince`.
@@ -182,11 +186,13 @@ in the model journal.
 `CommandExecutor` is bound to exactly one active `Session` and the process-local
 `ModelRegistry`. It can execute `CreateEntityCommand` against the selected
 model, `CreateAttributeCommand` against an entity in the selected model, and
-`CreateAssociationCommand` against the selected model. Successful commands are
-recorded in the session and in the model-level command journal. Failed commands
-are not recorded. Undo is stack-based and only applies to the latest successful
-command: create-entity is undone through the internal `DeleteEntityCommand`
-inverse, create-attribute is undone through the internal
+`CreateAssociationCommand` against the selected model. `CreateAssociationCommand`
+creates directed ownership/reference associations or bidirectional relations
+depending on its `AssociationKind` and relation end fields. Successful commands
+are recorded in the session and in the model-level command journal. Failed
+commands are not recorded. Undo is stack-based and only applies to the latest
+successful command: create-entity is undone through the internal
+`DeleteEntityCommand` inverse, create-attribute is undone through the internal
 `DeleteAttributeCommand` inverse, and create-association is undone through the
 internal `DeleteAssociationCommand` inverse. Undo removes the original command
 from active session command history and from the model-level command journal,
@@ -203,6 +209,12 @@ format. The format is UTF-8 text with:
   `create-attribute`, and `create-association`
 - a `snapshot` section containing the final entity/attribute tree, model-level
   associations, and lifecycle version metadata
+
+Association command and snapshot lines include common fields for association
+identity, kind, endpoints, cardinality, and lifecycle metadata. Relation lines
+add source and target role/cardinality fields so both named ends are preserved
+as one association definition. Directed ownership/reference lines omit those
+relation-only fields.
 
 Commands are authoritative during import. The service replays the command
 section into a new `ModelRoot` and validates the result against the snapshot.
@@ -301,8 +313,9 @@ Current CLI behavior:
 - creates attributes in the selected entity with `attr add`
 - lists associations with `associations`; when an entity is selected the list is
   scoped to associations touching that entity, otherwise it is model-scoped
-- creates directed ownership/reference associations with `assoc add`,
-  `assoc add ownership`, or `assoc add reference`
+- creates directed ownership/reference associations and bidirectional relations
+  with `assoc add`, `assoc add ownership`, `assoc add reference`, or
+  `assoc add relation`
 - attaches the session to a model by latest list number or `azName`
 - detaches the session from the current selected model
 - supports `undo` for the latest backend command and prints operation-specific
@@ -360,8 +373,8 @@ and exposes:
   `VAttribute` in an entity in the session's selected model through
   `CommandExecutor`
 - `POST /sessions/{uuid}/commands/create-association`, which creates a directed
-  ownership/reference association in the session's selected model through
-  `CommandExecutor`
+  ownership/reference association or bidirectional relation in the session's
+  selected model through `CommandExecutor`
 - `POST /sessions/{uuid}/commands/undo`, which undoes the latest command for
   the active backend session and returns the undone command slug plus target
   details, or returns `304` when nothing can be undone
@@ -448,8 +461,9 @@ Frontend adapter responsibilities:
 - `PlantUmlModelAdapter` reads the selected model through existing HTTP model,
   entity, attribute, and association endpoints. It transforms `VEntity`
   instances to PlantUML classes, `VAttribute` instances to class attributes,
-  ownership associations to composition-style edges, and reference associations
-  to aggregation-style edges.
+  ownership associations to composition-style edges, reference associations to
+  aggregation-style edges, and relations to solid undirected edges with role and
+  cardinality labels at both ends.
 - `PlantUmlDiagramRendererAdapter` lazy-loads `@plantuml/core` and renders the
   generated PlantUML source to SVG in the browser. The heavy renderer chunk is
   loaded only when a diagram is rendered.

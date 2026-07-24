@@ -284,7 +284,7 @@ inspection.
 
 ## Add True Bidirectional Relations
 
-Status: planning.
+Status: executed.
 
 ### Goal
 
@@ -302,6 +302,19 @@ to end.
 - Prevent the two ends from drifting into contradictory independent references.
 - Add command execution, undo, model journal recording, `.vdos` support, HTTP
   DTOs, CLI/console flows, tests, and diagram rendering.
+
+### Completion Notes
+
+- Added `RelationAssociation` and `RelationEnd` as pure model-api types.
+- Extended association command execution and undo through the existing
+  model-level association path.
+- Extended `.vdos` command and snapshot lines with relation-only source/target
+  role and cardinality fields.
+- Extended HTTP DTOs, terminal CLI prompts, shared console listing, and UX
+  PlantUML rendering for `relation`.
+- Kept relation as one association identity; no inverse reference pair is
+  generated.
+- Verified with `mvn -B clean verify` and `npm run build`.
 
 ### Resolved Decisions
 

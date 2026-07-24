@@ -221,6 +221,10 @@ public final class ModelsResource {
             String sourceEntityAzName,
             String targetEntityAzName,
             String cardinality,
+            String sourceRoleName,
+            String targetRoleName,
+            String sourceCardinality,
+            String targetCardinality,
             String activeSince,
             String deprecatedSince
     ) {
@@ -232,6 +236,10 @@ public final class ModelsResource {
                     association.sourceEntityAzName(),
                     association.targetEntityAzName(),
                     association.cardinality().toString(),
+                    association.sourceRoleName(),
+                    association.targetRoleName(),
+                    association.sourceCardinality() == null ? null : association.sourceCardinality().toString(),
+                    association.targetCardinality() == null ? null : association.targetCardinality().toString(),
                     association.activeSince().toString(),
                     association.deprecatedSince().map(Object::toString).orElse(null)
             );

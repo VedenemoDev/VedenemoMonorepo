@@ -371,7 +371,9 @@ public final class ConsoleSession {
                     + association.targetEntityAzName()
                     + " ["
                     + association.cardinality()
-                    + "] active since "
+                    + "]"
+                    + relationEndSuffix(association)
+                    + " active since "
                     + association.activeSince()
                     + deprecatedSuffix(association.deprecatedSince()));
         }
@@ -429,6 +431,21 @@ public final class ConsoleSession {
             return "";
         }
         return " deprecated since " + deprecatedSince;
+    }
+
+    private static String relationEndSuffix(AssociationSummary association) {
+        if (!"RELATION".equals(association.kind())) {
+            return "";
+        }
+        return " roles "
+                + association.sourceRoleName()
+                + "["
+                + association.sourceCardinality()
+                + "] <-> "
+                + association.targetRoleName()
+                + "["
+                + association.targetCardinality()
+                + "]";
     }
 
     private static String undoMessage(UndoCommandResult result) {

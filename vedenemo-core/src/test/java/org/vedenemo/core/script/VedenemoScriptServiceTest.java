@@ -42,6 +42,19 @@ final class VedenemoScriptServiceTest {
                 "Order",
                 Cardinality.parse("0..*")
         ));
+        fixture.executor.execute(new CreateAssociationCommand(
+                "Example_Model",
+                AssociationKind.RELATION,
+                "Customer_Order_Relation",
+                "orders",
+                "Customer",
+                "Order",
+                null,
+                "customer",
+                "order",
+                Cardinality.parse("1"),
+                Cardinality.parse("0..*")
+        ));
 
         String script = fixture.scriptService.exportModel("example_model");
 
@@ -50,9 +63,11 @@ final class VedenemoScriptServiceTest {
         assertTrue(script.contains("create-entity model=Example_Model entity=Customer visName=\"Customer\" activeSince=1.0.0"));
         assertTrue(script.contains("create-attribute model=Example_Model entity=Customer attribute=Email visName=\"Email\" dataType=TEXT activeSince=1.0.0"));
         assertTrue(script.contains("create-association model=Example_Model kind=OWNERSHIP association=Customer_Orders visName=\"orders\" source=Customer target=Order cardinality=0..* activeSince=1.0.0"));
+        assertTrue(script.contains("create-association model=Example_Model kind=RELATION association=Customer_Order_Relation visName=\"orders\" source=Customer sourceRole=\"customer\" sourceCardinality=1 target=Order targetRole=\"order\" targetCardinality=0..* cardinality=0..* activeSince=1.0.0"));
         assertTrue(script.contains("entity azName=Customer visName=\"Customer\" activeSince=1.0.0 deprecatedSince=null"));
         assertTrue(script.contains("attribute entity=Customer azName=Email visName=\"Email\" dataType=TEXT activeSince=1.0.0 deprecatedSince=null"));
         assertTrue(script.contains("association azName=Customer_Orders visName=\"orders\" kind=OWNERSHIP source=Customer target=Order cardinality=0..* activeSince=1.0.0 deprecatedSince=null"));
+        assertTrue(script.contains("association azName=Customer_Order_Relation visName=\"orders\" kind=RELATION source=Customer sourceRole=\"customer\" sourceCardinality=1 target=Order targetRole=\"order\" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null"));
     }
 
     @Test
@@ -68,23 +83,28 @@ final class VedenemoScriptServiceTest {
                 create-entity model=Example_Model entity=Order visName="Order" activeSince=1.0.0
                 create-attribute model=Example_Model entity=Customer attribute=Email visName="Email" dataType=TEXT activeSince=1.0.0
                 create-association model=Example_Model kind=REFERENCE association=Order_Customer visName="customer" source=Order target=Customer cardinality=1 activeSince=1.0.0
+                create-association model=Example_Model kind=RELATION association=Customer_Order_Relation visName="orders" source=Customer sourceRole="customer" sourceCardinality=1 target=Order targetRole="order" targetCardinality=0..* cardinality=0..* activeSince=1.0.0
 
                 snapshot
                 entity azName=Customer visName="Customer" activeSince=1.0.0 deprecatedSince=null
                 entity azName=Order visName="Order" activeSince=1.0.0 deprecatedSince=null
                 attribute entity=Customer azName=Email visName="Email" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
                 association azName=Order_Customer visName="customer" kind=REFERENCE source=Order target=Customer cardinality=1 activeSince=1.0.0 deprecatedSince=null
+                association azName=Customer_Order_Relation visName="orders" kind=RELATION source=Customer sourceRole="customer" sourceCardinality=1 target=Order targetRole="order" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null
                 """;
 
         VedenemoScriptImportResult result = fixture.scriptService.importModel(script, null);
 
         ModelRoot model = fixture.modelRegistry.find("Example_Model").orElseThrow();
         assertEquals("Example_Model", result.modelAzName());
-        assertEquals(4, result.commandCount());
+        assertEquals(5, result.commandCount());
         assertEquals(2, model.entities().size());
         assertEquals(1, model.entities().getFirst().attributes().size());
-        assertEquals(1, model.associations().size());
-        assertEquals(4, fixture.commandJournal.listForModel("Example_Model").size());
+        assertEquals(2, model.associations().size());
+        assertEquals(AssociationKind.RELATION, model.associations().get(1).kind());
+        assertEquals("customer", model.associations().get(1).sourceRoleName());
+        assertEquals("order", model.associations().get(1).targetRoleName());
+        assertEquals(5, fixture.commandJournal.listForModel("Example_Model").size());
     }
 
     @Test

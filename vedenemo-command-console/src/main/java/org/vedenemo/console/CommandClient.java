@@ -22,7 +22,11 @@ public interface CommandClient {
             String associationVisName,
             String sourceEntityAzName,
             String targetEntityAzName,
-            String cardinality
+            String cardinality,
+            String sourceRoleName,
+            String targetRoleName,
+            String sourceCardinality,
+            String targetCardinality
     ) throws IOException, InterruptedException;
 
     UndoCommandResult undo(UUID sessionId) throws IOException, InterruptedException;

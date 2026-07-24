@@ -13,6 +13,8 @@ import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.ModelVersion;
 import org.vedenemo.core.model.OwnershipAssociation;
 import org.vedenemo.core.model.ReferenceAssociation;
+import org.vedenemo.core.model.RelationAssociation;
+import org.vedenemo.core.model.RelationEnd;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
 import org.vedenemo.core.registry.ModelRegistry;
@@ -72,7 +74,9 @@ public final class VedenemoScriptService {
                     .append(" visName=").append(quote(association.visName()))
                     .append(" kind=").append(association.kind().name())
                     .append(" source=").append(association.sourceEntityAzName())
+                    .append(relationSourceEndSnapshotFields(association))
                     .append(" target=").append(association.targetEntityAzName())
+                    .append(relationTargetEndSnapshotFields(association))
                     .append(" cardinality=").append(association.cardinality())
                     .append(" activeSince=").append(association.activeSince())
                     .append(" deprecatedSince=").append(versionOrNull(association.deprecatedSince().orElse(null)))
@@ -118,14 +122,17 @@ public final class VedenemoScriptService {
                     + " activeSince=" + modelVersion;
         }
         if (command instanceof CreateAssociationCommand createAssociationCommand) {
-            return "create-association model=" + createAssociationCommand.modelAzName()
+            String line = "create-association model=" + createAssociationCommand.modelAzName()
                     + " kind=" + createAssociationCommand.kind().name()
                     + " association=" + createAssociationCommand.associationAzName()
                     + " visName=" + quote(createAssociationCommand.associationVisName())
                     + " source=" + createAssociationCommand.sourceEntityAzName()
+                    + relationSourceEndCommandFields(createAssociationCommand)
                     + " target=" + createAssociationCommand.targetEntityAzName()
+                    + relationTargetEndCommandFields(createAssociationCommand)
                     + " cardinality=" + createAssociationCommand.cardinality()
                     + " activeSince=" + modelVersion;
+            return line;
         }
         throw new IllegalArgumentException("unsupported export command: " + command.getClass().getSimpleName());
     }
@@ -151,7 +158,11 @@ public final class VedenemoScriptService {
                     createAssociationCommand.associationVisName(),
                     createAssociationCommand.sourceEntityAzName(),
                     createAssociationCommand.targetEntityAzName(),
-                    createAssociationCommand.cardinality()
+                    createAssociationCommand.cardinality(),
+                    createAssociationCommand.sourceRoleName(),
+                    createAssociationCommand.targetRoleName(),
+                    createAssociationCommand.sourceCardinality(),
+                    createAssociationCommand.targetCardinality()
             );
         }
         throw new IllegalArgumentException("unsupported import command: " + command.getClass().getSimpleName());
@@ -241,7 +252,11 @@ public final class VedenemoScriptService {
                     required(values, "visName", lineIndex),
                     required(values, "source", lineIndex),
                     required(values, "target", lineIndex),
-                    Cardinality.parse(required(values, "cardinality", lineIndex))
+                    Cardinality.parse(required(values, "cardinality", lineIndex)),
+                    values.get("sourceRole"),
+                    values.get("targetRole"),
+                    parseOptionalCardinality(values.get("sourceCardinality")),
+                    parseOptionalCardinality(values.get("targetCardinality"))
             );
             default -> throw new IllegalArgumentException("unsupported command on script line " + (lineIndex + 1));
         };
@@ -272,6 +287,10 @@ public final class VedenemoScriptService {
                     required(values, "source", lineIndex),
                     required(values, "target", lineIndex),
                     Cardinality.parse(required(values, "cardinality", lineIndex)),
+                    values.get("sourceRole"),
+                    values.get("targetRole"),
+                    parseOptionalCardinality(values.get("sourceCardinality")),
+                    parseOptionalCardinality(values.get("targetCardinality")),
                     ModelVersion.parse(required(values, "activeSince", lineIndex)),
                     parseNullableVersion(required(values, "deprecatedSince", lineIndex))
             ));
@@ -316,6 +335,7 @@ public final class VedenemoScriptService {
                     || !VEntity.uniquenessKey(actual.sourceEntityAzName()).equals(VEntity.uniquenessKey(expected.sourceEntityAzName()))
                     || !VEntity.uniquenessKey(actual.targetEntityAzName()).equals(VEntity.uniquenessKey(expected.targetEntityAzName()))
                     || !actual.cardinality().equals(expected.cardinality())
+                    || relationSnapshotEndsMismatch(actual, expected)
                     || !actual.activeSince().equals(expected.activeSince())
                     || !actual.deprecatedSince().equals(Optional.ofNullable(expected.deprecatedSince()))) {
                 throw new IllegalArgumentException("snapshot association does not match replayed commands: " + expected.azName());
@@ -371,7 +391,58 @@ public final class VedenemoScriptService {
                     modelRoot.version()
             );
         }
+        if (command.kind() == AssociationKind.RELATION) {
+            return new RelationAssociation(
+                    command.associationAzName(),
+                    command.associationVisName(),
+                    new RelationEnd(command.sourceEntityAzName(), command.sourceRoleName(), command.sourceCardinality()),
+                    new RelationEnd(command.targetEntityAzName(), command.targetRoleName(), command.targetCardinality()),
+                    modelRoot.version()
+            );
+        }
         throw new IllegalArgumentException("unsupported association kind: " + command.kind());
+    }
+
+    private static String relationSourceEndCommandFields(CreateAssociationCommand command) {
+        if (command.kind() != AssociationKind.RELATION) {
+            return "";
+        }
+        return " sourceRole=" + quote(command.sourceRoleName())
+                + " sourceCardinality=" + command.sourceCardinality();
+    }
+
+    private static String relationTargetEndCommandFields(CreateAssociationCommand command) {
+        if (command.kind() != AssociationKind.RELATION) {
+            return "";
+        }
+        return " targetRole=" + quote(command.targetRoleName())
+                + " targetCardinality=" + command.targetCardinality();
+    }
+
+    private static String relationSourceEndSnapshotFields(Association association) {
+        if (association.kind() != AssociationKind.RELATION) {
+            return "";
+        }
+        return " sourceRole=" + quote(association.sourceRoleName())
+                + " sourceCardinality=" + association.sourceCardinality();
+    }
+
+    private static String relationTargetEndSnapshotFields(Association association) {
+        if (association.kind() != AssociationKind.RELATION) {
+            return "";
+        }
+        return " targetRole=" + quote(association.targetRoleName())
+                + " targetCardinality=" + association.targetCardinality();
+    }
+
+    private static boolean relationSnapshotEndsMismatch(Association actual, SnapshotAssociation expected) {
+        if (actual.kind() != AssociationKind.RELATION) {
+            return false;
+        }
+        return !Objects.equals(actual.sourceRoleName(), expected.sourceRoleName())
+                || !Objects.equals(actual.targetRoleName(), expected.targetRoleName())
+                || !Objects.equals(actual.sourceCardinality(), expected.sourceCardinality())
+                || !Objects.equals(actual.targetCardinality(), expected.targetCardinality());
     }
 
     private static String keyword(String line) {
@@ -462,6 +533,13 @@ public final class VedenemoScriptService {
         return ModelVersion.parse(value);
     }
 
+    private static Cardinality parseOptionalCardinality(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return Cardinality.parse(value);
+    }
+
     private record ParsedScript(
             String modelAzName,
             String modelVisName,
@@ -502,6 +580,10 @@ public final class VedenemoScriptService {
             String sourceEntityAzName,
             String targetEntityAzName,
             Cardinality cardinality,
+            String sourceRoleName,
+            String targetRoleName,
+            Cardinality sourceCardinality,
+            Cardinality targetCardinality,
             ModelVersion activeSince,
             ModelVersion deprecatedSince
     ) {

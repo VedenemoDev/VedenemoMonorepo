@@ -31,7 +31,7 @@ public final class HttpModelClient implements ModelClient {
             "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"dataType\":\"([^\"]*)\",\"activeSince\":\"([^\"]*)\",\"deprecatedSince\":(\"([^\"]*)\"|null)}"
     );
     private static final Pattern ASSOCIATION_PATTERN = Pattern.compile(
-            "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"kind\":\"([^\"]*)\",\"sourceEntityAzName\":\"([^\"]*)\",\"targetEntityAzName\":\"([^\"]*)\",\"cardinality\":\"([^\"]*)\",\"activeSince\":\"([^\"]*)\",\"deprecatedSince\":(\"([^\"]*)\"|null)}"
+            "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"kind\":\"([^\"]*)\",\"sourceEntityAzName\":\"([^\"]*)\",\"targetEntityAzName\":\"([^\"]*)\",\"cardinality\":\"([^\"]*)\",\"sourceRoleName\":(\"([^\"]*)\"|null),\"targetRoleName\":(\"([^\"]*)\"|null),\"sourceCardinality\":(\"([^\"]*)\"|null),\"targetCardinality\":(\"([^\"]*)\"|null),\"activeSince\":\"([^\"]*)\",\"deprecatedSince\":(\"([^\"]*)\"|null)}"
     );
     private static final Pattern IMPORT_PATTERN = Pattern.compile(
             "\\{\"modelAzName\":\"([^\"]*)\",\"commandCount\":([0-9]+)}"
@@ -240,8 +240,12 @@ public final class HttpModelClient implements ModelClient {
                     matcher.group(4),
                     matcher.group(5),
                     matcher.group(6),
-                    matcher.group(7),
-                    matcher.group(9)
+                    matcher.group(8),
+                    matcher.group(10),
+                    matcher.group(12),
+                    matcher.group(14),
+                    matcher.group(15),
+                    matcher.group(17)
             ));
         }
         if (associations.isEmpty()) {

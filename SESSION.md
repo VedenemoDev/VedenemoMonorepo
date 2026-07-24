@@ -3693,3 +3693,87 @@ Current status and next steps:
 - `npm run build` passed after approved rerun.
 - Next implementation step is `Add True Bidirectional Relations`; keep it as a
   separate task after reviewing/exercising directed associations.
+
+## 2026-07-24 17:31 EEST
+
+Session goal: execute association implementation plan step 6, true
+bidirectional relations.
+
+Files changed:
+
+- `tasks/implementation-plan-associations.md`
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/*`
+- `vedenemo-model-api/src/test/java/org/vedenemo/core/model/*`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/*`
+- `vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/*`
+- `vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/*`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/*`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/*`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/*`
+- `vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`,
+  `tasks/implementation-plan-associations.md`, `tasks/backlog.md`, and
+  `SESSION.md`
+- Source and documentation inspection with `rg` and `sed`
+- `mvn -B verify` (failed because stale incremental compiled artifacts exposed
+  old shared-console signatures)
+- `mvn -B clean verify`
+- `npm run build`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Completed step 6 by adding `RELATION` as one model-level association identity
+  with two named ends.
+- Relation end fields now round-trip through core command execution, undo,
+  model journals, `.vdos`, HTTP DTOs, shared console output, terminal CLI
+  prompts, and UX PlantUML rendering.
+- Marked the persisted association implementation plan executed and updated
+  current task/backlog status.
+- `mvn -B clean verify` passed.
+- `npm run build` passed.
+- Next step is user testing through the Firebase UX before selecting the next
+  backlog item.
+
+## 2026-07-24 17:51 EEST
+
+Session goal: fix terminal CLI discoverability for bidirectional relation
+creation.
+
+Files changed:
+
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `rg -n "assoc add|associations|help|Available commands|relation" ...`
+- `sed` inspections of CLI help and association command handling
+- `mvn -B -pl vedenemo-cli -am test`
+- `git diff --check`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Updated terminal CLI help and association usage text to show
+  `assoc add [ownership | reference | relation]`.
+- Added a CLI help regression assertion.
+- Focused CLI tests passed.
+- Full step 6 changes remain ready for review/testing before commit.

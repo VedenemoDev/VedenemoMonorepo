@@ -280,8 +280,8 @@ Attribute was not added: attribute add failed with HTTP status 400: ...
 
 ### `associations`
 
-Lists directed model-level associations. If no entity is selected, the command
-lists all associations in the attached model. If an entity is selected, it lists
+Lists model-level associations. If no entity is selected, the command lists all
+associations in the attached model. If an entity is selected, it lists
 associations touching that entity.
 
 Example without an entity selected:
@@ -290,6 +290,7 @@ Example without an entity selected:
 VedenemoCli[Example_Model]>associations
 Associations for model Example_Model:
 1. orders (Customer_orders) OWNERSHIP Customer -> Order [0..*] active since 1.0.0
+2. enrollment (Student_enrollment) RELATION Student -> Course [1..*] roles student[0..*] <-> course[1..*] active since 1.0.0
 ```
 
 Example with an entity selected:
@@ -298,20 +299,24 @@ Example with an entity selected:
 VedenemoCli[Example_Model/Customer]>associations
 Associations for entity Customer in model Example_Model:
 1. orders (Customer_orders) OWNERSHIP Customer -> Order [0..*] active since 1.0.0
+2. enrollment (Student_enrollment) RELATION Student -> Course [1..*] roles student[0..*] <-> course[1..*] active since 1.0.0
 ```
 
-### `assoc add [ownership | reference]`
+### `assoc add [ownership | reference | relation]`
 
-Adds a directed model-level association through the backend command API.
+Adds a model-level association through the backend command API.
 
 Supported first-version kinds:
 
 - `ownership`, rendered as a composition-style edge in the UX diagram
 - `reference`, rendered as an aggregation-style edge in the UX diagram
+- `relation`, rendered as a solid line with role and cardinality labels at both
+  ends
 
-The CLI asks for source entity, target entity, visible name, cardinality, and
-lastly `azName`. Source and target can be exact entity `azName` values or
-numbers from the latest `entities` output. Blank cardinality defaults to `1`.
+For directed ownership/reference associations, the CLI asks for source entity,
+target entity, visible name, cardinality, and lastly `azName`. Source and
+target can be exact entity `azName` values or numbers from the latest
+`entities` output. Blank cardinality defaults to `1`.
 
 Example:
 
@@ -326,6 +331,26 @@ Association visible name: orders
 Association cardinality [1]: 0..*
 Association azName [Customer_orders]:
 Association Customer_orders added.
+```
+
+For bidirectional relations, the CLI asks for the first end entity, first role
+name, first end cardinality, second end entity, second role name, second end
+cardinality, visible name, and lastly `azName`. Blank cardinality defaults to
+`1`.
+
+Example:
+
+```text
+VedenemoCli[Example_Model]>assoc add relation
+First end entity number or azName: Student
+First end role name: student
+First end cardinality [1]: 0..*
+Second end entity number or azName: Course
+Second end role name: course
+Second end cardinality [1]: 1..*
+Relation visible name: enrollment
+Relation azName [Student_enrollment]:
+Relation Student_enrollment added.
 ```
 
 ### `save [N | azName] [outputPath]`
@@ -427,9 +452,9 @@ New model azName for import, or blank to cancel:
 ### `undo`
 
 Asks the backend to undo the latest executed command for the current session.
-Undo is stack-based: it applies only to the latest successful command. Currently
-this can undo an entity created through attached-model `add` and an attribute
-created through `attr add`.
+Undo is stack-based: it applies only to the latest successful command. It can
+undo entities created through attached-model `add`, attributes created through
+`attr add`, and associations or relations created through `assoc add`.
 
 ```text
 VedenemoCli[Example_Model]>undo

@@ -103,6 +103,10 @@ final class ConsoleSessionTest {
                 "Customer",
                 "Order",
                 "0..*",
+                null,
+                null,
+                null,
+                "0..*",
                 "1.0.0",
                 null
         ));
@@ -224,7 +228,11 @@ final class ConsoleSessionTest {
                 String associationVisName,
                 String sourceEntityAzName,
                 String targetEntityAzName,
-                String cardinality
+                String cardinality,
+                String sourceRoleName,
+                String targetRoleName,
+                String sourceCardinality,
+                String targetCardinality
         ) {
         }
 

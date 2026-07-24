@@ -7,6 +7,10 @@ public record AssociationSummary(
         String sourceEntityAzName,
         String targetEntityAzName,
         String cardinality,
+        String sourceRoleName,
+        String targetRoleName,
+        String sourceCardinality,
+        String targetCardinality,
         String activeSince,
         String deprecatedSince
 ) {

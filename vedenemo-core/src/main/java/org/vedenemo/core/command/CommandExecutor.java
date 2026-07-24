@@ -5,6 +5,8 @@ import org.vedenemo.core.model.AssociationKind;
 import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.OwnershipAssociation;
 import org.vedenemo.core.model.ReferenceAssociation;
+import org.vedenemo.core.model.RelationAssociation;
+import org.vedenemo.core.model.RelationEnd;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
 import org.vedenemo.core.registry.ModelRegistry;
@@ -187,6 +189,15 @@ public final class CommandExecutor {
                     command.sourceEntityAzName(),
                     command.targetEntityAzName(),
                     command.cardinality(),
+                    modelRoot.version()
+            );
+        }
+        if (command.kind() == AssociationKind.RELATION) {
+            return new RelationAssociation(
+                    command.associationAzName(),
+                    command.associationVisName(),
+                    new RelationEnd(command.sourceEntityAzName(), command.sourceRoleName(), command.sourceCardinality()),
+                    new RelationEnd(command.targetEntityAzName(), command.targetRoleName(), command.targetCardinality()),
                     modelRoot.version()
             );
         }

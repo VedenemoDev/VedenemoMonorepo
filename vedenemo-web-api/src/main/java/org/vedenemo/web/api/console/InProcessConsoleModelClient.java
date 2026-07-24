@@ -116,6 +116,10 @@ final class InProcessConsoleModelClient implements ModelClient {
                 association.sourceEntityAzName(),
                 association.targetEntityAzName(),
                 association.cardinality().toString(),
+                association.sourceRoleName(),
+                association.targetRoleName(),
+                association.sourceCardinality() == null ? null : association.sourceCardinality().toString(),
+                association.targetCardinality() == null ? null : association.targetCardinality().toString(),
                 association.activeSince().toString(),
                 association.deprecatedSince().map(Object::toString).orElse(null)
         );

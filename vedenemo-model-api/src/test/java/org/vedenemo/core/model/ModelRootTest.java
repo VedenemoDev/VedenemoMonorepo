@@ -118,6 +118,22 @@ final class ModelRootTest {
     }
 
     @Test
+    void acceptsRelationAssociationWithExistingEntities() {
+        ModelRoot modelRoot = modelWithCustomerAndOrder();
+        Association relation = new RelationAssociation(
+                "Customer_Order",
+                "orders",
+                new RelationEnd("Customer", "customer", Cardinality.parse("1")),
+                new RelationEnd("Order", "order", Cardinality.parse("0..*")),
+                modelRoot.version()
+        );
+
+        modelRoot.addAssociation(relation);
+
+        assertEquals(List.of(relation), modelRoot.associations());
+    }
+
+    @Test
     void rejectsDuplicateAssociationAzNameCaseInsensitively() {
         ModelRoot modelRoot = modelWithCustomerAndOrder();
         modelRoot.addAssociation(ownership("Customer_Orders", "Customer", "Order"));
