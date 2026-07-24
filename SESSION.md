@@ -4017,3 +4017,32 @@ Current status and next steps:
   prompt submissions can accept defaults.
 - The backlog item remains in `tasks/backlog.md` as an executed history item.
 - Full Maven verification, UX build, and diff whitespace checks passed.
+
+## 2026-07-25 01:13 EEST
+
+Session goal: diagnose why Firebase UX did not show browser virtual console
+command coverage changes after a green deploy.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- Deployment workflow and UX config inspection with `rg`, `sed`, `find`, and
+  `git`
+- `gh run list --workflow deploy-ux.yml --limit 5`
+- `gh run list --workflow backend-ci.yml --limit 5`
+- `curl` checks against the configured live backend
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Firebase UX deploy did run green for commit `8d917da`.
+- The live backend at the configured UX API base URL still returns old browser
+  console behavior, including old `help` output and old `assoc add` rejection.
+- The observed issue is a backend deployment/runtime version mismatch, not a
+  Firebase Hosting artifact problem.
