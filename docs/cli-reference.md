@@ -313,6 +313,10 @@ Supported first-version kinds:
 - `relation`, rendered as a solid line with role and cardinality labels at both
   ends
 
+Running plain `assoc add` prompts for the kind. The prompt accepts either the
+written kind name or a numbered shortcut: `1` for `ownership`, `2` for
+`reference`, and `3` for `relation`.
+
 For directed ownership/reference associations, the CLI asks for source entity,
 target entity, visible name, cardinality, and lastly `azName`. Source and
 target can be exact entity `azName` values or numbers from the latest
@@ -361,9 +365,18 @@ If no model selector is provided, `save` uses the currently attached model. If a
 selector is provided, it can be a model number from the latest `list` output or
 a case-insensitive model `azName`.
 
-If an output path is provided on the command line, the CLI uses it directly. If
-no output path is provided, the CLI prompts with an editable default based on
-the model `azName`:
+If no output path is provided, the CLI prompts with an editable default based on
+the model `azName`. When a `.vedenemo` directory exists under the directory
+where the CLI was started, the default save location is that directory:
+
+```text
+VedenemoCli[Example_Model]>save
+Output file [.vedenemo/Example_Model.vdos]:
+Saved model Example_Model to /current/directory/.vedenemo/Example_Model.vdos.
+```
+
+When `.vedenemo` does not exist, the default remains the current working
+directory:
 
 ```text
 VedenemoCli[Example_Model]>save
@@ -371,13 +384,17 @@ Output file [Example_Model.vdos]:
 Saved model Example_Model to /current/directory/Example_Model.vdos.
 ```
 
+Absolute output paths are used directly. Relative output paths are resolved
+under `.vedenemo` when that directory exists; otherwise they are resolved under
+the current working directory.
+
 Examples:
 
 ```text
 save
 save 1
 save Example_Model
-save Example_Model ./exports/example
+save Example_Model export-file
 save 1 /tmp/example.vdos
 ```
 

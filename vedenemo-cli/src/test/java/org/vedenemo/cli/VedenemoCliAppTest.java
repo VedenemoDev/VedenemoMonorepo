@@ -560,6 +560,28 @@ final class VedenemoCliAppTest {
     }
 
     @Test
+    void assocAddPromptsForNumberedRelationKind() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Student", "Student", "1.0.0", null));
+        modelClient.entities.add(new EntitySummary("Course", "Course", "1.0.0", null));
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                commandClient,
+                "attach Example_Model\nentities\nassoc add\n3\n1\nstudent\n0..*\n2\ncourse\n1..*\nenrollment\n\nexit\n"
+        );
+
+        assertEquals("relation", commandClient.createdAssociationKind);
+        assertEquals("Student_enrollment", commandClient.createdAssociationAzName);
+        assertTrue(result.output.contains("Association kind [1 ownership, 2 reference, 3 relation]: "));
+        assertTrue(result.output.contains("Relation Student_enrollment added."));
+    }
+
+    @Test
     void saveWithoutArgumentUsesAttachedModelAndDefaultPromptPath() throws Exception {
         TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
         TestModelClient modelClient = new TestModelClient();
@@ -581,6 +603,27 @@ final class VedenemoCliAppTest {
     }
 
     @Test
+    void saveWithoutArgumentDefaultsToVedenemoDirectoryWhenItExists() throws Exception {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.exportedScript = "script";
+        Path snapshotDirectory = Files.createDirectory(tempDirectory.resolve(".vedenemo"));
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                new TestCommandClient(),
+                "attach Example_Model\nsave\n\nexit\n",
+                tempDirectory
+        );
+
+        assertEquals("script", Files.readString(snapshotDirectory.resolve("Example_Model.vdos"), StandardCharsets.UTF_8));
+        assertTrue(!Files.exists(tempDirectory.resolve("Example_Model.vdos")));
+        assertTrue(result.output.contains("Output file [.vedenemo/Example_Model.vdos]: "));
+    }
+
+    @Test
     void saveByListNumberUsesInlinePathAndAddsExtension() throws Exception {
         TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
         TestModelClient modelClient = new TestModelClient();
@@ -591,6 +634,35 @@ final class VedenemoCliAppTest {
 
         assertEquals("Example_Model", modelClient.exportedModelAzName);
         assertEquals("script", Files.readString(tempDirectory.resolve("export-file.vdos"), StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void saveRelativeInlinePathUsesVedenemoDirectoryWhenItExists() throws Exception {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.exportedScript = "script";
+        Path snapshotDirectory = Files.createDirectory(tempDirectory.resolve(".vedenemo"));
+
+        run(sessionClient, modelClient, new TestCommandClient(), "list\nsave 1 export-file\nexit\n", tempDirectory);
+
+        assertEquals("script", Files.readString(snapshotDirectory.resolve("export-file.vdos"), StandardCharsets.UTF_8));
+        assertTrue(!Files.exists(tempDirectory.resolve("export-file.vdos")));
+    }
+
+    @Test
+    void saveAbsoluteInlinePathBypassesVedenemoDirectory() throws Exception {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.exportedScript = "script";
+        Path snapshotDirectory = Files.createDirectory(tempDirectory.resolve(".vedenemo"));
+        Path target = tempDirectory.resolve("absolute-target");
+
+        run(sessionClient, modelClient, new TestCommandClient(), "list\nsave 1 " + target + "\nexit\n", tempDirectory);
+
+        assertEquals("script", Files.readString(tempDirectory.resolve("absolute-target.vdos"), StandardCharsets.UTF_8));
+        assertTrue(!Files.exists(snapshotDirectory.resolve("absolute-target.vdos")));
     }
 
     @Test

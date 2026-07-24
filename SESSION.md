@@ -3777,3 +3777,67 @@ Current status and next steps:
 - Added a CLI help regression assertion.
 - Focused CLI tests passed.
 - Full step 6 changes remain ready for review/testing before commit.
+
+## 2026-07-24 18:39 EEST
+
+Session goal: change terminal CLI save defaults to prefer `.vedenemo`.
+
+Files changed:
+
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- Source and documentation inspection with `rg` and `sed`
+- `mvn -B -pl vedenemo-cli -am test`
+- `git diff --check`
+- `git status --short`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Terminal CLI `save` now defaults to `.vedenemo/<model>.vdos` when the local
+  `.vedenemo` directory exists.
+- Relative save paths also resolve under `.vedenemo` when that directory
+  exists; absolute save paths are used directly.
+- Updated CLI reference, README, and implementation architecture documentation.
+- Focused CLI tests passed.
+
+## 2026-07-24 19:05 EEST
+
+Session goal: improve terminal CLI `assoc add` kind prompt for relation
+discoverability and numbered shortcuts.
+
+Files changed:
+
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `docs/cli-reference.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- CLI source/test/doc inspection with `rg` and `sed`
+- `mvn -B -pl vedenemo-cli -am test`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Generic `assoc add` now prompts with
+  `Association kind [1 ownership, 2 reference, 3 relation]:`.
+- Association kind parsing accepts both written names and numeric shortcuts
+  `1`, `2`, and `3`.
+- Added a regression test for selecting relation through shortcut `3`.
+- Focused CLI tests passed.

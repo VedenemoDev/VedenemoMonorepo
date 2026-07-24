@@ -230,8 +230,10 @@ exit
 The CLI can create models, create entities and attributes through backend
 commands, undo the latest session command, save a model to a UTF-8 `.vdos`
 Vedenemo Script file, list `.vdos` snapshots from `.vedenemo`, and load a
-`.vdos` file back through the backend. Command words are case-insensitive;
-parameters such as model and entity `azName` values remain case-sensitive.
+`.vdos` file back through the backend. When a `.vedenemo` directory exists, CLI
+save defaults and relative save paths use that directory; absolute save paths
+are used directly. Command words are case-insensitive; parameters such as model
+and entity `azName` values remain case-sensitive.
 
 See [docs/cli-reference.md](docs/cli-reference.md) for full command usage and
 examples.

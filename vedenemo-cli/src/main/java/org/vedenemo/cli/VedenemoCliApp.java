@@ -347,7 +347,7 @@ public final class VedenemoCliApp {
         }
         String kind = arguments.size() == 2 ? normalizeAssociationKind(arguments.get(1)) : null;
         if (kind == null) {
-            String enteredKind = reader.readLine("Association kind [ownership/reference]: ");
+            String enteredKind = reader.readLine("Association kind [1 ownership, 2 reference, 3 relation]: ");
             kind = normalizeAssociationKind(enteredKind);
         }
         if (kind == null) {
@@ -650,10 +650,28 @@ public final class VedenemoCliApp {
     private Path saveTargetPath(CliInputReader reader, ModelSummary model, String inlinePath) throws IOException {
         String selectedPath = inlinePath;
         if (selectedPath == null || selectedPath.isBlank()) {
-            String answer = reader.readLine("Output file [" + model.azName() + ".vdos]: ");
+            String defaultPath = defaultSavePathText(model);
+            String answer = reader.readLine("Output file [" + defaultPath + "]: ");
             selectedPath = answer == null || answer.isBlank() ? model.azName() + ".vdos" : answer.trim();
         }
-        return resolvePathWithExtension(selectedPath);
+        return resolveSavePath(selectedPath);
+    }
+
+    private String defaultSavePathText(ModelSummary model) {
+        String fileName = model.azName() + ".vdos";
+        if (Files.isDirectory(snapshotDirectory())) {
+            return SNAPSHOT_DIRECTORY + "/" + fileName;
+        }
+        return fileName;
+    }
+
+    private Path resolveSavePath(String value) {
+        Path path = Path.of(value.trim());
+        if (!path.isAbsolute()) {
+            Path baseDirectory = Files.isDirectory(snapshotDirectory()) ? snapshotDirectory() : workingDirectory;
+            path = baseDirectory.resolve(path);
+        }
+        return addVdosExtension(path).normalize();
     }
 
     private void load(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
@@ -780,10 +798,14 @@ public final class VedenemoCliApp {
         if (!path.isAbsolute()) {
             path = workingDirectory.resolve(path);
         }
+        return addVdosExtension(path).normalize();
+    }
+
+    private Path addVdosExtension(Path path) {
         if (path.getFileName() != null && path.getFileName().toString().indexOf('.') == -1) {
             path = path.resolveSibling(path.getFileName() + ".vdos");
         }
-        return path.normalize();
+        return path;
     }
 
     private Path snapshotDirectory() {
@@ -863,9 +885,9 @@ public final class VedenemoCliApp {
             return null;
         }
         return switch (value.trim().toLowerCase()) {
-            case "ownership" -> "ownership";
-            case "reference" -> "reference";
-            case "relation" -> "relation";
+            case "1", "ownership" -> "ownership";
+            case "2", "reference" -> "reference";
+            case "3", "relation" -> "relation";
             default -> null;
         };
     }

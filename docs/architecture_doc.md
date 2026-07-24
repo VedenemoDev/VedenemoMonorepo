@@ -321,7 +321,9 @@ Current CLI behavior:
 - supports `undo` for the latest backend command and prints operation-specific
   undo output
 - supports `save [N | azName] [outputPath]`, which exports backend-generated
-  `.vdos` text for a model and writes it as UTF-8 to a local file
+  `.vdos` text for a model and writes it as UTF-8 to a local file; when a
+  local `.vedenemo` directory exists, default and relative save paths use that
+  directory, while absolute save paths are used directly
 - supports `snapshots`, which lists `.vdos` files from a local `.vedenemo`
   directory for numbered terminal loading
 - supports `load <path | snapshot-number>`, which reads a UTF-8 `.vdos` file,
