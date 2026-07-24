@@ -3841,3 +3841,27 @@ Current status and next steps:
   `1`, `2`, and `3`.
 - Added a regression test for selecting relation through shortcut `3`.
 - Focused CLI tests passed.
+
+## 2026-07-24 23:25 EEST
+
+Session goal: remove obsolete deployment-check copy from the UX.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- UX text/source inspection with `rg` and `sed`
+- `npm run build`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Removed the `Vedenemo UX Deployment Check` heading and the two deployment
+  status paragraphs from the main UX.
+- `npm run build` passed.
