@@ -196,6 +196,13 @@ body {
   color: #b91c1c;
 }
 
+.console-shortcut-hint {
+  display: block;
+  margin-top: 0.25rem;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
 .console-surface {
   display: grid;
   grid-template-rows: minmax(24rem, 1fr) auto;

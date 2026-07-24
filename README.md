@@ -203,7 +203,8 @@ Backend responded OK.
 
 Command words are case-insensitive while parameters remain case-sensitive. In a
 real terminal session, Arrow Up/Ctrl+P and Arrow Down/Ctrl+N walk command input
-history for the current CLI process only.
+history for the current CLI process only. Press Esc during an interactive prompt
+to cancel the current operation.
 
 Current CLI commands:
 

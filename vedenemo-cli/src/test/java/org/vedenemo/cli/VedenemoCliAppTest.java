@@ -75,6 +75,7 @@ final class VedenemoCliAppTest {
         assertTrue(result.output.contains("save [N | azName] [outputPath] - save a model to a .vdos file"));
         assertTrue(result.output.contains("snapshots - list .vdos files from the .vedenemo directory"));
         assertTrue(result.output.contains("load <path | snapshot-number> - load a model from a .vdos file"));
+        assertTrue(result.output.contains("Esc - cancel the current interactive prompt"));
         assertTrue(result.output.contains("exit - end the session and exit"));
     }
 
@@ -86,6 +87,26 @@ final class VedenemoCliAppTest {
 
         assertTrue(modelClient.pingCalled);
         assertTrue(result.output.contains("Backend responded OK."));
+    }
+
+    @Test
+    void escapeDuringInteractivePromptCancelsOperation() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                commandClient,
+                "attach Example_Model\nadd\n\u001b\nexit\n"
+        );
+
+        assertEquals("Example_Model", sessionClient.selectedModelAzName);
+        assertEquals(null, commandClient.createdEntityAzName);
+        assertTrue(result.output.contains("Operation cancelled."));
+        assertTrue(result.output.contains("VedenemoCli[Example_Model]>"));
     }
 
     @Test

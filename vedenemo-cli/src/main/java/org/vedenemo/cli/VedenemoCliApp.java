@@ -117,7 +117,11 @@ public final class VedenemoCliApp {
                 if ("exit".equals(commandName(trimmed).toLowerCase()) && commandOnly(trimmed)) {
                     break;
                 }
-                handleCommand(consoleSession, reader, trimmed);
+                try {
+                    handleCommand(consoleSession, reader, trimmed);
+                } catch (PromptCancelledException exception) {
+                    output.println("Operation cancelled.");
+                }
             }
         }
     }
@@ -189,6 +193,7 @@ public final class VedenemoCliApp {
         output.println("  load <path | snapshot-number> - load a model from a .vdos file");
         output.println("  help - show this help");
         output.println("  exit - end the session and exit");
+        output.println("  Esc - cancel the current interactive prompt");
     }
 
     private void attachModel(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
@@ -906,6 +911,9 @@ public final class VedenemoCliApp {
         String readLine(String prompt) throws IOException;
     }
 
+    private static final class PromptCancelledException extends IOException {
+    }
+
     private static final class BufferedCliInputReader implements CliInputReader {
         private final BufferedReader reader;
         private final PrintStream output;
@@ -917,14 +925,20 @@ public final class VedenemoCliApp {
 
         @Override
         public String readCommandLine(String prompt) throws IOException {
-            return readLine(prompt);
+            output.print(prompt);
+            output.flush();
+            return reader.readLine();
         }
 
         @Override
         public String readLine(String prompt) throws IOException {
             output.print(prompt);
             output.flush();
-            return reader.readLine();
+            String line = reader.readLine();
+            if (line != null && line.indexOf('\u001b') >= 0) {
+                throw new PromptCancelledException();
+            }
+            return line;
         }
 
         @Override
@@ -1029,6 +1043,10 @@ public final class VedenemoCliApp {
                 if (historyEnabled && character == CTRL_N) {
                     replaceWithHistoryEntry(prompt, buffer, 1);
                     continue;
+                }
+                if (!historyEnabled && character == ESCAPE) {
+                    output.println();
+                    throw new PromptCancelledException();
                 }
                 if (character == ESCAPE && historyEnabled) {
                     handleEscapeSequence(prompt, buffer);

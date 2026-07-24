@@ -300,6 +300,7 @@ Current CLI behavior:
 - keeps terminal command input history for the current CLI process only when
   attached to a real TTY, navigable with Arrow Up, Arrow Down, Ctrl+P, and
   Ctrl+N
+- cancels the current terminal interactive prompt flow when Esc is pressed
 - supports `help`
 - lists current backend models with `list`
 - adds a new backend model with `add`, using version `1.0.0`
@@ -452,6 +453,8 @@ Current user-facing behavior:
   an active model event connection
 - keeps browser console command input history for the current console page
   session only, navigable with Arrow Up, Arrow Down, Ctrl+P, and Ctrl+N
+- keeps browser console focus on the command input and lets Esc clear/cancel
+  the current command entry
 
 The default runtime config in `vedenemo-ux/public/config.json` points to a
 Tailscale HTTPS backend URL.

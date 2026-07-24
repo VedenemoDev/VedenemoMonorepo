@@ -3913,3 +3913,39 @@ Current status and next steps:
 
 - Added executed backlog entry `Keep Browser Console Input Focused`.
 - No code changes were made in this documentation-only update.
+
+## 2026-07-25 00:39 EEST
+
+Session goal: add Esc cancellation for terminal and browser console command
+entry.
+
+Files changed:
+
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- CLI and UX source/test/doc inspection with `rg` and `sed`
+- `mvn -B -pl vedenemo-cli -am test`
+- `npm run build`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Terminal CLI interactive prompts now cancel on Esc and return to the normal
+  prompt without executing the partially entered operation.
+- Browser virtual console command input now clears on Esc, keeps focus, and
+  shows a visible Esc hint.
+- CLI help, README, CLI reference, architecture doc, and backlog were updated.
+- Focused CLI tests and UX build passed.

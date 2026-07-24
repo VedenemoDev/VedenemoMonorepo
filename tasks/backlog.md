@@ -418,14 +418,15 @@ a `.vedenemo` directory.
   `load`.
 - Added focused CLI tests and updated CLI/architecture documentation.
 
-## Keep Browser Console Input Focused
+## Keep Browser Console Input Focused And Cancellable
 
 Status: executed.
 
 ### Goal
 
 Reduce friction in the virtual CLI by keeping keyboard focus on the command
-prompt instead of requiring an extra click after each command.
+prompt instead of requiring an extra click after each command, and make Esc a
+clear cancel shortcut for prompt/input work.
 
 ### Scope
 
@@ -434,12 +435,18 @@ prompt instead of requiring an extra click after each command.
   finishes.
 - Let incidental clicks inside the console surface return focus to the command
   input when the console is ready.
+- Clear virtual console command input when Esc is pressed.
+- Cancel terminal CLI interactive prompt flows when Esc is pressed, returning
+  to the normal CLI prompt without executing the partially entered operation.
+- Expose the shortcut in CLI/browser-console text.
 
 ### Completion Notes
 
 - Added a React input ref and focus effect in `vedenemo-ux/src/App.tsx`.
 - Console surface clicks now return focus to the command input when enabled.
-- Verified with `npm run build`.
+- Added terminal prompt cancellation handling in `VedenemoCliApp`.
+- Documented the Esc shortcut in CLI docs and UX console text.
+- Verified with `mvn -B -pl vedenemo-cli -am test` and `npm run build`.
 
 ## Move Backend Ping From UX Button To CLI Console Command
 

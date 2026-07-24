@@ -201,6 +201,14 @@ function ConsolePage() {
   }
 
   function navigateCommandHistory(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setCommand("");
+      setCommandHistoryIndex(commandHistory.length);
+      setStatusMessage("Command entry cancelled");
+      focusCommandInput();
+      return;
+    }
     const isPrevious = event.key === "ArrowUp" || (event.ctrlKey && event.key.toLowerCase() === "p");
     const isNext = event.key === "ArrowDown" || (event.ctrlKey && event.key.toLowerCase() === "n");
     if (!isPrevious && !isNext) {
@@ -227,6 +235,7 @@ function ConsolePage() {
         <div>
           <h1>Vedenemo Console</h1>
           <span className={`console-status console-status-${status}`}>{statusMessage}</span>
+          <span className="console-shortcut-hint">Esc cancels the current prompt or input.</span>
         </div>
         <a className="secondary-link" href="/">
           Model diagram

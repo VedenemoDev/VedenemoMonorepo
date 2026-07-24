@@ -63,6 +63,9 @@ In a real terminal session, the main command prompt keeps input history for the
 current CLI process only. Arrow Up and Ctrl+P navigate to previous commands;
 Arrow Down and Ctrl+N navigate forward.
 
+Press Esc during an interactive prompt to cancel the current operation and
+return to the normal CLI prompt without executing it.
+
 ### `ping`
 
 Checks backend connectivity through `GET /models/ping`.
