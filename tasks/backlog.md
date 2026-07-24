@@ -2959,3 +2959,97 @@ DELETE /console/sessions/{sessionId}
 - Added focused shared-console and web API tests.
 - `npm run build` in `vedenemo-ux` passed.
 - `mvn -B clean verify` passed.
+
+## Align Terminal And Browser Console CLI Command Coverage
+
+Status: planning.
+
+### Goal
+
+Make the browser `/console` virtual CLI functionally match the terminal
+`VedenemoCli` command surface except for local filesystem commands.
+
+The intended difference is:
+
+- terminal CLI supports `save`, `snapshots`, and `load` because it has local
+  filesystem access;
+- browser virtual console rejects filesystem-dependent commands clearly;
+- all other model-authoring and inspection commands should be available through
+  both command surfaces with equivalent prompts, output, context handling, undo,
+  and validation behavior.
+
+### Current Problem
+
+The current implementation does not meet that contract. `VedenemoCliApp`
+contains terminal-only interactive prompt flows for:
+
+- `add`
+- `attr add`
+- `assoc add`
+- `assoc add ownership`
+- `assoc add reference`
+- `assoc add relation`
+
+The shared `vedenemo-command-console` `ConsoleSession` used by the browser
+virtual console currently rejects `add`, `attr`, and `assoc` with:
+
+```text
+Command '<command>' requires interactive terminal prompts and is not supported in the web console yet.
+```
+
+Its `help` output also omits terminal-supported authoring commands such as
+`add`, `attr add`, and `assoc add [ownership | reference | relation]`, while it
+does list unsupported `save` and `load`.
+
+### Scope
+
+- Move or model interactive prompt workflows in shared command-console behavior
+  so both terminal CLI and browser virtual console can run the same authoring
+  flows.
+- Keep terminal stdin/stdout handling in `vedenemo-cli`.
+- Keep browser UI and HTTP request/response handling in `vedenemo-ux` and
+  `vedenemo-web-api`.
+- Add a prompt-state protocol for browser console sessions if a command needs
+  several user inputs across separate HTTP requests.
+- Preserve numbered shortcut behavior for association kind selection:
+  `1 ownership`, `2 reference`, `3 relation`.
+- Preserve Esc cancellation semantics:
+  - terminal CLI Esc cancels the active prompt flow;
+  - browser virtual console Esc cancels the active prompt/input flow.
+- Keep `save`, `snapshots`, and `load` terminal-only unless a later task adds
+  browser file upload/download support.
+- Update `help` output so browser virtual console shows the same supported
+  non-file commands as terminal CLI and clearly marks file commands as
+  unsupported.
+
+### Architecture Direction
+
+Prefer extending `vedenemo-command-console` as the owner of CLI-like command
+semantics. The shared module should own command flow state, prompt text,
+input validation, command dispatch, and output formatting. Entry points should
+provide capability-specific I/O:
+
+- terminal CLI supplies blocking line input and local filesystem access;
+- browser console supplies one submitted line at a time over HTTP and no local
+  filesystem access.
+
+Do not duplicate terminal prompt logic in TypeScript. Do not make
+`vedenemo-web-api` depend on `vedenemo-cli`.
+
+### Tests / Verification
+
+At minimum, implementation should add focused coverage for:
+
+- shared console `help` lists terminal-equivalent non-file commands;
+- browser console can create a model through `add`;
+- browser console can create an entity through `add` when a model is attached;
+- browser console can create an attribute through `attr add`;
+- browser console can create ownership/reference/relation associations through
+  `assoc add`;
+- browser console Esc cancellation abandons a partially entered prompt flow
+  without executing a command;
+- terminal CLI still supports the same prompt flows after refactoring;
+- browser console still rejects `save`, `snapshots`, and `load` as
+  filesystem-dependent commands;
+- `mvn -B verify` passes;
+- `npm run build` passes.

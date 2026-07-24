@@ -3949,3 +3949,31 @@ Current status and next steps:
   shows a visible Esc hint.
 - CLI help, README, CLI reference, architecture doc, and backlog were updated.
 - Focused CLI tests and UX build passed.
+
+## 2026-07-25 00:49 EEST
+
+Session goal: analyze terminal versus browser console CLI discrepancies and add
+a planning backlog task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- Compared terminal CLI and shared browser console command handling with `sed`
+  and `rg`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added planning backlog task `Align Terminal And Browser Console CLI Command
+  Coverage`.
+- The task records that browser `/console` should match terminal CLI except
+  local filesystem commands, and that current `add`, `attr`, and `assoc` flows
+  are terminal-only.
+- No implementation was done; task is ready for user review.
