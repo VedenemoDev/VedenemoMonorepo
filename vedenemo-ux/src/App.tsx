@@ -70,6 +70,7 @@ function readConnectedModelAzName(): string {
 function ConsolePage() {
   const sessionIdRef = useRef("");
   const apiBaseUrlRef = useRef("");
+  const commandInputRef = useRef<HTMLInputElement>(null);
   const [apiBaseUrl, setApiBaseUrl] = useState("");
   const [session, setSession] = useState<ConsoleSessionResponse | null>(null);
   const [status, setStatus] = useState<ConsoleStatus>("loading");
@@ -134,6 +135,16 @@ function ConsolePage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (status === "loading" || isExecuting || session === null) {
+      return;
+    }
+    const animationFrameId = window.requestAnimationFrame(() => {
+      commandInputRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [status, isExecuting, session]);
+
   async function executeConsoleCommand(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!apiBaseUrl || !session || isExecuting) {
@@ -182,6 +193,13 @@ function ConsolePage() {
     }
   }
 
+  function focusCommandInput() {
+    if (status === "loading" || isExecuting || session === null) {
+      return;
+    }
+    commandInputRef.current?.focus({ preventScroll: true });
+  }
+
   function navigateCommandHistory(event: KeyboardEvent<HTMLInputElement>) {
     const isPrevious = event.key === "ArrowUp" || (event.ctrlKey && event.key.toLowerCase() === "p");
     const isNext = event.key === "ArrowDown" || (event.ctrlKey && event.key.toLowerCase() === "n");
@@ -214,7 +232,7 @@ function ConsolePage() {
           Model diagram
         </a>
       </header>
-      <section className="console-surface" aria-label="Vedenemo virtual CLI">
+      <section className="console-surface" aria-label="Vedenemo virtual CLI" onMouseDown={focusCommandInput}>
         <div className="console-output" aria-live="polite">
           {history.map((line, index) => (
             <div key={`${index}-${line}`} className="console-line">
@@ -225,6 +243,7 @@ function ConsolePage() {
         <form className="console-input-row" onSubmit={(event) => void executeConsoleCommand(event)}>
           <label htmlFor="console-command">{session?.prompt ?? "VedenemoCli>"}</label>
           <input
+            ref={commandInputRef}
             id="console-command"
             value={command}
             onChange={(event) => {

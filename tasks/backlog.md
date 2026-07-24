@@ -418,6 +418,29 @@ a `.vedenemo` directory.
   `load`.
 - Added focused CLI tests and updated CLI/architecture documentation.
 
+## Keep Browser Console Input Focused
+
+Status: executed.
+
+### Goal
+
+Reduce friction in the virtual CLI by keeping keyboard focus on the command
+prompt instead of requiring an extra click after each command.
+
+### Scope
+
+- Focus the `/console` command input after the browser console session starts.
+- Restore focus to the command input after asynchronous command execution
+  finishes.
+- Let incidental clicks inside the console surface return focus to the command
+  input when the console is ready.
+
+### Completion Notes
+
+- Added a React input ref and focus effect in `vedenemo-ux/src/App.tsx`.
+- Console surface clicks now return focus to the command input when enabled.
+- Verified with `npm run build`.
+
 ## Move Backend Ping From UX Button To CLI Console Command
 
 Status: executed.

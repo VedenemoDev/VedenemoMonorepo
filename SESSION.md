@@ -3865,3 +3865,51 @@ Current status and next steps:
 - Removed the `Vedenemo UX Deployment Check` heading and the two deployment
   status paragraphs from the main UX.
 - `npm run build` passed.
+
+## 2026-07-24 23:53 EEST
+
+Session goal: keep browser virtual console focus on the command prompt.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- UX console source inspection with `rg` and `sed`
+- `npm run build`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added a command input ref and focus effect so the virtual console command
+  field regains focus after startup and after command execution.
+- Console surface clicks now return focus to the command input when the console
+  is ready.
+- `npm run build` passed.
+
+## 2026-07-24 23:56 EEST
+
+Session goal: report the browser virtual console focus fix to the backlog.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- Backlog inspection with `rg` and `sed`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added executed backlog entry `Keep Browser Console Input Focused`.
+- No code changes were made in this documentation-only update.
