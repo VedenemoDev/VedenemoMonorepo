@@ -3593,3 +3593,41 @@ Current status and next steps:
   definitions.
 - `git diff --check` passed. No code tests were run because this was a
   planning/documentation-only change.
+
+## 2026-07-24 12:54 EEST
+
+Session goal: resolve the remaining association backlog open questions from
+interactive discussion.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- `sed -n '180,360p' tasks/backlog.md`
+- `rg -n -A8 '^### Open Questions' tasks/backlog.md`
+- `git diff --check`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Resolved association `azName` suggestion inputs: source entity plus `visName`,
+  falling back to source entity plus target entity; include kind only if needed
+  for uniqueness.
+- Deferred directed-association role names; `visName` is enough for the first
+  label.
+- Resolved entity-scoped API shape as one ordered association list with source
+  and target fields.
+- Resolved relation role-name uniqueness as a clarity rule within a relation,
+  not identifier data or model-wide uniqueness.
+- Resolved `.vdos` behavior so association definitions are authoritative and
+  participating-entity association references are reconstructed after entity
+  import and integrity validation.
+- `git diff --check` passed. No code tests were run because this was a
+  planning/documentation-only change.

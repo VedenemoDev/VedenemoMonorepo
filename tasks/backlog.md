@@ -194,6 +194,13 @@ association objects from one entity to another.
 - Build a unique `azName` suggestion from the referenced entities and other
   association data. The user can accept the suggestion, edit it, or enter a
   fully manual unique `azName`.
+- Directed-association `azName` suggestions should use source entity plus
+  `visName`, falling back to source entity plus target entity when `visName`
+  cannot produce a valid suggestion. Do not include association kind in the
+  suggestion unless needed to avoid a uniqueness conflict.
+- Directed associations do not require separate role names in the first
+  version. `visName` is enough and may be used as the diagram, API, and CLI
+  label. Role names are deferred.
 - Association `azName` values share one model-wide namespace across all
   association kinds in the first implementation.
 
@@ -212,14 +219,6 @@ runtime deletion rule.
 Associations should be rendered in diagrams as lines with labels, rather than
 as pseudo-fields inside entity boxes. Entity-local projections can be
 introduced later if generated APIs or UI views need field-like navigation.
-
-### Open Questions
-
-- Which association fields should participate in the suggested `azName` for
-  directed associations: source entity, target entity, role/label, kind, or some
-  deterministic subset?
-- Should directed associations require a role/label, or can `visName` alone
-  carry the user-visible meaning in the first version?
 
 ## Expose Directed Associations In API, UX, And Diagrams
 
@@ -260,6 +259,9 @@ console, CLI, UX, and PlantUML rendering surfaces.
   entity is selected.
 - Association list output must state its context in the title, because the
   prompt alone is not explicit enough.
+- Entity-scoped API responses should return one ordered list with explicit
+  source and target fields. Do not split incoming/outgoing groups in the first
+  version.
 
 ### Pondering
 
@@ -279,11 +281,6 @@ The first implementation should include both model-scoped and entity-scoped
 views. `ModelRoot` remains the ownership boundary, while entity-scoped views
 are convenience projections for CLI, UX, generated APIs, and focused
 inspection.
-
-### Open Questions
-
-- Should the entity-scoped API include separate incoming/outgoing grouping, or
-  return one ordered list with source/target fields?
 
 ## Add True Bidirectional Relations
 
@@ -319,6 +316,13 @@ to end.
   not object references.
 - All association kinds should share the same model-wide `azName` namespace in
   the first implementation.
+- Relation end role names are not identifier data and do not need model-wide
+  uniqueness. When role names are introduced later, different ends of the same
+  relation are expected to have different roles, but this is a clarity rule
+  rather than relation identity.
+- `.vdos` stores association definitions in command and snapshot sections.
+  Participating-entity association references are reconstructed from those
+  definitions during import, after entities exist and integrity checks pass.
 - Association classes are expected to be useful later, but they are explicitly
   out of scope for the first association/relation implementation.
 
@@ -343,14 +347,6 @@ own stable `azName`/identifier in addition to its end role names. The current
 direction is: yes, relation names are required, so `.vdos` and future
 persistence should identify a relation by its own association/relation `azName`.
 Role names identify the ends, not the relation itself.
-
-### Open Questions
-
-- Should relation end role names be unique within the relation only, or also
-  constrained per participating entity?
-- Should `.vdos` list participating-entity association references explicitly in
-  snapshots, or should those references be reconstructed from model-root
-  association definitions during import?
 
 ## Make CLI Commands Case-Insensitive And Add Console Input History
 
