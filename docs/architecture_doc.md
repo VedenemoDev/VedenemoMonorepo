@@ -46,7 +46,7 @@ subgraph Core["Core"]
     Session["Session<br/>UUID, selected model, command history"]
     ModelRegistry["ModelRegistry<br/>process-local known models"]
     Spi["vedenemo-core-spi<br/>ModelStorage port"]
-    ModelApi["vedenemo-model-api<br/>ModelRoot, ModelVersion, VEntity, VAttribute"]
+    ModelApi["vedenemo-model-api<br/>ModelRoot, entities, attributes, associations"]
 end
 
 subgraph Adapters["Adapters"]
@@ -105,16 +105,22 @@ MemoryStorage --> ModelApi
 Shared model API module. It currently contains:
 
 - `ModelRoot`, the first concrete model root entity, which owns ordered
-  `VEntity` instances
+  `VEntity` instances and ordered model-level associations
 - `ModelVersion`, a normalized semantic version value
 - `Versionable`, an abstract base class for model elements with lifecycle
   version metadata
+- `Cardinality`, a pure value object for association multiplicity text such as
+  `1`, `0..1`, `0..*`, `1..*`, and bounded ranges
 - `DataType`, the initial enum of supported attribute data types:
   `TEXT`, `NUMERIC`, `URL`, and `DATA`
 - `VAttribute`, a model attribute with `azName`, `visName`, `DataType`, and
   lifecycle version metadata
 - `VEntity`, a model entity with `azName`, `visName`, lifecycle version
   metadata, and an ordered attribute collection
+- `Association`, a sealed interface for first-class model-level associations
+- `OwnershipAssociation` and `ReferenceAssociation`, directed associations
+  with `azName`, `visName`, source entity `azName`, target entity `azName`,
+  `Cardinality`, and lifecycle version metadata
 
 `ModelRoot`, `VEntity`, and `VAttribute` share the same `azName` rule: the name
 must start with an ASCII letter and then contain only ASCII letters, ASCII
@@ -126,10 +132,12 @@ uniqueness case-insensitively. It exposes attributes as a read-only snapshot
 list. Attributes can be removed by `azName` or by `VAttribute` instance while a
 model is under construction.
 
-`ModelRoot` preserves entity insertion order and enforces entity `azName`
-uniqueness case-insensitively. It exposes entities as a read-only snapshot list.
-Entities can be removed by `azName` or by `VEntity` instance while a model is
-under construction.
+`ModelRoot` preserves entity and association insertion order. It enforces entity
+`azName` uniqueness and association `azName` uniqueness case-insensitively in
+separate model-level namespaces. Association creation validates that source and
+target entities already exist. Entities and associations are exposed as
+read-only snapshot lists and can be removed while a model is under construction
+or while undo applies an inverse command.
 
 `Versionable` requires `activeSince`. `deprecatedSince` is optional, but when it
 is present it must be strictly later than `activeSince`.
@@ -149,8 +157,10 @@ Dependencies:
 ### `vedenemo-core`
 
 Core command module. It currently contains a sealed `Command` marker interface,
-`NoOpCommand`, `CreateEntityCommand`, `CreateAttributeCommand`, internal
-`DeleteEntityCommand` and `DeleteAttributeCommand` counterparts, `UndoResult`,
+`NoOpCommand`, `CreateEntityCommand`, `CreateAttributeCommand`,
+`CreateAssociationCommand`, internal `DeleteEntityCommand`,
+`DeleteAttributeCommand`, and `DeleteAssociationCommand` counterparts,
+`UndoResult`,
 `ModelCommandJournal`, `VedenemoScriptService`, `CommandExecutor`, `Session`,
 `SessionManager`, and `ModelRegistry`.
 
@@ -171,26 +181,28 @@ in the model journal.
 
 `CommandExecutor` is bound to exactly one active `Session` and the process-local
 `ModelRegistry`. It can execute `CreateEntityCommand` against the selected
-model and `CreateAttributeCommand` against an entity in the selected model.
-Successful commands are recorded in the session and in the model-level command
-journal. Failed commands are not recorded. Undo is stack-based and only applies
-to the latest successful command: create-entity is undone through the internal
-`DeleteEntityCommand` inverse, and create-attribute is undone through the
-internal `DeleteAttributeCommand` inverse. Undo removes the original command
+model, `CreateAttributeCommand` against an entity in the selected model, and
+`CreateAssociationCommand` against the selected model. Successful commands are
+recorded in the session and in the model-level command journal. Failed commands
+are not recorded. Undo is stack-based and only applies to the latest successful
+command: create-entity is undone through the internal `DeleteEntityCommand`
+inverse, create-attribute is undone through the internal
+`DeleteAttributeCommand` inverse, and create-association is undone through the
+internal `DeleteAssociationCommand` inverse. Undo removes the original command
 from active session command history and from the model-level command journal,
 then returns a core-owned `UndoResult` containing a stable command identifier
-such as `create-entity` or `create-attribute` plus the target model, entity, and
-attribute names needed by clients.
+such as `create-entity`, `create-attribute`, or `create-association` plus the
+target names needed by clients.
 
 `VedenemoScriptService` owns the current `.vdos` Vedenemo Script import/export
 format. The format is UTF-8 text with:
 
 - `vedenemo-script 1` header
 - one model metadata line
-- a `commands` section using stable command slugs such as `create-entity` and
-  `create-attribute`
-- a `snapshot` section containing the final entity/attribute tree and lifecycle
-  version metadata
+- a `commands` section using stable command slugs such as `create-entity`,
+  `create-attribute`, and `create-association`
+- a `snapshot` section containing the final entity/attribute tree, model-level
+  associations, and lifecycle version metadata
 
 Commands are authoritative during import. The service replays the command
 section into a new `ModelRoot` and validates the result against the snapshot.
@@ -287,6 +299,10 @@ Current CLI behavior:
 - lists attributes in the selected entity with `attributes`, including data
   type and lifecycle version fields
 - creates attributes in the selected entity with `attr add`
+- lists associations with `associations`; when an entity is selected the list is
+  scoped to associations touching that entity, otherwise it is model-scoped
+- creates directed ownership/reference associations with `assoc add`,
+  `assoc add ownership`, or `assoc add reference`
 - attaches the session to a model by latest list number or `azName`
 - detaches the session from the current selected model
 - supports `undo` for the latest backend command and prints operation-specific
@@ -320,6 +336,11 @@ and exposes:
 - `GET /models/{modelAzName}/entities/{entityAzName}/attributes`, which lists
   attributes in insertion order for one entity, including `DataType` and
   lifecycle version fields
+- `GET /models/{modelAzName}/associations`, which lists model-level
+  associations in insertion order
+- `GET /models/{modelAzName}/entities/{entityAzName}/associations`, which lists
+  associations touching one entity as a single ordered list with explicit source
+  and target fields
 - `GET /models/{modelAzName}/script`, which exports one model as UTF-8
   `text/plain` `.vdos` content using the model-level command journal and
   current model snapshot
@@ -337,6 +358,9 @@ and exposes:
   the session's selected model through `CommandExecutor`
 - `POST /sessions/{uuid}/commands/create-attribute`, which creates a
   `VAttribute` in an entity in the session's selected model through
+  `CommandExecutor`
+- `POST /sessions/{uuid}/commands/create-association`, which creates a directed
+  ownership/reference association in the session's selected model through
   `CommandExecutor`
 - `POST /sessions/{uuid}/commands/undo`, which undoes the latest command for
   the active backend session and returns the undone command slug plus target
@@ -368,8 +392,9 @@ messages such as:
 ```
 
 Model changes are broadcast after successful model creation, `.vdos` import,
-entity creation, attribute creation, and undo operations. The event stream is a
-process-local runtime notification channel; it is not durable persistence.
+entity creation, attribute creation, association creation, and undo operations.
+The event stream is a process-local runtime notification channel; it is not
+durable persistence.
 
 Runtime configuration is read from environment variables:
 
@@ -421,8 +446,10 @@ Frontend adapter responsibilities:
 - `ModelChangeEventAdapter` owns browser WebSocket connection lifecycle and
   translates backend model-change messages into callbacks.
 - `PlantUmlModelAdapter` reads the selected model through existing HTTP model,
-  entity, and attribute endpoints and transforms `VEntity` instances to PlantUML
-  classes and `VAttribute` instances to class attributes.
+  entity, attribute, and association endpoints. It transforms `VEntity`
+  instances to PlantUML classes, `VAttribute` instances to class attributes,
+  ownership associations to composition-style edges, and reference associations
+  to aggregation-style edges.
 - `PlantUmlDiagramRendererAdapter` lazy-loads `@plantuml/core` and renders the
   generated PlantUML source to SVG in the browser. The heavy renderer chunk is
   loaded only when a diagram is rendered.
@@ -530,7 +557,7 @@ sequenceDiagram
     Sessions-->>CLI: 204
 ```
 
-### CLI Entity And Attribute Commands With Undo
+### CLI Entity, Attribute, And Association Commands With Undo
 
 ```mermaid
 sequenceDiagram
@@ -566,6 +593,15 @@ sequenceDiagram
     Executor->>Executor: record command in Session
     Sessions-->>CLI: 200 attribute response
 
+    CLI->>API: POST /sessions/{uuid}/commands/create-association
+    API->>Sessions: route request
+    Sessions->>Manager: findExecutor(uuid)
+    Sessions->>Executor: execute(CreateAssociationCommand)
+    Executor->>Registry: find(selected model azName)
+    Executor->>Model: addAssociation(Association)
+    Executor->>Executor: record command in Session
+    Sessions-->>CLI: 200 association response
+
     CLI->>API: POST /sessions/{uuid}/commands/undo
     API->>Sessions: route request
     Sessions->>Manager: findExecutor(uuid)
@@ -592,6 +628,7 @@ sequenceDiagram
     Events-->>UX: connected
     UX->>API: GET /models/{modelAzName}/entities
     UX->>API: GET /models/{modelAzName}/entities/{entityAzName}/attributes
+    UX->>API: GET /models/{modelAzName}/associations
     UX->>UX: lazy-load PlantUML renderer and render SVG
     Events-->>UX: model-changed
     UX->>API: refresh selected model data

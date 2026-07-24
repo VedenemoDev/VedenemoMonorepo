@@ -1,5 +1,6 @@
 package org.vedenemo.cli;
 
+import org.vedenemo.console.AssociationSummary;
 import org.vedenemo.console.AttributeSummary;
 import org.vedenemo.console.EntitySummary;
 import org.vedenemo.console.ModelClient;
@@ -28,6 +29,9 @@ public final class HttpModelClient implements ModelClient {
     );
     private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile(
             "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"dataType\":\"([^\"]*)\",\"activeSince\":\"([^\"]*)\",\"deprecatedSince\":(\"([^\"]*)\"|null)}"
+    );
+    private static final Pattern ASSOCIATION_PATTERN = Pattern.compile(
+            "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"kind\":\"([^\"]*)\",\"sourceEntityAzName\":\"([^\"]*)\",\"targetEntityAzName\":\"([^\"]*)\",\"cardinality\":\"([^\"]*)\",\"activeSince\":\"([^\"]*)\",\"deprecatedSince\":(\"([^\"]*)\"|null)}"
     );
     private static final Pattern IMPORT_PATTERN = Pattern.compile(
             "\\{\"modelAzName\":\"([^\"]*)\",\"commandCount\":([0-9]+)}"
@@ -114,6 +118,32 @@ public final class HttpModelClient implements ModelClient {
     }
 
     @Override
+    public List<AssociationSummary> listAssociations(String modelAzName) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/models/" + encodePath(modelAzName) + "/associations"))
+                .GET()
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("association list failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+        return parseAssociations(response.body());
+    }
+
+    @Override
+    public List<AssociationSummary> listAssociations(String modelAzName, String entityAzName) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve(
+                        "/models/" + encodePath(modelAzName) + "/entities/" + encodePath(entityAzName) + "/associations"
+                ))
+                .GET()
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("association list failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+        return parseAssociations(response.body());
+    }
+
+    @Override
     public String exportScript(String modelAzName) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/models/" + encodePath(modelAzName) + "/script"))
                 .GET()
@@ -194,6 +224,30 @@ public final class HttpModelClient implements ModelClient {
             throw new IOException("attribute response did not contain parseable attributes");
         }
         return List.copyOf(attributes);
+    }
+
+    private static List<AssociationSummary> parseAssociations(String body) throws IOException {
+        if ("[]".equals(body)) {
+            return List.of();
+        }
+        ArrayList<AssociationSummary> associations = new ArrayList<>();
+        Matcher matcher = ASSOCIATION_PATTERN.matcher(body);
+        while (matcher.find()) {
+            associations.add(new AssociationSummary(
+                    matcher.group(1),
+                    matcher.group(2),
+                    matcher.group(3),
+                    matcher.group(4),
+                    matcher.group(5),
+                    matcher.group(6),
+                    matcher.group(7),
+                    matcher.group(9)
+            ));
+        }
+        if (associations.isEmpty()) {
+            throw new IOException("association response did not contain parseable associations");
+        }
+        return List.copyOf(associations);
     }
 
     private static ModelImportResult parseImportResult(String body) throws IOException {

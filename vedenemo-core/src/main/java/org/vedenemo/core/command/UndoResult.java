@@ -7,10 +7,11 @@ public record UndoResult(
         String undoneCommand,
         String modelAzName,
         String entityAzName,
-        String attributeAzName
+        String attributeAzName,
+        String associationAzName
 ) {
 
-    public static final UndoResult NOTHING_TO_UNDO = new UndoResult(Status.NOTHING_TO_UNDO, null, null, null, null);
+    public static final UndoResult NOTHING_TO_UNDO = new UndoResult(Status.NOTHING_TO_UNDO, null, null, null, null, null);
 
     public UndoResult {
         Objects.requireNonNull(status, "status must not be null");
@@ -26,6 +27,7 @@ public record UndoResult(
                 "create-entity",
                 modelAzName,
                 Objects.requireNonNull(entityAzName, "entityAzName must not be null"),
+                null,
                 null
         );
     }
@@ -36,7 +38,19 @@ public record UndoResult(
                 "create-attribute",
                 modelAzName,
                 Objects.requireNonNull(entityAzName, "entityAzName must not be null"),
-                Objects.requireNonNull(attributeAzName, "attributeAzName must not be null")
+                Objects.requireNonNull(attributeAzName, "attributeAzName must not be null"),
+                null
+        );
+    }
+
+    public static UndoResult undoneCreateAssociation(String modelAzName, String associationAzName) {
+        return new UndoResult(
+                Status.UNDONE,
+                "create-association",
+                modelAzName,
+                null,
+                null,
+                Objects.requireNonNull(associationAzName, "associationAzName must not be null")
         );
     }
 

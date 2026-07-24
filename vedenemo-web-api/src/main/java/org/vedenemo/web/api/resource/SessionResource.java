@@ -4,9 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.router.JavalinDefaultRoutingApi;
 import org.vedenemo.core.command.CommandExecutor;
+import org.vedenemo.core.command.CreateAssociationCommand;
 import org.vedenemo.core.command.CreateAttributeCommand;
 import org.vedenemo.core.command.CreateEntityCommand;
 import org.vedenemo.core.command.UndoResult;
+import org.vedenemo.core.model.AssociationKind;
+import org.vedenemo.core.model.Cardinality;
 import org.vedenemo.core.model.DataType;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.Session;
@@ -178,6 +181,54 @@ public final class SessionResource {
                     dataType.name()
             ));
         });
+        routes.post("/sessions/{uuid}/commands/create-association", context -> {
+            UUID sessionId = parseSessionId(context.pathParam("uuid"));
+            if (sessionId == null) {
+                writeJson(context, 400, new ErrorResponse("session uuid is invalid"));
+                return;
+            }
+            Optional<CommandExecutor> executor = sessionManager.findExecutor(sessionId);
+            if (executor.isEmpty()) {
+                writeJson(context, 404, new ErrorResponse("session not found"));
+                return;
+            }
+            Optional<String> selectedModelAzName = executor.orElseThrow().session().selectedModelAzName();
+            if (selectedModelAzName.isEmpty()) {
+                writeJson(context, 400, new ErrorResponse("no selected model"));
+                return;
+            }
+            CreateAssociationRequest request;
+            AssociationKind kind;
+            Cardinality cardinality;
+            try {
+                request = objectMapper.readValue(context.body(), CreateAssociationRequest.class);
+                kind = parseAssociationKind(request.kind());
+                cardinality = request.cardinality() == null || request.cardinality().isBlank()
+                        ? Cardinality.parse("1")
+                        : Cardinality.parse(request.cardinality());
+                executor.orElseThrow().execute(new CreateAssociationCommand(
+                        selectedModelAzName.orElseThrow(),
+                        kind,
+                        request.associationAzName(),
+                        request.associationVisName(),
+                        request.sourceEntityAzName(),
+                        request.targetEntityAzName(),
+                        cardinality
+                ));
+                modelChangeBroadcaster.broadcastModelChanged(selectedModelAzName.orElseThrow());
+            } catch (JsonProcessingException | IllegalArgumentException | IllegalStateException | NullPointerException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+                return;
+            }
+            writeJson(context, 200, new AssociationResponse(
+                    request.associationAzName(),
+                    request.associationVisName(),
+                    kind.name(),
+                    request.sourceEntityAzName(),
+                    request.targetEntityAzName(),
+                    cardinality.toString()
+            ));
+        });
         routes.post("/sessions/{uuid}/commands/undo", context -> {
             UUID sessionId = parseSessionId(context.pathParam("uuid"));
             if (sessionId == null) {
@@ -228,10 +279,30 @@ public final class SessionResource {
     ) {
     }
 
+    private record CreateAssociationRequest(
+            String kind,
+            String associationAzName,
+            String associationVisName,
+            String sourceEntityAzName,
+            String targetEntityAzName,
+            String cardinality
+    ) {
+    }
+
     private record EntityResponse(String azName, String visName) {
     }
 
     private record AttributeResponse(String azName, String visName, String dataType) {
+    }
+
+    private record AssociationResponse(
+            String azName,
+            String visName,
+            String kind,
+            String sourceEntityAzName,
+            String targetEntityAzName,
+            String cardinality
+    ) {
     }
 
     private record UndoResponse(
@@ -239,7 +310,8 @@ public final class SessionResource {
             String undoneCommand,
             String modelAzName,
             String entityAzName,
-            String attributeAzName
+            String attributeAzName,
+            String associationAzName
     ) {
         private static UndoResponse from(UndoResult result) {
             return new UndoResponse(
@@ -247,7 +319,8 @@ public final class SessionResource {
                     result.undoneCommand(),
                     result.modelAzName(),
                     result.entityAzName(),
-                    result.attributeAzName()
+                    result.attributeAzName(),
+                    result.associationAzName()
             );
         }
     }
@@ -273,6 +346,17 @@ public final class SessionResource {
             case "url" -> DataType.URL;
             case "data" -> DataType.DATA;
             default -> throw new IllegalArgumentException("unsupported dataType: " + value);
+        };
+    }
+
+    private static AssociationKind parseAssociationKind(String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("association kind is required");
+        }
+        return switch (value.trim().toLowerCase()) {
+            case "ownership" -> AssociationKind.OWNERSHIP;
+            case "reference" -> AssociationKind.REFERENCE;
+            default -> throw new IllegalArgumentException("unsupported association kind: " + value);
         };
     }
 }

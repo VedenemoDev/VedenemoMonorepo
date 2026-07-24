@@ -4,8 +4,10 @@ import io.javalin.Javalin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.vedenemo.core.model.Cardinality;
 import org.vedenemo.core.model.DataType;
 import org.vedenemo.core.model.ModelRoot;
+import org.vedenemo.core.model.OwnershipAssociation;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
 import org.vedenemo.core.registry.ModelRegistry;
@@ -140,6 +142,30 @@ final class ModelsResourceTest {
         assertEquals("""
                 [{"azName":"Email","visName":"Email","dataType":"TEXT","activeSince":"1.0.0","deprecatedSince":null},{"azName":"Website","visName":"Website","dataType":"URL","activeSince":"1.0.0","deprecatedSince":null}]\
                 """, response.body());
+    }
+
+    @Test
+    void listAssociationsReturnsModelAndEntityScopedAssociations() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addEntity(new VEntity("Customer", "Customer", modelRoot.version()));
+        modelRoot.addEntity(new VEntity("Order", "Order", modelRoot.version()));
+        modelRoot.addAssociation(new OwnershipAssociation(
+                "Customer_Orders",
+                "orders",
+                "Customer",
+                "Order",
+                Cardinality.parse("0..*"),
+                modelRoot.version()
+        ));
+
+        HttpResponse<String> modelResponse = get("/models/Example_Model/associations");
+        HttpResponse<String> entityResponse = get("/models/Example_Model/entities/Order/associations");
+
+        assertEquals(200, modelResponse.statusCode());
+        assertEquals(modelResponse.body(), entityResponse.body());
+        assertEquals("""
+                [{"azName":"Customer_Orders","visName":"orders","kind":"OWNERSHIP","sourceEntityAzName":"Customer","targetEntityAzName":"Order","cardinality":"0..*","activeSince":"1.0.0","deprecatedSince":null}]\
+                """, modelResponse.body());
     }
 
     @Test

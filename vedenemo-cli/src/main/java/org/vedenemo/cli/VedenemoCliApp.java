@@ -4,6 +4,8 @@ import org.vedenemo.console.CommandClient;
 import org.vedenemo.console.ConsoleCapabilities;
 import org.vedenemo.console.ConsoleCommandResult;
 import org.vedenemo.console.ConsoleSession;
+import org.vedenemo.console.AssociationSummary;
+import org.vedenemo.console.EntitySummary;
 import org.vedenemo.console.ModelClient;
 import org.vedenemo.console.ModelImportResult;
 import org.vedenemo.console.ModelSummary;
@@ -141,6 +143,10 @@ public final class VedenemoCliApp {
             handleEntityCommand(consoleSession, reader, line);
         } else if ("attributes".equals(command) && commandOnly(line)) {
             executeSharedConsoleCommand(consoleSession, line);
+        } else if ("associations".equals(command) && commandOnly(line)) {
+            executeSharedConsoleCommand(consoleSession, line);
+        } else if ("assoc".equals(command)) {
+            handleAssociationCommand(consoleSession, reader, line);
         } else if ("attr".equals(command)) {
             handleAttributeCommand(consoleSession, reader, line);
         } else if ("snapshots".equals(command) && commandOnly(line)) {
@@ -175,6 +181,8 @@ public final class VedenemoCliApp {
         output.println("  entity detach - clear the selected entity");
         output.println("  attributes - list attributes in the selected entity");
         output.println("  attr add - add an attribute to the selected entity");
+        output.println("  associations - list model associations, or selected entity associations");
+        output.println("  assoc add [ownership | reference] - add a directed association");
         output.println("  undo - undo the latest backend command");
         output.println("  save [N | azName] [outputPath] - save a model to a .vdos file");
         output.println("  snapshots - list .vdos files from the .vedenemo directory");
@@ -325,6 +333,135 @@ public final class VedenemoCliApp {
         } else {
             output.println("Unknown command: " + line);
         }
+    }
+
+    private void handleAssociationCommand(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
+        List<String> arguments = splitArguments(argumentText(line, "assoc"));
+        if (arguments.isEmpty() || !"add".equalsIgnoreCase(arguments.getFirst())) {
+            output.println("Usage: assoc add [ownership | reference]");
+            return;
+        }
+        if (arguments.size() > 2) {
+            output.println("Usage: assoc add [ownership | reference]");
+            return;
+        }
+        String kind = arguments.size() == 2 ? normalizeAssociationKind(arguments.get(1)) : null;
+        if (kind == null) {
+            String enteredKind = reader.readLine("Association kind [ownership/reference]: ");
+            kind = normalizeAssociationKind(enteredKind);
+        }
+        if (kind == null) {
+            output.println("Association kind is required.");
+            return;
+        }
+        if ("relation".equals(kind)) {
+            output.println("Association kind relation is not implemented yet.");
+            return;
+        }
+        addAssociation(consoleSession, reader, kind);
+    }
+
+    private void addAssociation(ConsoleSession consoleSession, CliInputReader reader, String kind) throws IOException, InterruptedException {
+        Optional<String> modelAzName = consoleSession.attachedModelAzName();
+        if (modelAzName.isEmpty()) {
+            output.println("Attach a model before adding an association.");
+            return;
+        }
+        String source = readEntityReference(consoleSession, reader, "Source entity number or azName: ");
+        if (source == null) {
+            return;
+        }
+        String target = readEntityReference(consoleSession, reader, "Target entity number or azName: ");
+        if (target == null) {
+            return;
+        }
+        String visName = reader.readLine("Association visible name: ");
+        if (visName == null || visName.isBlank()) {
+            output.println("Association visible name is required.");
+            return;
+        }
+        String enteredCardinality = reader.readLine("Association cardinality [1]: ");
+        String cardinality = enteredCardinality == null || enteredCardinality.isBlank() ? "1" : enteredCardinality.trim();
+        String suggestion = suggestAssociationAzName(modelAzName.orElseThrow(), kind, source, target, visName);
+        String enteredAzName = reader.readLine("Association azName [" + suggestion + "]: ");
+        if (enteredAzName == null) {
+            output.println("Association azName is required.");
+            return;
+        }
+        String azName = enteredAzName.isBlank() ? suggestion : enteredAzName.trim();
+        if (azName.isBlank()) {
+            output.println("Association azName is required.");
+            return;
+        }
+        try {
+            commandClient.createAssociation(
+                    consoleSession.backendSessionId(),
+                    kind,
+                    azName,
+                    visName,
+                    source,
+                    target,
+                    cardinality
+            );
+            output.println("Association " + azName + " added.");
+        } catch (IOException exception) {
+            output.println("Association was not added: " + exception.getMessage() + ".");
+        }
+    }
+
+    private String readEntityReference(ConsoleSession consoleSession, CliInputReader reader, String prompt) throws IOException {
+        String answer = reader.readLine(prompt);
+        if (answer == null || answer.trim().isEmpty()) {
+            output.println("Entity identifier is required.");
+            return null;
+        }
+        String value = answer.trim();
+        if (!isPositiveInteger(value)) {
+            return value;
+        }
+        List<EntitySummary> entities = consoleSession.latestEntities();
+        if (entities.isEmpty()) {
+            output.println("Run entities first before selecting an entity by number.");
+            return null;
+        }
+        int index = Integer.parseInt(value) - 1;
+        if (index < 0 || index >= entities.size()) {
+            output.println("No entity found for list number " + value + ".");
+            return null;
+        }
+        return entities.get(index).azName();
+    }
+
+    private String suggestAssociationAzName(String modelAzName, String kind, String source, String target, String visName) throws IOException, InterruptedException {
+        List<AssociationSummary> associations = modelClient.listAssociations(modelAzName);
+        String base = source + "_" + Objects.requireNonNullElse(suggestAzName(visName), "");
+        String suggestion = cleanAssociationSuggestion(base);
+        if (suggestion == null) {
+            suggestion = cleanAssociationSuggestion(source + "_" + target);
+        }
+        if (suggestion == null) {
+            suggestion = "Association";
+        }
+        if (isAssociationAzNameAvailable(associations, suggestion)) {
+            return suggestion;
+        }
+        String withTarget = cleanAssociationSuggestion(source + "_" + target);
+        if (withTarget != null && isAssociationAzNameAvailable(associations, withTarget)) {
+            return withTarget;
+        }
+        String withKind = cleanAssociationSuggestion(source + "_" + kind + "_" + target);
+        if (withKind != null && isAssociationAzNameAvailable(associations, withKind)) {
+            return withKind;
+        }
+        int suffix = 2;
+        while (!isAssociationAzNameAvailable(associations, suggestion + "_" + suffix)) {
+            suffix++;
+        }
+        return suggestion + "_" + suffix;
+    }
+
+    private static boolean isAssociationAzNameAvailable(List<AssociationSummary> associations, String azName) {
+        return associations.stream().noneMatch(association -> association.azName().equalsIgnoreCase(azName));
     }
 
     private void addAttribute(ConsoleSession consoleSession, CliInputReader reader) throws IOException, InterruptedException {
@@ -648,6 +785,26 @@ public final class VedenemoCliApp {
             case "data" -> "DATA";
             default -> value.trim();
         };
+    }
+
+    private static String normalizeAssociationKind(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return switch (value.trim().toLowerCase()) {
+            case "ownership" -> "ownership";
+            case "reference" -> "reference";
+            case "relation" -> "relation";
+            default -> null;
+        };
+    }
+
+    private static String cleanAssociationSuggestion(String value) {
+        String suggestion = suggestAzName(value);
+        if (suggestion == null || suggestion.isBlank()) {
+            return null;
+        }
+        return suggestion;
     }
 
     private interface CliInputReader extends Closeable {

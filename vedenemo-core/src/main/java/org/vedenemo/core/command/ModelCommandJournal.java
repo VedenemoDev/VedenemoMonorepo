@@ -62,6 +62,12 @@ public final class ModelCommandJournal {
         if (command instanceof CreateAttributeCommand createAttributeCommand) {
             return createAttributeCommand.modelAzName();
         }
+        if (command instanceof CreateAssociationCommand createAssociationCommand) {
+            return createAssociationCommand.modelAzName();
+        }
+        if (command instanceof DeleteAssociationCommand deleteAssociationCommand) {
+            return deleteAssociationCommand.modelAzName();
+        }
         if (command instanceof DeleteEntityCommand deleteEntityCommand) {
             return deleteEntityCommand.modelAzName();
         }

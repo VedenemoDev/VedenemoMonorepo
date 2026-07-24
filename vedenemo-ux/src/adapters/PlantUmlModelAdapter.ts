@@ -8,9 +8,20 @@ type AttributeSummary = {
   dataType: string;
 };
 
+type AssociationSummary = {
+  visName: string;
+  kind: "OWNERSHIP" | "REFERENCE";
+  sourceEntityAzName: string;
+  targetEntityAzName: string;
+  cardinality: string;
+};
+
 export class PlantUmlModelAdapter {
   async renderModel(apiBaseUrl: string, modelAzName: string, modelVisName = modelAzName): Promise<string> {
     const entities = await fetchJson<EntitySummary[]>(`${apiBaseUrl}/models/${encodeURIComponent(modelAzName)}/entities`);
+    const associations = await fetchJson<AssociationSummary[]>(
+      `${apiBaseUrl}/models/${encodeURIComponent(modelAzName)}/associations`,
+    );
     const lines = [
       "@startuml",
       "hide circle",
@@ -30,6 +41,18 @@ export class PlantUmlModelAdapter {
       }
 
       lines.push("}");
+      lines.push("");
+    }
+
+    for (const association of associations) {
+      lines.push(
+        `${identifier(association.sourceEntityAzName)} ${associationOperator(association.kind)} ${identifier(association.targetEntityAzName)} : "${plantUmlText(
+          association.visName,
+        )}" ${plantUmlText(association.cardinality)}`,
+      );
+    }
+
+    if (associations.length > 0) {
       lines.push("");
     }
 
@@ -62,4 +85,13 @@ function plantUmlText(value: string): string {
 
 function modelTitle(azName: string, visName: string): string {
   return visName === azName ? visName : `${visName} (${azName})`;
+}
+
+function associationOperator(kind: AssociationSummary["kind"]): string {
+  switch (kind) {
+    case "OWNERSHIP":
+      return "*--";
+    case "REFERENCE":
+      return "o--";
+  }
 }

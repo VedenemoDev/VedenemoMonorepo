@@ -5,6 +5,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.vedenemo.core.model.ModelRoot;
+import org.vedenemo.core.model.VEntity;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.SessionManager;
 import org.vedenemo.storage.memory.InMemoryModelStorage;
@@ -352,6 +353,49 @@ final class SessionResourceTest {
         assertTrue(response.body().contains("\"entityAzName\":\"Customer\""));
         assertTrue(response.body().contains("\"attributeAzName\":\"Email\""));
         assertTrue(modelRoot.entities().getFirst().attributes().isEmpty());
+        assertTrue(sessionManager.findSession(sessionId).orElseThrow().commandHistory().isEmpty());
+    }
+
+    @Test
+    void createAssociationCommandAddsAssociationToSelectedModel() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addEntity(new VEntity("Customer", "Customer", modelRoot.version()));
+        modelRoot.addEntity(new VEntity("Order", "Order", modelRoot.version()));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/create-association", """
+                {"kind":"ownership","associationAzName":"Customer_Orders","associationVisName":"orders","sourceEntityAzName":"Customer","targetEntityAzName":"Order","cardinality":"0..*"}
+                """);
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("\"kind\":\"OWNERSHIP\""));
+        assertEquals("Customer_Orders", modelRoot.associations().getFirst().azName());
+        assertEquals("0..*", modelRoot.associations().getFirst().cardinality().toString());
+        assertEquals(1, sessionManager.findSession(sessionId).orElseThrow().commandHistory().size());
+    }
+
+    @Test
+    void undoCommandRemovesPreviouslyCreatedAssociation() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addEntity(new VEntity("Customer", "Customer", modelRoot.version()));
+        modelRoot.addEntity(new VEntity("Order", "Order", modelRoot.version()));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+        post("/sessions/" + sessionId + "/commands/create-association", """
+                {"kind":"reference","associationAzName":"Order_Customer","associationVisName":"customer","sourceEntityAzName":"Order","targetEntityAzName":"Customer","cardinality":"1"}
+                """);
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/undo");
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("\"undoneCommand\":\"create-association\""));
+        assertTrue(response.body().contains("\"associationAzName\":\"Order_Customer\""));
+        assertTrue(modelRoot.associations().isEmpty());
         assertTrue(sessionManager.findSession(sessionId).orElseThrow().commandHistory().isEmpty());
     }
 

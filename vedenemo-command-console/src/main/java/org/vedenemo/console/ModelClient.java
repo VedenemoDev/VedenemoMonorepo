@@ -15,6 +15,10 @@ public interface ModelClient {
 
     List<AttributeSummary> listAttributes(String modelAzName, String entityAzName) throws IOException, InterruptedException;
 
+    List<AssociationSummary> listAssociations(String modelAzName) throws IOException, InterruptedException;
+
+    List<AssociationSummary> listAssociations(String modelAzName, String entityAzName) throws IOException, InterruptedException;
+
     String exportScript(String modelAzName) throws IOException, InterruptedException;
 
     ModelImportResult importScript(String script, String modelAzNameOverride) throws IOException, InterruptedException;

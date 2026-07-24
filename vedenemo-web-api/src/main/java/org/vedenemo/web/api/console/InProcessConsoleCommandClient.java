@@ -3,9 +3,12 @@ package org.vedenemo.web.api.console;
 import org.vedenemo.console.CommandClient;
 import org.vedenemo.console.UndoCommandResult;
 import org.vedenemo.core.command.CommandExecutor;
+import org.vedenemo.core.command.CreateAssociationCommand;
 import org.vedenemo.core.command.CreateAttributeCommand;
 import org.vedenemo.core.command.CreateEntityCommand;
 import org.vedenemo.core.command.UndoResult;
+import org.vedenemo.core.model.AssociationKind;
+import org.vedenemo.core.model.Cardinality;
 import org.vedenemo.core.model.DataType;
 import org.vedenemo.core.session.SessionManager;
 import org.vedenemo.web.api.events.ModelChangeBroadcaster;
@@ -54,6 +57,30 @@ final class InProcessConsoleCommandClient implements CommandClient {
     }
 
     @Override
+    public void createAssociation(
+            UUID sessionId,
+            String kind,
+            String associationAzName,
+            String associationVisName,
+            String sourceEntityAzName,
+            String targetEntityAzName,
+            String cardinality
+    ) throws IOException {
+        CommandExecutor executor = executor(sessionId);
+        String modelAzName = selectedModelAzName(executor);
+        executor.execute(new CreateAssociationCommand(
+                modelAzName,
+                parseAssociationKind(kind),
+                associationAzName,
+                associationVisName,
+                sourceEntityAzName,
+                targetEntityAzName,
+                cardinality == null || cardinality.isBlank() ? Cardinality.parse("1") : Cardinality.parse(cardinality)
+        ));
+        modelChangeBroadcaster.broadcastModelChanged(modelAzName);
+    }
+
+    @Override
     public UndoCommandResult undo(UUID sessionId) throws IOException {
         UndoResult result = executor(sessionId).undoLatest();
         if (result.isNothingToUndo()) {
@@ -64,7 +91,8 @@ final class InProcessConsoleCommandClient implements CommandClient {
                 result.undoneCommand(),
                 result.modelAzName(),
                 result.entityAzName(),
-                result.attributeAzName()
+                result.attributeAzName(),
+                result.associationAzName()
         );
     }
 
@@ -91,6 +119,17 @@ final class InProcessConsoleCommandClient implements CommandClient {
             case "url" -> DataType.URL;
             case "data" -> DataType.DATA;
             default -> throw new IllegalArgumentException("unsupported dataType: " + value);
+        };
+    }
+
+    private static AssociationKind parseAssociationKind(String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("association kind is required");
+        }
+        return switch (value.trim().toLowerCase()) {
+            case "ownership" -> AssociationKind.OWNERSHIP;
+            case "reference" -> AssociationKind.REFERENCE;
+            default -> throw new IllegalArgumentException("unsupported association kind: " + value);
         };
     }
 }

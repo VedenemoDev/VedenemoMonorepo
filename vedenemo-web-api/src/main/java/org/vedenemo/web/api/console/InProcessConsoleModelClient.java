@@ -1,10 +1,12 @@
 package org.vedenemo.web.api.console;
 
+import org.vedenemo.console.AssociationSummary;
 import org.vedenemo.console.AttributeSummary;
 import org.vedenemo.console.EntitySummary;
 import org.vedenemo.console.ModelClient;
 import org.vedenemo.console.ModelImportResult;
 import org.vedenemo.console.ModelSummary;
+import org.vedenemo.core.model.Association;
 import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.VEntity;
 import org.vedenemo.core.registry.ModelRegistry;
@@ -71,6 +73,32 @@ final class InProcessConsoleModelClient implements ModelClient {
     }
 
     @Override
+    public List<AssociationSummary> listAssociations(String modelAzName) throws IOException {
+        ModelRoot modelRoot = modelRegistry.find(modelAzName)
+                .orElseThrow(() -> new IOException("model not found"));
+        return modelRoot.associations().stream()
+                .map(InProcessConsoleModelClient::toAssociationSummary)
+                .toList();
+    }
+
+    @Override
+    public List<AssociationSummary> listAssociations(String modelAzName, String entityAzName) throws IOException {
+        ModelRoot modelRoot = modelRegistry.find(modelAzName)
+                .orElseThrow(() -> new IOException("model not found"));
+        String entityKey = VEntity.uniquenessKey(entityAzName);
+        boolean entityExists = modelRoot.entities().stream()
+                .anyMatch(entity -> VEntity.uniquenessKey(entity.azName()).equals(entityKey));
+        if (!entityExists) {
+            throw new IOException("entity not found");
+        }
+        return modelRoot.associations().stream()
+                .filter(association -> VEntity.uniquenessKey(association.sourceEntityAzName()).equals(entityKey)
+                        || VEntity.uniquenessKey(association.targetEntityAzName()).equals(entityKey))
+                .map(InProcessConsoleModelClient::toAssociationSummary)
+                .toList();
+    }
+
+    @Override
     public String exportScript(String modelAzName) throws IOException {
         throw new IOException("model save is not supported by this console adapter");
     }
@@ -78,5 +106,18 @@ final class InProcessConsoleModelClient implements ModelClient {
     @Override
     public ModelImportResult importScript(String script, String modelAzNameOverride) throws IOException {
         throw new IOException("model load is not supported by this console adapter");
+    }
+
+    private static AssociationSummary toAssociationSummary(Association association) {
+        return new AssociationSummary(
+                association.azName(),
+                association.visName(),
+                association.kind().name(),
+                association.sourceEntityAzName(),
+                association.targetEntityAzName(),
+                association.cardinality().toString(),
+                association.activeSince().toString(),
+                association.deprecatedSince().map(Object::toString).orElse(null)
+        );
     }
 }

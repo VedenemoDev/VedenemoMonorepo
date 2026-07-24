@@ -92,8 +92,40 @@ final class ConsoleSessionTest {
         assertTrue(modelClient.pingCalled);
     }
 
+    @Test
+    void listsModelAssociationsWhenNoEntityIsSelected() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.associations.add(new AssociationSummary(
+                "Customer_Orders",
+                "orders",
+                "OWNERSHIP",
+                "Customer",
+                "Order",
+                "0..*",
+                "1.0.0",
+                null
+        ));
+        TestSessionClient sessionClient = new TestSessionClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsole()
+        );
+
+        session.execute("attach Example_Model");
+        ConsoleCommandResult result = session.execute("associations");
+
+        assertEquals(ConsoleCommandResult.Status.OK, result.status());
+        assertEquals("Associations for model Example_Model:", result.outputLines().getFirst());
+        assertTrue(result.outputLines().contains("1. orders (Customer_Orders) OWNERSHIP Customer -> Order [0..*] active since 1.0.0"));
+    }
+
     private static final class TestModelClient implements ModelClient {
         private final List<ModelSummary> models = new ArrayList<>();
+        private final List<AssociationSummary> associations = new ArrayList<>();
         private boolean pingCalled;
 
         @Override
@@ -119,6 +151,19 @@ final class ConsoleSessionTest {
         @Override
         public List<AttributeSummary> listAttributes(String modelAzName, String entityAzName) {
             return List.of();
+        }
+
+        @Override
+        public List<AssociationSummary> listAssociations(String modelAzName) {
+            return List.copyOf(associations);
+        }
+
+        @Override
+        public List<AssociationSummary> listAssociations(String modelAzName, String entityAzName) {
+            return associations.stream()
+                    .filter(association -> association.sourceEntityAzName().equals(entityAzName)
+                            || association.targetEntityAzName().equals(entityAzName))
+                    .toList();
         }
 
         @Override
@@ -168,6 +213,18 @@ final class ConsoleSessionTest {
                 String attributeAzName,
                 String attributeVisName,
                 String dataType
+        ) {
+        }
+
+        @Override
+        public void createAssociation(
+                UUID sessionId,
+                String kind,
+                String associationAzName,
+                String associationVisName,
+                String sourceEntityAzName,
+                String targetEntityAzName,
+                String cardinality
         ) {
         }
 

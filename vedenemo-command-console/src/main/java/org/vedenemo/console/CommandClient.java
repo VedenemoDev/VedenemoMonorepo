@@ -15,5 +15,15 @@ public interface CommandClient {
             String dataType
     ) throws IOException, InterruptedException;
 
+    void createAssociation(
+            UUID sessionId,
+            String kind,
+            String associationAzName,
+            String associationVisName,
+            String sourceEntityAzName,
+            String targetEntityAzName,
+            String cardinality
+    ) throws IOException, InterruptedException;
+
     UndoCommandResult undo(UUID sessionId) throws IOException, InterruptedException;
 }

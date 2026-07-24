@@ -3631,3 +3631,65 @@ Current status and next steps:
   import and integrity validation.
 - `git diff --check` passed. No code tests were run because this was a
   planning/documentation-only change.
+
+## 2026-07-24 16:46 EEST
+
+Session goal: persist the six-step association implementation plan and execute
+the directed association slices.
+
+Files changed:
+
+- `tasks/implementation-plan-associations.md`
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/*`
+- `vedenemo-model-api/src/test/java/org/vedenemo/core/model/*`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/*`
+- `vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/*`
+- `vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/*`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/*`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/*`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/*`
+- `vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- Source inspection with `rg --files`, `rg`, and `sed`
+- `mvn -B -pl vedenemo-model-api test`
+- `mvn -B -pl vedenemo-core -am test`
+- `mvn -B test` (failed after stale/unpack lifecycle issues before rerunning
+  documented verification)
+- `mvn -B clean test` (failed because CLI dependency unpack runs before the
+  reactor artifact is packaged during `test`)
+- `mvn -B verify`
+- `npm run build` (first sandboxed run failed because Vite needed to write
+  under `node_modules`; approved rerun passed)
+- `git diff --check`
+- `git status --short`
+- `rg -n "^## |^Status:" tasks/backlog.md tasks/implementation-plan-associations.md tasks/current-task.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Persisted the association implementation plan in
+  `tasks/implementation-plan-associations.md`.
+- Completed steps 1-5: cardinality, directed association model/core support,
+  `.vdos` persistence, API/shared console/CLI exposure, and UX PlantUML edges.
+- Marked the corresponding backlog items executed and left true bidirectional
+  relations pending.
+- `mvn -B verify` passed.
+- `npm run build` passed after approved rerun.
+- Next implementation step is `Add True Bidirectional Relations`; keep it as a
+  separate task after reviewing/exercising directed associations.

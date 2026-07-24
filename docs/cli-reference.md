@@ -278,6 +278,56 @@ exists in the entity, the CLI prints the failure and keeps the current context:
 Attribute was not added: attribute add failed with HTTP status 400: ...
 ```
 
+### `associations`
+
+Lists directed model-level associations. If no entity is selected, the command
+lists all associations in the attached model. If an entity is selected, it lists
+associations touching that entity.
+
+Example without an entity selected:
+
+```text
+VedenemoCli[Example_Model]>associations
+Associations for model Example_Model:
+1. orders (Customer_orders) OWNERSHIP Customer -> Order [0..*] active since 1.0.0
+```
+
+Example with an entity selected:
+
+```text
+VedenemoCli[Example_Model/Customer]>associations
+Associations for entity Customer in model Example_Model:
+1. orders (Customer_orders) OWNERSHIP Customer -> Order [0..*] active since 1.0.0
+```
+
+### `assoc add [ownership | reference]`
+
+Adds a directed model-level association through the backend command API.
+
+Supported first-version kinds:
+
+- `ownership`, rendered as a composition-style edge in the UX diagram
+- `reference`, rendered as an aggregation-style edge in the UX diagram
+
+The CLI asks for source entity, target entity, visible name, cardinality, and
+lastly `azName`. Source and target can be exact entity `azName` values or
+numbers from the latest `entities` output. Blank cardinality defaults to `1`.
+
+Example:
+
+```text
+VedenemoCli[Example_Model]>entities
+1. Customer (Customer) active since 1.0.0
+2. Order (Order) active since 1.0.0
+VedenemoCli[Example_Model]>assoc add ownership
+Source entity number or azName: 1
+Target entity number or azName: 2
+Association visible name: orders
+Association cardinality [1]: 0..*
+Association azName [Customer_orders]:
+Association Customer_orders added.
+```
+
 ### `save [N | azName] [outputPath]`
 
 Saves a model to a UTF-8 Vedenemo Script file with the `.vdos` extension.

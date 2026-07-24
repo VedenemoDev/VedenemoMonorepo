@@ -2,7 +2,7 @@
 
 ## Plan Association Semantics For Vedenemo Models
 
-Status: planning.
+Status: executed.
 
 ### Goal
 
@@ -105,7 +105,7 @@ The first slice should still move through the existing vertical path:
 
 ## Add Cardinality Value Object
 
-Status: planning.
+Status: executed.
 
 ### Goal
 
@@ -141,7 +141,7 @@ number.
 
 ## Add Directed Model Associations
 
-Status: planning.
+Status: executed.
 
 ### Goal
 
@@ -222,7 +222,7 @@ introduced later if generated APIs or UI views need field-like navigation.
 
 ## Expose Directed Associations In API, UX, And Diagrams
 
-Status: planning.
+Status: executed.
 
 ### Goal
 

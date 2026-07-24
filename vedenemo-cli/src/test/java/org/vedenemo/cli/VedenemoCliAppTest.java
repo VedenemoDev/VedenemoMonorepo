@@ -1,5 +1,6 @@
 package org.vedenemo.cli;
 
+import org.vedenemo.console.AssociationSummary;
 import org.vedenemo.console.AttributeSummary;
 import org.vedenemo.console.CommandClient;
 import org.vedenemo.console.EntitySummary;
@@ -474,7 +475,8 @@ final class VedenemoCliAppTest {
                 "create-attribute",
                 "Example_Model",
                 "Customer",
-                "Email"
+                "Email",
+                null
         );
 
         Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), commandClient, "undo\nexit\n");
@@ -500,6 +502,31 @@ final class VedenemoCliAppTest {
         Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), commandClient, "undo\nexit\n");
 
         assertTrue(result.output.contains("Unexpected response code: 500"));
+    }
+
+    @Test
+    void assocAddCreatesAssociationWithPromptedValues() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+        modelClient.entities.add(new EntitySummary("Order", "Order", "1.0.0", null));
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                commandClient,
+                "attach Example_Model\nentities\nassoc add ownership\n1\n2\norders\n0..*\n\nexit\n"
+        );
+
+        assertEquals("ownership", commandClient.createdAssociationKind);
+        assertEquals("Customer_orders", commandClient.createdAssociationAzName);
+        assertEquals("orders", commandClient.createdAssociationVisName);
+        assertEquals("Customer", commandClient.createdAssociationSourceEntityAzName);
+        assertEquals("Order", commandClient.createdAssociationTargetEntityAzName);
+        assertEquals("0..*", commandClient.createdAssociationCardinality);
+        assertTrue(result.output.contains("Association Customer_orders added."));
     }
 
     @Test
@@ -792,6 +819,7 @@ final class VedenemoCliAppTest {
         private final List<ModelSummary> models = new ArrayList<>();
         private final List<EntitySummary> entities = new ArrayList<>();
         private final List<AttributeSummary> attributes = new ArrayList<>();
+        private final List<AssociationSummary> associations = new ArrayList<>();
         private boolean pingCalled;
         private IOException addFailure;
         private String exportedScript = "";
@@ -831,6 +859,19 @@ final class VedenemoCliAppTest {
         }
 
         @Override
+        public List<AssociationSummary> listAssociations(String modelAzName) {
+            return List.copyOf(associations);
+        }
+
+        @Override
+        public List<AssociationSummary> listAssociations(String modelAzName, String entityAzName) {
+            return associations.stream()
+                    .filter(association -> association.sourceEntityAzName().equals(entityAzName)
+                            || association.targetEntityAzName().equals(entityAzName))
+                    .toList();
+        }
+
+        @Override
         public String exportScript(String modelAzName) {
             exportedModelAzName = modelAzName;
             return exportedScript;
@@ -859,11 +900,18 @@ final class VedenemoCliAppTest {
         private String createdAttributeAzName;
         private String createdAttributeVisName;
         private String createdAttributeDataType;
+        private String createdAssociationKind;
+        private String createdAssociationAzName;
+        private String createdAssociationVisName;
+        private String createdAssociationSourceEntityAzName;
+        private String createdAssociationTargetEntityAzName;
+        private String createdAssociationCardinality;
         private boolean undoCalled;
         private UndoCommandResult undoResult = UndoCommandResult.undone(
                 "create-entity",
                 "Example_Model",
                 "Customer",
+                null,
                 null
         );
         private IOException createFailure;
@@ -896,6 +944,24 @@ final class VedenemoCliAppTest {
             createdAttributeAzName = attributeAzName;
             createdAttributeVisName = attributeVisName;
             createdAttributeDataType = dataType;
+        }
+
+        @Override
+        public void createAssociation(
+                UUID sessionId,
+                String kind,
+                String associationAzName,
+                String associationVisName,
+                String sourceEntityAzName,
+                String targetEntityAzName,
+                String cardinality
+        ) {
+            createdAssociationKind = kind;
+            createdAssociationAzName = associationAzName;
+            createdAssociationVisName = associationVisName;
+            createdAssociationSourceEntityAzName = sourceEntityAzName;
+            createdAssociationTargetEntityAzName = targetEntityAzName;
+            createdAssociationCardinality = cardinality;
         }
 
         @Override

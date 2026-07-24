@@ -1,6 +1,8 @@
 package org.vedenemo.core.command;
 
 import org.junit.jupiter.api.Test;
+import org.vedenemo.core.model.AssociationKind;
+import org.vedenemo.core.model.Cardinality;
 import org.vedenemo.core.model.DataType;
 import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.VEntity;
@@ -202,6 +204,77 @@ final class CommandExecutorTest {
         assertTrue(fixture.modelRoot.entities().getFirst().attributes().isEmpty());
     }
 
+    @Test
+    void createAssociationCommandAddsAssociationToSelectedModel() {
+        Fixture fixture = fixtureWithSelectedModelAndTwoEntities();
+
+        fixture.executor.execute(new CreateAssociationCommand(
+                "Example_Model",
+                AssociationKind.OWNERSHIP,
+                "Customer_Orders",
+                "orders",
+                "Customer",
+                "Order",
+                Cardinality.parse("0..*")
+        ));
+
+        assertEquals(1, fixture.modelRoot.associations().size());
+        assertEquals("Customer_Orders", fixture.modelRoot.associations().getFirst().azName());
+        assertEquals("orders", fixture.modelRoot.associations().getFirst().visName());
+        assertEquals("Customer", fixture.modelRoot.associations().getFirst().sourceEntityAzName());
+        assertEquals("Order", fixture.modelRoot.associations().getFirst().targetEntityAzName());
+        assertEquals(AssociationKind.OWNERSHIP, fixture.modelRoot.associations().getFirst().kind());
+        assertEquals(Cardinality.parse("0..*"), fixture.modelRoot.associations().getFirst().cardinality());
+        assertEquals(fixture.modelRoot.version(), fixture.modelRoot.associations().getFirst().activeSince());
+        assertEquals(3, fixture.session.commandHistory().size());
+        assertEquals(3, fixture.commandJournal.listForModel("Example_Model").size());
+    }
+
+    @Test
+    void createAssociationCommandRequiresExistingEndpoints() {
+        Fixture fixture = fixtureWithSelectedModelAndEntity();
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> fixture.executor.execute(new CreateAssociationCommand(
+                        "Example_Model",
+                        AssociationKind.REFERENCE,
+                        "Customer_Order",
+                        "order",
+                        "Customer",
+                        "Order",
+                        Cardinality.parse("1")
+                ))
+        );
+
+        assertTrue(fixture.modelRoot.associations().isEmpty());
+        assertEquals(1, fixture.session.commandHistory().size());
+    }
+
+    @Test
+    void undoAfterCreateAssociationRemovesAssociationAndOriginalCommandFromHistory() {
+        Fixture fixture = fixtureWithSelectedModelAndTwoEntities();
+        fixture.executor.execute(new CreateAssociationCommand(
+                "Example_Model",
+                AssociationKind.REFERENCE,
+                "Order_Customer",
+                "customer",
+                "Order",
+                "Customer",
+                Cardinality.parse("1")
+        ));
+
+        UndoResult result = fixture.executor.undoLatest();
+
+        assertEquals(UndoResult.Status.UNDONE, result.status());
+        assertEquals("create-association", result.undoneCommand());
+        assertEquals("Example_Model", result.modelAzName());
+        assertEquals("Order_Customer", result.associationAzName());
+        assertTrue(fixture.modelRoot.associations().isEmpty());
+        assertEquals(2, fixture.session.commandHistory().size());
+        assertEquals(2, fixture.commandJournal.listForModel("Example_Model").size());
+    }
+
     private static Fixture fixtureWithSelectedModel() {
         Fixture fixture = fixtureWithoutSelectedModel();
         fixture.session.selectModel("Example_Model");
@@ -211,6 +284,12 @@ final class CommandExecutorTest {
     private static Fixture fixtureWithSelectedModelAndEntity() {
         Fixture fixture = fixtureWithSelectedModel();
         fixture.executor.execute(new CreateEntityCommand("Example_Model", "Customer", "Customer"));
+        return fixture;
+    }
+
+    private static Fixture fixtureWithSelectedModelAndTwoEntities() {
+        Fixture fixture = fixtureWithSelectedModelAndEntity();
+        fixture.executor.execute(new CreateEntityCommand("Example_Model", "Order", "Order"));
         return fixture;
     }
 

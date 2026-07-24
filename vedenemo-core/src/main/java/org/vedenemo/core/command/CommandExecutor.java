@@ -1,6 +1,10 @@
 package org.vedenemo.core.command;
 
+import org.vedenemo.core.model.Association;
+import org.vedenemo.core.model.AssociationKind;
 import org.vedenemo.core.model.ModelRoot;
+import org.vedenemo.core.model.OwnershipAssociation;
+import org.vedenemo.core.model.ReferenceAssociation;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
 import org.vedenemo.core.registry.ModelRegistry;
@@ -71,6 +75,16 @@ public final class CommandExecutor {
                     createAttributeCommand.attributeAzName()
             );
         }
+        if (command instanceof CreateAssociationCommand createAssociationCommand) {
+            apply(new DeleteAssociationCommand(
+                    createAssociationCommand.modelAzName(),
+                    createAssociationCommand.associationAzName()
+            ));
+            return UndoResult.undoneCreateAssociation(
+                    createAssociationCommand.modelAzName(),
+                    createAssociationCommand.associationAzName()
+            );
+        }
         throw new IllegalStateException("command has no undo counterpart: " + command.getClass().getSimpleName());
     }
 
@@ -79,6 +93,10 @@ public final class CommandExecutor {
             applyCreateEntity(createEntityCommand);
         } else if (command instanceof CreateAttributeCommand createAttributeCommand) {
             applyCreateAttribute(createAttributeCommand);
+        } else if (command instanceof CreateAssociationCommand createAssociationCommand) {
+            applyCreateAssociation(createAssociationCommand);
+        } else if (command instanceof DeleteAssociationCommand deleteAssociationCommand) {
+            applyDeleteAssociation(deleteAssociationCommand);
         } else if (command instanceof DeleteAttributeCommand deleteAttributeCommand) {
             applyDeleteAttribute(deleteAttributeCommand);
         } else if (command instanceof DeleteEntityCommand deleteEntityCommand) {
@@ -106,12 +124,24 @@ public final class CommandExecutor {
         ));
     }
 
+    private void applyCreateAssociation(CreateAssociationCommand command) {
+        ModelRoot modelRoot = selectedModel(command.modelAzName());
+        modelRoot.addAssociation(toAssociation(command, modelRoot));
+    }
+
     private void applyDeleteAttribute(DeleteAttributeCommand command) {
         ModelRoot modelRoot = modelRegistry.find(command.modelAzName())
                 .orElseThrow(() -> new IllegalStateException("selected model not found"));
         VEntity entity = findEntity(modelRoot, command.entityAzName());
         entity.removeAttribute(command.attributeAzName())
                 .orElseThrow(() -> new IllegalStateException("attribute not found"));
+    }
+
+    private void applyDeleteAssociation(DeleteAssociationCommand command) {
+        ModelRoot modelRoot = modelRegistry.find(command.modelAzName())
+                .orElseThrow(() -> new IllegalStateException("selected model not found"));
+        modelRoot.removeAssociation(command.associationAzName())
+                .orElseThrow(() -> new IllegalStateException("association not found"));
     }
 
     private ModelRoot selectedModel(String commandModelAzName) {
@@ -137,6 +167,30 @@ public final class CommandExecutor {
                 .filter(entity -> VEntity.uniquenessKey(entity.azName()).equals(targetKey))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("entity not found"));
+    }
+
+    private static Association toAssociation(CreateAssociationCommand command, ModelRoot modelRoot) {
+        if (command.kind() == AssociationKind.OWNERSHIP) {
+            return new OwnershipAssociation(
+                    command.associationAzName(),
+                    command.associationVisName(),
+                    command.sourceEntityAzName(),
+                    command.targetEntityAzName(),
+                    command.cardinality(),
+                    modelRoot.version()
+            );
+        }
+        if (command.kind() == AssociationKind.REFERENCE) {
+            return new ReferenceAssociation(
+                    command.associationAzName(),
+                    command.associationVisName(),
+                    command.sourceEntityAzName(),
+                    command.targetEntityAzName(),
+                    command.cardinality(),
+                    modelRoot.version()
+            );
+        }
+        throw new IllegalArgumentException("unsupported association kind: " + command.kind());
     }
 
     public ModelStorage modelStorage() {

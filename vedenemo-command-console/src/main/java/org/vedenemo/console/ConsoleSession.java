@@ -19,6 +19,7 @@ public final class ConsoleSession {
     private List<ModelSummary> latestModels = List.of();
     private List<EntitySummary> latestEntities = List.of();
     private List<AttributeSummary> latestAttributes = List.of();
+    private List<AssociationSummary> latestAssociations = List.of();
 
     public ConsoleSession(
             UUID backendSessionId,
@@ -58,6 +59,10 @@ public final class ConsoleSession {
         return List.copyOf(latestAttributes);
     }
 
+    public List<AssociationSummary> latestAssociations() {
+        return List.copyOf(latestAssociations);
+    }
+
     public void refreshModels() throws IOException, InterruptedException {
         latestModels = modelClient.listModels();
     }
@@ -91,6 +96,8 @@ public final class ConsoleSession {
                 listEntities(output);
             } else if ("attributes".equals(command) && commandOnly(trimmed)) {
                 listAttributes(output);
+            } else if ("associations".equals(command) && commandOnly(trimmed)) {
+                listAssociations(output);
             } else if ("detach".equals(command) && commandOnly(trimmed)) {
                 detachModel(output);
             } else if ("attach".equals(command)) {
@@ -103,7 +110,7 @@ public final class ConsoleSession {
                 unsupportedFileCommand("save", output);
             } else if ("load".equals(command)) {
                 unsupportedFileCommand("load", output);
-            } else if ("add".equals(command) || "attr".equals(command)) {
+            } else if ("add".equals(command) || "attr".equals(command) || "assoc".equals(command)) {
                 output.add("Command '" + command + "' requires interactive terminal prompts and is not supported in the web console yet.");
                 return ConsoleCommandResult.error(output);
             } else {
@@ -144,6 +151,7 @@ public final class ConsoleSession {
         output.add("  entity [N | azName] - select an entity in the attached model");
         output.add("  entity detach - clear the selected entity");
         output.add("  attributes - list attributes in the selected entity");
+        output.add("  associations - list model associations, or selected entity associations");
         output.add("  undo - undo the latest backend command");
         output.add("  save [N | azName] [outputPath] - not supported in the web console");
         output.add("  load <path> - not supported in the web console");
@@ -210,6 +218,7 @@ public final class ConsoleSession {
         attachedEntityAzName = null;
         latestEntities = List.of();
         latestAttributes = List.of();
+        latestAssociations = List.of();
     }
 
     private void detachModel(List<String> output) throws IOException, InterruptedException {
@@ -222,6 +231,7 @@ public final class ConsoleSession {
         attachedEntityAzName = null;
         latestEntities = List.of();
         latestAttributes = List.of();
+        latestAssociations = List.of();
         output.add("Detached from model.");
     }
 
@@ -265,6 +275,7 @@ public final class ConsoleSession {
         }
         attachedEntityAzName = entity.orElseThrow().azName();
         latestAttributes = List.of();
+        latestAssociations = List.of();
         output.add("Selected entity " + entity.orElseThrow().azName() + ".");
     }
 
@@ -298,6 +309,7 @@ public final class ConsoleSession {
         }
         attachedEntityAzName = null;
         latestAttributes = List.of();
+        latestAssociations = List.of();
         output.add("Entity detached.");
     }
 
@@ -326,6 +338,42 @@ public final class ConsoleSession {
                     + " active since "
                     + attribute.activeSince()
                     + deprecatedSuffix(attribute.deprecatedSince()));
+        }
+    }
+
+    private void listAssociations(List<String> output) throws IOException, InterruptedException {
+        if (attachedModelAzName == null) {
+            output.add("Attach a model before listing associations.");
+            return;
+        }
+        if (attachedEntityAzName == null) {
+            latestAssociations = modelClient.listAssociations(attachedModelAzName);
+            output.add("Associations for model " + attachedModelAzName + ":");
+        } else {
+            latestAssociations = modelClient.listAssociations(attachedModelAzName, attachedEntityAzName);
+            output.add("Associations for entity " + attachedEntityAzName + " in model " + attachedModelAzName + ":");
+        }
+        if (latestAssociations.isEmpty()) {
+            output.add("No associations available.");
+            return;
+        }
+        for (int index = 0; index < latestAssociations.size(); index++) {
+            AssociationSummary association = latestAssociations.get(index);
+            output.add((index + 1) + ". "
+                    + association.visName()
+                    + " ("
+                    + association.azName()
+                    + ") "
+                    + association.kind()
+                    + " "
+                    + association.sourceEntityAzName()
+                    + " -> "
+                    + association.targetEntityAzName()
+                    + " ["
+                    + association.cardinality()
+                    + "] active since "
+                    + association.activeSince()
+                    + deprecatedSuffix(association.deprecatedSince()));
         }
     }
 
@@ -390,6 +438,13 @@ public final class ConsoleSession {
                     + " from entity "
                     + result.entityAzName()
                     + " in model "
+                    + result.modelAzName()
+                    + ".";
+        }
+        if ("create-association".equals(result.undoneCommand())) {
+            return "Undo completed: removed association "
+                    + result.associationAzName()
+                    + " from model "
                     + result.modelAzName()
                     + ".";
         }

@@ -1,12 +1,18 @@
 package org.vedenemo.core.script;
 
 import org.vedenemo.core.command.Command;
+import org.vedenemo.core.command.CreateAssociationCommand;
 import org.vedenemo.core.command.CreateAttributeCommand;
 import org.vedenemo.core.command.CreateEntityCommand;
 import org.vedenemo.core.command.ModelCommandJournal;
+import org.vedenemo.core.model.Association;
+import org.vedenemo.core.model.AssociationKind;
+import org.vedenemo.core.model.Cardinality;
 import org.vedenemo.core.model.DataType;
 import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.ModelVersion;
+import org.vedenemo.core.model.OwnershipAssociation;
+import org.vedenemo.core.model.ReferenceAssociation;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
 import org.vedenemo.core.registry.ModelRegistry;
@@ -61,6 +67,17 @@ public final class VedenemoScriptService {
                         .append("\n");
             }
         }
+        for (Association association : modelRoot.associations()) {
+            script.append("association azName=").append(association.azName())
+                    .append(" visName=").append(quote(association.visName()))
+                    .append(" kind=").append(association.kind().name())
+                    .append(" source=").append(association.sourceEntityAzName())
+                    .append(" target=").append(association.targetEntityAzName())
+                    .append(" cardinality=").append(association.cardinality())
+                    .append(" activeSince=").append(association.activeSince())
+                    .append(" deprecatedSince=").append(versionOrNull(association.deprecatedSince().orElse(null)))
+                    .append("\n");
+        }
         return script.toString();
     }
 
@@ -100,6 +117,16 @@ public final class VedenemoScriptService {
                     + " dataType=" + createAttributeCommand.dataType().name()
                     + " activeSince=" + modelVersion;
         }
+        if (command instanceof CreateAssociationCommand createAssociationCommand) {
+            return "create-association model=" + createAssociationCommand.modelAzName()
+                    + " kind=" + createAssociationCommand.kind().name()
+                    + " association=" + createAssociationCommand.associationAzName()
+                    + " visName=" + quote(createAssociationCommand.associationVisName())
+                    + " source=" + createAssociationCommand.sourceEntityAzName()
+                    + " target=" + createAssociationCommand.targetEntityAzName()
+                    + " cardinality=" + createAssociationCommand.cardinality()
+                    + " activeSince=" + modelVersion;
+        }
         throw new IllegalArgumentException("unsupported export command: " + command.getClass().getSimpleName());
     }
 
@@ -114,6 +141,17 @@ public final class VedenemoScriptService {
                     createAttributeCommand.attributeAzName(),
                     createAttributeCommand.attributeVisName(),
                     createAttributeCommand.dataType()
+            );
+        }
+        if (command instanceof CreateAssociationCommand createAssociationCommand) {
+            return new CreateAssociationCommand(
+                    modelAzName,
+                    createAssociationCommand.kind(),
+                    createAssociationCommand.associationAzName(),
+                    createAssociationCommand.associationVisName(),
+                    createAssociationCommand.sourceEntityAzName(),
+                    createAssociationCommand.targetEntityAzName(),
+                    createAssociationCommand.cardinality()
             );
         }
         throw new IllegalArgumentException("unsupported import command: " + command.getClass().getSimpleName());
@@ -132,6 +170,10 @@ public final class VedenemoScriptService {
                     createAttributeCommand.dataType(),
                     modelRoot.version()
             ));
+            return;
+        }
+        if (command instanceof CreateAssociationCommand createAssociationCommand) {
+            modelRoot.addAssociation(toAssociation(createAssociationCommand, modelRoot));
             return;
         }
         throw new IllegalArgumentException("unsupported import command: " + command.getClass().getSimpleName());
@@ -192,6 +234,15 @@ public final class VedenemoScriptService {
                     required(values, "visName", lineIndex),
                     DataType.valueOf(required(values, "dataType", lineIndex))
             );
+            case "create-association" -> new CreateAssociationCommand(
+                    required(values, "model", lineIndex),
+                    AssociationKind.valueOf(required(values, "kind", lineIndex)),
+                    required(values, "association", lineIndex),
+                    required(values, "visName", lineIndex),
+                    required(values, "source", lineIndex),
+                    required(values, "target", lineIndex),
+                    Cardinality.parse(required(values, "cardinality", lineIndex))
+            );
             default -> throw new IllegalArgumentException("unsupported command on script line " + (lineIndex + 1));
         };
     }
@@ -210,6 +261,17 @@ public final class VedenemoScriptService {
                     required(values, "azName", lineIndex),
                     required(values, "visName", lineIndex),
                     DataType.valueOf(required(values, "dataType", lineIndex)),
+                    ModelVersion.parse(required(values, "activeSince", lineIndex)),
+                    parseNullableVersion(required(values, "deprecatedSince", lineIndex))
+            ));
+        } else if ("association".equals(keyword)) {
+            snapshot.associations.add(new SnapshotAssociation(
+                    required(values, "azName", lineIndex),
+                    required(values, "visName", lineIndex),
+                    AssociationKind.valueOf(required(values, "kind", lineIndex)),
+                    required(values, "source", lineIndex),
+                    required(values, "target", lineIndex),
+                    Cardinality.parse(required(values, "cardinality", lineIndex)),
                     ModelVersion.parse(required(values, "activeSince", lineIndex)),
                     parseNullableVersion(required(values, "deprecatedSince", lineIndex))
             ));
@@ -247,6 +309,21 @@ public final class VedenemoScriptService {
         if (actualAttributeCount != snapshot.attributes.size()) {
             throw new IllegalArgumentException("snapshot attribute count does not match replayed commands for " + targetModelAzName);
         }
+        for (SnapshotAssociation expected : snapshot.associations) {
+            Association actual = findAssociation(modelRoot, expected.azName());
+            if (!actual.visName().equals(expected.visName())
+                    || actual.kind() != expected.kind()
+                    || !VEntity.uniquenessKey(actual.sourceEntityAzName()).equals(VEntity.uniquenessKey(expected.sourceEntityAzName()))
+                    || !VEntity.uniquenessKey(actual.targetEntityAzName()).equals(VEntity.uniquenessKey(expected.targetEntityAzName()))
+                    || !actual.cardinality().equals(expected.cardinality())
+                    || !actual.activeSince().equals(expected.activeSince())
+                    || !actual.deprecatedSince().equals(Optional.ofNullable(expected.deprecatedSince()))) {
+                throw new IllegalArgumentException("snapshot association does not match replayed commands: " + expected.azName());
+            }
+        }
+        if (modelRoot.associations().size() != snapshot.associations.size()) {
+            throw new IllegalArgumentException("snapshot association count does not match replayed commands for " + targetModelAzName);
+        }
     }
 
     private static VEntity findEntity(ModelRoot modelRoot, String entityAzName) {
@@ -263,6 +340,38 @@ public final class VedenemoScriptService {
                 .filter(attribute -> VAttribute.uniquenessKey(attribute.azName()).equals(targetKey))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("attribute not found: " + attributeAzName));
+    }
+
+    private static Association findAssociation(ModelRoot modelRoot, String associationAzName) {
+        String targetKey = Association.uniquenessKey(associationAzName);
+        return modelRoot.associations().stream()
+                .filter(association -> Association.uniquenessKey(association.azName()).equals(targetKey))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("association not found: " + associationAzName));
+    }
+
+    private static Association toAssociation(CreateAssociationCommand command, ModelRoot modelRoot) {
+        if (command.kind() == AssociationKind.OWNERSHIP) {
+            return new OwnershipAssociation(
+                    command.associationAzName(),
+                    command.associationVisName(),
+                    command.sourceEntityAzName(),
+                    command.targetEntityAzName(),
+                    command.cardinality(),
+                    modelRoot.version()
+            );
+        }
+        if (command.kind() == AssociationKind.REFERENCE) {
+            return new ReferenceAssociation(
+                    command.associationAzName(),
+                    command.associationVisName(),
+                    command.sourceEntityAzName(),
+                    command.targetEntityAzName(),
+                    command.cardinality(),
+                    modelRoot.version()
+            );
+        }
+        throw new IllegalArgumentException("unsupported association kind: " + command.kind());
     }
 
     private static String keyword(String line) {
@@ -365,6 +474,7 @@ public final class VedenemoScriptService {
     private static final class Snapshot {
         private final List<SnapshotEntity> entities = new ArrayList<>();
         private final List<SnapshotAttribute> attributes = new ArrayList<>();
+        private final List<SnapshotAssociation> associations = new ArrayList<>();
     }
 
     private record SnapshotEntity(
@@ -380,6 +490,18 @@ public final class VedenemoScriptService {
             String azName,
             String visName,
             DataType dataType,
+            ModelVersion activeSince,
+            ModelVersion deprecatedSince
+    ) {
+    }
+
+    private record SnapshotAssociation(
+            String azName,
+            String visName,
+            AssociationKind kind,
+            String sourceEntityAzName,
+            String targetEntityAzName,
+            Cardinality cardinality,
             ModelVersion activeSince,
             ModelVersion deprecatedSince
     ) {

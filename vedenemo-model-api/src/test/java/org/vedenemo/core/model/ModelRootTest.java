@@ -105,7 +105,99 @@ final class ModelRootTest {
         assertEquals(List.of(first, second), modelRoot.entities());
     }
 
+    @Test
+    void preservesAssociationInsertionOrder() {
+        ModelRoot modelRoot = modelWithCustomerAndOrder();
+        Association first = ownership("Customer_Orders", "Customer", "Order");
+        Association second = reference("Order_Customer", "Order", "Customer");
+
+        modelRoot.addAssociation(first);
+        modelRoot.addAssociation(second);
+
+        assertEquals(List.of(first, second), modelRoot.associations());
+    }
+
+    @Test
+    void rejectsDuplicateAssociationAzNameCaseInsensitively() {
+        ModelRoot modelRoot = modelWithCustomerAndOrder();
+        modelRoot.addAssociation(ownership("Customer_Orders", "Customer", "Order"));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> modelRoot.addAssociation(reference("customer_orders", "Order", "Customer"))
+        );
+    }
+
+    @Test
+    void rejectsAssociationWithMissingSourceOrTargetEntity() {
+        ModelRoot modelRoot = ModelRoot.create("Example_Model", "Example Model", "1.0.0");
+        modelRoot.addEntity(entity("Customer"));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> modelRoot.addAssociation(reference("Customer_Order", "Customer", "Order"))
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> modelRoot.addAssociation(reference("Order_Customer", "Order", "Customer"))
+        );
+    }
+
+    @Test
+    void removesAssociationByAzName() {
+        ModelRoot modelRoot = modelWithCustomerAndOrder();
+        Association association = reference("Order_Customer", "Order", "Customer");
+        modelRoot.addAssociation(association);
+
+        assertEquals(association, modelRoot.removeAssociation("order_customer").orElseThrow());
+        assertTrue(modelRoot.associations().isEmpty());
+    }
+
+    @Test
+    void associationsReturnsReadOnlySnapshotCopy() {
+        ModelRoot modelRoot = modelWithCustomerAndOrder();
+        Association first = reference("Order_Customer", "Order", "Customer");
+        Association second = ownership("Customer_Orders", "Customer", "Order");
+        modelRoot.addAssociation(first);
+
+        List<Association> associations = modelRoot.associations();
+        modelRoot.addAssociation(second);
+
+        assertThrows(UnsupportedOperationException.class, () -> associations.add(reference("Another", "Order", "Customer")));
+        assertEquals(List.of(first), associations);
+        assertEquals(List.of(first, second), modelRoot.associations());
+    }
+
     private static VEntity entity(String azName) {
         return new VEntity(azName, azName, ModelVersion.parse("1.0.0"));
+    }
+
+    private static ModelRoot modelWithCustomerAndOrder() {
+        ModelRoot modelRoot = ModelRoot.create("Example_Model", "Example Model", "1.0.0");
+        modelRoot.addEntity(entity("Customer"));
+        modelRoot.addEntity(entity("Order"));
+        return modelRoot;
+    }
+
+    private static Association ownership(String azName, String sourceEntityAzName, String targetEntityAzName) {
+        return new OwnershipAssociation(
+                azName,
+                "orders",
+                sourceEntityAzName,
+                targetEntityAzName,
+                Cardinality.parse("0..*"),
+                ModelVersion.parse("1.0.0")
+        );
+    }
+
+    private static Association reference(String azName, String sourceEntityAzName, String targetEntityAzName) {
+        return new ReferenceAssociation(
+                azName,
+                "customer",
+                sourceEntityAzName,
+                targetEntityAzName,
+                Cardinality.parse("1"),
+                ModelVersion.parse("1.0.0")
+        );
     }
 }

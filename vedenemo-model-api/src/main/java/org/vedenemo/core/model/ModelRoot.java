@@ -12,6 +12,7 @@ public final class ModelRoot {
     private final String visName;
     private final ModelVersion version;
     private final Map<String, VEntity> entitiesByAzName = new LinkedHashMap<>();
+    private final Map<String, Association> associationsByAzName = new LinkedHashMap<>();
 
     public ModelRoot(String azName, String visName, ModelVersion version) {
         this.azName = ModelTextRules.requireAzName(azName);
@@ -61,5 +62,37 @@ public final class ModelRoot {
 
     public synchronized List<VEntity> entities() {
         return List.copyOf(entitiesByAzName.values());
+    }
+
+    public synchronized Association addAssociation(Association association) {
+        Objects.requireNonNull(association, "association must not be null");
+        String key = Association.uniquenessKey(association.azName());
+        if (associationsByAzName.containsKey(key)) {
+            throw new IllegalArgumentException("association azName must be unique within ModelRoot");
+        }
+        requireEntityExists(association.sourceEntityAzName(), "source entity");
+        requireEntityExists(association.targetEntityAzName(), "target entity");
+        associationsByAzName.put(key, association);
+        return association;
+    }
+
+    public synchronized Optional<Association> removeAssociation(String azName) {
+        return Optional.ofNullable(associationsByAzName.remove(ModelTextRules.uniquenessKey(azName)));
+    }
+
+    public synchronized boolean removeAssociation(Association association) {
+        Objects.requireNonNull(association, "association must not be null");
+        String key = Association.uniquenessKey(association.azName());
+        return associationsByAzName.remove(key, association);
+    }
+
+    public synchronized List<Association> associations() {
+        return List.copyOf(associationsByAzName.values());
+    }
+
+    private void requireEntityExists(String entityAzName, String role) {
+        if (!entitiesByAzName.containsKey(VEntity.uniquenessKey(entityAzName))) {
+            throw new IllegalArgumentException(role + " must exist in ModelRoot");
+        }
     }
 }

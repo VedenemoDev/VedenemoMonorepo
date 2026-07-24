@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.router.JavalinDefaultRoutingApi;
 import org.vedenemo.core.command.ModelCommandJournal;
+import org.vedenemo.core.model.Association;
 import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
@@ -92,6 +93,36 @@ public final class ModelsResource {
                     .toList();
             writeJson(context, 200, attributes);
         });
+        routes.get("/models/{modelAzName}/associations", context -> {
+            ModelRoot modelRoot = findModel(context.pathParam("modelAzName"));
+            if (modelRoot == null) {
+                writeJson(context, 404, new ErrorResponse("model not found"));
+                return;
+            }
+            List<AssociationResponse> associations = modelRoot.associations().stream()
+                    .map(AssociationResponse::from)
+                    .toList();
+            writeJson(context, 200, associations);
+        });
+        routes.get("/models/{modelAzName}/entities/{entityAzName}/associations", context -> {
+            ModelRoot modelRoot = findModel(context.pathParam("modelAzName"));
+            if (modelRoot == null) {
+                writeJson(context, 404, new ErrorResponse("model not found"));
+                return;
+            }
+            VEntity entity = findEntity(modelRoot, context.pathParam("entityAzName"));
+            if (entity == null) {
+                writeJson(context, 404, new ErrorResponse("entity not found"));
+                return;
+            }
+            String entityKey = VEntity.uniquenessKey(entity.azName());
+            List<AssociationResponse> associations = modelRoot.associations().stream()
+                    .filter(association -> VEntity.uniquenessKey(association.sourceEntityAzName()).equals(entityKey)
+                            || VEntity.uniquenessKey(association.targetEntityAzName()).equals(entityKey))
+                    .map(AssociationResponse::from)
+                    .toList();
+            writeJson(context, 200, associations);
+        });
         routes.get("/models/{modelAzName}/script", context -> {
             try {
                 String script = scriptService.exportModel(context.pathParam("modelAzName"));
@@ -179,6 +210,30 @@ public final class ModelsResource {
                     attribute.type().name(),
                     attribute.activeSince().toString(),
                     attribute.deprecatedSince().map(Object::toString).orElse(null)
+            );
+        }
+    }
+
+    private record AssociationResponse(
+            String azName,
+            String visName,
+            String kind,
+            String sourceEntityAzName,
+            String targetEntityAzName,
+            String cardinality,
+            String activeSince,
+            String deprecatedSince
+    ) {
+        private static AssociationResponse from(Association association) {
+            return new AssociationResponse(
+                    association.azName(),
+                    association.visName(),
+                    association.kind().name(),
+                    association.sourceEntityAzName(),
+                    association.targetEntityAzName(),
+                    association.cardinality().toString(),
+                    association.activeSince().toString(),
+                    association.deprecatedSince().map(Object::toString).orElse(null)
             );
         }
     }

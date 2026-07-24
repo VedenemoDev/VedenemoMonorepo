@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 public final class HttpCommandClient implements CommandClient {
 
     private static final Pattern UNDO_RESPONSE_PATTERN = Pattern.compile(
-            "\\{\"status\":\"undone\",\"undoneCommand\":\"([^\"]*)\",\"modelAzName\":\"([^\"]*)\",\"entityAzName\":\"([^\"]*)\",\"attributeAzName\":(\"([^\"]*)\"|null)}"
+            "\\{\"status\":\"undone\",\"undoneCommand\":\"([^\"]*)\",\"modelAzName\":\"([^\"]*)\",\"entityAzName\":(\"([^\"]*)\"|null),\"attributeAzName\":(\"([^\"]*)\"|null),\"associationAzName\":(\"([^\"]*)\"|null)}"
     );
 
     private final URI apiBaseUrl;
@@ -71,6 +71,35 @@ public final class HttpCommandClient implements CommandClient {
     }
 
     @Override
+    public void createAssociation(
+            UUID sessionId,
+            String kind,
+            String associationAzName,
+            String associationVisName,
+            String sourceEntityAzName,
+            String targetEntityAzName,
+            String cardinality
+    ) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/sessions/" + sessionId + "/commands/create-association"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("""
+                        {"kind":"%s","associationAzName":"%s","associationVisName":"%s","sourceEntityAzName":"%s","targetEntityAzName":"%s","cardinality":"%s"}\
+                        """.formatted(
+                        escapeJson(kind),
+                        escapeJson(associationAzName),
+                        escapeJson(associationVisName),
+                        escapeJson(sourceEntityAzName),
+                        escapeJson(targetEntityAzName),
+                        escapeJson(cardinality)
+                )))
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("association add failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+    }
+
+    @Override
     public UndoCommandResult undo(UUID sessionId) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/sessions/" + sessionId + "/commands/undo"))
                 .POST(HttpRequest.BodyPublishers.noBody())
@@ -90,7 +119,7 @@ public final class HttpCommandClient implements CommandClient {
         if (!matcher.matches()) {
             throw new IOException("undo response did not contain parseable undo details");
         }
-        return UndoCommandResult.undone(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(5));
+        return UndoCommandResult.undone(matcher.group(1), matcher.group(2), matcher.group(4), matcher.group(6), matcher.group(8));
     }
 
     private static String escapeJson(String value) {

@@ -11,9 +11,11 @@ development, command-flow testing, and shaping the core model/API boundaries.
 
 - Java 21 + Maven multi-module backend.
 - Pure JDK-only core rule for model and command logic.
-- Shared model API with `ModelRoot`, `VEntity`, `VAttribute`, lifecycle version
-  metadata, and initial `DataType` values.
-- Core command execution for creating entities and attributes.
+- Shared model API with `ModelRoot`, `VEntity`, `VAttribute`, directed
+  model-level associations, cardinality, lifecycle version metadata, and
+  initial `DataType` values.
+- Core command execution for creating entities, attributes, and directed
+  ownership/reference associations.
 - Stack-based undo for the latest successful command in the current session.
 - Model-level command journal used by Vedenemo Script export.
 - Backend-owned `.vdos` Vedenemo Script import/export.
@@ -121,6 +123,8 @@ GET    /models/list
 WS     /models/events
 GET    /models/{modelAzName}/entities
 GET    /models/{modelAzName}/entities/{entityAzName}/attributes
+GET    /models/{modelAzName}/associations
+GET    /models/{modelAzName}/entities/{entityAzName}/associations
 GET    /models/{modelAzName}/script
 POST   /models/script
 
@@ -130,6 +134,7 @@ PUT    /sessions/{uuid}/selected-model
 DELETE /sessions/{uuid}/selected-model
 POST   /sessions/{uuid}/commands/create-entity
 POST   /sessions/{uuid}/commands/create-attribute
+POST   /sessions/{uuid}/commands/create-association
 POST   /sessions/{uuid}/commands/undo
 
 POST   /console/sessions
@@ -213,6 +218,8 @@ entity [N | azName]
 entity detach
 attributes
 attr add
+associations
+assoc add [ownership | reference]
 undo
 save [N | azName] [outputPath]
 snapshots
