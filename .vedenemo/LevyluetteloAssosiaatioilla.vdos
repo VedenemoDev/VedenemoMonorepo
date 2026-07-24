@@ -1,0 +1,27 @@
+vedenemo-script 1
+
+model azName=AlbumCollection visName="Levykokoelma" version=1.0.0
+
+commands
+create-entity model=AlbumCollection entity=Artist visName="Esittäjä" activeSince=1.0.0
+create-attribute model=AlbumCollection entity=Artist attribute=Name visName="Nimi" dataType=TEXT activeSince=1.0.0
+create-entity model=AlbumCollection entity=Album visName="Albumi" activeSince=1.0.0
+create-attribute model=AlbumCollection entity=Album attribute=Name visName="Nimi" dataType=TEXT activeSince=1.0.0
+create-attribute model=AlbumCollection entity=Album attribute=year visName="Julkaisuvuosi" dataType=NUMERIC activeSince=1.0.0
+create-attribute model=AlbumCollection entity=Album attribute=Comment visName="Kommentti" dataType=TEXT activeSince=1.0.0
+create-entity model=AlbumCollection entity=Genre visName="Musiikkityyli" activeSince=1.0.0
+create-attribute model=AlbumCollection entity=Genre attribute=Name visName="Nimi" dataType=TEXT activeSince=1.0.0
+create-association model=AlbumCollection kind=REFERENCE association=Album_kuuluu_genreen visName="kuuluu genreen" source=Album target=Genre cardinality=1 activeSince=1.0.0
+create-association model=AlbumCollection kind=REFERENCE association=Albumilla_on_esittajia visName="on" source=Album target=Artist cardinality=1..* activeSince=1.0.0
+
+snapshot
+entity azName=Artist visName="Esittäjä" activeSince=1.0.0 deprecatedSince=null
+attribute entity=Artist azName=Name visName="Nimi" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=Album visName="Albumi" activeSince=1.0.0 deprecatedSince=null
+attribute entity=Album azName=Name visName="Nimi" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Album azName=year visName="Julkaisuvuosi" dataType=NUMERIC activeSince=1.0.0 deprecatedSince=null
+attribute entity=Album azName=Comment visName="Kommentti" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=Genre visName="Musiikkityyli" activeSince=1.0.0 deprecatedSince=null
+attribute entity=Genre azName=Name visName="Nimi" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+association azName=Album_kuuluu_genreen visName="kuuluu genreen" kind=REFERENCE source=Album target=Genre cardinality=1 activeSince=1.0.0 deprecatedSince=null
+association azName=Albumilla_on_esittajia visName="on" kind=REFERENCE source=Album target=Artist cardinality=1..* activeSince=1.0.0 deprecatedSince=null
