@@ -1,47 +1,52 @@
 # Current Task
 
-## Implement True Bidirectional Relations
+## Align Terminal And Browser Console CLI Command Coverage
 
 Status: executed.
 
 ### Goal
 
-Add first-class bidirectional `relation` support on top of the implemented
-model-level association path while preserving strict module boundaries.
+Make the browser `/console` virtual CLI functionally match the terminal
+`VedenemoCli` command surface except for local filesystem commands.
 
 ### Scope
 
-- Add relation model objects as one association identity with two named ends.
-- Preserve existing ownership/reference behavior and `.vdos` compatibility.
-- Extend `CreateAssociationCommand`, undo, journal, `.vdos`, HTTP DTOs, shared
-  console, terminal CLI, and UX PlantUML rendering for `relation`.
-- Require each relation end to provide entity identifier, role name, and
-  cardinality.
-- Keep relation handling in pure model/core code and keep JSON/HTTP parsing in
+- Add shared prompt-state handling so browser console sessions can complete
+  multi-step command flows over multiple HTTP command submissions.
+- Support browser console flows for:
+  - `add`
+  - `attr add`
+  - `assoc add`
+  - `assoc add ownership`
+  - `assoc add reference`
+  - `assoc add relation`
+- Keep `save`, `snapshots`, and `load` terminal-only because they require local
+  filesystem access.
+- Keep terminal stdin/stdout and local file handling in `vedenemo-cli`.
+- Keep browser UI and HTTP session handling in `vedenemo-ux` and
   `vedenemo-web-api`.
 
 ### Completion Notes
 
-- Added `RelationEnd` and `RelationAssociation` to `vedenemo-model-api`.
-- Extended `AssociationKind` with `RELATION` and added end role/cardinality
-  accessors to the association API.
-- `CreateAssociationCommand` now supports relation-specific source and target
-  role/cardinality fields while keeping directed ownership/reference commands
-  compatible.
-- `.vdos` export/import writes relation end fields only for `RELATION`
-  associations and validates those fields during import.
-- HTTP association DTOs and `POST /sessions/{uuid}/commands/create-association`
-  now carry nullable relation end role/cardinality fields.
-- Shared console and terminal CLI support `assoc add relation`; association
-  listing shows relation roles and end cardinalities.
-- UX PlantUML rendering now draws relations as solid undirected lines with role
-  and cardinality labels on both ends.
-- Updated README, CLI reference, implementation architecture documentation,
-  backlog status, and persisted implementation plan.
-- `mvn -B clean verify` passed.
-- `npm run build` passed.
+- Extended `vedenemo-command-console` `ConsoleSession` with prompt-flow state
+  for model, entity, attribute, directed association, and relation creation.
+- Browser console `help` now lists the same supported non-file authoring
+  commands as terminal CLI and clearly marks file commands as unsupported.
+- Browser console Esc cancellation now sends a cancellation command to the
+  backend so pending prompt state is abandoned server-side.
+- Browser console blank Enter is allowed while answering prompts, so defaulted
+  prompt values can be accepted.
+- Added focused shared-console tests for help, add/entity/attribute/association
+  flows, relation kind shortcut, Esc cancellation, and unsupported file
+  commands.
+- Added a web API console-session prompt-flow test.
+- Updated README, CLI reference, implementation architecture documentation, and
+  backlog history.
+- `mvn -B -pl vedenemo-command-console test` passed.
+- `mvn -B verify` passed.
+- `npm run build` passed in `vedenemo-ux`.
 
 ### Next Steps
 
-- Review relation authoring and round-trip behavior through the Firebase UX.
-- Continue with the next backlog item after relation behavior is accepted.
+- Review browser console command parity through the Firebase UX after
+  deployment.

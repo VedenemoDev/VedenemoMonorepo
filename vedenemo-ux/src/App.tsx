@@ -151,16 +151,29 @@ function ConsolePage() {
       return;
     }
 
-    const trimmedCommand = command.trim();
-    if (!trimmedCommand) {
+    const commandToSubmit = command.trim();
+    if (!commandToSubmit && !isInteractivePrompt(session.prompt)) {
       return;
     }
 
+    await submitConsoleCommand(commandToSubmit, true);
+  }
+
+  async function submitConsoleCommand(commandToSubmit: string, recordInCommandHistory: boolean) {
+    if (!apiBaseUrl || !session || isExecuting) {
+      return;
+    }
     setCommand("");
-    setCommandHistory((current) => [...current, trimmedCommand]);
-    setCommandHistoryIndex(commandHistory.length + 1);
+    if (recordInCommandHistory && commandToSubmit) {
+      setCommandHistory((current) => [...current, commandToSubmit]);
+      setCommandHistoryIndex(commandHistory.length + 1);
+    } else {
+      setCommandHistoryIndex(commandHistory.length);
+    }
     setIsExecuting(true);
-    setHistory((current) => [...current, `${session.prompt} ${trimmedCommand}`]);
+    if (recordInCommandHistory) {
+      setHistory((current) => [...current, `${session.prompt} ${commandToSubmit}`]);
+    }
 
     try {
       const response = await fetch(`${apiBaseUrl}/console/sessions/${session.sessionId}/commands`, {
@@ -169,7 +182,7 @@ function ConsolePage() {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ command: trimmedCommand }),
+        body: JSON.stringify({ command: commandToSubmit }),
       });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -200,13 +213,14 @@ function ConsolePage() {
     commandInputRef.current?.focus({ preventScroll: true });
   }
 
+  function isInteractivePrompt(prompt: string): boolean {
+    return !prompt.startsWith("VedenemoCli");
+  }
+
   function navigateCommandHistory(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Escape") {
       event.preventDefault();
-      setCommand("");
-      setCommandHistoryIndex(commandHistory.length);
-      setStatusMessage("Command entry cancelled");
-      focusCommandInput();
+      void submitConsoleCommand("\u001b", false);
       return;
     }
     const isPrevious = event.key === "ArrowUp" || (event.ctrlKey && event.key.toLowerCase() === "p");

@@ -260,19 +260,20 @@ Dependencies:
 ### `vedenemo-command-console`
 
 Shared CLI-like command-flow module. It contains the session-oriented command
-dispatcher, prompt rendering, command result type, terminal/web capability
-flags, and Vedenemo-owned client DTO/interfaces used by command frontends.
+dispatcher, multi-step prompt-flow state, prompt rendering, command result
+type, terminal/web capability flags, and Vedenemo-owned client DTO/interfaces
+used by command frontends.
 
 The module is intentionally UI-neutral:
 
 - it does not read terminal stdin or write terminal stdout;
 - it does not render browser UI;
 - it does not perform local filesystem access;
-- it rejects filesystem-dependent commands such as `save` and `load` when used
-  with web-console capabilities.
+- it rejects filesystem-dependent commands such as `save`, `snapshots`, and
+  `load` when used with web-console capabilities.
 
 Terminal CLI adapters and web API in-process adapters implement the shared
-client interfaces so both entry points use the same command behavior.
+client interfaces so both entry points use the same non-file command behavior.
 
 Dependencies:
 
@@ -284,8 +285,8 @@ Minimal command-line entry point. It reads the backend base URL from
 `VEDENEMO_API_BASE_URL`, defaulting to `http://127.0.0.1:8080`, creates a
 backend session through `POST /sessions/start`, and enters an interactive prompt
 loop. Common CLI-like command DTOs and command-session behavior are supplied by
-`vedenemo-command-console`; terminal input/output, prompts that ask for missing
-arguments, and local `.vdos` file access remain in `vedenemo-cli`.
+`vedenemo-command-console`; terminal input/output and local `.vdos` file access
+remain in `vedenemo-cli`.
 
 Current CLI behavior:
 
@@ -437,7 +438,6 @@ event WebSocket.
 
 Current user-facing behavior:
 
-- renders a minimal deployment check page
 - shows the configured backend URL
 - fetches available models from `{apiBaseUrl}/models/list` at page load
 - provides a Refresh model list button
@@ -448,13 +448,14 @@ Current user-facing behavior:
   diagram in a scrollable viewport
 - exposes `/console` as a separate full-page virtual CLI that starts a backend
   console session, appends command output to a terminal-like history, and runs
-  one command at a time through `{apiBaseUrl}/console/sessions`
+  one command or prompt answer at a time through
+  `{apiBaseUrl}/console/sessions`
 - passes the connected model `azName` into `/console` only when the main UX has
   an active model event connection
 - keeps browser console command input history for the current console page
   session only, navigable with Arrow Up, Arrow Down, Ctrl+P, and Ctrl+N
 - keeps browser console focus on the command input and lets Esc clear/cancel
-  the current command entry
+  the current command entry or pending backend prompt flow
 
 The default runtime config in `vedenemo-ux/public/config.json` points to a
 Tailscale HTTPS backend URL.

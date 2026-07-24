@@ -20,6 +20,7 @@ public final class ConsoleSession {
     private List<EntitySummary> latestEntities = List.of();
     private List<AttributeSummary> latestAttributes = List.of();
     private List<AssociationSummary> latestAssociations = List.of();
+    private PromptFlow promptFlow;
 
     public ConsoleSession(
             UUID backendSessionId,
@@ -81,6 +82,32 @@ public final class ConsoleSession {
     public ConsoleCommandResult execute(String line) {
         ArrayList<String> output = new ArrayList<>();
         String trimmed = line == null ? "" : line.trim();
+        if (line != null && line.indexOf('\u001b') >= 0) {
+            promptFlow = null;
+            return ConsoleCommandResult.ok(List.of("Operation cancelled."));
+        }
+        if (promptFlow != null) {
+            try {
+                ConsoleCommandResult result = promptFlow.accept(trimmed);
+                if (promptFlow.isComplete()) {
+                    promptFlow = null;
+                }
+                return result;
+            } catch (IOException exception) {
+                promptFlow = null;
+                output.add(exception.getMessage());
+                return ConsoleCommandResult.error(output);
+            } catch (InterruptedException exception) {
+                promptFlow = null;
+                Thread.currentThread().interrupt();
+                output.add("Command interrupted.");
+                return ConsoleCommandResult.error(output);
+            } catch (IllegalArgumentException | IllegalStateException exception) {
+                promptFlow = null;
+                output.add(exception.getMessage());
+                return ConsoleCommandResult.error(output);
+            }
+        }
         if (trimmed.isEmpty()) {
             return ConsoleCommandResult.ok(List.of());
         }
@@ -106,13 +133,18 @@ public final class ConsoleSession {
                 handleEntityCommand(trimmed, output);
             } else if ("undo".equals(command) && commandOnly(trimmed)) {
                 undo(output);
+            } else if ("add".equals(command) && commandOnly(trimmed)) {
+                startAddFlow();
+            } else if ("attr".equals(command)) {
+                startAttributeFlow(trimmed, output);
+            } else if ("assoc".equals(command)) {
+                startAssociationFlow(trimmed, output);
             } else if ("save".equals(command)) {
                 unsupportedFileCommand("save", output);
             } else if ("load".equals(command)) {
                 unsupportedFileCommand("load", output);
-            } else if ("add".equals(command) || "attr".equals(command) || "assoc".equals(command)) {
-                output.add("Command '" + command + "' requires interactive terminal prompts and is not supported in the web console yet.");
-                return ConsoleCommandResult.error(output);
+            } else if ("snapshots".equals(command)) {
+                unsupportedFileCommand("snapshots", output);
             } else {
                 output.add("Unknown command: " + trimmed);
                 return ConsoleCommandResult.error(output);
@@ -132,6 +164,9 @@ public final class ConsoleSession {
     }
 
     public String prompt() {
+        if (promptFlow != null) {
+            return promptFlow.prompt();
+        }
         if (attachedModelAzName == null) {
             return "VedenemoCli>";
         }
@@ -145,17 +180,22 @@ public final class ConsoleSession {
         output.add("Available commands:");
         output.add("  ping - check backend connectivity");
         output.add("  list - list existing models");
+        output.add("  add - add a new model or entity in the attached model");
         output.add("  attach [N | azName] - attach to a listed model");
         output.add("  detach - detach from the current model");
         output.add("  entities - list entities in the attached model");
         output.add("  entity [N | azName] - select an entity in the attached model");
         output.add("  entity detach - clear the selected entity");
         output.add("  attributes - list attributes in the selected entity");
+        output.add("  attr add - add an attribute to the selected entity");
         output.add("  associations - list model associations, or selected entity associations");
+        output.add("  assoc add [ownership | reference | relation] - add an association or relation");
         output.add("  undo - undo the latest backend command");
         output.add("  save [N | azName] [outputPath] - not supported in the web console");
-        output.add("  load <path> - not supported in the web console");
+        output.add("  snapshots - not supported in the web console");
+        output.add("  load <path | snapshot-number> - not supported in the web console");
         output.add("  help - show this help");
+        output.add("  Esc - cancel the current interactive prompt");
     }
 
     private void ping(List<String> output) throws IOException, InterruptedException {
@@ -388,6 +428,51 @@ public final class ConsoleSession {
         }
     }
 
+    private void startAddFlow() {
+        promptFlow = attachedModelAzName == null ? new AddModelFlow() : new AddEntityFlow();
+    }
+
+    private void startAttributeFlow(String line, List<String> output) {
+        if (!"add".equals(argumentText(line, "attr").toLowerCase())) {
+            output.add("Unknown command: " + line);
+            return;
+        }
+        if (attachedModelAzName == null) {
+            output.add("Attach a model before adding an attribute.");
+            return;
+        }
+        if (attachedEntityAzName == null) {
+            output.add("Select an entity before adding an attribute.");
+            return;
+        }
+        promptFlow = new AddAttributeFlow();
+    }
+
+    private void startAssociationFlow(String line, List<String> output) {
+        List<String> arguments = splitArguments(argumentText(line, "assoc"));
+        if (arguments.isEmpty() || !"add".equalsIgnoreCase(arguments.getFirst())) {
+            output.add("Usage: assoc add [ownership | reference | relation]");
+            return;
+        }
+        if (arguments.size() > 2) {
+            output.add("Usage: assoc add [ownership | reference | relation]");
+            return;
+        }
+        String kind = arguments.size() == 2 ? normalizeAssociationKind(arguments.get(1)) : null;
+        if (kind == null && arguments.size() == 2) {
+            output.add("Association kind is required.");
+            return;
+        }
+        promptFlow = kind == null ? new AssociationKindFlow() : associationFlow(kind);
+    }
+
+    private PromptFlow associationFlow(String kind) {
+        if ("relation".equals(kind)) {
+            return new AddRelationFlow();
+        }
+        return new AddAssociationFlow(kind);
+    }
+
     private void unsupportedFileCommand(String command, List<String> output) {
         if (capabilities.localFileAccess()) {
             output.add("Command '" + command + "' is handled by the terminal CLI.");
@@ -407,6 +492,13 @@ public final class ConsoleSession {
 
     private static String argumentText(String line, String command) {
         return line.length() == command.length() ? "" : line.substring(command.length()).trim();
+    }
+
+    private static List<String> splitArguments(String value) {
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+        return List.of(value.trim().split("\\s+"));
     }
 
     private static boolean isPositiveInteger(String value) {
@@ -446,6 +538,478 @@ public final class ConsoleSession {
                 + "["
                 + association.targetCardinality()
                 + "]";
+    }
+
+    private static String normalizeAssociationKind(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return switch (value.trim().toLowerCase()) {
+            case "1", "ownership" -> "ownership";
+            case "2", "reference" -> "reference";
+            case "3", "relation" -> "relation";
+            default -> null;
+        };
+    }
+
+    private static String normalizeDataTypeInput(String value) {
+        if (value == null || value.isBlank()) {
+            return "TEXT";
+        }
+        return switch (value.trim().toLowerCase()) {
+            case "text" -> "TEXT";
+            case "numeric", "number" -> "NUMERIC";
+            case "url" -> "URL";
+            case "data" -> "DATA";
+            default -> value.trim();
+        };
+    }
+
+    private static String suggestAzName(String visName) {
+        StringBuilder suggestion = new StringBuilder();
+        boolean previousWasSeparator = true;
+        for (int index = 0; index < visName.length(); index++) {
+            char character = visName.charAt(index);
+            if (isAsciiLetter(character)) {
+                suggestion.append(character);
+                previousWasSeparator = false;
+            } else if (isAsciiDigit(character) && !suggestion.isEmpty()) {
+                suggestion.append(character);
+                previousWasSeparator = false;
+            } else if (!previousWasSeparator && suggestion.length() > 0) {
+                suggestion.append('_');
+                previousWasSeparator = true;
+            }
+        }
+        while (!suggestion.isEmpty() && suggestion.charAt(suggestion.length() - 1) == '_') {
+            suggestion.deleteCharAt(suggestion.length() - 1);
+        }
+        if (suggestion.isEmpty()) {
+            return null;
+        }
+        return suggestion.toString();
+    }
+
+    private static boolean isAsciiLetter(char value) {
+        return (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z');
+    }
+
+    private static boolean isAsciiDigit(char value) {
+        return value >= '0' && value <= '9';
+    }
+
+    private static String cleanAssociationSuggestion(String value) {
+        String suggestion = suggestAzName(value);
+        if (suggestion == null || suggestion.isBlank()) {
+            return null;
+        }
+        return suggestion;
+    }
+
+    private boolean isAssociationAzNameAvailable(String azName) throws IOException, InterruptedException {
+        return modelClient.listAssociations(attachedModelAzName).stream()
+                .noneMatch(association -> association.azName().equalsIgnoreCase(azName));
+    }
+
+    private String suggestAssociationAzName(String kind, String source, String target, String visName) throws IOException, InterruptedException {
+        String base = source + "_" + Objects.requireNonNullElse(suggestAzName(visName), "");
+        String suggestion = cleanAssociationSuggestion(base);
+        if (suggestion == null) {
+            suggestion = cleanAssociationSuggestion(source + "_" + target);
+        }
+        if (suggestion == null) {
+            suggestion = "Association";
+        }
+        if (isAssociationAzNameAvailable(suggestion)) {
+            return suggestion;
+        }
+        String withTarget = cleanAssociationSuggestion(source + "_" + target);
+        if (withTarget != null && isAssociationAzNameAvailable(withTarget)) {
+            return withTarget;
+        }
+        String withKind = cleanAssociationSuggestion(source + "_" + kind + "_" + target);
+        if (withKind != null && isAssociationAzNameAvailable(withKind)) {
+            return withKind;
+        }
+        int suffix = 2;
+        while (!isAssociationAzNameAvailable(suggestion + "_" + suffix)) {
+            suffix++;
+        }
+        return suggestion + "_" + suffix;
+    }
+
+    private String resolveEntityReference(String value, List<String> output) throws IOException, InterruptedException {
+        if (value == null || value.trim().isEmpty()) {
+            output.add("Entity identifier is required.");
+            return null;
+        }
+        String trimmed = value.trim();
+        if (!isPositiveInteger(trimmed)) {
+            return trimmed;
+        }
+        if (latestEntities.isEmpty()) {
+            output.add("Run entities first before selecting an entity by number.");
+            return null;
+        }
+        int index = Integer.parseInt(trimmed) - 1;
+        if (index < 0 || index >= latestEntities.size()) {
+            output.add("No entity found for list number " + trimmed + ".");
+            return null;
+        }
+        return latestEntities.get(index).azName();
+    }
+
+    private interface PromptFlow {
+        String prompt();
+
+        ConsoleCommandResult accept(String input) throws IOException, InterruptedException;
+
+        boolean isComplete();
+    }
+
+    private abstract static class BasePromptFlow implements PromptFlow {
+        protected int step;
+        protected boolean complete;
+
+        @Override
+        public boolean isComplete() {
+            return complete;
+        }
+    }
+
+    private final class AddModelFlow extends BasePromptFlow {
+        private String visName;
+        private String suggestion;
+
+        @Override
+        public String prompt() {
+            return step == 0 ? "Model visible name: " : "Model azName [" + suggestion + "]: ";
+        }
+
+        @Override
+        public ConsoleCommandResult accept(String input) throws IOException, InterruptedException {
+            ArrayList<String> output = new ArrayList<>();
+            if (step == 0) {
+                if (input == null || input.isBlank()) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(List.of("Model visible name is required."));
+                }
+                visName = input;
+                suggestion = suggestAzName(visName);
+                if (suggestion == null) {
+                    suggestion = "";
+                }
+                step = 1;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            String azName = input == null || input.isBlank() ? suggestion : input.trim();
+            if (azName.isBlank()) {
+                complete = true;
+                return ConsoleCommandResult.ok(List.of("Model azName is required."));
+            }
+            ModelSummary created = modelClient.addModel(azName, visName, "1.0.0");
+            attachResolvedModel(created);
+            refreshModels();
+            output.add("Attached to model " + created.azName() + ".");
+            output.add("Added and attached model " + created.azName() + ".");
+            complete = true;
+            return ConsoleCommandResult.ok(output);
+        }
+    }
+
+    private final class AddEntityFlow extends BasePromptFlow {
+        private String visName;
+        private String suggestion;
+
+        @Override
+        public String prompt() {
+            return step == 0 ? "Entity visible name: " : "Entity azName [" + suggestion + "]: ";
+        }
+
+        @Override
+        public ConsoleCommandResult accept(String input) throws IOException, InterruptedException {
+            if (step == 0) {
+                if (input == null || input.isBlank()) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(List.of("Entity visible name is required."));
+                }
+                visName = input;
+                suggestion = suggestAzName(visName);
+                if (suggestion == null) {
+                    suggestion = "";
+                }
+                step = 1;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            String azName = input == null || input.isBlank() ? suggestion : input.trim();
+            if (azName.isBlank()) {
+                complete = true;
+                return ConsoleCommandResult.ok(List.of("Entity azName is required."));
+            }
+            commandClient.createEntity(backendSessionId, azName, visName);
+            complete = true;
+            return ConsoleCommandResult.ok(List.of("Entity " + azName + " added."));
+        }
+    }
+
+    private final class AddAttributeFlow extends BasePromptFlow {
+        private String visName;
+        private String suggestion;
+        private String azName;
+
+        @Override
+        public String prompt() {
+            return switch (step) {
+                case 0 -> "Attribute visible name: ";
+                case 1 -> "Attribute azName [" + suggestion + "]: ";
+                default -> "Attribute data type [TEXT]: ";
+            };
+        }
+
+        @Override
+        public ConsoleCommandResult accept(String input) throws IOException, InterruptedException {
+            if (step == 0) {
+                if (input == null || input.isBlank()) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(List.of("Attribute visible name is required."));
+                }
+                visName = input;
+                suggestion = suggestAzName(visName);
+                if (suggestion == null) {
+                    suggestion = "";
+                }
+                step = 1;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            if (step == 1) {
+                azName = input == null || input.isBlank() ? suggestion : input.trim();
+                if (azName.isBlank()) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(List.of("Attribute azName is required."));
+                }
+                step = 2;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            String dataType = normalizeDataTypeInput(input);
+            commandClient.createAttribute(backendSessionId, attachedEntityAzName, azName, visName, dataType);
+            complete = true;
+            return ConsoleCommandResult.ok(List.of("Attribute " + azName + " added."));
+        }
+    }
+
+    private final class AssociationKindFlow extends BasePromptFlow {
+        @Override
+        public String prompt() {
+            return "Association kind [1 ownership, 2 reference, 3 relation]: ";
+        }
+
+        @Override
+        public ConsoleCommandResult accept(String input) {
+            String kind = normalizeAssociationKind(input);
+            if (kind == null) {
+                complete = true;
+                return ConsoleCommandResult.ok(List.of("Association kind is required."));
+            }
+            promptFlow = associationFlow(kind);
+            complete = false;
+            return ConsoleCommandResult.ok(List.of());
+        }
+    }
+
+    private final class AddAssociationFlow extends BasePromptFlow {
+        private final String kind;
+        private String source;
+        private String target;
+        private String visName;
+        private String cardinality;
+        private String suggestion;
+
+        private AddAssociationFlow(String kind) {
+            this.kind = kind;
+        }
+
+        @Override
+        public String prompt() {
+            return switch (step) {
+                case 0 -> "Source entity number or azName: ";
+                case 1 -> "Target entity number or azName: ";
+                case 2 -> "Association visible name: ";
+                case 3 -> "Association cardinality [1]: ";
+                default -> "Association azName [" + suggestion + "]: ";
+            };
+        }
+
+        @Override
+        public ConsoleCommandResult accept(String input) throws IOException, InterruptedException {
+            ArrayList<String> output = new ArrayList<>();
+            if (attachedModelAzName == null) {
+                complete = true;
+                return ConsoleCommandResult.ok(List.of("Attach a model before adding an association."));
+            }
+            if (step == 0) {
+                source = resolveEntityReference(input, output);
+                if (source == null) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(output);
+                }
+                step = 1;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            if (step == 1) {
+                target = resolveEntityReference(input, output);
+                if (target == null) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(output);
+                }
+                step = 2;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            if (step == 2) {
+                if (input == null || input.isBlank()) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(List.of("Association visible name is required."));
+                }
+                visName = input;
+                step = 3;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            if (step == 3) {
+                cardinality = input == null || input.isBlank() ? "1" : input.trim();
+                suggestion = suggestAssociationAzName(kind, source, target, visName);
+                step = 4;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            String azName = input == null || input.isBlank() ? suggestion : input.trim();
+            if (azName.isBlank()) {
+                complete = true;
+                return ConsoleCommandResult.ok(List.of("Association azName is required."));
+            }
+            commandClient.createAssociation(
+                    backendSessionId,
+                    kind,
+                    azName,
+                    visName,
+                    source,
+                    target,
+                    cardinality,
+                    null,
+                    null,
+                    null,
+                    null
+            );
+            complete = true;
+            return ConsoleCommandResult.ok(List.of("Association " + azName + " added."));
+        }
+    }
+
+    private final class AddRelationFlow extends BasePromptFlow {
+        private String source;
+        private String sourceRole;
+        private String sourceCardinality;
+        private String target;
+        private String targetRole;
+        private String targetCardinality;
+        private String visName;
+        private String suggestion;
+
+        @Override
+        public String prompt() {
+            return switch (step) {
+                case 0 -> "First end entity number or azName: ";
+                case 1 -> "First end role name: ";
+                case 2 -> "First end cardinality [1]: ";
+                case 3 -> "Second end entity number or azName: ";
+                case 4 -> "Second end role name: ";
+                case 5 -> "Second end cardinality [1]: ";
+                case 6 -> "Relation visible name: ";
+                default -> "Relation azName [" + suggestion + "]: ";
+            };
+        }
+
+        @Override
+        public ConsoleCommandResult accept(String input) throws IOException, InterruptedException {
+            ArrayList<String> output = new ArrayList<>();
+            if (attachedModelAzName == null) {
+                complete = true;
+                return ConsoleCommandResult.ok(List.of("Attach a model before adding a relation."));
+            }
+            if (step == 0) {
+                source = resolveEntityReference(input, output);
+                if (source == null) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(output);
+                }
+                step = 1;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            if (step == 1) {
+                if (input == null || input.isBlank()) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(List.of("First end role name is required."));
+                }
+                sourceRole = input.trim();
+                step = 2;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            if (step == 2) {
+                sourceCardinality = input == null || input.isBlank() ? "1" : input.trim();
+                step = 3;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            if (step == 3) {
+                target = resolveEntityReference(input, output);
+                if (target == null) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(output);
+                }
+                step = 4;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            if (step == 4) {
+                if (input == null || input.isBlank()) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(List.of("Second end role name is required."));
+                }
+                targetRole = input.trim();
+                step = 5;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            if (step == 5) {
+                targetCardinality = input == null || input.isBlank() ? "1" : input.trim();
+                step = 6;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            if (step == 6) {
+                if (input == null || input.isBlank()) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(List.of("Relation visible name is required."));
+                }
+                visName = input;
+                suggestion = suggestAssociationAzName("relation", source, target, visName);
+                step = 7;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            String azName = input == null || input.isBlank() ? suggestion : input.trim();
+            if (azName.isBlank()) {
+                complete = true;
+                return ConsoleCommandResult.ok(List.of("Relation azName is required."));
+            }
+            commandClient.createAssociation(
+                    backendSessionId,
+                    "relation",
+                    azName,
+                    visName,
+                    source,
+                    target,
+                    targetCardinality,
+                    sourceRole,
+                    targetRole,
+                    sourceCardinality,
+                    targetCardinality
+            );
+            complete = true;
+            return ConsoleCommandResult.ok(List.of("Relation " + azName + " added."));
+        }
     }
 
     private static String undoMessage(UndoCommandResult result) {

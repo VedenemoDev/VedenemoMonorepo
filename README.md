@@ -258,9 +258,10 @@ npm run dev
 
 The main page shows model selection and the PlantUML diagram. The browser
 console is available at `/console`; if opened from the main page while a model
-is connected, it starts attached to that model. Browser console `save` and
-`load` commands are currently rejected because they require local filesystem
-access.
+is connected, it starts attached to that model. The browser console supports
+the same non-file authoring commands as `VedenemoCli`, including `add`,
+`attr add`, and `assoc add`; `save`, `snapshots`, and `load` are rejected
+because they require local filesystem access.
 
 ## Vedenemo Script Files
 

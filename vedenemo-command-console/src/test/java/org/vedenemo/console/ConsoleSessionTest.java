@@ -68,10 +68,32 @@ final class ConsoleSessionTest {
         );
 
         ConsoleCommandResult saveResult = session.execute("save");
+        ConsoleCommandResult snapshotsResult = session.execute("snapshots");
         ConsoleCommandResult loadResult = session.execute("load model.vdos");
 
         assertEquals(List.of("Command 'save' is not supported in the web console because it requires local file access."), saveResult.outputLines());
+        assertEquals(List.of("Command 'snapshots' is not supported in the web console because it requires local file access."), snapshotsResult.outputLines());
         assertEquals(List.of("Command 'load' is not supported in the web console because it requires local file access."), loadResult.outputLines());
+    }
+
+    @Test
+    void helpListsTerminalEquivalentNonFileCommands() {
+        ConsoleSession session = new ConsoleSession(
+                UUID.randomUUID(),
+                new TestModelClient(),
+                new TestSessionClient(),
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsole()
+        );
+
+        ConsoleCommandResult result = session.execute("help");
+
+        assertTrue(result.outputLines().contains("  add - add a new model or entity in the attached model"));
+        assertTrue(result.outputLines().contains("  attr add - add an attribute to the selected entity"));
+        assertTrue(result.outputLines().contains("  assoc add [ownership | reference | relation] - add an association or relation"));
+        assertTrue(result.outputLines().contains("  save [N | azName] [outputPath] - not supported in the web console"));
+        assertTrue(result.outputLines().contains("  snapshots - not supported in the web console"));
+        assertTrue(result.outputLines().contains("  load <path | snapshot-number> - not supported in the web console"));
     }
 
     @Test
@@ -127,8 +149,187 @@ final class ConsoleSessionTest {
         assertTrue(result.outputLines().contains("1. orders (Customer_Orders) OWNERSHIP Customer -> Order [0..*] active since 1.0.0"));
     }
 
+    @Test
+    void addCreatesModelThroughPromptFlow() {
+        TestModelClient modelClient = new TestModelClient();
+        TestSessionClient sessionClient = new TestSessionClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsole()
+        );
+
+        session.execute("add");
+        assertEquals("Model visible name: ", session.prompt());
+        session.execute("Example Model");
+        assertEquals("Model azName [Example_Model]: ", session.prompt());
+        ConsoleCommandResult result = session.execute("");
+
+        assertEquals(ConsoleCommandResult.Status.OK, result.status());
+        assertTrue(result.outputLines().contains("Added and attached model Example_Model."));
+        assertEquals("Example_Model", sessionClient.selectedModelAzName);
+        assertEquals("VedenemoCli[Example_Model]>", session.prompt());
+    }
+
+    @Test
+    void addCreatesEntityThroughPromptFlowWhenModelIsAttached() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        TestSessionClient sessionClient = new TestSessionClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                commandClient,
+                ConsoleCapabilities.webConsole()
+        );
+
+        session.execute("attach Example_Model");
+        session.execute("add");
+        assertEquals("Entity visible name: ", session.prompt());
+        session.execute("Customer");
+        assertEquals("Entity azName [Customer]: ", session.prompt());
+        ConsoleCommandResult result = session.execute("");
+
+        assertEquals(List.of("Entity Customer added."), result.outputLines());
+        assertEquals("Customer", commandClient.createdEntityAzName);
+        assertEquals("VedenemoCli[Example_Model]>", session.prompt());
+    }
+
+    @Test
+    void attrAddCreatesAttributeThroughPromptFlow() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+        TestSessionClient sessionClient = new TestSessionClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                commandClient,
+                ConsoleCapabilities.webConsole()
+        );
+
+        session.execute("attach Example_Model");
+        session.execute("entity Customer");
+        session.execute("attr add");
+        assertEquals("Attribute visible name: ", session.prompt());
+        session.execute("Email Address");
+        assertEquals("Attribute azName [Email_Address]: ", session.prompt());
+        session.execute("");
+        assertEquals("Attribute data type [TEXT]: ", session.prompt());
+        ConsoleCommandResult result = session.execute("url");
+
+        assertEquals(List.of("Attribute Email_Address added."), result.outputLines());
+        assertEquals("Customer", commandClient.createdAttributeEntityAzName);
+        assertEquals("Email_Address", commandClient.createdAttributeAzName);
+        assertEquals("URL", commandClient.createdAttributeDataType);
+        assertEquals("VedenemoCli[Example_Model/Customer]>", session.prompt());
+    }
+
+    @Test
+    void assocAddCreatesOwnershipThroughPromptFlow() {
+        TestModelClient modelClient = modelWithAssociationEntities();
+        TestSessionClient sessionClient = new TestSessionClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                commandClient,
+                ConsoleCapabilities.webConsole()
+        );
+
+        session.execute("attach Example_Model");
+        session.execute("entities");
+        session.execute("assoc add ownership");
+        session.execute("1");
+        session.execute("2");
+        session.execute("orders");
+        session.execute("0..*");
+        ConsoleCommandResult result = session.execute("");
+
+        assertEquals(List.of("Association Customer_orders added."), result.outputLines());
+        assertEquals("ownership", commandClient.createdAssociationKind);
+        assertEquals("Customer_orders", commandClient.createdAssociationAzName);
+        assertEquals("Customer", commandClient.createdAssociationSourceEntityAzName);
+        assertEquals("Order", commandClient.createdAssociationTargetEntityAzName);
+        assertEquals("0..*", commandClient.createdAssociationCardinality);
+    }
+
+    @Test
+    void assocAddCreatesRelationThroughNumberedKindPromptFlow() {
+        TestModelClient modelClient = modelWithAssociationEntities();
+        TestSessionClient sessionClient = new TestSessionClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                commandClient,
+                ConsoleCapabilities.webConsole()
+        );
+
+        session.execute("attach Example_Model");
+        session.execute("entities");
+        session.execute("assoc add");
+        assertEquals("Association kind [1 ownership, 2 reference, 3 relation]: ", session.prompt());
+        session.execute("3");
+        session.execute("1");
+        session.execute("customer");
+        session.execute("0..*");
+        session.execute("2");
+        session.execute("order");
+        session.execute("1..*");
+        session.execute("orders");
+        ConsoleCommandResult result = session.execute("");
+
+        assertEquals(List.of("Relation Customer_orders added."), result.outputLines());
+        assertEquals("relation", commandClient.createdAssociationKind);
+        assertEquals("customer", commandClient.createdAssociationSourceRoleName);
+        assertEquals("order", commandClient.createdAssociationTargetRoleName);
+        assertEquals("0..*", commandClient.createdAssociationSourceCardinality);
+        assertEquals("1..*", commandClient.createdAssociationTargetCardinality);
+    }
+
+    @Test
+    void escapeCancelsPromptFlowWithoutExecutingCommand() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        TestSessionClient sessionClient = new TestSessionClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                commandClient,
+                ConsoleCapabilities.webConsole()
+        );
+
+        session.execute("attach Example_Model");
+        session.execute("add");
+        ConsoleCommandResult result = session.execute("\u001b");
+
+        assertEquals(List.of("Operation cancelled."), result.outputLines());
+        assertEquals(null, commandClient.createdEntityAzName);
+        assertEquals("VedenemoCli[Example_Model]>", session.prompt());
+    }
+
+    private static TestModelClient modelWithAssociationEntities() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+        modelClient.entities.add(new EntitySummary("Order", "Order", "1.0.0", null));
+        return modelClient;
+    }
+
     private static final class TestModelClient implements ModelClient {
         private final List<ModelSummary> models = new ArrayList<>();
+        private final List<EntitySummary> entities = new ArrayList<>();
         private final List<AssociationSummary> associations = new ArrayList<>();
         private boolean pingCalled;
 
@@ -143,13 +344,15 @@ final class ConsoleSessionTest {
         }
 
         @Override
-        public ModelSummary addModel(String azName, String visName, String version) throws IOException {
-            throw new IOException("not implemented");
+        public ModelSummary addModel(String azName, String visName, String version) {
+            ModelSummary model = new ModelSummary(azName, visName, version);
+            models.add(model);
+            return model;
         }
 
         @Override
         public List<EntitySummary> listEntities(String modelAzName) {
-            return List.of();
+            return List.copyOf(entities);
         }
 
         @Override
@@ -206,8 +409,23 @@ final class ConsoleSessionTest {
     }
 
     private static final class TestCommandClient implements CommandClient {
+        private String createdEntityAzName;
+        private String createdAttributeEntityAzName;
+        private String createdAttributeAzName;
+        private String createdAttributeDataType;
+        private String createdAssociationKind;
+        private String createdAssociationAzName;
+        private String createdAssociationSourceEntityAzName;
+        private String createdAssociationTargetEntityAzName;
+        private String createdAssociationCardinality;
+        private String createdAssociationSourceRoleName;
+        private String createdAssociationTargetRoleName;
+        private String createdAssociationSourceCardinality;
+        private String createdAssociationTargetCardinality;
+
         @Override
         public void createEntity(UUID sessionId, String entityAzName, String entityVisName) {
+            createdEntityAzName = entityAzName;
         }
 
         @Override
@@ -218,6 +436,9 @@ final class ConsoleSessionTest {
                 String attributeVisName,
                 String dataType
         ) {
+            createdAttributeEntityAzName = entityAzName;
+            createdAttributeAzName = attributeAzName;
+            createdAttributeDataType = dataType;
         }
 
         @Override
@@ -234,6 +455,15 @@ final class ConsoleSessionTest {
                 String sourceCardinality,
                 String targetCardinality
         ) {
+            createdAssociationKind = kind;
+            createdAssociationAzName = associationAzName;
+            createdAssociationSourceEntityAzName = sourceEntityAzName;
+            createdAssociationTargetEntityAzName = targetEntityAzName;
+            createdAssociationCardinality = cardinality;
+            createdAssociationSourceRoleName = sourceRoleName;
+            createdAssociationTargetRoleName = targetRoleName;
+            createdAssociationSourceCardinality = sourceCardinality;
+            createdAssociationTargetCardinality = targetCardinality;
         }
 
         @Override

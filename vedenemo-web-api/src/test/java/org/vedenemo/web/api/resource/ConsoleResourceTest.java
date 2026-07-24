@@ -69,6 +69,47 @@ final class ConsoleResourceTest {
     }
 
     @Test
+    void createsEntityThroughBrowserConsolePromptFlow() throws Exception {
+        ModelRegistry modelRegistry = new ModelRegistry();
+        modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+
+        Javalin app = VedenemoWebApi.create(testConfig(), modelRegistry);
+        try {
+            start(app);
+            URI baseUri = URI.create("http://127.0.0.1:" + app.port());
+            HttpResponse<String> start = post(
+                    baseUri.resolve("/console/sessions"),
+                    "{\"connectedModelAzName\":\"Example_Model\"}"
+            );
+            String sessionId = extract(start.body(), "sessionId");
+
+            HttpResponse<String> add = post(
+                    baseUri.resolve("/console/sessions/" + sessionId + "/commands"),
+                    "{\"command\":\"add\"}"
+            );
+            HttpResponse<String> visName = post(
+                    baseUri.resolve("/console/sessions/" + sessionId + "/commands"),
+                    "{\"command\":\"Customer\"}"
+            );
+            HttpResponse<String> azName = post(
+                    baseUri.resolve("/console/sessions/" + sessionId + "/commands"),
+                    "{\"command\":\"\"}"
+            );
+
+            assertEquals(201, start.statusCode());
+            assertEquals(200, add.statusCode());
+            assertTrue(add.body().contains("\"prompt\":\"Entity visible name: \""));
+            assertEquals(200, visName.statusCode());
+            assertTrue(visName.body().contains("\"prompt\":\"Entity azName [Customer]: \""));
+            assertEquals(200, azName.statusCode());
+            assertTrue(azName.body().contains("Entity Customer added."));
+            assertTrue(azName.body().contains("\"prompt\":\"VedenemoCli[Example_Model]>\""));
+        } finally {
+            app.stop();
+        }
+    }
+
+    @Test
     void startsConsoleSessionAttachedToConnectedModelAndRejectsSaveAsText() throws Exception {
         ModelRegistry modelRegistry = new ModelRegistry();
         modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));

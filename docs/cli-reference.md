@@ -66,6 +66,12 @@ Arrow Down and Ctrl+N navigate forward.
 Press Esc during an interactive prompt to cancel the current operation and
 return to the normal CLI prompt without executing it.
 
+The browser console at `/console` uses the same CLI-like command behavior for
+non-file commands. It supports the same prompt flows for `add`, `attr add`, and
+`assoc add`; blank Enter accepts prompt defaults, and Esc cancels the active
+prompt flow. `save`, `snapshots`, and `load` remain terminal-only because they
+need local filesystem access.
+
 ### `ping`
 
 Checks backend connectivity through `GET /models/ping`.

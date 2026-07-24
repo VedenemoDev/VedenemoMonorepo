@@ -2962,7 +2962,7 @@ DELETE /console/sessions/{sessionId}
 
 ## Align Terminal And Browser Console CLI Command Coverage
 
-Status: planning.
+Status: executed.
 
 ### Goal
 
@@ -2980,8 +2980,8 @@ The intended difference is:
 
 ### Current Problem
 
-The current implementation does not meet that contract. `VedenemoCliApp`
-contains terminal-only interactive prompt flows for:
+The previous implementation did not meet that contract. `VedenemoCliApp`
+contained terminal-only interactive prompt flows for:
 
 - `add`
 - `attr add`
@@ -2991,15 +2991,15 @@ contains terminal-only interactive prompt flows for:
 - `assoc add relation`
 
 The shared `vedenemo-command-console` `ConsoleSession` used by the browser
-virtual console currently rejects `add`, `attr`, and `assoc` with:
+virtual console rejected `add`, `attr`, and `assoc` with:
 
 ```text
 Command '<command>' requires interactive terminal prompts and is not supported in the web console yet.
 ```
 
-Its `help` output also omits terminal-supported authoring commands such as
+Its `help` output also omitted terminal-supported authoring commands such as
 `add`, `attr add`, and `assoc add [ownership | reference | relation]`, while it
-does list unsupported `save` and `load`.
+listed unsupported `save` and `load`.
 
 ### Scope
 
@@ -3053,3 +3053,21 @@ At minimum, implementation should add focused coverage for:
   filesystem-dependent commands;
 - `mvn -B verify` passes;
 - `npm run build` passes.
+
+### Completion Notes
+
+- Extended `vedenemo-command-console` `ConsoleSession` with browser-compatible
+  prompt-flow state for `add`, `attr add`, and `assoc add`.
+- Browser console can now create models, entities, attributes, directed
+  ownership/reference associations, and bidirectional relations through the
+  same command words as terminal CLI.
+- Browser console `help` now lists the supported non-file authoring commands
+  and marks `save`, `snapshots`, and `load` as unsupported file-access
+  commands.
+- Browser console Esc cancellation now sends cancellation to the backend so
+  pending prompt state is abandoned server-side.
+- Browser console blank Enter can be submitted while a prompt flow is active,
+  allowing default prompt values to be accepted.
+- Added focused shared-console and web API tests.
+- `mvn -B verify` passed.
+- `npm run build` passed in `vedenemo-ux`.
