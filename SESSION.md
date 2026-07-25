@@ -4079,3 +4079,34 @@ Current status and next steps:
 - The diagram canvas uses only the single empty-state prompt, and PlantUML
   titles show only model `visName`.
 - UX build and diff whitespace checks passed.
+
+## 2026-07-25 17:27 EEST
+
+Session goal: create a family tree metamodel Vedenemo Script snapshot under
+`.vedenemo`.
+
+Files changed:
+
+- `.vedenemo/FamilyTree.vdos`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- Existing `.vdos` and script parser inspection with `rg`, `find`, `ls`, and
+  `sed`
+- Local backend import smoke test for `.vedenemo/FamilyTree.vdos`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `FamilyTree` model script with `Person`, `FamilyUnit`, `LifeEvent`,
+  `Place`, and `SourceRecord` entities.
+- Added attributes for personal names, dates, notes, family relation metadata,
+  event metadata, place metadata, and source metadata.
+- Added relation/reference/ownership associations for spouses, children,
+  birth/death places, life events, and source records.
+- Backend script import validation succeeded with `modelAzName=FamilyTree` and
+  `commandCount=34`.

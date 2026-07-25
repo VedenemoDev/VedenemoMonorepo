@@ -1,0 +1,75 @@
+vedenemo-script 1
+
+model azName=FamilyTree visName="Family Tree" version=1.0.0
+
+commands
+create-entity model=FamilyTree entity=Person visName="Person" activeSince=1.0.0
+create-attribute model=FamilyTree entity=Person attribute=GivenNames visName="Given names" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=Person attribute=FamilyName visName="Family name" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=Person attribute=BirthDate visName="Birth date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=Person attribute=DeathDate visName="Death date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=Person attribute=Gender visName="Gender" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=Person attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyTree entity=FamilyUnit visName="Family unit" activeSince=1.0.0
+create-attribute model=FamilyTree entity=FamilyUnit attribute=StartDate visName="Start date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=FamilyUnit attribute=EndDate visName="End date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=FamilyUnit attribute=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=FamilyUnit attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyTree entity=LifeEvent visName="Life event" activeSince=1.0.0
+create-attribute model=FamilyTree entity=LifeEvent attribute=EventType visName="Event type" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=LifeEvent attribute=EventDate visName="Event date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=LifeEvent attribute=Description visName="Description" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyTree entity=Place visName="Place" activeSince=1.0.0
+create-attribute model=FamilyTree entity=Place attribute=Name visName="Name" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=Place attribute=Country visName="Country" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=Place attribute=Coordinates visName="Coordinates" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyTree entity=SourceRecord visName="Source record" activeSince=1.0.0
+create-attribute model=FamilyTree entity=SourceRecord attribute=Title visName="Title" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=SourceRecord attribute=RecordType visName="Record type" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=SourceRecord attribute=Repository visName="Repository" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTree entity=SourceRecord attribute=Url visName="URL" dataType=URL activeSince=1.0.0
+create-association model=FamilyTree kind=RELATION association=FamilyUnit_Spouses visName="spouses" source=FamilyUnit sourceRole="family" sourceCardinality=1 target=Person targetRole="spouse" targetCardinality=0..2 cardinality=0..2 activeSince=1.0.0
+create-association model=FamilyTree kind=RELATION association=FamilyUnit_Children visName="children" source=FamilyUnit sourceRole="family" sourceCardinality=1 target=Person targetRole="child" targetCardinality=0..* cardinality=0..* activeSince=1.0.0
+create-association model=FamilyTree kind=REFERENCE association=Person_BirthPlace visName="birth place" source=Person target=Place cardinality=0..1 activeSince=1.0.0
+create-association model=FamilyTree kind=REFERENCE association=Person_DeathPlace visName="death place" source=Person target=Place cardinality=0..1 activeSince=1.0.0
+create-association model=FamilyTree kind=OWNERSHIP association=Person_LifeEvents visName="life events" source=Person target=LifeEvent cardinality=0..* activeSince=1.0.0
+create-association model=FamilyTree kind=REFERENCE association=LifeEvent_Place visName="place" source=LifeEvent target=Place cardinality=0..1 activeSince=1.0.0
+create-association model=FamilyTree kind=REFERENCE association=Person_Sources visName="sources" source=Person target=SourceRecord cardinality=0..* activeSince=1.0.0
+create-association model=FamilyTree kind=REFERENCE association=LifeEvent_Sources visName="sources" source=LifeEvent target=SourceRecord cardinality=0..* activeSince=1.0.0
+create-association model=FamilyTree kind=REFERENCE association=FamilyUnit_Sources visName="sources" source=FamilyUnit target=SourceRecord cardinality=0..* activeSince=1.0.0
+
+snapshot
+entity azName=Person visName="Person" activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=GivenNames visName="Given names" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=FamilyName visName="Family name" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=BirthDate visName="Birth date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=DeathDate visName="Death date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=Gender visName="Gender" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=FamilyUnit visName="Family unit" activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=StartDate visName="Start date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=EndDate visName="End date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=LifeEvent visName="Life event" activeSince=1.0.0 deprecatedSince=null
+attribute entity=LifeEvent azName=EventType visName="Event type" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=LifeEvent azName=EventDate visName="Event date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=LifeEvent azName=Description visName="Description" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=Place visName="Place" activeSince=1.0.0 deprecatedSince=null
+attribute entity=Place azName=Name visName="Name" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Place azName=Country visName="Country" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Place azName=Coordinates visName="Coordinates" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=SourceRecord visName="Source record" activeSince=1.0.0 deprecatedSince=null
+attribute entity=SourceRecord azName=Title visName="Title" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=SourceRecord azName=RecordType visName="Record type" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=SourceRecord azName=Repository visName="Repository" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=SourceRecord azName=Url visName="URL" dataType=URL activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnit_Spouses visName="spouses" kind=RELATION source=FamilyUnit sourceRole="family" sourceCardinality=1 target=Person targetRole="spouse" targetCardinality=0..2 cardinality=0..2 activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnit_Children visName="children" kind=RELATION source=FamilyUnit sourceRole="family" sourceCardinality=1 target=Person targetRole="child" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=Person_BirthPlace visName="birth place" kind=REFERENCE source=Person target=Place cardinality=0..1 activeSince=1.0.0 deprecatedSince=null
+association azName=Person_DeathPlace visName="death place" kind=REFERENCE source=Person target=Place cardinality=0..1 activeSince=1.0.0 deprecatedSince=null
+association azName=Person_LifeEvents visName="life events" kind=OWNERSHIP source=Person target=LifeEvent cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=LifeEvent_Place visName="place" kind=REFERENCE source=LifeEvent target=Place cardinality=0..1 activeSince=1.0.0 deprecatedSince=null
+association azName=Person_Sources visName="sources" kind=REFERENCE source=Person target=SourceRecord cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=LifeEvent_Sources visName="sources" kind=REFERENCE source=LifeEvent target=SourceRecord cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnit_Sources visName="sources" kind=REFERENCE source=FamilyUnit target=SourceRecord cardinality=0..* activeSince=1.0.0 deprecatedSince=null
