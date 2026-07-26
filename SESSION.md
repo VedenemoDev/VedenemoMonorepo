@@ -4303,3 +4303,27 @@ Current status and next steps:
 - Added expected infrastructure outputs for backend configuration, including
   bucket, prefix, service account, optional Workload Identity Federation values,
   and `vedenemo-web-api` environment variables.
+
+## 2026-07-26 22:38 EEST
+
+Session goal: clarify how manual GCP setup phases interleave with repository
+infrastructure scripts for cloud snapshots.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '3260,3305p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added an explicit manual/scripted runbook to the cloud snapshot planning
+  item.
+- The runbook now sequences project/billing/authentication checks, bootstrap
+  command execution, Terraform variable review, `terraform plan`, manual plan
+  review, `terraform apply`, backend configuration from outputs, remaining
+  manual budget/policy steps, and identity/prefix verification.

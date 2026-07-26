@@ -3273,6 +3273,31 @@ documented outputs where practical. Browser console setup should be reserved for
 one-time project prerequisites that cannot be managed reliably from Terraform or
 `gcloud` in this repository.
 
+The setup documentation should be an interleaved manual/scripted runbook rather
+than one large manual checklist followed by one opaque script. A reasonable
+first shape is:
+
+1. Manually choose or create the GCP project and confirm billing ownership.
+2. Manually authenticate locally with `gcloud` using an account allowed to
+   manage services, buckets, service accounts, IAM, and budgets.
+3. Run the repo-managed bootstrap command from
+   `infra/gcp/cloud-storage-snapshots` to enable required APIs that Terraform
+   can manage safely.
+4. Review and edit Terraform variables for project ID, bucket name, region,
+   object prefix, service account name, and initial storage scope.
+5. Run `terraform init` and `terraform plan` from the snapshot infra directory.
+6. Manually review the plan for public access settings, IAM grants, service
+   account names, retention choices, and cost-sensitive resources.
+7. Run `terraform apply` only after the plan matches the intended private
+   development setup.
+8. Copy Terraform outputs into backend deployment configuration or local
+   environment files that are intentionally outside version control.
+9. Manually configure any budget alert or organization-level policy that is not
+   handled by the infrastructure module.
+10. Run a small verification command from the infra directory or backend tests
+    to confirm that the configured backend identity can list, read, and write
+    only under the intended snapshot prefix.
+
 Before implementation starts, make the following configuration choices and
 record the selected values in deployment notes, Terraform variables, script
 arguments, or environment configuration:
