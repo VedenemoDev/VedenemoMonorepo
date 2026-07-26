@@ -3270,6 +3270,25 @@ An initial template scaffold now exists in that directory with Terraform files,
 manual/setup runbooks, and shell script templates for API bootstrap, backend
 environment output, and access verification.
 
+The scaffold files should be treated as the starting point for implementation
+setup:
+
+- `README.md` summarizes the chosen first-slice decisions and local tool
+  requirements.
+- `MANUAL-PHASES.md` records the manual project, billing, auth, review, budget,
+  and verification phases.
+- `RUNBOOK.md` interleaves those manual phases with the concrete bootstrap,
+  Terraform, output, and verification commands.
+- `terraform.tfvars.example` is the committed placeholder for missing project,
+  bucket, prefix, region, scope, service account, and retention values; real
+  `.tfvars` files remain ignored.
+- `scripts/bootstrap-apis.sh` corresponds to the API-enable step after manual
+  project and billing selection.
+- `scripts/print-backend-env.sh` corresponds to copying Terraform outputs into
+  backend deployment configuration.
+- `scripts/verify-snapshot-access.sh` corresponds to the final storage
+  read/write/list verification phase.
+
 Prefer repeatable Terraform and small shell helper scripts in that directory
 over browser-based Google Cloud Console setup. The scripts/module should encode
 the chosen services, bucket settings, service account, IAM bindings, and
@@ -3336,6 +3355,7 @@ VEDENEMO_SNAPSHOT_STORE=gcs
 VEDENEMO_GCS_PROJECT_ID=<project-id>
 VEDENEMO_GCS_BUCKET=<bucket-name>
 VEDENEMO_GCS_PREFIX=snapshots/dev
+VEDENEMO_SNAPSHOT_SCOPE=dev
 ```
 
 14. Configure a GCP budget alert for the project. Automate this if it fits the

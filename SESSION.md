@@ -4446,3 +4446,26 @@ Current status and next steps:
   snapshot prefix access verification.
 - Formatting and shell syntax checks passed; no live GCP or Terraform apply was
   run.
+
+## 2026-07-27 00:28 EEST
+
+Session goal: align the cloud snapshot backlog guidance with the newly created
+infrastructure scaffold files.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed` inspections of the cloud snapshot setup section in `tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added a scaffold-to-runbook mapping to the backlog item so the created
+  README, manual phases, runbook, Terraform variable example, and scripts are
+  tied to the manual/setup guidance.
+- Added `VEDENEMO_SNAPSHOT_SCOPE=dev` to the planned backend environment
+  variable list to match the Terraform scaffold output.
