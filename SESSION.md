@@ -4376,3 +4376,31 @@ Current status and next steps:
   the first slice, browser clients still receive no GCP credentials, backend
   IAM remains narrowly scoped, snapshot keys remain backend-owned, and the lack
   of per-user privacy/sharing guarantees must be documented.
+
+## 2026-07-27 00:04 EEST
+
+Session goal: resolve remaining cloud snapshot first-slice planning questions.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '3450,3505p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Resolved the first storage scope as one global bucket namespace for this
+  phase.
+- Resolved model last-modification timestamp source as backend server clock
+  only.
+- Resolved cloud `load` duplicate model handling to prompt for a replacement
+  `azName`, matching terminal CLI behavior.
+- Resolved command behavior so terminal CLI plain `save`, `snapshots`, and
+  `load` remain local-filesystem commands while browser console uses the same
+  plain command names for cloud snapshots.
+- Resolved the storage abstraction as a Vedenemo-specific snapshot store rather
+  than a generic artifact store.

@@ -3457,8 +3457,9 @@ POST /models/script/from-snapshot
   - `save` writes the attached model's exported `.vdos` to cloud storage;
   - `snapshots` lists cloud snapshots available in the configured scope;
   - `load <snapshot-number | snapshot-key>` imports the chosen stored `.vdos`;
-  - terminal CLI can either keep local file behavior or later gain explicit
-    cloud commands.
+  - terminal CLI keeps plain `save`, `snapshots`, and `load` commands backed by
+    the local filesystem while browser console uses the same plain command
+    names backed by cloud snapshots.
 
 ### Resolved Auth Boundary For First Slice
 
@@ -3482,15 +3483,14 @@ Consequences of this decision:
 - Document explicitly that this private development mode does not provide
   per-user snapshot privacy or sharing guarantees.
 
-### Open Questions
+### Resolved First Slice Decisions
 
-- What is the first scope boundary: one global bucket namespace, per user, per
-  workspace, or per deployment?
-- What exact timestamp source should model last-modification metadata use:
-  backend server clock, logical monotonic revision, or both?
-- Should `load` import as a new model when the `azName` already exists, or
-  prompt for a replacement name like terminal CLI does?
-- Should terminal CLI `save/load` remain local-only, or should cloud behavior
-  be exposed through explicit commands such as `cloud save` and `cloud load`?
-- Should this task create a generic artifact store, a Vedenemo snapshot store,
-  or both layered together?
+- Use one global bucket namespace for the first phase.
+- Use the backend server clock as the model last-modification timestamp source.
+- Browser console cloud `load` should prompt for a replacement model `azName`
+  when the loaded `.vdos` model `azName` already exists, matching terminal CLI
+  behavior.
+- Keep command names plain and context-specific:
+  - terminal CLI `save`, `snapshots`, and `load` use the local filesystem;
+  - browser console `save`, `snapshots`, and `load` use cloud snapshots.
+- Create a Vedenemo-specific snapshot store, not a generic artifact store.
