@@ -3460,6 +3460,28 @@ POST /models/script/from-snapshot
   - terminal CLI can either keep local file behavior or later gain explicit
     cloud commands.
 
+### Resolved Auth Boundary For First Slice
+
+For the first private development slice, private Tailscale/backend reachability
+is an acceptable access boundary. Anyone who can reach the Vedenemo backend in
+that private network can use the snapshot endpoints.
+
+Consequences of this decision:
+
+- Do not require per-user authentication or sharing rules in the first cloud
+  snapshot implementation.
+- Do not require an extra shared development token for the first slice unless a
+  later deployment constraint makes it necessary.
+- Keep snapshot access behind the Vedenemo backend. Browser clients must not
+  receive Google Cloud API keys, service account keys, signed URLs, or other
+  direct Cloud Storage credentials.
+- Limit the backend service account with GCP IAM to only the chosen
+  bucket/prefix and required object operations.
+- Treat snapshot keys as backend-owned identifiers so later user/workspace
+  authorization can be added without changing command syntax.
+- Document explicitly that this private development mode does not provide
+  per-user snapshot privacy or sharing guarantees.
+
 ### Open Questions
 
 - What is the first scope boundary: one global bucket namespace, per user, per
@@ -3470,26 +3492,5 @@ POST /models/script/from-snapshot
   prompt for a replacement name like terminal CLI does?
 - Should terminal CLI `save/load` remain local-only, or should cloud behavior
   be exposed through explicit commands such as `cloud save` and `cloud load`?
-- What authentication/authorization boundary is acceptable before user auth is
-  implemented? This question is about which layer is trusted to prevent
-  unwanted snapshot access during the private development phase:
-  - Network boundary: is private Tailscale/backend reachability enough for the
-    first slice, meaning anyone who can reach the backend can use the snapshot
-    endpoints?
-  - Backend capability boundary: should snapshot endpoints require an explicit
-    server-side feature flag, shared development token, or environment-gated
-    console capability even before per-user login exists?
-  - Storage scope boundary: should all browser console sessions share one fixed
-    development scope, or should each deployment/session get a separate prefix
-    even without real user identity?
-  - GCP IAM boundary: the backend service account should be limited to only the
-    chosen bucket/prefix and should not grant browser clients any direct Cloud
-    Storage credentials.
-  - UX/API boundary: should snapshot keys be treated as opaque backend-owned
-    identifiers so future user/workspace authorization can be added without
-    changing command syntax?
-  - Out-of-scope boundary: without user auth, the first slice cannot guarantee
-    per-user privacy or sharing rules; document that limitation explicitly if
-    network-only or deployment-only trust is selected.
 - Should this task create a generic artifact store, a Vedenemo snapshot store,
   or both layered together?

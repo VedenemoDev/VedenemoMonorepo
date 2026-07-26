@@ -4350,3 +4350,29 @@ Current status and next steps:
   scope separation, GCP IAM limits, opaque snapshot keys, and explicit
   documentation of missing per-user privacy/sharing guarantees before real user
   auth is implemented.
+
+## 2026-07-26 22:56 EEST
+
+Session goal: resolve the first cloud snapshot authentication boundary decision
+for the private development slice.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '3458,3495p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Recorded that private Tailscale/backend reachability is enough for the first
+  cloud snapshot slice.
+- Moved the auth boundary material out of open questions and into a resolved
+  decision section.
+- Clarified consequences: no per-user auth or extra shared token required in
+  the first slice, browser clients still receive no GCP credentials, backend
+  IAM remains narrowly scoped, snapshot keys remain backend-owned, and the lack
+  of per-user privacy/sharing guarantees must be documented.
