@@ -4110,3 +4110,82 @@ Current status and next steps:
   birth/death places, life events, and source records.
 - Backend script import validation succeeded with `modelAzName=FamilyTree` and
   `commandCount=34`.
+
+## 2026-07-26 18:00 EEST
+
+Session goal: add a planning backlog item for cloud-backed browser console
+snapshot save/load and storage-adapter options.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- Backlog inspection with `tail`
+- Official GCP documentation lookup for Cloud Storage, Firestore, and Cloud
+  SQL options
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added planning item `Plan Cloud Snapshot Storage For Browser Console
+  Save/Load`.
+- The item compares Cloud Storage, Firestore Native mode, Cloud SQL for
+  PostgreSQL, and Cloud Storage plus Firestore metadata indexing.
+- Initial recommendation recorded: start with a small `SnapshotStore` port and
+  a Cloud Storage adapter for `.vdos` artifacts, without treating that as the
+  final model-instance persistence design.
+
+## 2026-07-26 18:05 EEST
+
+Session goal: extend the cloud snapshot planning backlog item with
+authentication, authorization, and billing concerns.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Official Google Cloud documentation lookup for Cloud Storage authentication,
+  signed URLs, IAM service account key guidance, and pricing
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added backlog guidance to keep storage credentials out of the browser and
+  route browser console snapshot commands through Vedenemo backend endpoints.
+- Recommended backend service account / ADC access to a private bucket for the
+  private Tailscale development phase.
+- Added cost guardrails: regional Standard bucket, API-side size limits,
+  retention limits, budget alerts, explicit overwrite behavior, and documented
+  IAM requirements.
+
+## 2026-07-26 18:13 EEST
+
+Session goal: expand the cloud snapshot planning backlog item with manual GCP
+setup steps and a clearer deployed/local credential strategy.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Backlog inspection with `rg` and `sed`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added a `Manual GCP Setup Checklist` to the cloud snapshot planning item.
+- Expanded the credential decision into Cloud Run/runtime identity,
+  non-GCP/Tailscale host, temporary service account key, and local ADC paths.
+- Reiterated that browser UX must never receive GCP credentials; browser
+  console commands should go through Vedenemo backend endpoints.

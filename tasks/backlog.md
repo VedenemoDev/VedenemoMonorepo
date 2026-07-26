@@ -3071,3 +3071,389 @@ At minimum, implementation should add focused coverage for:
 - Added focused shared-console and web API tests.
 - `mvn -B verify` passed.
 - `npm run build` passed in `vedenemo-ux`.
+
+## Plan Cloud Snapshot Storage For Browser Console Save/Load
+
+Status: planning.
+
+### Goal
+
+Define a storage-adapter direction that lets the browser virtual console save
+and load `.vdos` snapshots through backend-managed cloud storage, while
+preserving the option to reuse the same abstraction or selected backend for
+future model-instance persistence.
+
+This is a planning/pondering item. It should leave the current terminal
+filesystem save/load behavior intact until an implementation task is selected.
+
+### Current Problem
+
+The terminal CLI can run:
+
+- `save`
+- `snapshots`
+- `load`
+
+because it has local filesystem access and can read/write `.vdos` files under
+`.vedenemo`.
+
+The browser `/console` intentionally rejects those commands because browser
+console sessions submit one command or prompt answer at a time over HTTP and do
+not have access to the user's local filesystem.
+
+To support browser save/load without introducing browser file uploads as the
+primary workflow, the backend needs a cloud snapshot store behind a
+Vedenemo-owned storage interface.
+
+### Architectural Direction
+
+Introduce a Vedenemo-owned snapshot storage port before choosing any concrete
+cloud product. The port should be generic enough for storing named byte/text
+documents with metadata, but narrow enough that the first implementation is not
+a general database abstraction.
+
+Possible shape:
+
+```text
+SnapshotStore
+  listSnapshots(scope)
+  readSnapshot(scope, snapshotKey)
+  writeSnapshot(scope, snapshotKey, content, metadata, overwritePolicy)
+  deleteSnapshot(scope, snapshotKey)
+```
+
+The first stored content can be plain UTF-8 `.vdos` text. The storage record
+metadata should include at least:
+
+- model `azName`
+- model visible name
+- model version
+- command count, if cheaply available
+- creation/update timestamp
+- content type or format version, such as `vedenemo-script 1`
+- optional owner/workspace scope placeholder, even before authentication exists
+
+Keep cloud SDK dependencies out of `vedenemo-core` and
+`vedenemo-model-api`. Put storage ports in an appropriate Vedenemo-owned SPI
+module and concrete GCP adapters in adapter/infrastructure modules. Application
+composition should wire the selected adapter explicitly.
+
+### GCP Storage Options
+
+#### Option A: Cloud Storage Object Store
+
+Use Google Cloud Storage buckets and store each `.vdos` snapshot as an object.
+
+Good fit for the first snapshot task because `.vdos` is already a file-like
+artifact. Object names can encode scope and model identity, for example:
+
+```text
+snapshots/{scope}/{modelAzName}/{timestamp-or-version}.vdos
+```
+
+Pros:
+
+- Closest match to saving/loading `.vdos` files.
+- Simple mental model: object data plus object metadata.
+- Easy to retain multiple historical snapshots.
+- Good stepping stone before designing model-instance persistence.
+- Does not force Vedenemo model structures into a cloud database schema too
+  early.
+
+Cons:
+
+- Listing/filtering by arbitrary metadata is limited compared to a database.
+- Concurrent writes need explicit generation/precondition handling.
+- Not ideal as the primary store for highly queryable model instances.
+
+Use this if the near-term goal is browser `save`, `snapshots`, and `load` for
+whole model scripts.
+
+#### Option B: Firestore Native Mode
+
+Use Firestore documents for snapshot metadata and either store small `.vdos`
+content directly in a document or store content in Cloud Storage with Firestore
+as the index.
+
+Pros:
+
+- Better metadata queries than object storage alone.
+- Stronger fit if browser UX later needs lists, ownership/workspace views,
+  tags, recent files, sharing records, or live metadata updates.
+- More plausible bridge toward future model-instance persistence because it is
+  document-oriented and supports hierarchical data.
+
+Cons:
+
+- Less natural for large opaque `.vdos` files than Cloud Storage.
+- Document size and document-model constraints may shape the design too early.
+- A Firestore-shaped snapshot API should not be mistaken for the final
+  model-instance persistence model.
+
+Use this if snapshot discovery/querying matters early, or pair it with Cloud
+Storage as metadata/index plus object content.
+
+#### Option C: Cloud SQL For PostgreSQL
+
+Use PostgreSQL through Cloud SQL for snapshot records and possibly store `.vdos`
+content as text/blob rows.
+
+Pros:
+
+- Strong transactional semantics and relational querying.
+- Good candidate if future model instances require relational constraints,
+  reporting, migrations, or joins.
+- Familiar operational and backup model.
+
+Cons:
+
+- Heavier first step for storing simple `.vdos` files.
+- Requires schema design, migrations, connection management, and operational
+  decisions earlier.
+- May bias model-instance design toward relational tables before the product
+  model is stable.
+
+Use this if the team already knows model-instance persistence should become
+relational.
+
+#### Option D: Hybrid Cloud Storage + Firestore
+
+Store `.vdos` content in Cloud Storage and store searchable snapshot metadata
+in Firestore.
+
+Pros:
+
+- Keeps file content in the most file-like service.
+- Gives the UX a queryable index for listing snapshots.
+- Leaves room to evolve Firestore metadata into workspace/recent/shared views.
+
+Cons:
+
+- Two services and consistency between object write and metadata write.
+- More moving parts than needed for the smallest implementation.
+
+Use this if browser snapshot listing should become richer than object-name
+listing but `.vdos` should remain an opaque file artifact.
+
+### Initial Recommendation
+
+Start with Cloud Storage behind a small `SnapshotStore` port.
+
+Reasoning:
+
+- The first problem is simple file-like snapshot persistence.
+- `.vdos` is already an authoritative, portable text artifact.
+- It avoids prematurely designing model-instance storage.
+- The same port can later gain a Firestore metadata index without changing
+  browser console command semantics.
+
+Do not make this first storage port the final model-instance persistence API.
+Instead, treat it as a durable artifact store that can later coexist with a
+separate `ModelInstanceStore` or event/journal store.
+
+### Authentication And Authorization Direction
+
+Do not put a Google Cloud API key, service account key, signed URL, or bucket
+credential in the browser UX.
+
+For the first development-phase implementation, keep the same trust boundary
+that Vedenemo already uses:
+
+- the browser talks only to the Vedenemo backend;
+- the backend authenticates to Google Cloud using its runtime identity or
+  Application Default Credentials;
+- the GCP service account has narrowly scoped bucket permissions;
+- browser console `save`, `snapshots`, and `load` call Vedenemo HTTP endpoints
+  rather than Cloud Storage directly.
+
+This means Vedenemo can defer end-user authentication/authorization for the
+first private Tailscale-hosted development slice, but the backend API should be
+designed so authorization can be added without changing storage adapters.
+
+Minimum development-phase controls:
+
+- keep the backend reachable only inside the private network;
+- use a private bucket with no public object access;
+- use a dedicated service account for snapshot storage;
+- grant only the bucket/object permissions needed for snapshot read/write/list;
+- include a placeholder storage scope in the `SnapshotStore` API, even if it is
+  initially a fixed development scope;
+- avoid exposing raw object names that would become authorization-sensitive
+  later unless they are treated as opaque snapshot keys.
+
+API keys are not a good fit for this backend storage access. They identify a
+calling project/application, but they are not an authorization model for
+per-object user access and should not be used as a browser-visible storage
+secret. Service account credentials also must not be shipped to the browser.
+
+Signed URLs are useful later for direct browser upload/download of specific
+objects, but they are not needed for the first console command flow. If used
+later, signed URLs should be short-lived, generated by the backend after
+Vedenemo authorization checks, and scoped to one object/action.
+
+### Manual GCP Setup Checklist
+
+Before implementation starts, make the following manual configuration choices
+and record the selected values in deployment notes or environment
+configuration:
+
+1. Choose the GCP project that owns snapshot storage.
+2. Enable billing for the project if it is not already enabled.
+3. Enable the Cloud Storage API if the project does not already use it.
+4. Choose the first bucket name, region, and storage class.
+5. Create one private bucket for Vedenemo snapshots.
+6. Keep public access prevention enabled unless a later public artifact task
+   explicitly changes that.
+7. Decide the object prefix convention, for example:
+
+```text
+snapshots/dev/{modelAzName}/{snapshotName}.vdos
+```
+
+8. Decide the first fixed storage scope, for example `dev`, `single-user`, or
+   a deployment name.
+9. Create or select the service account that the backend will use for snapshot
+   storage.
+10. Grant that service account only the required bucket permissions.
+11. Decide how the deployed backend receives Google credentials.
+12. Decide how local development receives Google credentials.
+13. Configure backend environment variables:
+
+```text
+VEDENEMO_SNAPSHOT_STORE=gcs
+VEDENEMO_GCS_PROJECT_ID=<project-id>
+VEDENEMO_GCS_BUCKET=<bucket-name>
+VEDENEMO_GCS_PREFIX=snapshots/dev
+```
+
+14. Configure a GCP budget alert for the project.
+15. Decide first retention behavior: maximum snapshots per model, maximum age,
+   or no automatic retention for the first private slice.
+16. Decide first overwrite behavior: overwrite latest, always create a
+   timestamped snapshot, or support both.
+17. Document how to rotate the service account or deployment identity if
+   credentials are suspected to be exposed.
+
+The deployed-backend credential decision deserves special care:
+
+- If the backend runs on a GCP runtime such as Cloud Run, prefer attaching a
+  dedicated runtime service account to the service. The application then uses
+  Google client libraries with Application Default Credentials. No JSON key
+  file is stored in the repository, copied into the image, or exposed to the
+  browser.
+- If the backend runs on a non-GCP host, such as the current private Tailscale
+  machine, prefer Workload Identity Federation if practical. If that is too
+  much setup for the first development slice, use a user-managed service
+  account key only as a temporary development/deployment secret. Store it
+  outside the repository, inject it through the host's secret/environment
+  mechanism, restrict its bucket permissions, and plan to replace it later.
+- For local development, use `gcloud auth application-default login` or
+  service account impersonation so ADC can find credentials on the developer
+  machine. Avoid committing credential files or requiring developers to paste
+  long-lived keys into config files.
+- In all cases, the browser should never receive GCP credentials. Browser
+  console commands call the Vedenemo backend, and the backend performs storage
+  operations after applying Vedenemo-side capability/authorization checks.
+
+### Billing And Cost Controls
+
+Cloud snapshot storage introduces real billing even when the data is small.
+The first implementation should include basic cost guardrails rather than
+assuming `.vdos` files are always negligible.
+
+Cost sources to account for:
+
+- stored object bytes;
+- object write/list/read operations;
+- network egress when snapshots are downloaded;
+- retrieval fees if a non-Standard storage class is chosen;
+- extra costs if dual-region/multi-region replication or lifecycle features are
+  enabled.
+
+Recommended first-phase controls:
+
+- use one Standard storage bucket in one region unless there is a clear
+  deployment reason for multi-region;
+- cap snapshot size at the Vedenemo API boundary;
+- cap snapshots per scope/model, or implement retention by count/age;
+- make overwrite versus timestamped snapshot behavior explicit;
+- keep object versioning off until there is a retention requirement;
+- configure budget alerts in the GCP project;
+- document expected operation volume for `save`, `snapshots`, and `load`;
+- prefer backend-mediated save/load over signed URL transfers until direct
+  transfer is needed.
+
+Billing should be part of the implementation acceptance criteria:
+
+- failed storage writes must produce clear user-facing errors;
+- object names should be deterministic enough to clean up;
+- tests should cover overwrite/duplicate behavior without relying on live GCP;
+- production deployment must document the required bucket, service account, and
+  IAM permissions.
+
+### Future Model-Instance Persistence Considerations
+
+Model-instance persistence is a larger problem than `.vdos` snapshot storage.
+It may need:
+
+- identity rules for instances;
+- schema evolution when metamodels change;
+- validation against model versions;
+- query patterns over instances;
+- transactions across related instances;
+- history/audit/event storage;
+- access control and sharing;
+- import/export between durable storage and `.vdos`.
+
+Potential directions:
+
+- Firestore if instance data is document-shaped, hierarchical, and needs
+  Firebase/GCP web integration.
+- PostgreSQL/Cloud SQL if instance data needs relational integrity, joins, and
+  explicit schema/migration control.
+- Cloud Storage remains useful for exported snapshots, backups, and archive
+  artifacts even if live instances use a database.
+
+The snapshot-store task should therefore avoid claiming that Cloud Storage is
+the final persistence answer. It should create a small cloud save/load slice and
+generate practical learning about auth, deployment, naming, metadata, and
+operational handling.
+
+### Possible First Implementation Slice
+
+- Add a pure Vedenemo storage SPI for snapshot artifacts.
+- Add a local filesystem adapter for tests/dev parity if useful.
+- Add a GCP Cloud Storage adapter in a separate adapter module.
+- Wire the selected snapshot store in application composition.
+- Add backend endpoints for browser-console snapshot operations, for example:
+
+```text
+GET  /snapshots
+POST /snapshots/{modelAzName}
+GET  /snapshots/{snapshotKey}
+POST /models/script/from-snapshot
+```
+
+- Extend browser console capabilities so:
+  - `save` writes the attached model's exported `.vdos` to cloud storage;
+  - `snapshots` lists cloud snapshots available in the configured scope;
+  - `load <snapshot-number | snapshot-key>` imports the chosen stored `.vdos`;
+  - terminal CLI can either keep local file behavior or later gain explicit
+    cloud commands.
+
+### Open Questions
+
+- What is the first scope boundary: one global bucket namespace, per user, per
+  workspace, or per deployment?
+- Should browser `save` overwrite a named latest snapshot, always create
+  timestamped snapshots, or support both?
+- Should `load` import as a new model when the `azName` already exists, or
+  prompt for a replacement name like terminal CLI does?
+- Should terminal CLI `save/load` remain local-only, or should cloud behavior
+  be exposed through explicit commands such as `cloud save` and `cloud load`?
+- Should snapshot listing rely only on Cloud Storage object names/metadata at
+  first, or should Firestore metadata indexing be introduced immediately?
+- What authentication/authorization boundary is acceptable before user auth is
+  implemented?
+- Should this task create a generic artifact store, a Vedenemo snapshot store,
+  or both layered together?
