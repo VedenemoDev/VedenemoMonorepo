@@ -3471,6 +3471,25 @@ POST /models/script/from-snapshot
 - Should terminal CLI `save/load` remain local-only, or should cloud behavior
   be exposed through explicit commands such as `cloud save` and `cloud load`?
 - What authentication/authorization boundary is acceptable before user auth is
-  implemented?
+  implemented? This question is about which layer is trusted to prevent
+  unwanted snapshot access during the private development phase:
+  - Network boundary: is private Tailscale/backend reachability enough for the
+    first slice, meaning anyone who can reach the backend can use the snapshot
+    endpoints?
+  - Backend capability boundary: should snapshot endpoints require an explicit
+    server-side feature flag, shared development token, or environment-gated
+    console capability even before per-user login exists?
+  - Storage scope boundary: should all browser console sessions share one fixed
+    development scope, or should each deployment/session get a separate prefix
+    even without real user identity?
+  - GCP IAM boundary: the backend service account should be limited to only the
+    chosen bucket/prefix and should not grant browser clients any direct Cloud
+    Storage credentials.
+  - UX/API boundary: should snapshot keys be treated as opaque backend-owned
+    identifiers so future user/workspace authorization can be added without
+    changing command syntax?
+  - Out-of-scope boundary: without user auth, the first slice cannot guarantee
+    per-user privacy or sharing rules; document that limitation explicitly if
+    network-only or deployment-only trust is selected.
 - Should this task create a generic artifact store, a Vedenemo snapshot store,
   or both layered together?

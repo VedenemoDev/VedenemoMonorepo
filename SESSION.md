@@ -4327,3 +4327,26 @@ Current status and next steps:
   command execution, Terraform variable review, `terraform plan`, manual plan
   review, `terraform apply`, backend configuration from outputs, remaining
   manual budget/policy steps, and identity/prefix verification.
+
+## 2026-07-26 22:51 EEST
+
+Session goal: clarify the cloud snapshot planning question about acceptable
+authentication and authorization boundaries before user auth exists.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed` inspections of the cloud snapshot backlog section
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Expanded the open auth boundary question into concrete boundary choices:
+  private network reachability, backend feature/capability gating, storage
+  scope separation, GCP IAM limits, opaque snapshot keys, and explicit
+  documentation of missing per-user privacy/sharing guarantees before real user
+  auth is implemented.
