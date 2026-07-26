@@ -3266,6 +3266,10 @@ setup files should follow that convention, for example:
 infra/gcp/cloud-storage-snapshots
 ```
 
+An initial template scaffold now exists in that directory with Terraform files,
+manual/setup runbooks, and shell script templates for API bootstrap, backend
+environment output, and access verification.
+
 Prefer repeatable Terraform and small shell helper scripts in that directory
 over browser-based Google Cloud Console setup. The scripts/module should encode
 the chosen services, bucket settings, service account, IAM bindings, and

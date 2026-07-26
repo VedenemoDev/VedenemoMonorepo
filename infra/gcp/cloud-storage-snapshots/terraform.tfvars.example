@@ -1,0 +1,28 @@
+# Copy this file to terraform.tfvars and fill in real values.
+# terraform.tfvars is ignored by Git and must not be committed.
+
+project_id = "YOUR_PROJECT_ID"
+
+# Must be globally unique across Cloud Storage.
+bucket_name = "YOUR_UNIQUE_VEDENEMO_SNAPSHOT_BUCKET"
+
+# Pick the region deliberately for latency, data location, and cost.
+bucket_location = "europe-north1"
+
+bucket_storage_class = "STANDARD"
+
+# First object naming shape:
+# snapshots/{scope}/{modelAzName}/{snapshotName}.vdos
+snapshot_object_prefix = "snapshots/dev"
+storage_scope          = "dev"
+
+backend_service_account_id = "vedenemo-snapshot-backend"
+
+# Set to 0 for no automatic lifecycle deletion in the first private slice.
+retention_days = 0
+
+labels = {
+  app       = "vedenemo"
+  component = "snapshots"
+}
+

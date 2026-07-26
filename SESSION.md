@@ -4404,3 +4404,45 @@ Current status and next steps:
   plain command names for cloud snapshots.
 - Resolved the storage abstraction as a Vedenemo-specific snapshot store rather
   than a generic artifact store.
+
+## 2026-07-27 00:26 EEST
+
+Session goal: create initial GCP Cloud Storage snapshot infrastructure scaffold.
+
+Files changed:
+
+- `infra/gcp/cloud-storage-snapshots/README.md`
+- `infra/gcp/cloud-storage-snapshots/MANUAL-PHASES.md`
+- `infra/gcp/cloud-storage-snapshots/RUNBOOK.md`
+- `infra/gcp/cloud-storage-snapshots/versions.tf`
+- `infra/gcp/cloud-storage-snapshots/variables.tf`
+- `infra/gcp/cloud-storage-snapshots/main.tf`
+- `infra/gcp/cloud-storage-snapshots/outputs.tf`
+- `infra/gcp/cloud-storage-snapshots/terraform.tfvars.example`
+- `infra/gcp/cloud-storage-snapshots/scripts/bootstrap-apis.sh`
+- `infra/gcp/cloud-storage-snapshots/scripts/print-backend-env.sh`
+- `infra/gcp/cloud-storage-snapshots/scripts/verify-snapshot-access.sh`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `.gitignore` and existing Firebase infra inspections
+- `chmod +x` for snapshot infrastructure shell scripts
+- `terraform -chdir=infra/gcp/cloud-storage-snapshots fmt -check`
+- `bash -n` for all new shell scripts
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added a committed template scaffold under
+  `infra/gcp/cloud-storage-snapshots`.
+- The scaffold includes separate manual-phase and runbook markdown files plus
+  inline script comments for manual prerequisites and usage.
+- Terraform templates define a private Cloud Storage bucket, backend service
+  account, service enablement, bucket IAM, non-secret backend environment
+  outputs, optional retention, and placeholder variable values.
+- Script templates cover API bootstrap, backend environment output, and basic
+  snapshot prefix access verification.
+- Formatting and shell syntax checks passed; no live GCP or Terraform apply was
+  run.
