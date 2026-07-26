@@ -4189,3 +4189,53 @@ Current status and next steps:
   non-GCP/Tailscale host, temporary service account key, and local ADC paths.
 - Reiterated that browser UX must never receive GCP credentials; browser
   console commands should go through Vedenemo backend endpoints.
+
+## 2026-07-26 21:55 EEST
+
+Session goal: refine cloud snapshot planning around manual snapshot names,
+overwrite behavior, and model last-modification metadata.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Backlog inspection with `sed` and `rg`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Updated cloud snapshot object naming to
+  `snapshots/{scope}/{modelAzName}/{snapshotName}.vdos`.
+- Recorded that first cloud snapshots are manually named and same-name saves
+  overwrite after confirmation, without automatic version control.
+- Added planning requirement for model last-modification timestamp metadata in
+  model metadata and `.vdos` files.
+- Added stale-overwrite warning behavior when an existing snapshot appears to
+  contain newer model modifications than the currently loaded model.
+
+## 2026-07-26 22:00 EEST
+
+Session goal: narrow the cloud snapshot planning item to Google Cloud Storage
+only for the first implementation phase.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Backlog inspection with `sed` and `rg`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Removed detailed Firestore, Cloud SQL, and hybrid alternative comparisons
+  from the browser console cloud snapshot backlog item.
+- Kept Cloud Storage Object Store as the selected GCP direction for first-phase
+  `.vdos` snapshot save/load.
+- Left a short note to revisit model-instance persistence alternatives only
+  after concrete model-instance requirements exist.

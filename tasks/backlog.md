@@ -3132,26 +3132,26 @@ metadata should include at least:
 - creation/update timestamp
 - content type or format version, such as `vedenemo-script 1`
 - optional owner/workspace scope placeholder, even before authentication exists
+- model last modification timestamp, once the model layer exposes one
 
 Keep cloud SDK dependencies out of `vedenemo-core` and
 `vedenemo-model-api`. Put storage ports in an appropriate Vedenemo-owned SPI
 module and concrete GCP adapters in adapter/infrastructure modules. Application
 composition should wire the selected adapter explicitly.
 
-### GCP Storage Options
-
-#### Option A: Cloud Storage Object Store
+### Selected GCP Storage Direction
 
 Use Google Cloud Storage buckets and store each `.vdos` snapshot as an object.
 
 Good fit for the first snapshot task because `.vdos` is already a file-like
-artifact. Object names can encode scope and model identity, for example:
+artifact. Object names can encode scope, model identity, and a user-chosen
+snapshot name, for example:
 
 ```text
-snapshots/{scope}/{modelAzName}/{timestamp-or-version}.vdos
+snapshots/{scope}/{modelAzName}/{snapshotName}.vdos
 ```
 
-Pros:
+Reasons:
 
 - Closest match to saving/loading `.vdos` files.
 - Simple mental model: object data plus object metadata.
@@ -3160,96 +3160,61 @@ Pros:
 - Does not force Vedenemo model structures into a cloud database schema too
   early.
 
-Cons:
+Known limitations:
 
 - Listing/filtering by arbitrary metadata is limited compared to a database.
 - Concurrent writes need explicit generation/precondition handling.
 - Not ideal as the primary store for highly queryable model instances.
 
-Use this if the near-term goal is browser `save`, `snapshots`, and `load` for
+Use this for the near-term goal: browser `save`, `snapshots`, and `load` for
 whole model scripts.
-
-#### Option B: Firestore Native Mode
-
-Use Firestore documents for snapshot metadata and either store small `.vdos`
-content directly in a document or store content in Cloud Storage with Firestore
-as the index.
-
-Pros:
-
-- Better metadata queries than object storage alone.
-- Stronger fit if browser UX later needs lists, ownership/workspace views,
-  tags, recent files, sharing records, or live metadata updates.
-- More plausible bridge toward future model-instance persistence because it is
-  document-oriented and supports hierarchical data.
-
-Cons:
-
-- Less natural for large opaque `.vdos` files than Cloud Storage.
-- Document size and document-model constraints may shape the design too early.
-- A Firestore-shaped snapshot API should not be mistaken for the final
-  model-instance persistence model.
-
-Use this if snapshot discovery/querying matters early, or pair it with Cloud
-Storage as metadata/index plus object content.
-
-#### Option C: Cloud SQL For PostgreSQL
-
-Use PostgreSQL through Cloud SQL for snapshot records and possibly store `.vdos`
-content as text/blob rows.
-
-Pros:
-
-- Strong transactional semantics and relational querying.
-- Good candidate if future model instances require relational constraints,
-  reporting, migrations, or joins.
-- Familiar operational and backup model.
-
-Cons:
-
-- Heavier first step for storing simple `.vdos` files.
-- Requires schema design, migrations, connection management, and operational
-  decisions earlier.
-- May bias model-instance design toward relational tables before the product
-  model is stable.
-
-Use this if the team already knows model-instance persistence should become
-relational.
-
-#### Option D: Hybrid Cloud Storage + Firestore
-
-Store `.vdos` content in Cloud Storage and store searchable snapshot metadata
-in Firestore.
-
-Pros:
-
-- Keeps file content in the most file-like service.
-- Gives the UX a queryable index for listing snapshots.
-- Leaves room to evolve Firestore metadata into workspace/recent/shared views.
-
-Cons:
-
-- Two services and consistency between object write and metadata write.
-- More moving parts than needed for the smallest implementation.
-
-Use this if browser snapshot listing should become richer than object-name
-listing but `.vdos` should remain an opaque file artifact.
-
-### Initial Recommendation
-
-Start with Cloud Storage behind a small `SnapshotStore` port.
-
-Reasoning:
-
-- The first problem is simple file-like snapshot persistence.
-- `.vdos` is already an authoritative, portable text artifact.
-- It avoids prematurely designing model-instance storage.
-- The same port can later gain a Firestore metadata index without changing
-  browser console command semantics.
 
 Do not make this first storage port the final model-instance persistence API.
 Instead, treat it as a durable artifact store that can later coexist with a
 separate `ModelInstanceStore` or event/journal store.
+
+### Snapshot Naming And Overwrite Semantics
+
+The first cloud snapshot implementation should not introduce automatic version
+control. Snapshot names can be manually chosen by the user. A save to the same
+snapshot name overwrites the previous stored `.vdos` snapshot after normal
+overwrite confirmation.
+
+Recommended first object naming shape:
+
+```text
+snapshots/{scope}/{modelAzName}/{snapshotName}.vdos
+```
+
+The latest save timestamp remains important even without snapshot versioning.
+Both local file-based snapshots and cloud snapshots should eventually carry
+enough metadata to answer:
+
+- when the model was last modified in memory;
+- when the snapshot was last saved;
+- which model modification timestamp was captured by this snapshot.
+
+This implies adding model-level modification metadata before or alongside cloud
+snapshot overwrite handling. At minimum, `ModelRoot` or model metadata should
+track a last modification timestamp that changes when model-authoring commands
+successfully mutate the model. `.vdos` export should include that timestamp in
+the model metadata, and `.vdos` import should restore or validate it
+deterministically.
+
+Overwrite confirmation should use this metadata:
+
+- If the target snapshot does not exist, save normally.
+- If the target snapshot exists and its saved model modification timestamp is
+  older than or equal to the current model's last modification timestamp, a
+  normal overwrite confirmation is enough.
+- If the target snapshot exists and its saved model modification timestamp is
+  newer than the current model's last modification timestamp, warn that the
+  user is about to overwrite a snapshot that appears to contain newer model
+  changes than the currently loaded model.
+
+The same stale-overwrite warning should apply to terminal `.vedenemo` files and
+cloud-backed snapshots once both paths have access to the metadata. Before the
+metadata exists, implementation can keep the existing simple overwrite prompt.
 
 ### Authentication And Authorization Direction
 
@@ -3329,9 +3294,11 @@ VEDENEMO_GCS_PREFIX=snapshots/dev
 14. Configure a GCP budget alert for the project.
 15. Decide first retention behavior: maximum snapshots per model, maximum age,
    or no automatic retention for the first private slice.
-16. Decide first overwrite behavior: overwrite latest, always create a
-   timestamped snapshot, or support both.
-17. Document how to rotate the service account or deployment identity if
+16. Use user-chosen snapshot names. Saving the same name overwrites the old
+   snapshot after confirmation.
+17. Plan model last-modification timestamp metadata so overwrite confirmation
+   can warn when the existing snapshot appears newer than the current model.
+18. Document how to rotate the service account or deployment identity if
    credentials are suspected to be exposed.
 
 The deployed-backend credential decision deserves special care:
@@ -3376,7 +3343,7 @@ Recommended first-phase controls:
   deployment reason for multi-region;
 - cap snapshot size at the Vedenemo API boundary;
 - cap snapshots per scope/model, or implement retention by count/age;
-- make overwrite versus timestamped snapshot behavior explicit;
+- make manual-name overwrite behavior explicit;
 - keep object versioning off until there is a retention requirement;
 - configure budget alerts in the GCP project;
 - document expected operation volume for `save`, `snapshots`, and `load`;
@@ -3405,14 +3372,11 @@ It may need:
 - access control and sharing;
 - import/export between durable storage and `.vdos`.
 
-Potential directions:
-
-- Firestore if instance data is document-shaped, hierarchical, and needs
-  Firebase/GCP web integration.
-- PostgreSQL/Cloud SQL if instance data needs relational integrity, joins, and
-  explicit schema/migration control.
-- Cloud Storage remains useful for exported snapshots, backups, and archive
-  artifacts even if live instances use a database.
+Do not compare or select model-instance persistence backends in this snapshot
+task. Revisit those alternatives only after Vedenemo has a concrete model
+instance design and real instance query/update requirements. Cloud Storage
+remains useful for exported snapshots, backups, and archive artifacts even if
+live instances later use a different persistence backend.
 
 The snapshot-store task should therefore avoid claiming that Cloud Storage is
 the final persistence answer. It should create a small cloud save/load slice and
@@ -3445,14 +3409,12 @@ POST /models/script/from-snapshot
 
 - What is the first scope boundary: one global bucket namespace, per user, per
   workspace, or per deployment?
-- Should browser `save` overwrite a named latest snapshot, always create
-  timestamped snapshots, or support both?
+- What exact timestamp source should model last-modification metadata use:
+  backend server clock, logical monotonic revision, or both?
 - Should `load` import as a new model when the `azName` already exists, or
   prompt for a replacement name like terminal CLI does?
 - Should terminal CLI `save/load` remain local-only, or should cloud behavior
   be exposed through explicit commands such as `cloud save` and `cloud load`?
-- Should snapshot listing rely only on Cloud Storage object names/metadata at
-  first, or should Firestore metadata indexing be introduced immediately?
 - What authentication/authorization boundary is acceptable before user auth is
   implemented?
 - Should this task create a generic artifact store, a Vedenemo snapshot store,
