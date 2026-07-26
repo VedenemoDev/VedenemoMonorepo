@@ -3258,15 +3258,32 @@ Vedenemo authorization checks, and scoped to one object/action.
 
 ### Manual GCP Setup Checklist
 
-Before implementation starts, make the following manual configuration choices
-and record the selected values in deployment notes or environment
-configuration:
+The repository already has GCP infrastructure under `infra/gcp`, including
+`infra/gcp/firebase-hosting` for Firebase Hosting setup. New cloud snapshot
+setup files should follow that convention, for example:
+
+```text
+infra/gcp/cloud-storage-snapshots
+```
+
+Prefer repeatable Terraform and small shell helper scripts in that directory
+over browser-based Google Cloud Console setup. The scripts/module should encode
+the chosen services, bucket settings, service account, IAM bindings, and
+documented outputs where practical. Browser console setup should be reserved for
+one-time project prerequisites that cannot be managed reliably from Terraform or
+`gcloud` in this repository.
+
+Before implementation starts, make the following configuration choices and
+record the selected values in deployment notes, Terraform variables, script
+arguments, or environment configuration:
 
 1. Choose the GCP project that owns snapshot storage.
 2. Enable billing for the project if it is not already enabled.
-3. Enable the Cloud Storage API if the project does not already use it.
+3. Enable the Cloud Storage API if the project does not already use it. Prefer
+   doing this from the infrastructure module.
 4. Choose the first bucket name, region, and storage class.
-5. Create one private bucket for Vedenemo snapshots.
+5. Create one private bucket for Vedenemo snapshots from the infrastructure
+   module.
 6. Keep public access prevention enabled unless a later public artifact task
    explicitly changes that.
 7. Decide the object prefix convention, for example:
@@ -3278,8 +3295,9 @@ snapshots/dev/{modelAzName}/{snapshotName}.vdos
 8. Decide the first fixed storage scope, for example `dev`, `single-user`, or
    a deployment name.
 9. Create or select the service account that the backend will use for snapshot
-   storage.
-10. Grant that service account only the required bucket permissions.
+   storage. Prefer managing this in infrastructure code.
+10. Grant that service account only the required bucket permissions from the
+   infrastructure module.
 11. Decide how the deployed backend receives Google credentials.
 12. Decide how local development receives Google credentials.
 13. Configure backend environment variables:
@@ -3291,7 +3309,8 @@ VEDENEMO_GCS_BUCKET=<bucket-name>
 VEDENEMO_GCS_PREFIX=snapshots/dev
 ```
 
-14. Configure a GCP budget alert for the project.
+14. Configure a GCP budget alert for the project. Automate this if it fits the
+   current infra pattern; otherwise document the manual step.
 15. Decide first retention behavior: maximum snapshots per model, maximum age,
    or no automatic retention for the first private slice.
 16. Use user-chosen snapshot names. Saving the same name overwrites the old
@@ -3300,6 +3319,17 @@ VEDENEMO_GCS_PREFIX=snapshots/dev
    can warn when the existing snapshot appears newer than the current model.
 18. Document how to rotate the service account or deployment identity if
    credentials are suspected to be exposed.
+
+The first infrastructure slice should produce enough outputs for backend
+configuration without requiring users to search the Cloud Console manually:
+
+- GCP project ID;
+- bucket name;
+- object prefix;
+- backend service account email;
+- any Workload Identity Federation provider or principal identifiers if the
+  backend deployment uses keyless authentication;
+- the exact environment variable values needed by `vedenemo-web-api`.
 
 The deployed-backend credential decision deserves special care:
 

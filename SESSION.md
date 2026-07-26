@@ -4237,5 +4237,69 @@ Current status and next steps:
   from the browser console cloud snapshot backlog item.
 - Kept Cloud Storage Object Store as the selected GCP direction for first-phase
   `.vdos` snapshot save/load.
+
+## 2026-07-26 22:30 EEST
+
+Session goal: reconstruct current task and repository state after a corrupted
+previous Codex session.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- Required project context reads from `docs/architecture/*`,
+  `docs/roadmap/current-milestone.md`, `tasks/current-task.md`, and
+  `SESSION.md`
+- `git status --short`
+- `git status --short --branch`
+- `git log --oneline -n 12`
+- `git show --stat --oneline --decorate -n 1 HEAD`
+- `git show --name-status --format=fuller -n 3 HEAD`
+- `git show --stat --oneline --decorate 8d917da`
+- `sed`/`rg` inspections of `tasks/backlog.md`, `tasks/current-task.md`,
+  `tasks/implementation-plan-associations.md`, `README.md`, and architecture
+  documentation references
+- Module inventory via `rg --files`, `find`, and root `pom.xml` inspection
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Worktree was clean at session start and `main` was aligned with
+  `origin/main`.
+- `tasks/current-task.md` still records the executed browser console parity
+  task; no active implementation task is currently promoted.
+- The only planning-status backlog item found is `Plan Cloud Snapshot Storage
+  For Browser Console Save/Load`.
+- Next step is to resolve the open cloud snapshot planning questions or promote
+  a narrower implementation slice to `tasks/current-task.md`.
 - Left a short note to revisit model-instance persistence alternatives only
   after concrete model-instance requirements exist.
+
+## 2026-07-26 22:34 EEST
+
+Session goal: record that existing GCP infrastructure should host cloud
+snapshot setup automation.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `find infra -maxdepth 3 -type f -o -type d`
+- `sed` inspections of `tasks/backlog.md`, `SESSION.md`, and
+  `infra/gcp/firebase-hosting` Terraform files
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Updated the cloud snapshot planning item to place new setup automation under
+  `infra/gcp/cloud-storage-snapshots`.
+- Recorded that Terraform and small helper scripts should be preferred over
+  browser-based Google Cloud Console setup where practical.
+- Added expected infrastructure outputs for backend configuration, including
+  bucket, prefix, service account, optional Workload Identity Federation values,
+  and `vedenemo-web-api` environment variables.
