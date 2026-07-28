@@ -25,6 +25,8 @@ development, command-flow testing, and shaping the core model/API boundaries.
   behavior.
 - HTTP-backed interactive `VedenemoCli`.
 - In-memory storage adapter.
+- Optional Google Cloud Storage snapshot adapter for browser console `.vdos`
+  save/load.
 - Separate Vite/TypeScript UX with model selection, PlantUML SVG rendering, and
   a full-page browser console at `/console`.
 - GitHub Actions workflows for backend and frontend.
@@ -44,6 +46,7 @@ vedenemo-model-api       Shared model API types. Pure JDK.
 vedenemo-core-spi        Core-facing SPI ports. Pure JDK plus Vedenemo modules.
 vedenemo-core            Commands, sessions, undo, command journal, .vdos logic.
 vedenemo-storage-memory  Initial in-memory ModelStorage adapter.
+vedenemo-storage-gcs     Google Cloud Storage SnapshotStore adapter.
 vedenemo-app             Application composition root.
 vedenemo-command-console Shared CLI-like command session behavior.
 vedenemo-web-api         Javalin HTTP backend executable jar.
@@ -92,6 +95,11 @@ Backend environment variables:
 - `VEDENEMO_WEB_HOST`, default `127.0.0.1`
 - `VEDENEMO_WEB_PORT`, default `8080`
 - `VEDENEMO_ALLOWED_ORIGINS`, default `*`
+- `VEDENEMO_SNAPSHOT_STORE`, set to `gcs` for browser-console cloud snapshots
+- `VEDENEMO_GCS_PROJECT_ID`, required when `VEDENEMO_SNAPSHOT_STORE=gcs`
+- `VEDENEMO_GCS_BUCKET`, required when `VEDENEMO_SNAPSHOT_STORE=gcs`
+- `VEDENEMO_GCS_PREFIX`, required when `VEDENEMO_SNAPSHOT_STORE=gcs`
+- `VEDENEMO_SNAPSHOT_SCOPE`, default `dev`
 
 Example with an explicit local port:
 
@@ -239,6 +247,25 @@ and entity `azName` values remain case-sensitive.
 See [docs/cli-reference.md](docs/cli-reference.md) for full command usage and
 examples.
 
+## Browser Console Cloud Snapshots
+
+The browser console at `/console` uses the same plain command names for
+snapshots, but storage is backend-managed instead of local filesystem based:
+
+```text
+save [snapshotName]
+snapshots
+load <snapshot-key | snapshot-number>
+```
+
+Set `VEDENEMO_SNAPSHOT_STORE=gcs` and the `VEDENEMO_GCS_*` variables before
+starting `vedenemo-web-api` to enable the Google Cloud Storage adapter. The
+browser never receives Google Cloud credentials; the backend uses its runtime
+Application Default Credentials or service account identity.
+
+The infrastructure scaffold for the private development bucket and service
+account is under `infra/gcp/cloud-storage-snapshots`.
+
 ## Run The UX Locally
 
 Build first:
@@ -259,9 +286,10 @@ npm run dev
 The main page shows model selection and the PlantUML diagram. The browser
 console is available at `/console`; if opened from the main page while a model
 is connected, it starts attached to that model. The browser console supports
-the same non-file authoring commands as `VedenemoCli`, including `add`,
-`attr add`, and `assoc add`; `save`, `snapshots`, and `load` are rejected
-because they require local filesystem access.
+the same authoring commands as `VedenemoCli`, including `add`, `attr add`, and
+`assoc add`. With the backend snapshot store configured, browser `save`,
+`snapshots`, and `load` use cloud snapshots; terminal `VedenemoCli` keeps using
+local `.vdos` files.
 
 ## Vedenemo Script Files
 

@@ -6,6 +6,7 @@ import org.vedenemo.console.EntitySummary;
 import org.vedenemo.console.ModelClient;
 import org.vedenemo.console.ModelImportResult;
 import org.vedenemo.console.ModelSummary;
+import org.vedenemo.console.SnapshotSummary;
 
 import java.io.IOException;
 import java.net.URI;
@@ -173,6 +174,21 @@ public final class HttpModelClient implements ModelClient {
             throw new ModelAlreadyExistsException("model load failed with HTTP status 409: " + response.body());
         }
         throw new IOException("model load failed with HTTP status " + response.statusCode() + ": " + response.body());
+    }
+
+    @Override
+    public List<SnapshotSummary> listSnapshots() throws IOException {
+        throw new IOException("cloud snapshots are not supported by the terminal HTTP model client");
+    }
+
+    @Override
+    public SnapshotSummary saveSnapshot(String modelAzName, String snapshotName) throws IOException {
+        throw new IOException("cloud snapshots are not supported by the terminal HTTP model client");
+    }
+
+    @Override
+    public ModelImportResult loadSnapshot(String snapshotKey, String modelAzNameOverride) throws IOException {
+        throw new IOException("cloud snapshots are not supported by the terminal HTTP model client");
     }
 
     private static List<ModelSummary> parseModels(String body) throws IOException {

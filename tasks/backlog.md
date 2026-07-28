@@ -3074,7 +3074,7 @@ At minimum, implementation should add focused coverage for:
 
 ## Plan Cloud Snapshot Storage For Browser Console Save/Load
 
-Status: planning.
+Status: executed.
 
 ### Goal
 
@@ -3083,8 +3083,9 @@ and load `.vdos` snapshots through backend-managed cloud storage, while
 preserving the option to reuse the same abstraction or selected backend for
 future model-instance persistence.
 
-This is a planning/pondering item. It should leave the current terminal
-filesystem save/load behavior intact until an implementation task is selected.
+This started as a planning/pondering item. The first implementation keeps the
+terminal filesystem save/load behavior intact and adds backend-managed cloud
+snapshots for browser console sessions.
 
 ### Current Problem
 
@@ -3484,6 +3485,25 @@ POST /models/script/from-snapshot
   - terminal CLI keeps plain `save`, `snapshots`, and `load` commands backed by
     the local filesystem while browser console uses the same plain command
     names backed by cloud snapshots.
+
+### Implementation Result
+
+- Added `SnapshotStore`, `SnapshotDescriptor`, and `SnapshotContent` to
+  `vedenemo-core-spi`.
+- Added `vedenemo-storage-gcs` with `GcsSnapshotStore`.
+- Wired browser console snapshot storage in `vedenemo-web-api` from:
+  - `VEDENEMO_SNAPSHOT_STORE=gcs`
+  - `VEDENEMO_GCS_PROJECT_ID`
+  - `VEDENEMO_GCS_BUCKET`
+  - `VEDENEMO_GCS_PREFIX`
+  - `VEDENEMO_SNAPSHOT_SCOPE`
+- Kept terminal `VedenemoCli` `save`, `snapshots`, and `load` local
+  filesystem-backed.
+- Implemented browser `/console` plain `save`, `snapshots`, and `load` through
+  the existing console-session command endpoint instead of adding separate
+  snapshot REST endpoints in this slice.
+- Added deterministic tests using in-memory fake snapshot storage rather than
+  live GCP.
 
 ### Resolved Auth Boundary For First Slice
 

@@ -15,6 +15,7 @@
         <module>vedenemo-core-spi</module>
         <module>vedenemo-core</module>
         <module>vedenemo-storage-memory</module>
+        <module>vedenemo-storage-gcs</module>
         <module>vedenemo-command-console</module>
         <module>vedenemo-cli</module>
         <module>vedenemo-app</module>
@@ -27,6 +28,7 @@
         <javalin.version>7.2.2</javalin.version>
         <jackson.version>2.19.0</jackson.version>
         <junit.jupiter.version>5.12.2</junit.jupiter.version>
+        <google.cloud.storage.version>2.69.0</google.cloud.storage.version>
     </properties>
 
     <build>

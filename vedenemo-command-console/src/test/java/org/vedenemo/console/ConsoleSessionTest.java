@@ -97,6 +97,98 @@ final class ConsoleSessionTest {
     }
 
     @Test
+    void helpListsCloudSnapshotCommandsWhenEnabled() {
+        ConsoleSession session = new ConsoleSession(
+                UUID.randomUUID(),
+                new TestModelClient(),
+                new TestSessionClient(),
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsoleWithCloudSnapshots()
+        );
+
+        ConsoleCommandResult result = session.execute("help");
+
+        assertTrue(result.outputLines().contains("  save [snapshotName] - save the attached model to a cloud snapshot"));
+        assertTrue(result.outputLines().contains("  snapshots - list cloud snapshots"));
+        assertTrue(result.outputLines().contains("  load <snapshot-key | snapshot-number> - load a model from a cloud snapshot"));
+    }
+
+    @Test
+    void savesAttachedModelToCloudSnapshotWithPromptedName() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        TestSessionClient sessionClient = new TestSessionClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsoleWithCloudSnapshots()
+        );
+
+        session.execute("attach Example_Model");
+        session.execute("save");
+        assertEquals("Snapshot name: ", session.prompt());
+        ConsoleCommandResult result = session.execute("first");
+
+        assertEquals(ConsoleCommandResult.Status.OK, result.status());
+        assertEquals(List.of("Saved model Example_Model to cloud snapshot Example_Model/first.vdos."), result.outputLines());
+        assertEquals("Example_Model", modelClient.savedSnapshotModelAzName);
+        assertEquals("first", modelClient.savedSnapshotName);
+    }
+
+    @Test
+    void listsAndLoadsCloudSnapshotByNumber() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.models.add(new ModelSummary("Loaded_Model", "Loaded Model", "1.0.0"));
+        modelClient.snapshots.add(new SnapshotSummary("Loaded_Model/first.vdos", "Loaded_Model", "Loaded Model", "1.0.0", 2, "2026-07-28T18:30:00Z"));
+        TestSessionClient sessionClient = new TestSessionClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsoleWithCloudSnapshots()
+        );
+
+        ConsoleCommandResult snapshots = session.execute("snapshots");
+        ConsoleCommandResult load = session.execute("load 1");
+
+        assertEquals("Cloud snapshots:", snapshots.outputLines().getFirst());
+        assertTrue(snapshots.outputLines().contains("1. Loaded_Model/first.vdos - Loaded Model (Loaded_Model) version 1.0.0, 2 commands, saved 2026-07-28T18:30:00Z"));
+        assertEquals(List.of("Loaded model Loaded_Model from cloud snapshot Loaded_Model/first.vdos."), load.outputLines());
+        assertEquals("Loaded_Model/first.vdos", modelClient.loadedSnapshotKey);
+        assertEquals("Loaded_Model", sessionClient.selectedModelAzName);
+    }
+
+    @Test
+    void promptsForReplacementAzNameWhenCloudSnapshotLoadConflicts() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Existing_Model", "Existing Model", "1.0.0"));
+        modelClient.models.add(new ModelSummary("Replacement_Model", "Replacement Model", "1.0.0"));
+        modelClient.duplicateOnFirstLoad = true;
+        TestSessionClient sessionClient = new TestSessionClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsoleWithCloudSnapshots()
+        );
+
+        ConsoleCommandResult firstLoad = session.execute("load Existing_Model/saved.vdos");
+        assertEquals(List.of("model load failed: model already exists: Existing_Model"), firstLoad.outputLines());
+        assertEquals("New model azName for import, or blank to cancel: ", session.prompt());
+
+        ConsoleCommandResult renamedLoad = session.execute("Replacement_Model");
+
+        assertEquals(List.of("Loaded model Replacement_Model from cloud snapshot Existing_Model/saved.vdos."), renamedLoad.outputLines());
+        assertEquals("Replacement_Model", modelClient.loadedModelAzNameOverride);
+        assertEquals("Replacement_Model", sessionClient.selectedModelAzName);
+    }
+
+    @Test
     void pingChecksBackendThroughSharedModelClient() {
         TestModelClient modelClient = new TestModelClient();
         ConsoleSession session = new ConsoleSession(
@@ -331,7 +423,13 @@ final class ConsoleSessionTest {
         private final List<ModelSummary> models = new ArrayList<>();
         private final List<EntitySummary> entities = new ArrayList<>();
         private final List<AssociationSummary> associations = new ArrayList<>();
+        private final List<SnapshotSummary> snapshots = new ArrayList<>();
         private boolean pingCalled;
+        private String savedSnapshotModelAzName;
+        private String savedSnapshotName;
+        private String loadedSnapshotKey;
+        private String loadedModelAzNameOverride;
+        private boolean duplicateOnFirstLoad;
 
         @Override
         public void ping() {
@@ -381,6 +479,32 @@ final class ConsoleSessionTest {
         @Override
         public ModelImportResult importScript(String script, String modelAzNameOverride) throws IOException {
             throw new IOException("not implemented");
+        }
+
+        @Override
+        public ModelImportResult loadSnapshot(String snapshotKey, String modelAzNameOverride) throws IOException {
+            loadedSnapshotKey = snapshotKey;
+            loadedModelAzNameOverride = modelAzNameOverride;
+            if (duplicateOnFirstLoad && modelAzNameOverride == null) {
+                duplicateOnFirstLoad = false;
+                throw new ModelAlreadyExistsException("model load failed: model already exists: Existing_Model");
+            }
+            String modelAzName = modelAzNameOverride == null ? "Loaded_Model" : modelAzNameOverride;
+            return new ModelImportResult(modelAzName, 2);
+        }
+
+        @Override
+        public List<SnapshotSummary> listSnapshots() {
+            return List.copyOf(snapshots);
+        }
+
+        @Override
+        public SnapshotSummary saveSnapshot(String modelAzName, String snapshotName) {
+            savedSnapshotModelAzName = modelAzName;
+            savedSnapshotName = snapshotName;
+            SnapshotSummary snapshot = new SnapshotSummary(modelAzName + "/" + snapshotName + ".vdos", modelAzName, modelAzName, "1.0.0", 1, "2026-07-28T18:30:00Z");
+            snapshots.add(snapshot);
+            return snapshot;
         }
     }
 

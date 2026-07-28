@@ -4660,3 +4660,54 @@ Current status and next steps:
   authorization but no objects currently listed under the requested prefix.
 - Next useful check, if desired, is an impersonated write/read/delete smoke test
   under `gs://vedenemo-snapshot-bucket/snapshots/dev/verification/`.
+
+## 2026-07-28 21:41 EEST
+
+Session goal: implement browser-console cloud snapshot save/list/load using the
+prepared GCP Cloud Storage infrastructure direction.
+
+Files changed:
+
+- `pom.xml`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-core-spi/src/main/java/org/vedenemo/core/spi/snapshot/*`
+- `vedenemo-storage-gcs/*`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/*`
+- `vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `vedenemo-web-api/pom.xml`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/*`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/*`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ConsoleResourceTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `mvn -B -pl vedenemo-command-console test`
+- `mvn -B -pl vedenemo-web-api -am test`
+- `mvn -B clean verify`
+- `mvn -B -pl vedenemo-web-api -am package -DskipTests`
+- `mvn -B verify`
+
+Current status and next steps:
+
+- Added `SnapshotStore`, `SnapshotDescriptor`, and `SnapshotContent` to
+  `vedenemo-core-spi`.
+- Added the `vedenemo-storage-gcs` adapter module and wired it into web API
+  composition through `VEDENEMO_SNAPSHOT_STORE=gcs`,
+  `VEDENEMO_GCS_PROJECT_ID`, `VEDENEMO_GCS_BUCKET`,
+  `VEDENEMO_GCS_PREFIX`, and `VEDENEMO_SNAPSHOT_SCOPE`.
+- Browser `/console` now supports plain `save`, `snapshots`, and
+  `load <snapshot-key | snapshot-number>` against backend-managed cloud
+  snapshots, including duplicate-model rename prompting.
+- Terminal `VedenemoCli` keeps local filesystem-backed `save`, `snapshots`,
+  and `load` behavior.
+- Added deterministic tests with fake snapshot storage; no live GCP tests are
+  part of the default build.
+- `mvn -B verify` passes. The next practical step is a manual smoke test using
+  the already verified `vedenemo-snapshot-bucket` environment values.

@@ -1,52 +1,68 @@
 # Current Task
 
-## Align Terminal And Browser Console CLI Command Coverage
+## Add Cloud Snapshot Save/Load For Browser Console
 
 Status: executed.
 
 ### Goal
 
-Make the browser `/console` virtual CLI functionally match the terminal
-`VedenemoCli` command surface except for local filesystem commands.
+Let the browser `/console` use plain `save`, `snapshots`, and `load` commands
+against backend-managed Google Cloud Storage `.vdos` snapshots, while keeping
+terminal `VedenemoCli` `save`, `snapshots`, and `load` backed by the local
+filesystem.
 
 ### Scope
 
-- Add shared prompt-state handling so browser console sessions can complete
-  multi-step command flows over multiple HTTP command submissions.
-- Support browser console flows for:
-  - `add`
-  - `attr add`
-  - `assoc add`
-  - `assoc add ownership`
-  - `assoc add reference`
-  - `assoc add relation`
-- Keep `save`, `snapshots`, and `load` terminal-only because they require local
-  filesystem access.
-- Keep terminal stdin/stdout and local file handling in `vedenemo-cli`.
-- Keep browser UI and HTTP session handling in `vedenemo-ux` and
-  `vedenemo-web-api`.
+- Add a Vedenemo-specific snapshot store SPI for `.vdos` snapshot artifacts.
+- Add a Google Cloud Storage adapter in a separate infrastructure module.
+- Keep Google Cloud SDK dependencies out of `vedenemo-core`,
+  `vedenemo-model-api`, and `vedenemo-command-console`.
+- Wire snapshot storage explicitly in web API composition from environment
+  variables:
+  - `VEDENEMO_SNAPSHOT_STORE=gcs`
+  - `VEDENEMO_GCS_PROJECT_ID`
+  - `VEDENEMO_GCS_BUCKET`
+  - `VEDENEMO_GCS_PREFIX`
+  - `VEDENEMO_SNAPSHOT_SCOPE`
+- Add backend browser-console snapshot operations for:
+  - saving the attached model to a manually named cloud snapshot;
+  - listing snapshots in the configured scope;
+  - loading a snapshot by latest listed number or snapshot key;
+  - prompting for replacement model `azName` when loaded `.vdos` content
+    conflicts with an existing model.
+- Preserve terminal CLI local file behavior unchanged.
+- Use backend server clock for snapshot saved timestamps in this first slice.
+- Keep tests deterministic and not dependent on live GCP by default.
+
+### Constraints
+
+- First private development access boundary is private Tailscale/backend
+  reachability; no per-user auth or sharing rules in this slice.
+- Browser clients must not receive GCP credentials.
+- Snapshot keys should be backend-owned identifiers so later authorization can
+  be added without changing command syntax.
+- One global bucket namespace is acceptable for this phase.
+
+### Done Criteria
+
+- `mvn -B verify` succeeds.
+- Focused tests cover browser console cloud `save`, `snapshots`, duplicate
+  `load` rename prompt behavior, and no-store error handling.
+- `docs/architecture_doc.md`, `README.md`, `docs/cli-reference.md`,
+  `tasks/backlog.md`, and `SESSION.md` reflect the implemented behavior.
 
 ### Completion Notes
 
-- Extended `vedenemo-command-console` `ConsoleSession` with prompt-flow state
-  for model, entity, attribute, directed association, and relation creation.
-- Browser console `help` now lists the same supported non-file authoring
-  commands as terminal CLI and clearly marks file commands as unsupported.
-- Browser console Esc cancellation now sends a cancellation command to the
-  backend so pending prompt state is abandoned server-side.
-- Browser console blank Enter is allowed while answering prompts, so defaulted
-  prompt values can be accepted.
-- Added focused shared-console tests for help, add/entity/attribute/association
-  flows, relation kind shortcut, Esc cancellation, and unsupported file
-  commands.
-- Added a web API console-session prompt-flow test.
-- Updated README, CLI reference, implementation architecture documentation, and
-  backlog history.
-- `mvn -B -pl vedenemo-command-console test` passed.
-- `mvn -B verify` passed.
-- `npm run build` passed in `vedenemo-ux`.
-
-### Next Steps
-
-- Review browser console command parity through the Firebase UX after
-  deployment.
+- Added a pure Vedenemo snapshot SPI in `vedenemo-core-spi`.
+- Added `vedenemo-storage-gcs` as the Google Cloud Storage adapter module.
+- Browser console `save`, `snapshots`, and `load` now use backend-managed cloud
+  snapshots when the web API snapshot store is configured.
+- Terminal `VedenemoCli` local `.vdos` save/list/load behavior remains local
+  filesystem-backed.
+- Web API composition reads the snapshot store from environment variables and
+  keeps GCP credentials on the backend side.
+- Added focused command-console, web API, and CLI test-double coverage.
+- Fixed the web API shaded JAR packaging to exclude signed dependency metadata
+  introduced by the Google Cloud client dependencies.
+- Verified with `mvn -B clean verify`, `mvn -B -pl vedenemo-web-api -am package
+  -DskipTests`, and `mvn -B verify`.

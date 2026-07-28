@@ -22,4 +22,10 @@ public interface ModelClient {
     String exportScript(String modelAzName) throws IOException, InterruptedException;
 
     ModelImportResult importScript(String script, String modelAzNameOverride) throws IOException, InterruptedException;
+
+    List<SnapshotSummary> listSnapshots() throws IOException, InterruptedException;
+
+    SnapshotSummary saveSnapshot(String modelAzName, String snapshotName) throws IOException, InterruptedException;
+
+    ModelImportResult loadSnapshot(String snapshotKey, String modelAzNameOverride) throws IOException, InterruptedException;
 }

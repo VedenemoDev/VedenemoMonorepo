@@ -18,12 +18,19 @@ public final class WebConsoleSessionRegistry {
     private final SessionClient sessionClient;
     private final ModelClient modelClient;
     private final CommandClient commandClient;
+    private final ConsoleCapabilities capabilities;
     private final Map<UUID, WebConsoleSession> sessions = new LinkedHashMap<>();
 
-    public WebConsoleSessionRegistry(SessionClient sessionClient, ModelClient modelClient, CommandClient commandClient) {
+    public WebConsoleSessionRegistry(
+            SessionClient sessionClient,
+            ModelClient modelClient,
+            CommandClient commandClient,
+            ConsoleCapabilities capabilities
+    ) {
         this.sessionClient = Objects.requireNonNull(sessionClient, "sessionClient must not be null");
         this.modelClient = Objects.requireNonNull(modelClient, "modelClient must not be null");
         this.commandClient = Objects.requireNonNull(commandClient, "commandClient must not be null");
+        this.capabilities = Objects.requireNonNull(capabilities, "capabilities must not be null");
     }
 
     public synchronized WebConsoleSession startSession(String connectedModelAzName) throws IOException, InterruptedException {
@@ -33,7 +40,7 @@ public final class WebConsoleSessionRegistry {
                 modelClient,
                 sessionClient,
                 commandClient,
-                ConsoleCapabilities.webConsole()
+                capabilities
         );
         if (connectedModelAzName != null && !connectedModelAzName.isBlank()) {
             session.attachInitialModel(connectedModelAzName);

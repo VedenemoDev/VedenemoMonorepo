@@ -20,6 +20,7 @@ public final class ConsoleSession {
     private List<EntitySummary> latestEntities = List.of();
     private List<AttributeSummary> latestAttributes = List.of();
     private List<AssociationSummary> latestAssociations = List.of();
+    private List<SnapshotSummary> latestSnapshots = List.of();
     private PromptFlow promptFlow;
 
     public ConsoleSession(
@@ -140,11 +141,11 @@ public final class ConsoleSession {
             } else if ("assoc".equals(command)) {
                 startAssociationFlow(trimmed, output);
             } else if ("save".equals(command)) {
-                unsupportedFileCommand("save", output);
+                saveSnapshot(trimmed, output);
             } else if ("load".equals(command)) {
-                unsupportedFileCommand("load", output);
+                loadSnapshot(trimmed, output);
             } else if ("snapshots".equals(command)) {
-                unsupportedFileCommand("snapshots", output);
+                listSnapshots(trimmed, output);
             } else {
                 output.add("Unknown command: " + trimmed);
                 return ConsoleCommandResult.error(output);
@@ -191,9 +192,15 @@ public final class ConsoleSession {
         output.add("  associations - list model associations, or selected entity associations");
         output.add("  assoc add [ownership | reference | relation] - add an association or relation");
         output.add("  undo - undo the latest backend command");
-        output.add("  save [N | azName] [outputPath] - not supported in the web console");
-        output.add("  snapshots - not supported in the web console");
-        output.add("  load <path | snapshot-number> - not supported in the web console");
+        if (capabilities.cloudSnapshots()) {
+            output.add("  save [snapshotName] - save the attached model to a cloud snapshot");
+            output.add("  snapshots - list cloud snapshots");
+            output.add("  load <snapshot-key | snapshot-number> - load a model from a cloud snapshot");
+        } else {
+            output.add("  save [N | azName] [outputPath] - not supported in the web console");
+            output.add("  snapshots - not supported in the web console");
+            output.add("  load <path | snapshot-number> - not supported in the web console");
+        }
         output.add("  help - show this help");
         output.add("  Esc - cancel the current interactive prompt");
     }
@@ -481,6 +488,117 @@ public final class ConsoleSession {
         output.add("Command '" + command + "' is not supported in the web console because it requires local file access.");
     }
 
+    private void saveSnapshot(String line, List<String> output) throws IOException, InterruptedException {
+        if (!capabilities.cloudSnapshots()) {
+            unsupportedFileCommand("save", output);
+            return;
+        }
+        if (attachedModelAzName == null) {
+            output.add("Attach a model before saving a snapshot.");
+            return;
+        }
+        List<String> arguments = splitArguments(argumentText(line, "save"));
+        if (arguments.size() > 1) {
+            output.add("Usage: save [snapshotName]");
+            return;
+        }
+        if (arguments.isEmpty()) {
+            promptFlow = new SaveSnapshotFlow();
+            return;
+        }
+        saveSnapshotToCloud(arguments.getFirst(), output);
+    }
+
+    private void saveSnapshotToCloud(String snapshotName, List<String> output) throws IOException, InterruptedException {
+        SnapshotSummary snapshot = modelClient.saveSnapshot(attachedModelAzName, snapshotName);
+        latestSnapshots = modelClient.listSnapshots();
+        output.add("Saved model " + attachedModelAzName + " to cloud snapshot " + snapshot.key() + ".");
+    }
+
+    private void listSnapshots(String line, List<String> output) throws IOException, InterruptedException {
+        if (!capabilities.cloudSnapshots()) {
+            unsupportedFileCommand("snapshots", output);
+            return;
+        }
+        if (!commandOnly(line)) {
+            output.add("Usage: snapshots");
+            return;
+        }
+        latestSnapshots = modelClient.listSnapshots();
+        if (latestSnapshots.isEmpty()) {
+            output.add("No cloud snapshots available.");
+            return;
+        }
+        output.add("Cloud snapshots:");
+        for (int index = 0; index < latestSnapshots.size(); index++) {
+            SnapshotSummary snapshot = latestSnapshots.get(index);
+            output.add((index + 1) + ". "
+                    + snapshot.key()
+                    + " - "
+                    + snapshot.modelVisName()
+                    + " ("
+                    + snapshot.modelAzName()
+                    + ") version "
+                    + snapshot.modelVersion()
+                    + ", "
+                    + snapshot.commandCount()
+                    + " commands, saved "
+                    + snapshot.savedAt());
+        }
+    }
+
+    private void loadSnapshot(String line, List<String> output) throws IOException, InterruptedException {
+        if (!capabilities.cloudSnapshots()) {
+            unsupportedFileCommand("load", output);
+            return;
+        }
+        String argument = argumentText(line, "load");
+        if (argument.isBlank()) {
+            output.add("Usage: load <snapshot-key | snapshot-number>");
+            return;
+        }
+        String snapshotKey = resolveSnapshotKey(argument, output);
+        if (snapshotKey == null) {
+            return;
+        }
+        importSnapshotWithRenamePrompt(snapshotKey, null, output);
+    }
+
+    private String resolveSnapshotKey(String argument, List<String> output) {
+        String value = argument.trim();
+        if (!isPositiveInteger(value)) {
+            return value;
+        }
+        if (latestSnapshots.isEmpty()) {
+            output.add("Run snapshots first before loading by number.");
+            return null;
+        }
+        int index = Integer.parseInt(value) - 1;
+        if (index < 0 || index >= latestSnapshots.size()) {
+            output.add("No snapshot found for list number " + value + ".");
+            return null;
+        }
+        return latestSnapshots.get(index).key();
+    }
+
+    private boolean importSnapshotWithRenamePrompt(String snapshotKey, String modelAzNameOverride, List<String> output)
+            throws IOException, InterruptedException {
+        try {
+            ModelImportResult result = modelClient.loadSnapshot(snapshotKey, modelAzNameOverride);
+            refreshModels();
+            Optional<ModelSummary> importedModel = resolveModel(result.modelAzName(), output);
+            if (importedModel.isPresent()) {
+                attachResolvedModel(importedModel.orElseThrow());
+            }
+            output.add("Loaded model " + result.modelAzName() + " from cloud snapshot " + snapshotKey + ".");
+            return true;
+        } catch (ModelAlreadyExistsException exception) {
+            output.add(exception.getMessage());
+            promptFlow = new LoadSnapshotRenameFlow(snapshotKey);
+            return false;
+        }
+    }
+
     private static String commandName(String value) {
         int spaceIndex = value.indexOf(' ');
         return spaceIndex < 0 ? value : value.substring(0, spaceIndex);
@@ -713,6 +831,49 @@ public final class ConsoleSession {
             output.add("Attached to model " + created.azName() + ".");
             output.add("Added and attached model " + created.azName() + ".");
             complete = true;
+            return ConsoleCommandResult.ok(output);
+        }
+    }
+
+    private final class SaveSnapshotFlow extends BasePromptFlow {
+        @Override
+        public String prompt() {
+            return "Snapshot name: ";
+        }
+
+        @Override
+        public ConsoleCommandResult accept(String input) throws IOException, InterruptedException {
+            if (input == null || input.isBlank()) {
+                complete = true;
+                return ConsoleCommandResult.ok(List.of("Snapshot name is required."));
+            }
+            ArrayList<String> output = new ArrayList<>();
+            saveSnapshotToCloud(input.trim(), output);
+            complete = true;
+            return ConsoleCommandResult.ok(output);
+        }
+    }
+
+    private final class LoadSnapshotRenameFlow extends BasePromptFlow {
+        private final String snapshotKey;
+
+        private LoadSnapshotRenameFlow(String snapshotKey) {
+            this.snapshotKey = snapshotKey;
+        }
+
+        @Override
+        public String prompt() {
+            return "New model azName for import, or blank to cancel: ";
+        }
+
+        @Override
+        public ConsoleCommandResult accept(String input) throws IOException, InterruptedException {
+            if (input == null || input.isBlank()) {
+                complete = true;
+                return ConsoleCommandResult.ok(List.of("Load cancelled."));
+            }
+            ArrayList<String> output = new ArrayList<>();
+            complete = importSnapshotWithRenamePrompt(snapshotKey, input.trim(), output);
             return ConsoleCommandResult.ok(output);
         }
     }

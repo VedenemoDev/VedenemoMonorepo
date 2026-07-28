@@ -8,6 +8,7 @@ import org.vedenemo.console.ModelClient;
 import org.vedenemo.console.ModelImportResult;
 import org.vedenemo.console.ModelSummary;
 import org.vedenemo.console.SessionClient;
+import org.vedenemo.console.SnapshotSummary;
 import org.vedenemo.console.UndoCommandResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -1011,6 +1012,21 @@ final class VedenemoCliAppTest {
             String modelAzName = modelAzNameOverride == null ? "Imported_Model" : modelAzNameOverride;
             models.add(new ModelSummary(modelAzName, modelAzName, "1.0.0"));
             return new ModelImportResult(modelAzName, 2);
+        }
+
+        @Override
+        public List<SnapshotSummary> listSnapshots() throws IOException {
+            throw new IOException("cloud snapshots are not supported by terminal tests");
+        }
+
+        @Override
+        public SnapshotSummary saveSnapshot(String modelAzName, String snapshotName) throws IOException {
+            throw new IOException("cloud snapshots are not supported by terminal tests");
+        }
+
+        @Override
+        public ModelImportResult loadSnapshot(String snapshotKey, String modelAzNameOverride) throws IOException {
+            throw new IOException("cloud snapshots are not supported by terminal tests");
         }
     }
 

@@ -66,11 +66,12 @@ Arrow Down and Ctrl+N navigate forward.
 Press Esc during an interactive prompt to cancel the current operation and
 return to the normal CLI prompt without executing it.
 
-The browser console at `/console` uses the same CLI-like command behavior for
-non-file commands. It supports the same prompt flows for `add`, `attr add`, and
-`assoc add`; blank Enter accepts prompt defaults, and Esc cancels the active
-prompt flow. `save`, `snapshots`, and `load` remain terminal-only because they
-need local filesystem access.
+The browser console at `/console` uses the same CLI-like command behavior. It
+supports the same prompt flows for `add`, `attr add`, and `assoc add`; blank
+Enter accepts prompt defaults, and Esc cancels the active prompt flow. In the
+terminal CLI, `save`, `snapshots`, and `load` use local `.vdos` files. In the
+browser console, the same command names use backend cloud snapshots when the
+backend snapshot store is configured.
 
 ### `ping`
 
@@ -474,6 +475,42 @@ CLI asks for a replacement import `azName` or lets the user cancel:
 model load failed with HTTP status 409: ...
 New model azName for import, or blank to cancel:
 ```
+
+## Browser Console Snapshot Commands
+
+In `/console`, `save`, `snapshots`, and `load` use the backend-configured cloud
+snapshot store instead of the terminal filesystem. The backend must be started
+with `VEDENEMO_SNAPSHOT_STORE=gcs`, `VEDENEMO_GCS_PROJECT_ID`,
+`VEDENEMO_GCS_BUCKET`, `VEDENEMO_GCS_PREFIX`, and optionally
+`VEDENEMO_SNAPSHOT_SCOPE`.
+
+Browser `save` saves the attached model to a manually named cloud snapshot:
+
+```text
+VedenemoCli[Example_Model]>save
+Snapshot name: smoke
+Saved model Example_Model to cloud snapshot Example_Model/smoke.vdos.
+```
+
+Browser `snapshots` lists snapshots in the configured scope and caches that
+list for numeric loading:
+
+```text
+VedenemoCli[Example_Model]>snapshots
+Cloud snapshots:
+1. Example_Model/smoke.vdos - Example Model (Example_Model) version 1.0.0, 2 commands, saved 2026-07-28T18:30:00Z
+```
+
+Browser `load` accepts either a snapshot key or a number from the latest
+`snapshots` output:
+
+```text
+VedenemoCli[Example_Model]>load 1
+Loaded model Example_Model from cloud snapshot Example_Model/smoke.vdos.
+```
+
+If the imported model `azName` already exists, the browser console asks for a
+replacement import `azName`, matching the terminal CLI load flow.
 
 ### `undo`
 

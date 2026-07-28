@@ -45,12 +45,13 @@ subgraph Core["Core"]
     SessionManager["SessionManager<br/>process-local active sessions"]
     Session["Session<br/>UUID, selected model, command history"]
     ModelRegistry["ModelRegistry<br/>process-local known models"]
-    Spi["vedenemo-core-spi<br/>ModelStorage port"]
+    Spi["vedenemo-core-spi<br/>ModelStorage and SnapshotStore ports"]
     ModelApi["vedenemo-model-api<br/>ModelRoot, entities, attributes, associations"]
 end
 
 subgraph Adapters["Adapters"]
     MemoryStorage["vedenemo-storage-memory<br/>InMemoryModelStorage"]
+    GcsStorage["vedenemo-storage-gcs<br/>GcsSnapshotStore"]
 end
 
 ViteUX --> RuntimeConfig
@@ -68,6 +69,7 @@ WebApi --> SessionResource
 WebApi --> ConsoleResource
 WebApi --> ModelEvents
 WebApi --> AppRoot
+WebApi --> GcsStorage
 ConsoleResource --> ConsoleRegistry
 ConsoleRegistry --> CommandConsole
 ConsoleRegistry --> SessionManager
@@ -96,6 +98,7 @@ CoreModule --> Session
 Spi --> ModelApi
 MemoryStorage --> Spi
 MemoryStorage --> ModelApi
+GcsStorage --> Spi
 ```
 
 ## Backend Modules
@@ -151,7 +154,9 @@ Dependencies: Java JDK only.
 ### `vedenemo-core-spi`
 
 Core-facing service provider interfaces. It currently defines `ModelStorage`
-with `save` and `load` operations for `ModelRoot`.
+with `save` and `load` operations for `ModelRoot`, and `SnapshotStore` for
+Vedenemo `.vdos` snapshot artifacts. Snapshot records carry a backend-owned key,
+model metadata, command count, and saved timestamp.
 
 Dependencies:
 
@@ -246,6 +251,23 @@ Dependencies:
 - `vedenemo-core-spi`
 - Java JDK
 
+### `vedenemo-storage-gcs`
+
+Google Cloud Storage adapter for Vedenemo `.vdos` snapshots. `GcsSnapshotStore`
+implements `SnapshotStore` by storing UTF-8 `.vdos` content as bucket objects
+under the configured object prefix. Snapshot object metadata stores model
+`azName`, visible name, version, command count, saved timestamp, scope, and
+format version.
+
+The adapter depends on the Google Cloud Storage client library. The dependency
+is isolated to this module and the web API composition layer; core and model
+modules remain pure JDK plus Vedenemo-owned dependencies.
+
+Dependencies:
+
+- `vedenemo-core-spi`
+- Google Cloud Storage client
+
 ### `vedenemo-app`
 
 Application composition root. It currently wires `CommandExecutor` to
@@ -269,8 +291,9 @@ The module is intentionally UI-neutral:
 - it does not read terminal stdin or write terminal stdout;
 - it does not render browser UI;
 - it does not perform local filesystem access;
-- it rejects filesystem-dependent commands such as `save`, `snapshots`, and
-  `load` when used with web-console capabilities.
+- it routes `save`, `snapshots`, and `load` through capability-specific client
+  operations: terminal CLI keeps local filesystem behavior, while browser
+  console sessions can use backend-managed cloud snapshots.
 
 Terminal CLI adapters and web API in-process adapters implement the shared
 client interfaces so both entry points use the same non-file command behavior.
@@ -400,6 +423,16 @@ turn owns or links one backend edit session UUID. This keeps web-console browser
 state separate from the generic backend session API while reusing existing
 model-editing behavior under the hood.
 
+Browser console `save`, `snapshots`, and `load` commands are handled by the web
+API in-process console adapter. When `VEDENEMO_SNAPSHOT_STORE=gcs` is configured,
+the adapter exports the attached model through `VedenemoScriptService`, writes
+it through `SnapshotStore`, lists snapshot descriptors from the configured
+scope, and imports loaded snapshot content through the same `.vdos` import
+service used by normal script uploads. If a loaded snapshot conflicts with an
+existing model `azName`, the browser console prompts for a replacement import
+`azName`. Without a configured snapshot store, these commands return a clear
+cloud snapshot store configuration error.
+
 `ModelChangeBroadcaster` is a web-runtime adapter for browser model-change
 listening. It owns the Javalin WebSocket endpoint and broadcasts UTF-8 JSON
 messages such as:
@@ -418,12 +451,20 @@ Runtime configuration is read from environment variables:
 - `VEDENEMO_WEB_HOST`, default `127.0.0.1`
 - `VEDENEMO_WEB_PORT`, default `8080`
 - `VEDENEMO_ALLOWED_ORIGINS`, default `*`
+- `VEDENEMO_SNAPSHOT_STORE`; set to `gcs` to enable the Google Cloud snapshot
+  adapter
+- `VEDENEMO_GCS_PROJECT_ID`, required when `VEDENEMO_SNAPSHOT_STORE=gcs`
+- `VEDENEMO_GCS_BUCKET`, required when `VEDENEMO_SNAPSHOT_STORE=gcs`
+- `VEDENEMO_GCS_PREFIX`, required when `VEDENEMO_SNAPSHOT_STORE=gcs`
+- `VEDENEMO_SNAPSHOT_SCOPE`, default `dev`
 
 Dependencies:
 
 - `vedenemo-app`
 - `vedenemo-command-console`
 - `vedenemo-core`
+- `vedenemo-core-spi`
+- `vedenemo-storage-gcs`
 - Javalin
 - Jackson Databind
 - `slf4j-simple` at runtime
@@ -457,6 +498,9 @@ Current user-facing behavior:
   session only, navigable with Arrow Up, Arrow Down, Ctrl+P, and Ctrl+N
 - keeps browser console focus on the command input and lets Esc clear/cancel
   the current command entry or pending backend prompt flow
+- supports browser console `save`, `snapshots`, and `load` through the backend
+  when the backend snapshot store is configured; the browser never receives
+  Google Cloud credentials
 
 The default runtime config in `vedenemo-ux/public/config.json` points to a
 Tailscale HTTPS backend URL.
