@@ -69,3 +69,21 @@ resource "google_storage_bucket_iam_member" "backend_object_user" {
   member = "serviceAccount:${google_service_account.backend.email}"
 }
 
+# Allows Google client tools/libraries using this project as the quota project
+# to make API calls as the backend service account.
+resource "google_project_iam_member" "backend_service_usage_consumer" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageConsumer"
+  member  = "serviceAccount:${google_service_account.backend.email}"
+}
+
+# Optional local verification support. Add only trusted operator emails here,
+# because roles/iam.serviceAccountTokenCreator allows minting short-lived tokens
+# as the backend service account.
+resource "google_service_account_iam_member" "backend_impersonators" {
+  for_each = var.impersonation_user_emails
+
+  service_account_id = google_service_account.backend.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "user:${each.value}"
+}

@@ -18,6 +18,12 @@ storage_scope          = "dev"
 
 backend_service_account_id = "vedenemo-snapshot-backend"
 
+# Optional. Add trusted local operator emails only when they need to verify GCS
+# access by impersonating the backend service account.
+impersonation_user_emails = [
+  # "you@example.com",
+]
+
 # Set to 0 for no automatic lifecycle deletion in the first private slice.
 retention_days = 0
 
@@ -25,4 +31,3 @@ labels = {
   app       = "vedenemo"
   component = "snapshots"
 }
-

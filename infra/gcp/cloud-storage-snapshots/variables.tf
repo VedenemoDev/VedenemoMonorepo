@@ -37,6 +37,12 @@ variable "backend_service_account_id" {
   default     = "vedenemo-snapshot-backend"
 }
 
+variable "impersonation_user_emails" {
+  description = "Optional human/operator user emails allowed to impersonate the backend service account for local verification."
+  type        = set(string)
+  default     = []
+}
+
 variable "retention_days" {
   description = "Optional age-based object retention in days. Set to 0 to disable lifecycle deletion."
   type        = number
@@ -51,4 +57,3 @@ variable "labels" {
     component = "snapshots"
   }
 }
-

@@ -4469,3 +4469,194 @@ Current status and next steps:
   tied to the manual/setup guidance.
 - Added `VEDENEMO_SNAPSHOT_SCOPE=dev` to the planned backend environment
   variable list to match the Terraform scaffold output.
+
+## 2026-07-28 20:35 EEST
+
+Session goal: review created GCP snapshot bucket backend environment outputs.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- User reported that the Cloud Storage bucket was created.
+- `scripts/print-backend-env.sh` produced backend environment values for
+  project `vedenemo-snapshot-storage`, bucket `vedenemo-snapshot-bucket`,
+  prefix `snapshots/dev`, scope `dev`, and store selector `gcs`.
+- Backend service account output was
+  `vedenemo-snapshot-backend@vedenemo-snapshot-storage.iam.gserviceaccount.com`.
+- Next step is to run the snapshot access verification script, optionally with
+  service account impersonation if the local account has permission.
+
+## 2026-07-28 20:37 EEST
+
+Session goal: record successful Cloud Storage snapshot prefix access
+verification.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- User ran
+  `./scripts/verify-snapshot-access.sh vedenemo-snapshot-bucket snapshots/dev`.
+- The script successfully wrote, listed, read, and cleaned up a verification
+  object under
+  `gs://vedenemo-snapshot-bucket/snapshots/dev/verification/`.
+- This verifies access for the active local `gcloud` identity. A later check
+  should verify the deployed backend identity or explicit service account
+  impersonation path before backend cloud snapshot code depends on it.
+
+## 2026-07-28 20:38 EEST
+
+Session goal: handle failed local impersonation of the GCP snapshot backend
+service account.
+
+Files changed:
+
+- `infra/gcp/cloud-storage-snapshots/variables.tf`
+- `infra/gcp/cloud-storage-snapshots/main.tf`
+- `infra/gcp/cloud-storage-snapshots/terraform.tfvars.example`
+- `infra/gcp/cloud-storage-snapshots/RUNBOOK.md`
+- `infra/gcp/cloud-storage-snapshots/MANUAL-PHASES.md`
+- `SESSION.md`
+
+Commands run:
+
+- Inspected snapshot Terraform and runbook files with `sed`
+- `terraform -chdir=infra/gcp/cloud-storage-snapshots fmt -check`
+- `bash -n infra/gcp/cloud-storage-snapshots/scripts/verify-snapshot-access.sh`
+- `git diff -- infra/gcp/cloud-storage-snapshots`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- User's impersonated `gcloud storage ls` failed because
+  `vedenemo.dev@gmail.com` lacks `iam.serviceAccounts.getAccessToken` on the
+  backend service account.
+- Added optional Terraform variable `impersonation_user_emails` and service
+  account IAM binding for `roles/iam.serviceAccountTokenCreator`.
+- Updated runbook/manual docs and tfvars example to explain local verification
+  through service account impersonation.
+- Next step is to add the trusted operator email to local `terraform.tfvars`,
+  run `terraform plan`/`apply`, and retry the impersonated storage command.
+
+## 2026-07-28 20:43 EEST
+
+Session goal: handle `serviceusage.services.use` failure during impersonated
+Cloud Storage verification.
+
+Files changed:
+
+- `infra/gcp/cloud-storage-snapshots/main.tf`
+- `infra/gcp/cloud-storage-snapshots/RUNBOOK.md`
+- `infra/gcp/cloud-storage-snapshots/MANUAL-PHASES.md`
+- `SESSION.md`
+
+Commands run:
+
+- Inspected snapshot Terraform/runbook files with `sed`
+- `terraform -chdir=infra/gcp/cloud-storage-snapshots fmt -check`
+- `terraform fmt -check infra/gcp/cloud-storage-snapshots/main.tf infra/gcp/cloud-storage-snapshots/variables.tf infra/gcp/cloud-storage-snapshots/outputs.tf infra/gcp/cloud-storage-snapshots/versions.tf`
+- `git diff -- infra/gcp/cloud-storage-snapshots/main.tf infra/gcp/cloud-storage-snapshots/RUNBOOK.md infra/gcp/cloud-storage-snapshots/MANUAL-PHASES.md`
+- `git status --short --ignored=matching infra/gcp/cloud-storage-snapshots`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- User's impersonated `gcloud storage ls` now gets past token impersonation but
+  fails because the backend service account lacks
+  `serviceusage.services.use` on the quota project.
+- Added `google_project_iam_member.backend_service_usage_consumer` granting
+  `roles/serviceusage.serviceUsageConsumer` to the backend service account.
+- Updated runbook/manual docs to explain this failure mode and rerun
+  Terraform.
+- Committed `.tf` files pass `terraform fmt -check`; the full directory check
+  also sees the user's ignored local `terraform.tfvars`, which may need local
+  formatting but should not be edited by the agent.
+
+## 2026-07-28 20:45 EEST
+
+Session goal: triage repeated `serviceusage.services.use` failure after
+impersonated Cloud Storage verification retry.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- User retried impersonated `gcloud storage ls` and still received
+  `serviceusage.services.use` denied for
+  `vedenemo-snapshot-backend@vedenemo-snapshot-storage.iam.gserviceaccount.com`.
+- Existing repo-side Terraform now includes the intended
+  `roles/serviceusage.serviceUsageConsumer` project binding.
+- Next step is to confirm the latest Terraform plan/apply included that binding
+  and then retry after IAM propagation, or inspect the project IAM policy for
+  the service account member.
+
+## 2026-07-28 20:48 EEST
+
+Session goal: respond to Terraform no-op plan after repeated
+`serviceusage.services.use` impersonation failure.
+
+Files changed:
+
+- `infra/gcp/cloud-storage-snapshots/RUNBOOK.md`
+- `infra/gcp/cloud-storage-snapshots/MANUAL-PHASES.md`
+- `SESSION.md`
+
+Commands run:
+
+- Inspected runbook/manual sections with `sed`
+- `git diff -- infra/gcp/cloud-storage-snapshots/RUNBOOK.md infra/gcp/cloud-storage-snapshots/MANUAL-PHASES.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- User reported `terraform plan` shows no changes and the
+  `roles/serviceusage.serviceUsageConsumer` binding is in Terraform state.
+- Updated runbook/manual docs to align active `gcloud` project, ADC quota
+  project, and `billing/quota_project`, and to pass `--billing-project` during
+  impersonated verification.
+- Next step is for the user to set local quota project values to
+  `vedenemo-snapshot-storage` and retry the impersonated `gcloud storage ls`
+  with `--billing-project=vedenemo-snapshot-storage`.
+
+## 2026-07-28 20:50 EEST
+
+Session goal: record successful impersonated Cloud Storage listing attempt for
+the snapshot backend service account.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- User retried `gcloud storage ls` with
+  `--billing-project=vedenemo-snapshot-storage` and
+  `--impersonate-service-account=vedenemo-snapshot-backend@vedenemo-snapshot-storage.iam.gserviceaccount.com`.
+- The command reached Cloud Storage as the backend service account and returned
+  `One or more URLs matched no objects`, which indicates successful
+  authorization but no objects currently listed under the requested prefix.
+- Next useful check, if desired, is an impersonated write/read/delete smoke test
+  under `gs://vedenemo-snapshot-bucket/snapshots/dev/verification/`.

@@ -25,10 +25,14 @@ Authenticate locally with `gcloud` before running scripts or Terraform:
 gcloud auth login
 gcloud auth application-default login
 gcloud config set project YOUR_PROJECT_ID
+gcloud auth application-default set-quota-project YOUR_PROJECT_ID
+gcloud config set billing/quota_project YOUR_PROJECT_ID
 ```
 
 Use an account with enough administrative permission for setup. This is
 operator authentication, not browser-console user authentication.
+Keeping the active project and quota project aligned avoids confusing
+`serviceusage.services.use` failures during impersonated local verification.
 
 ## Phase 3: Bootstrap APIs
 
@@ -51,6 +55,8 @@ Review especially:
 - `bucket_location`;
 - `snapshot_object_prefix`;
 - `backend_service_account_id`;
+- `impersonation_user_emails`, only for trusted operators who need to verify as
+  the backend service account;
 - `storage_scope`;
 - retention settings.
 
@@ -90,9 +96,21 @@ remain manual, record where they were configured.
 ## Phase 8: Access Verification
 
 Run `scripts/verify-snapshot-access.sh` with the chosen bucket and prefix. The
-verification should prove that the backend identity can list, read, and write
-only what the first slice expects.
+basic verification proves that the active local `gcloud` identity can list,
+read, and write what the first slice expects.
+
+To verify as the backend service account from the local machine, first add the
+operator email to `impersonation_user_emails`, apply Terraform, and then run a
+`gcloud storage` command with `--impersonate-service-account`. If impersonation
+fails with `iam.serviceAccounts.getAccessToken`, the operator does not yet have
+`roles/iam.serviceAccountTokenCreator` on the backend service account.
+
+If impersonation succeeds but the storage command fails with
+`serviceusage.services.use`, the backend service account needs
+`roles/serviceusage.serviceUsageConsumer` on the project used for quota and
+billing. This module grants that role to the backend service account. If
+Terraform reports no changes, check the active `gcloud` quota project and pass
+the snapshot project explicitly with `--billing-project`.
 
 If prefix-level IAM cannot be enforced cleanly for the chosen setup, keep the
 bucket dedicated to Vedenemo snapshots and enforce the prefix in backend code.
-

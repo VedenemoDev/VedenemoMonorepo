@@ -13,6 +13,8 @@ deployment notes.
 gcloud auth login
 gcloud auth application-default login
 gcloud config set project YOUR_PROJECT_ID
+gcloud auth application-default set-quota-project YOUR_PROJECT_ID
+gcloud config set billing/quota_project YOUR_PROJECT_ID
 ```
 
 ## 3. Script: Enable APIs
@@ -29,6 +31,10 @@ cp terraform.tfvars.example terraform.tfvars
 ```
 
 Edit `terraform.tfvars`. Do not commit it.
+
+If you want to verify access as the backend service account from your local
+machine, add your operator email to `impersonation_user_emails`. This grants
+`roles/iam.serviceAccountTokenCreator` on only the backend service account.
 
 ## 5. Script: Plan Terraform
 
@@ -68,6 +74,21 @@ them manually and record the location.
 ./scripts/verify-snapshot-access.sh YOUR_BUCKET_NAME YOUR_PREFIX
 ```
 
-The verification command is a template. Adjust authentication impersonation or
-runtime identity details after the backend deployment target is selected.
+This verifies the currently active `gcloud` identity. To verify as the backend
+service account after `impersonation_user_emails` has been applied, run:
 
+```bash
+gcloud storage ls gs://YOUR_BUCKET_NAME/YOUR_PREFIX/ \
+  --billing-project=YOUR_PROJECT_ID \
+  --impersonate-service-account=BACKEND_SERVICE_ACCOUNT_EMAIL
+```
+
+If impersonation succeeds but the command fails with
+`serviceusage.services.use`, rerun `terraform plan` and `terraform apply` so
+the backend service account receives `roles/serviceusage.serviceUsageConsumer`
+on the project. If Terraform reports no changes and the binding exists, confirm
+that the active `gcloud` quota project and `--billing-project` are set to the
+snapshot project.
+
+Runtime identity checks should still be repeated from the eventual backend
+deployment target.
