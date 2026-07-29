@@ -25,12 +25,21 @@ accepted fields are derived from the loaded model definition at runtime.
   visible when the instance dataset is created.
 - Support creating entity instances for modeled entities.
 - Support querying entity instances for modeled entities.
+- Support creating association/relation instance links for modeled
+  associations.
+- Support relationship-aware queries, for example querying albums through their
+  related artist instance.
 - Validate incoming instance values against the selected model schema:
   - model `azName` must resolve to a loaded `ModelRoot`;
   - entity `azName` must exist in that model;
   - submitted attribute `azName` values must exist on that entity;
   - unknown attribute names should be rejected;
   - values should be validated according to `DataType`.
+- Validate association links against the selected model schema:
+  - association `azName` must exist in that model;
+  - source and target instance ids must exist;
+  - source and target instances must belong to the association's source and
+    target entity types.
 - Add a dynamic HTTP API description endpoint for a selected model.
 - Keep JSON parsing/serialization and HTTP routing in `vedenemo-web-api`.
 - Keep core/model instance validation independent of Javalin, Jackson, and web
@@ -49,13 +58,16 @@ should avoid adding a module only for naming neatness.
 
 Likely pure model/core types:
 
-- `InstanceId`: backend-assigned opaque identifier for one entity instance.
+- `InstanceId`: backend-assigned UUID string for one entity instance.
 - `EntityInstance`: one data record for one model entity.
 - `InstanceValue`: typed value wrapper for attribute values.
+- `AssociationInstanceLink`: one runtime relationship link between source and
+  target entity instances for a modeled association.
 - `ModelInstanceDataset`: all in-memory instance data for one model `azName`
-  and schema version.
+  and schema version, including entity instances and association links.
 - `ModelInstanceRegistry`: process-local registry keyed by model `azName`,
-  then entity `azName`, then `InstanceId`.
+  then entity `azName`, then `InstanceId`, plus association links keyed by
+  association `azName`.
 - `ModelInstanceService`: validates requests against `ModelRegistry` /
   `ModelRoot` and reads/writes `ModelInstanceRegistry`.
 
@@ -80,16 +92,27 @@ Recommended endpoint shape:
 - `GET /data/{modelAzName}/{entityAzName}`
   - Lists stored instances for one entity, with deterministic order and a
     conservative default limit.
+  - Supports simple exact-match attribute filters in query parameters.
 - `GET /data/{modelAzName}/{entityAzName}/{instanceId}`
   - Reads one stored instance.
 - `POST /data/{modelAzName}/{entityAzName}/_query`
-  - Queries stored instances with a JSON query body. This avoids collisions
-    between attribute names and reserved query parameters such as `limit`.
+  - Queries stored instances with a JSON query body. This supports more
+    expressive queries, including relationship predicates.
+- `POST /data/{modelAzName}/_links/{associationAzName}`
+  - Creates one association/relation instance link between source and target
+    entity instances.
+- `GET /data/{modelAzName}/_links/{associationAzName}`
+  - Lists links for one modeled association.
 
-The `_api` and `_query` segments are intentionally underscore-prefixed. Current
-`azName` rules require names to start with an ASCII letter, so underscore
-segments can be reserved for dynamic API control endpoints without conflicting
-with model/entity/attribute/association `azName` values.
+The `_api`, `_query`, and `_links` segments are intentionally
+underscore-prefixed. Current `azName` rules require names to start with an ASCII
+letter, so underscore segments can be reserved for dynamic API control
+endpoints without conflicting with model/entity/attribute/association `azName`
+values.
+
+The first slice should be HTTP-only. Terminal and browser CLI commands remain
+focused on model building and maintenance/troubleshooting unless later usage
+shows that direct data access commands are needed.
 
 ### Dynamic API Description
 
@@ -109,7 +132,10 @@ Initial response should describe:
 - selected model `azName`, `visName`, and version;
 - each entity `azName` and `visName`;
 - each entity attribute `azName`, `visName`, and `DataType`;
+- each association `azName`, `visName`, kind, endpoint entity types,
+  cardinality, and role metadata where available;
 - supported operations for that entity in this runtime;
+- supported link operations for each association in this runtime;
 - JSON body examples or field maps sufficient for a client to build forms and
   requests dynamically.
 
@@ -119,8 +145,8 @@ First-slice instance data should be generic and schema-driven:
 
 - Instances are not Java classes generated per model entity.
 - Attribute values are stored in a map keyed by attribute `azName`.
-- Instance ids are backend-assigned opaque ids, not user-visible `azName`
-  values.
+- Instance ids are backend-assigned UUID strings, not user-visible `azName`
+  values and not monotonic row numbers.
 - Attribute order in responses should follow the model entity attribute order
   where practical.
 - Missing attributes should be allowed because Vedenemo does not yet model
@@ -134,39 +160,40 @@ Suggested first `DataType` handling:
 - `TEXT`: JSON string.
 - `NUMERIC`: JSON number or numeric string parsed to a deterministic JDK value
   such as `BigDecimal`.
-- `URL`: JSON string accepted only if it parses as a URI/URL according to the
-  chosen validation rule.
+- `URL`: JSON string accepted only if it is a strict absolute URL.
 - `DATA`: JSON string in the first slice; binary uploads and structured data
   schemas are deferred.
+
+Both query styles should be available:
+
+- simple exact-match filters on `GET /data/{modelAzName}/{entityAzName}`;
+- richer JSON query bodies on
+  `POST /data/{modelAzName}/{entityAzName}/_query`.
 
 ### Association Instance Semantics
 
 Associations are the hardest part and should be planned explicitly rather than
 accidentally encoded as scalar fields.
 
-Recommended first implementation slice:
+First implementation slice:
 
-- Implement scalar entity-instance create/list/read/query first.
+- Implement scalar entity-instance create/list/read/query.
 - Include association definitions in `/data/{modelAzName}/_api` so clients can
   see available relationship semantics.
-- Defer writing association instance links until after scalar instance storage
-  is proven.
-
-Recommended later association-instance direction:
-
 - Store relationship links separately from entity attribute maps.
 - Key relationship links by association `azName`.
 - A link should reference source and target `InstanceId` values and validate
   that those ids belong to the association's source and target entity types.
-- Ownership/reference/relation semantics should affect validation and traversal
-  behavior later, not be flattened into ordinary attributes.
-- Cardinality enforcement can be added after links exist; it should not be
+- Support relationship-aware entity queries so clients can express conditions
+  through modeled associations, for example "albums whose artist is this artist
+  instance".
+- Ownership/reference/relation semantics must not be flattened into ordinary
+  attributes.
+- Cardinality enforcement should be planned explicitly; it should not be
   implied by the scalar-attribute storage model.
 
-Possible later endpoints:
+Possible traversal endpoint:
 
-- `POST /data/{modelAzName}/_links/{associationAzName}`
-- `GET /data/{modelAzName}/_links/{associationAzName}`
 - `GET /data/{modelAzName}/{entityAzName}/{instanceId}/{associationAzName}`
 
 ### Naming And `azName` Direction
@@ -199,16 +226,17 @@ instance. It should store:
 - generated instance ids.
 
 Validation should resolve the current loaded `ModelRoot` from `ModelRegistry`
-for each write/query operation. If the model definition changes after instances
-exist, the first implementation may either:
+for each write/query operation.
 
-- reject instance operations when stored dataset version does not match current
-  model version; or
-- allow reads but validate new writes against the current model definition.
+The first implementation should ignore schema-version mismatches. It still
+stores the model version visible at dataset creation time, but it does not block
+reads, writes, or queries when the currently loaded model version differs.
+Real schema migration strategies and compatibility rules are explicitly deferred
+to future planning.
 
-The safer first direction is to reject writes on schema-version mismatch and
-allow reads of already stored data, because no schema migration capability
-exists yet.
+Instance operations should not broadcast existing model-change events. Runtime
+data changes should get a separate event channel later if live data views need
+push notifications.
 
 ### Static API Separation
 
@@ -228,33 +256,57 @@ authoring endpoints and makes the runtime boundary obvious:
 First implementation should include deterministic tests for:
 
 - API description for a model with entities and attributes;
+- API description for associations and available link operations;
 - create instance with valid values;
+- create association link with valid source and target instances;
 - reject unknown model `azName`;
 - reject unknown entity `azName`;
+- reject unknown association `azName`;
 - reject unknown attribute `azName`;
 - reject invalid `DataType` value;
+- reject invalid association link endpoints;
 - list/read created instances in deterministic order;
 - query by one or more attribute values;
+- query through an association, for example albums by artist;
 - prove state is process-local/in-memory and does not require external
   services.
 
+### Resolved Decisions
+
+- Include association/relation instance links in the first API design. The
+  scalar-only plan is not enough because ordinary models need relationship
+  queries, such as finding albums through their artist.
+- Ignore schema-version mismatches in the first implementation. Record schema
+  version metadata, but defer migration and compatibility rules.
+- Use UUID strings for `InstanceId`.
+- Validate `URL` values as strict absolute URLs.
+- Support both simple exact-match GET filters and richer POST query bodies.
+- Do not reuse model-change events for instance data changes. Plan a separate
+  runtime-data event channel later.
+- Keep the first slice HTTP-only; CLI commands can remain focused on model
+  building and maintenance/troubleshooting.
+
+### Future Design Items
+
+- Define schema migration and compatibility rules for instance data after model
+  definitions change.
+- Design a separate runtime-data event channel if UX or API clients need live
+  instance-data updates.
+- Decide whether direct CLI data-access commands are ever needed, or whether
+  data access should remain HTTP-only.
+
 ### Open Questions
 
-1. Should the first implementation include only scalar entity-instance data, or
-   should it also create association/relation links immediately? => Answer: Even normally preferring small steps, I'm afraid that plan/design gets unbalanced, if we do not take into account also associations. Even in a simple model having separate Album and Artist entities, those are naturally related, and there is need e.g. search albums by artist, so data search condition comes via the association between the entities. So this should be considered in HTTP APIs to be planned.
-2. Should schema-version mismatch reject all operations, reject only writes, or
-   be ignored until explicit schema migration work exists? => Answer: Let's ignore schema-version mismatches until real migration strategies and rules are planned separately (so let tackle this concern at later stages, can be marked however to the list of uncovered future design items).
-3. Should `InstanceId` be a UUID string, a monotonic per-entity number, or
-   another opaque identifier? => Answer: Let's start with UUID.
-4. Should `URL` values be validated as strict absolute URLs, or is any valid
-   JDK `URI` acceptable initially? => Answer: Let's start with strict absolute URLs at this stage.
-5. Should `POST /data/{modelAzName}/{entityAzName}/_query` be the only first
-   query mechanism, or should simple exact-match filters also be accepted on
-   `GET /data/{modelAzName}/{entityAzName}`? => Answer: I would like to see both ways to be possible to query data.
-6. Should instance operations broadcast model-change events, or should runtime
-   data changes get a separate event channel later? => Answer: data changes will get a separate event channel later
-7. Should terminal/browser CLI commands for instance data be planned in the
-   same implementation slice, or should the first slice be HTTP-only? => Answer: First slice HTTP-only (it might be even so that data access will be HTTP-only also in later stages, and cli is only for model building, and for troubleshooting/maintenance related services)
+1. Should association-link creation be only through dedicated `_links`
+   endpoints, or should entity instance create/update requests also be able to
+   create links inline?
+2. What exact JSON shape should relationship-aware `_query` requests use for
+   association predicates?
+3. Should first-slice association links enforce cardinality immediately, or
+   should they only validate source/target entity types until cardinality rules
+   are planned in more detail?
+4. Should UUID instance ids be globally unique across all models/entities in
+   the registry, or is uniqueness within each model/entity collection enough?
 
 ## Plan Association Semantics For Vedenemo Models
 

@@ -4873,3 +4873,38 @@ Current status and next steps:
   behavior, instance id format, URL validation strictness, query shape, event
   channel behavior, and whether CLI commands belong in the first slice.
 - No build was run because this was a documentation-only planning change.
+
+## 2026-07-30 00:30 EEST
+
+Session goal: fold answered dynamic model-instance API planning questions into
+the backlog plan.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,280p' tasks/backlog.md`
+- `git status --short`
+- `tail -n 80 SESSION.md`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Moved the answered dynamic instance API questions into a new resolved
+  decisions section.
+- Updated the first-slice plan to include association/relation instance links
+  and relationship-aware queries, not only scalar entity-instance data.
+- Recorded UUID strings for `InstanceId`, strict absolute URL validation,
+  schema-version mismatch deferral, both GET filters and POST query bodies,
+  separate future data-change events, and HTTP-only first-slice access.
+- Added future design items for schema migration, runtime-data events, and
+  whether data-access CLI commands are ever needed.
+- Added new narrower open questions about link creation shape, relationship
+  query JSON shape, cardinality enforcement timing, and UUID uniqueness scope.
+- No build was run because this was a documentation-only planning change.
