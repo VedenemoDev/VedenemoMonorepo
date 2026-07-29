@@ -5012,3 +5012,33 @@ Current status and next steps:
   one-hop relationship queries are implemented and tested.
 - Cleared the dynamic model-instance API backlog item's open questions section.
 - No build was run because this was a documentation-only planning change.
+
+## 2026-07-30 01:14 EEST
+
+Session goal: proofread the ready dynamic model-instance API backlog item before
+implementation.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short`
+- `git log -3 --oneline`
+- `sed -n '1,430p' tasks/backlog.md`
+- `nl -ba tasks/backlog.md | sed -n '1,390p'`
+- `rg -n "update|Open Questions|too large|immediately after|only first-slice|cardinality|UUID uniqueness|one association hop|schema-version" tasks/backlog.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Reviewed the dynamic model-instance API backlog item for implementation
+  readiness.
+- Added concrete `_links` creation request body guidance using
+  `sourceInstanceId` and `targetInstanceId`.
+- Defined first-slice relationship query `direction` values:
+  `outgoing`, `incoming`, and `either`.
+- No build was run because this was a documentation-only proofreading change.

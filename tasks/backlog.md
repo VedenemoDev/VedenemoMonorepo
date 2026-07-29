@@ -106,6 +106,8 @@ Recommended endpoint shape:
     entity instances.
   - This is the only first-slice link creation path. Entity instance
     create/update bodies should not create association links inline.
+  - Request body should use explicit source/target ids:
+    `{ "sourceInstanceId": "...", "targetInstanceId": "..." }`.
 - `GET /data/{modelAzName}/_links/{associationAzName}`
   - Lists links for one modeled association.
 
@@ -211,6 +213,20 @@ POST /data/Music/Album/_query
 Meaning: find `Album` instances whose `Title` is `Kind of Blue` and whose
 outgoing `Album_Artist` link reaches an `Artist` instance whose `Name` is
 `Miles Davis`.
+
+For first-slice query predicates, `direction` should be explicit:
+
+- `outgoing`: traverse links where the queried entity instance is the
+  association source;
+- `incoming`: traverse links where the queried entity instance is the
+  association target;
+- `either`: traverse links where the queried entity instance may be either
+  source or target.
+
+For directed `ownership` and `reference` associations, `outgoing` and
+`incoming` preserve the modeled source/target direction. For `relation`
+associations, `either` is useful when the caller wants bidirectional traversal
+without separately knowing which endpoint is source or target.
 
 If this is too large for the first executable implementation, the acceptable
 near-term split is:
