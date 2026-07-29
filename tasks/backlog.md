@@ -98,9 +98,14 @@ Recommended endpoint shape:
 - `POST /data/{modelAzName}/{entityAzName}/_query`
   - Queries stored instances with a JSON query body. This supports more
     expressive queries, including relationship predicates.
+  - Relationship predicates should support filtering by attributes of related
+    entity instances, for example albums whose linked artist has `Name` equal
+    to `Miles Davis`.
 - `POST /data/{modelAzName}/_links/{associationAzName}`
   - Creates one association/relation instance link between source and target
     entity instances.
+  - This is the only first-slice link creation path. Entity instance
+    create/update bodies should not create association links inline.
 - `GET /data/{modelAzName}/_links/{associationAzName}`
   - Lists links for one modeled association.
 
@@ -170,6 +175,51 @@ Both query styles should be available:
 - richer JSON query bodies on
   `POST /data/{modelAzName}/{entityAzName}/_query`.
 
+The preferred relationship-aware query target is link-by-related-entity-filter,
+not only link-by-known-instance-id. Clients should be able to query from one
+entity type through an association into another entity type and match related
+entity attributes.
+
+Example target query:
+
+```http
+POST /data/Music/Album/_query
+```
+
+```json
+{
+  "where": {
+    "equals": {
+      "Title": "Kind of Blue"
+    }
+  },
+  "relationships": [
+    {
+      "associationAzName": "Album_Artist",
+      "direction": "outgoing",
+      "entityAzName": "Artist",
+      "where": {
+        "equals": {
+          "Name": "Miles Davis"
+        }
+      }
+    }
+  ]
+}
+```
+
+Meaning: find `Album` instances whose `Title` is `Kind of Blue` and whose
+outgoing `Album_Artist` link reaches an `Artist` instance whose `Name` is
+`Miles Davis`.
+
+If this is too large for the first executable implementation, the acceptable
+near-term split is:
+
+- first implement the same `_query` envelope with relationship predicates that
+  filter by known related `targetInstanceId` / `sourceInstanceId`;
+- then implement related-entity attribute predicates immediately after, without
+  changing the endpoint or replacing the query envelope.
+
 ### Association Instance Semantics
 
 Associations are the hardest part and should be planned explicitly rather than
@@ -184,13 +234,19 @@ First implementation slice:
 - Key relationship links by association `azName`.
 - A link should reference source and target `InstanceId` values and validate
   that those ids belong to the association's source and target entity types.
+- First-slice link validation should not enforce cardinality. Cardinality
+  enforcement needs separate create/update/delete rules and should be planned
+  after basic links and relationship queries work.
 - Support relationship-aware entity queries so clients can express conditions
   through modeled associations, for example "albums whose artist is this artist
   instance".
+- Prefer relationship predicates that can match attributes on the related
+  entity instance, for example "albums where artist name equals Miles Davis".
+  If needed, implement known-related-instance-id predicates first as a stepping
+  stone, but keep the query envelope compatible with related-entity attribute
+  predicates.
 - Ownership/reference/relation semantics must not be flattened into ordinary
   attributes.
-- Cardinality enforcement should be planned explicitly; it should not be
-  implied by the scalar-attribute storage model.
 
 Possible traversal endpoint:
 
@@ -279,12 +335,27 @@ First implementation should include deterministic tests for:
 - Ignore schema-version mismatches in the first implementation. Record schema
   version metadata, but defer migration and compatibility rules.
 - Use UUID strings for `InstanceId`.
+- UUID uniqueness within each model/entity instance collection is enough for
+  the first implementation.
 - Validate `URL` values as strict absolute URLs.
 - Support both simple exact-match GET filters and richer POST query bodies.
+- Prefer link-by-related-entity-filter for relationship-aware `_query`
+  predicates. If that is too much for the first executable slice, implement
+  link-by-known-instance-id first with a query shape that can be extended to
+  related-entity attribute filters in the very near future.
+- First-slice relationship predicates should support one association hop only,
+  for example `Album -> Artist`. Nested/multi-hop predicates such as
+  `Track -> Album -> Artist` are deferred.
 - Do not reuse model-change events for instance data changes. Plan a separate
   runtime-data event channel later.
 - Keep the first slice HTTP-only; CLI commands can remain focused on model
   building and maintenance/troubleshooting.
+- Use dedicated `_links` endpoints only for association-link creation in the
+  first implementation. Do not create links inline inside entity instance
+  create/update bodies yet.
+- First-slice association links should validate source/target entity types, but
+  should not enforce cardinality until cardinality rules are planned in more
+  detail.
 
 ### Future Design Items
 
@@ -294,19 +365,16 @@ First implementation should include deterministic tests for:
   instance-data updates.
 - Decide whether direct CLI data-access commands are ever needed, or whether
   data access should remain HTTP-only.
+- Decide whether inline link creation in entity instance create/update bodies
+  is useful after dedicated `_links` endpoints are established.
+- Define cardinality enforcement behavior for association links, including how
+  create/update/delete operations report violations.
+- Add nested/multi-hop relationship predicates later, after one-hop
+  relationship queries are implemented and tested.
 
 ### Open Questions
 
-1. Should association-link creation be only through dedicated `_links`
-   endpoints, or should entity instance create/update requests also be able to
-   create links inline?
-2. What exact JSON shape should relationship-aware `_query` requests use for
-   association predicates?
-3. Should first-slice association links enforce cardinality immediately, or
-   should they only validate source/target entity types until cardinality rules
-   are planned in more detail?
-4. Should UUID instance ids be globally unique across all models/entities in
-   the registry, or is uniqueness within each model/entity collection enough?
+None currently.
 
 ## Plan Association Semantics For Vedenemo Models
 

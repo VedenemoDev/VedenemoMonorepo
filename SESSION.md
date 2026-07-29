@@ -4908,3 +4908,107 @@ Current status and next steps:
 - Added new narrower open questions about link creation shape, relationship
   query JSON shape, cardinality enforcement timing, and UUID uniqueness scope.
 - No build was run because this was a documentation-only planning change.
+
+## 2026-07-30 00:59 EEST
+
+Session goal: refine dynamic model-instance query planning around
+relationship-aware `_query` predicates.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,310p' tasks/backlog.md`
+- `git status --short`
+- `tail -n 70 SESSION.md`
+- `git diff --check`
+- `sed -n '180,300p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Updated the dynamic instance API plan to prefer link-by-related-entity-filter
+  for relationship-aware `_query` predicates.
+- Added a concrete `POST /data/Music/Album/_query` example that filters albums
+  by a linked artist's `Name` value.
+- Kept a near-term fallback path: implement known-related-instance-id
+  predicates first only if needed, while preserving the same query envelope for
+  related-entity attribute predicates.
+- Moved the broad relationship-query JSON-shape question out of open questions.
+- Added a narrower open question about whether first-slice relationship
+  predicates should support only one association hop or allow nested/multi-hop
+  predicates immediately.
+- No build was run because this was a documentation-only planning change.
+
+## 2026-07-30 01:04 EEST
+
+Session goal: resolve additional dynamic model-instance API open questions and
+make the remaining relationship-hop question concrete.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '220,330p' tasks/backlog.md`
+- `git status --short`
+- `tail -n 60 SESSION.md`
+- `sed -n '285,345p' tasks/backlog.md`
+- `sed -n '45,115p' tasks/backlog.md`
+- `sed -n '205,255p' tasks/backlog.md`
+- `sed -n '330,375p' tasks/backlog.md`
+- `sed -n '80,120p' tasks/backlog.md`
+- `sed -n '225,385p' tasks/backlog.md`
+- `git diff --check`
+- `sed -n '385,430p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Recorded dedicated `_links` endpoints as the only first-slice association
+  link creation path.
+- Recorded that first-slice association links validate source/target entity
+  types but do not enforce cardinality.
+- Recorded that UUID instance-id uniqueness only needs to hold within each
+  model/entity instance collection.
+- Moved inline link creation and cardinality enforcement into future design
+  items.
+- Rewrote the only remaining open question with concrete one-hop
+  `Album -> Artist` and multi-hop `Track -> Album -> Artist` examples.
+- No build was run because this was a documentation-only planning change.
+
+## 2026-07-30 01:11 EEST
+
+Session goal: resolve the remaining dynamic instance API relationship-hop open
+question.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '330,410p' tasks/backlog.md`
+- `git status --short`
+- `tail -n 70 SESSION.md`
+- `sed -n '330,385p' tasks/backlog.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Recorded one-hop relationship predicates as the first-slice `_query`
+  boundary.
+- Deferred nested/multi-hop relationship predicates to future design after
+  one-hop relationship queries are implemented and tested.
+- Cleared the dynamic model-instance API backlog item's open questions section.
+- No build was run because this was a documentation-only planning change.
