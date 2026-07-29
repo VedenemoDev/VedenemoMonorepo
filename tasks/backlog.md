@@ -252,7 +252,7 @@ First implementation should include deterministic tests for:
    query mechanism, or should simple exact-match filters also be accepted on
    `GET /data/{modelAzName}/{entityAzName}`? => Answer: I would like to see both ways to be possible to query data.
 6. Should instance operations broadcast model-change events, or should runtime
-   data changes get a separate event channel later? => Answer: data changes will get a sperate event channel later
+   data changes get a separate event channel later? => Answer: data changes will get a separate event channel later
 7. Should terminal/browser CLI commands for instance data be planned in the
    same implementation slice, or should the first slice be HTTP-only? => Answer: First slice HTTP-only (it might be even so that data access will be HTTP-only also in later stages, and cli is only for model building, and for troubleshooting/maintenance related services)
 
