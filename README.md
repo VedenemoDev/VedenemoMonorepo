@@ -284,13 +284,14 @@ npm run dev
 ```
 
 The main page shows model selection and the PlantUML diagram. Use the
-bottom-left arrow to open the browser console as a lower split pane; use the
-same arrow to minimize it again. The full-page browser console remains
-available directly at `/console`. The browser console supports the same
-authoring commands as `VedenemoCli`, including `add`, `attr add`, and
-`assoc add`. With the backend snapshot store configured, browser `save`,
-`snapshots`, and `load` use cloud snapshots; terminal `VedenemoCli` keeps using
-local `.vdos` files.
+bottom-left arrow to open the browser console as a lower split pane; drag the
+pane's top border to resize it, and use the same arrow to minimize it again.
+The console output scrolls to the latest line as commands run. The full-page
+browser console remains available directly at `/console`. The browser console
+supports the same authoring commands as `VedenemoCli`, including `add`,
+`attr add`, and `assoc add`. With the backend snapshot store configured,
+browser `save`, `snapshots`, and `load` use cloud snapshots; terminal
+`VedenemoCli` keeps using local `.vdos` files.
 
 ## Vedenemo Script Files
 

@@ -4779,3 +4779,45 @@ Current status and next steps:
   embedded console pane and retained `/console` route.
 - `npm run build` passes; Vite still reports the existing large PlantUML chunk
   warning.
+
+## 2026-07-29 17:08 EEST
+
+Session goal: make the embedded browser console pane vertically resizable and
+keep new console output visible above the command prompt.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `docs/architecture_doc.md`
+- `README.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,360p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,380p' vedenemo-ux/src/styles.css`
+- `git status --short`
+- `npm run build` in `vedenemo-ux`
+- `sed -n '488,510p' docs/architecture_doc.md`
+- `sed -n '283,294p' README.md`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `git diff -- vedenemo-ux/src/styles.css`
+- `git diff -- README.md docs/architecture_doc.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added a draggable resize handle on the embedded console pane's top border.
+- The pane height is clamped between a practical minimum and 75% of the
+  viewport height.
+- The selected pane height is stored in browser local storage and reused on
+  later visits.
+- Console output now scrolls to the latest history line whenever new output is
+  appended.
+- README and current architecture documentation describe the resizable pane and
+  auto-scroll behavior.
+- `npm run build` passes; Vite still reports the existing large PlantUML chunk
+  warning.

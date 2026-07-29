@@ -1,4 +1,12 @@
-import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type FormEvent,
+  type KeyboardEvent,
+  type PointerEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { ModelChangeEventAdapter } from "./adapters/ModelChangeEventAdapter";
 import { PlantUmlModelAdapter } from "./adapters/PlantUmlModelAdapter";
 
@@ -37,8 +45,12 @@ type ConsolePanelProps = {
 
 const PLANTUML_TARGET_ID = "plantuml-diagram";
 const CONNECTED_MODEL_STORAGE_KEY = "vedenemo.connectedModelAzName";
+const CONSOLE_PANE_HEIGHT_STORAGE_KEY = "vedenemo.consolePaneHeight";
 const DIAGRAM_EMPTY_MESSAGE = "Select model and connect to show diagram.";
 const DIAGRAM_RENDERED_MESSAGE = "Diagram rendered";
+const DEFAULT_CONSOLE_PANE_HEIGHT = 360;
+const MIN_CONSOLE_PANE_HEIGHT = 256;
+const MAX_CONSOLE_PANE_VIEWPORT_RATIO = 0.75;
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   const response = await fetch("/config.json", { cache: "no-store" });
@@ -70,10 +82,24 @@ function readConnectedModelAzName(): string {
   return new URLSearchParams(window.location.search).get("connectedModelAzName") ?? "";
 }
 
+function clampConsolePaneHeight(value: number): number {
+  const maxHeight = Math.max(MIN_CONSOLE_PANE_HEIGHT, Math.floor(window.innerHeight * MAX_CONSOLE_PANE_VIEWPORT_RATIO));
+  return Math.min(Math.max(value, MIN_CONSOLE_PANE_HEIGHT), maxHeight);
+}
+
+function readConsolePaneHeight(): number {
+  const storedValue = Number(window.localStorage.getItem(CONSOLE_PANE_HEIGHT_STORAGE_KEY));
+  if (!Number.isFinite(storedValue) || storedValue <= 0) {
+    return clampConsolePaneHeight(DEFAULT_CONSOLE_PANE_HEIGHT);
+  }
+  return clampConsolePaneHeight(storedValue);
+}
+
 function ConsolePanel({ connectedModelAzName = "", mode }: ConsolePanelProps) {
   const sessionIdRef = useRef("");
   const apiBaseUrlRef = useRef("");
   const commandInputRef = useRef<HTMLInputElement>(null);
+  const consoleOutputRef = useRef<HTMLDivElement>(null);
   const [apiBaseUrl, setApiBaseUrl] = useState("");
   const [session, setSession] = useState<ConsoleSessionResponse | null>(null);
   const [status, setStatus] = useState<ConsoleStatus>("loading");
@@ -146,6 +172,14 @@ function ConsolePanel({ connectedModelAzName = "", mode }: ConsolePanelProps) {
     });
     return () => window.cancelAnimationFrame(animationFrameId);
   }, [status, isExecuting, session]);
+
+  useEffect(() => {
+    const output = consoleOutputRef.current;
+    if (output === null) {
+      return;
+    }
+    output.scrollTop = output.scrollHeight;
+  }, [history]);
 
   async function executeConsoleCommand(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -261,7 +295,7 @@ function ConsolePanel({ connectedModelAzName = "", mode }: ConsolePanelProps) {
         )}
       </header>
       <section className="console-surface" aria-label="Vedenemo virtual CLI" onMouseDown={focusCommandInput}>
-        <div className="console-output" aria-live="polite">
+        <div ref={consoleOutputRef} className="console-output" aria-live="polite">
           {history.map((line, index) => (
             <div key={`${index}-${line}`} className="console-line">
               {line || "\u00a0"}
@@ -324,6 +358,7 @@ export function App() {
   const [diagramHasContent, setDiagramHasContent] = useState(false);
   const [diagramMessage, setDiagramMessage] = useState(DIAGRAM_EMPTY_MESSAGE);
   const [isConsolePaneOpen, setIsConsolePaneOpen] = useState(false);
+  const [consolePaneHeight, setConsolePaneHeight] = useState(readConsolePaneHeight);
 
   useEffect(() => {
     selectedModelAzNameRef.current = selectedModelAzName;
@@ -496,9 +531,23 @@ export function App() {
 
   const footerDiagramMessage = diagramMessage === DIAGRAM_EMPTY_MESSAGE ? "" : diagramMessage;
   const showDiagramPlaceholder = !diagramHasContent && diagramMessage === DIAGRAM_EMPTY_MESSAGE;
+  const workspaceStyle = {
+    "--console-pane-height": `${consolePaneHeight}px`,
+  } as CSSProperties;
+
+  function resizeConsolePane(event: PointerEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const nextHeight = clampConsolePaneHeight(window.innerHeight - event.clientY);
+    setConsolePaneHeight(nextHeight);
+    window.localStorage.setItem(CONSOLE_PANE_HEIGHT_STORAGE_KEY, String(nextHeight));
+  }
 
   return (
-    <main className={isConsolePaneOpen ? "workspace-shell workspace-shell-console-open" : "workspace-shell"}>
+    <main
+      className={isConsolePaneOpen ? "workspace-shell workspace-shell-console-open" : "workspace-shell"}
+      style={workspaceStyle}
+    >
       <section className="app-shell">
         <section className="card">
           <div className="model-panel">
@@ -545,6 +594,18 @@ export function App() {
       </section>
       {isConsolePaneOpen && (
         <section className="console-pane" aria-label="Vedenemo console pane">
+          <button
+            type="button"
+            className="console-resize-handle"
+            onPointerDown={resizeConsolePane}
+            onPointerMove={(event) => {
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                resizeConsolePane(event);
+              }
+            }}
+            aria-label="Resize console pane"
+            title="Resize console pane"
+          />
           <ConsolePanel mode="pane" />
         </section>
       )}

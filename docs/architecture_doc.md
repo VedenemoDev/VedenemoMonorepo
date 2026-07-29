@@ -494,6 +494,8 @@ Current user-facing behavior:
 - splits the main model view horizontally while the embedded console pane is
   open, keeping the PlantUML model view in the upper pane and the terminal-like
   console history/input in the lower pane
+- lets the user drag the embedded console pane's top border to adjust its
+  vertical size, and stores the chosen pane height in browser local storage
 - starts a backend console session for each browser console instance, appends
   command output to terminal-like history, and runs one command or prompt answer
   at a time through `{apiBaseUrl}/console/sessions`
@@ -503,6 +505,8 @@ Current user-facing behavior:
   instance only, navigable with Arrow Up, Arrow Down, Ctrl+P, and Ctrl+N
 - keeps browser console focus on the command input and lets Esc clear/cancel
   the current command entry or pending backend prompt flow
+- keeps console output scrolled to the latest history line above the command
+  prompt as output is appended
 - supports browser console `save`, `snapshots`, and `load` through the backend
   when the backend snapshot store is configured; the browser never receives
   Google Cloud credentials
