@@ -1,5 +1,261 @@
 # Backlog
 
+## Plan Dynamic Model Instance Data API
+
+Status: planning.
+
+### Goal
+
+Plan the first process-local model-instance capability: users should be able to
+create and query data records whose shape is validated against a selected
+Vedenemo model definition.
+
+In this phase, model definitions act like database schemas and model instances
+act like rows/data stored according to those schemas. The implementation should
+not persist model-instance data yet. It should introduce a generic in-memory
+instance model and a dynamic HTTP API whose available entity entry points and
+accepted fields are derived from the loaded model definition at runtime.
+
+### Initial Scope
+
+- Add a pure Vedenemo-owned runtime instance model for data created from a
+  `ModelRoot`.
+- Keep instance storage process-local and in memory only.
+- Bind instance data to a loaded model by model `azName` and the model version
+  visible when the instance dataset is created.
+- Support creating entity instances for modeled entities.
+- Support querying entity instances for modeled entities.
+- Validate incoming instance values against the selected model schema:
+  - model `azName` must resolve to a loaded `ModelRoot`;
+  - entity `azName` must exist in that model;
+  - submitted attribute `azName` values must exist on that entity;
+  - unknown attribute names should be rejected;
+  - values should be validated according to `DataType`.
+- Add a dynamic HTTP API description endpoint for a selected model.
+- Keep JSON parsing/serialization and HTTP routing in `vedenemo-web-api`.
+- Keep core/model instance validation independent of Javalin, Jackson, and web
+  DTO classes.
+- Do not add database persistence, authentication, generated source code,
+  WebSockets, or schema migration in the first slice.
+
+### Recommended First Architecture Direction
+
+Introduce the model-instance concepts in a Vedenemo-owned backend module with
+pure JDK dependencies, likely `vedenemo-model-api` for immutable value objects
+and `vedenemo-core` for registry/service behavior if command/session semantics
+are needed. If the implementation grows enough to justify a boundary, a later
+`vedenemo-instance-api` module can be introduced, but the first planning pass
+should avoid adding a module only for naming neatness.
+
+Likely pure model/core types:
+
+- `InstanceId`: backend-assigned opaque identifier for one entity instance.
+- `EntityInstance`: one data record for one model entity.
+- `InstanceValue`: typed value wrapper for attribute values.
+- `ModelInstanceDataset`: all in-memory instance data for one model `azName`
+  and schema version.
+- `ModelInstanceRegistry`: process-local registry keyed by model `azName`,
+  then entity `azName`, then `InstanceId`.
+- `ModelInstanceService`: validates requests against `ModelRegistry` /
+  `ModelRoot` and reads/writes `ModelInstanceRegistry`.
+
+The web API should expose a static resource class, for example
+`InstanceDataResource`, rather than dynamically registering and unregistering
+Javalin routes per model. Dynamic behavior should come from resolving
+`modelAzName` and `entityAzName` path parameters against the current
+`ModelRegistry`.
+
+Recommended endpoint shape:
+
+- `GET /data/{modelAzName}/_api`
+  - Returns a JSON description of the dynamic instance API for the selected
+    model.
+  - Includes entity `azName`/`visName`, attribute definitions, data types, and
+    concrete create/list/query/read URLs.
+- `POST /data/{modelAzName}/{entityAzName}`
+  - Creates one entity instance.
+  - Request body contains attribute values keyed by attribute `azName`.
+  - Response includes generated instance id, entity `azName`, model `azName`,
+    and stored values.
+- `GET /data/{modelAzName}/{entityAzName}`
+  - Lists stored instances for one entity, with deterministic order and a
+    conservative default limit.
+- `GET /data/{modelAzName}/{entityAzName}/{instanceId}`
+  - Reads one stored instance.
+- `POST /data/{modelAzName}/{entityAzName}/_query`
+  - Queries stored instances with a JSON query body. This avoids collisions
+    between attribute names and reserved query parameters such as `limit`.
+
+The `_api` and `_query` segments are intentionally underscore-prefixed. Current
+`azName` rules require names to start with an ASCII letter, so underscore
+segments can be reserved for dynamic API control endpoints without conflicting
+with model/entity/attribute/association `azName` values.
+
+### Dynamic API Description
+
+Do not use a WSDL-style query parameter in the first slice. Prefer a normal JSON
+metadata endpoint:
+
+```text
+GET /data/{modelAzName}/_api
+```
+
+This endpoint can be Vedenemo-specific and small at first. It should not pretend
+to be OpenAPI unless the generated description is actually valid OpenAPI. A
+later task can add an OpenAPI projection if external tooling needs it.
+
+Initial response should describe:
+
+- selected model `azName`, `visName`, and version;
+- each entity `azName` and `visName`;
+- each entity attribute `azName`, `visName`, and `DataType`;
+- supported operations for that entity in this runtime;
+- JSON body examples or field maps sufficient for a client to build forms and
+  requests dynamically.
+
+### Instance Data Semantics
+
+First-slice instance data should be generic and schema-driven:
+
+- Instances are not Java classes generated per model entity.
+- Attribute values are stored in a map keyed by attribute `azName`.
+- Instance ids are backend-assigned opaque ids, not user-visible `azName`
+  values.
+- Attribute order in responses should follow the model entity attribute order
+  where practical.
+- Missing attributes should be allowed because Vedenemo does not yet model
+  required/optional field constraints.
+- Unknown attributes should be rejected.
+- Duplicate values, uniqueness constraints, indexes, and transactions are out
+  of scope.
+
+Suggested first `DataType` handling:
+
+- `TEXT`: JSON string.
+- `NUMERIC`: JSON number or numeric string parsed to a deterministic JDK value
+  such as `BigDecimal`.
+- `URL`: JSON string accepted only if it parses as a URI/URL according to the
+  chosen validation rule.
+- `DATA`: JSON string in the first slice; binary uploads and structured data
+  schemas are deferred.
+
+### Association Instance Semantics
+
+Associations are the hardest part and should be planned explicitly rather than
+accidentally encoded as scalar fields.
+
+Recommended first implementation slice:
+
+- Implement scalar entity-instance create/list/read/query first.
+- Include association definitions in `/data/{modelAzName}/_api` so clients can
+  see available relationship semantics.
+- Defer writing association instance links until after scalar instance storage
+  is proven.
+
+Recommended later association-instance direction:
+
+- Store relationship links separately from entity attribute maps.
+- Key relationship links by association `azName`.
+- A link should reference source and target `InstanceId` values and validate
+  that those ids belong to the association's source and target entity types.
+- Ownership/reference/relation semantics should affect validation and traversal
+  behavior later, not be flattened into ordinary attributes.
+- Cardinality enforcement can be added after links exist; it should not be
+  implied by the scalar-attribute storage model.
+
+Possible later endpoints:
+
+- `POST /data/{modelAzName}/_links/{associationAzName}`
+- `GET /data/{modelAzName}/_links/{associationAzName}`
+- `GET /data/{modelAzName}/{entityAzName}/{instanceId}/{associationAzName}`
+
+### Naming And `azName` Direction
+
+Keep the current `azName` rule in the first dynamic API slice:
+
+- starts with an ASCII letter;
+- then contains only ASCII letters, ASCII digits, and underscores;
+- preserves original casing;
+- compares case-insensitively where uniqueness is enforced.
+
+Hyphenated path segments are more common in public REST APIs, but changing
+`azName` rules now would require a broader migration through commands, `.vdos`,
+HTTP DTOs, CLI prompts, diagrams, tests, and existing snapshots. Current
+underscore-based `azName` values are valid URL path segments and already fit the
+implemented model/schema semantics.
+
+If later public API ergonomics need hyphenated URLs, add a separate alias or URL
+projection layer instead of changing the canonical model identifier first.
+
+### Runtime Binding Between Model And Instances
+
+The instance registry should not copy the whole `ModelRoot` into every
+instance. It should store:
+
+- canonical model `azName`;
+- model version at dataset creation time;
+- entity `azName` per collection/instance;
+- attribute values keyed by attribute `azName`;
+- generated instance ids.
+
+Validation should resolve the current loaded `ModelRoot` from `ModelRegistry`
+for each write/query operation. If the model definition changes after instances
+exist, the first implementation may either:
+
+- reject instance operations when stored dataset version does not match current
+  model version; or
+- allow reads but validate new writes against the current model definition.
+
+The safer first direction is to reject writes on schema-version mismatch and
+allow reads of already stored data, because no schema migration capability
+exists yet.
+
+### Static API Separation
+
+Keep existing model-authoring APIs under `/models` and `/sessions`.
+
+Put dynamic model-instance data under a distinct top-level prefix such as
+`/data`. This prevents dynamic entity names from colliding with static
+authoring endpoints and makes the runtime boundary obvious:
+
+- `/models/...`: model definition/schema authoring and inspection.
+- `/sessions/...`: command/session editing behavior.
+- `/console/...`: browser virtual CLI sessions.
+- `/data/...`: runtime model-instance data derived from loaded schemas.
+
+### Testing Scope
+
+First implementation should include deterministic tests for:
+
+- API description for a model with entities and attributes;
+- create instance with valid values;
+- reject unknown model `azName`;
+- reject unknown entity `azName`;
+- reject unknown attribute `azName`;
+- reject invalid `DataType` value;
+- list/read created instances in deterministic order;
+- query by one or more attribute values;
+- prove state is process-local/in-memory and does not require external
+  services.
+
+### Open Questions
+
+1. Should the first implementation include only scalar entity-instance data, or
+   should it also create association/relation links immediately?
+2. Should schema-version mismatch reject all operations, reject only writes, or
+   be ignored until explicit schema migration work exists?
+3. Should `InstanceId` be a UUID string, a monotonic per-entity number, or
+   another opaque identifier?
+4. Should `URL` values be validated as strict absolute URLs, or is any valid
+   JDK `URI` acceptable initially?
+5. Should `POST /data/{modelAzName}/{entityAzName}/_query` be the only first
+   query mechanism, or should simple exact-match filters also be accepted on
+   `GET /data/{modelAzName}/{entityAzName}`?
+6. Should instance operations broadcast model-change events, or should runtime
+   data changes get a separate event channel later?
+7. Should terminal/browser CLI commands for instance data be planned in the
+   same implementation slice, or should the first slice be HTTP-only?
+
 ## Plan Association Semantics For Vedenemo Models
 
 Status: executed.

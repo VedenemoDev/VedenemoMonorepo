@@ -4821,3 +4821,55 @@ Current status and next steps:
   auto-scroll behavior.
 - `npm run build` passes; Vite still reports the existing large PlantUML chunk
   warning.
+
+## 2026-07-29 17:34 EEST
+
+Session goal: add a thorough backlog planning item for dynamic model-instance
+data and schema-derived HTTP APIs.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,140p' docs/architecture_doc.md`
+- `tail -n 140 SESSION.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `rg -n "class .*Resource|app\\.(get|post|put|delete)|path\\(" vedenemo-web-api/src/main/java`
+- `rg -n "class ModelRoot|class VEntity|class VAttribute|record .*Command|interface .*Command|azName" vedenemo-model-api/src/main/java vedenemo-core/src/main/java | head -n 120`
+- `find vedenemo-web-api/src/main/java/org/vedenemo/web/api -maxdepth 3 -type f | sort`
+- `sed -n '260,620p' tasks/backlog.md`
+- `sed -n '1,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `sed -n '1,300p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `find vedenemo-web-api/src/main/java/org/vedenemo/web/api/dto -type f -maxdepth 3 -print -exec sed -n '1,120p' {} \\;`
+- `sed -n '1,160p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelTextRules.java && sed -n '1,150p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java && sed -n '1,130p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VEntity.java`
+- `git diff -- tasks/backlog.md`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Added pending backlog item `Plan Dynamic Model Instance Data API`.
+- The plan separates model-authoring APIs under `/models` from runtime
+  instance-data APIs under `/data`.
+- The recommended dynamic API description endpoint is
+  `GET /data/{modelAzName}/_api`, using underscore-prefixed reserved segments
+  because current `azName` values cannot start with `_`.
+- The plan recommends keeping current underscore-based `azName` rules for the
+  first slice rather than migrating to hyphenated identifiers.
+- The plan recommends scalar entity-instance create/list/read/query before
+  association-instance links.
+- Open questions remain for association-link timing, schema-version mismatch
+  behavior, instance id format, URL validation strictness, query shape, event
+  channel behavior, and whether CLI commands belong in the first slice.
+- No build was run because this was a documentation-only planning change.
