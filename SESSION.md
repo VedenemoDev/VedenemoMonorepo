@@ -4711,3 +4711,30 @@ Current status and next steps:
   part of the default build.
 - `mvn -B verify` passes. The next practical step is a manual smoke test using
   the already verified `vedenemo-snapshot-bucket` environment values.
+
+## 2026-07-29 09:02 EEST
+
+Session goal: fix browser virtual console startup so it works unattached like
+the terminal CLI.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- `npm run build` in `vedenemo-ux`
+- `date '+%Y-%m-%d %H:%M:%S %Z'`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `git status --short`
+
+Current status and next steps:
+
+- Removed the browser console startup fallback that read a stale connected
+  model from `sessionStorage`.
+- `/console` now starts unattached unless the URL explicitly includes
+  `connectedModelAzName`.
+- Opening the console from the connected model page still passes
+  `connectedModelAzName` in the URL and can start attached.
+- `npm run build` passes.

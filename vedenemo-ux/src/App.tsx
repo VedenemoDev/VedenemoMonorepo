@@ -62,11 +62,7 @@ async function fetchModels(apiBaseUrl: string): Promise<ModelSummary[]> {
 }
 
 function readConnectedModelAzName(): string {
-  const queryValue = new URLSearchParams(window.location.search).get("connectedModelAzName");
-  if (queryValue) {
-    return queryValue;
-  }
-  return window.sessionStorage.getItem(CONNECTED_MODEL_STORAGE_KEY) ?? "";
+  return new URLSearchParams(window.location.search).get("connectedModelAzName") ?? "";
 }
 
 function ConsolePage() {
