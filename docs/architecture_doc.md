@@ -20,7 +20,7 @@ subgraph UX["Frontend"]
     UXModelEvents["ModelChangeEventAdapter<br/>browser WebSocket listener"]
     UXPlantUml["PlantUmlModelAdapter<br/>model-to-PlantUML source"]
     UXPlantUmlRenderer["PlantUmlDiagramRendererAdapter<br/>lazy PlantUML SVG renderer"]
-    UXConsole["/console<br/>browser virtual CLI"]
+    UXConsole["browser virtual CLI<br/>/console and embedded pane"]
 end
 
 subgraph Web["Web API Runtime"]
@@ -488,14 +488,19 @@ Current user-facing behavior:
 - renders the selected model as an automatically laid out PlantUML SVG class
   diagram in a scrollable viewport
 - shows transient diagram rendering status below the diagram viewport
-- exposes `/console` as a separate full-page virtual CLI that starts a backend
-  console session, appends command output to a terminal-like history, and runs
-  one command or prompt answer at a time through
-  `{apiBaseUrl}/console/sessions`
-- passes the connected model `azName` into `/console` only when the main UX has
-  an active model event connection
-- keeps browser console command input history for the current console page
-  session only, navigable with Arrow Up, Arrow Down, Ctrl+P, and Ctrl+N
+- exposes the browser virtual CLI both as a separate full-page `/console` route
+  and as an embedded lower pane opened from the main model view's bottom-left
+  toggle
+- splits the main model view horizontally while the embedded console pane is
+  open, keeping the PlantUML model view in the upper pane and the terminal-like
+  console history/input in the lower pane
+- starts a backend console session for each browser console instance, appends
+  command output to terminal-like history, and runs one command or prompt answer
+  at a time through `{apiBaseUrl}/console/sessions`
+- starts `/console` unattached unless the URL explicitly includes a connected
+  model `azName`; the embedded pane currently starts unattached
+- keeps browser console command input history for the current browser console
+  instance only, navigable with Arrow Up, Arrow Down, Ctrl+P, and Ctrl+N
 - keeps browser console focus on the command input and lets Esc clear/cancel
   the current command entry or pending backend prompt flow
 - supports browser console `save`, `snapshots`, and `load` through the backend
@@ -703,7 +708,7 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    participant UX as vedenemo-ux /console
+    participant UX as vedenemo-ux browser console
     participant API as vedenemo-web-api
     participant Resource as ConsoleResource
     participant Registry as WebConsoleSessionRegistry

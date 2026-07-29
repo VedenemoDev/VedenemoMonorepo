@@ -30,6 +30,11 @@ type ConsoleCommandResponse = {
   attachedModelAzName?: string | null;
 };
 
+type ConsolePanelProps = {
+  connectedModelAzName?: string;
+  mode: "page" | "pane";
+};
+
 const PLANTUML_TARGET_ID = "plantuml-diagram";
 const CONNECTED_MODEL_STORAGE_KEY = "vedenemo.connectedModelAzName";
 const DIAGRAM_EMPTY_MESSAGE = "Select model and connect to show diagram.";
@@ -65,7 +70,7 @@ function readConnectedModelAzName(): string {
   return new URLSearchParams(window.location.search).get("connectedModelAzName") ?? "";
 }
 
-function ConsolePage() {
+function ConsolePanel({ connectedModelAzName = "", mode }: ConsolePanelProps) {
   const sessionIdRef = useRef("");
   const apiBaseUrlRef = useRef("");
   const commandInputRef = useRef<HTMLInputElement>(null);
@@ -88,7 +93,6 @@ function ConsolePage() {
         if (!baseUrl) {
           throw new Error("Backend URL is not configured");
         }
-        const connectedModelAzName = readConnectedModelAzName();
         const response = await fetch(`${baseUrl}/console/sessions`, {
           method: "POST",
           headers: {
@@ -131,7 +135,7 @@ function ConsolePage() {
         void fetch(`${baseUrl}/console/sessions/${sessionId}`, { method: "DELETE" });
       }
     };
-  }, []);
+  }, [connectedModelAzName]);
 
   useEffect(() => {
     if (status === "loading" || isExecuting || session === null) {
@@ -241,17 +245,20 @@ function ConsolePage() {
     setCommand(nextIndex === commandHistory.length ? "" : commandHistory[nextIndex]);
   }
 
-  return (
-    <main className="console-shell">
+  const inputId = mode === "page" ? "console-command" : "console-pane-command";
+  const panelContent = (
+    <>
       <header className="console-header">
         <div>
           <h1>Vedenemo Console</h1>
           <span className={`console-status console-status-${status}`}>{statusMessage}</span>
           <span className="console-shortcut-hint">Esc cancels the current prompt or input.</span>
         </div>
-        <a className="secondary-link" href="/">
-          Model diagram
-        </a>
+        {mode === "page" && (
+          <a className="secondary-link" href="/">
+            Model diagram
+          </a>
+        )}
       </header>
       <section className="console-surface" aria-label="Vedenemo virtual CLI" onMouseDown={focusCommandInput}>
         <div className="console-output" aria-live="polite">
@@ -262,10 +269,10 @@ function ConsolePage() {
           ))}
         </div>
         <form className="console-input-row" onSubmit={(event) => void executeConsoleCommand(event)}>
-          <label htmlFor="console-command">{session?.prompt ?? "VedenemoCli>"}</label>
+          <label htmlFor={inputId}>{session?.prompt ?? "VedenemoCli>"}</label>
           <input
             ref={commandInputRef}
-            id="console-command"
+            id={inputId}
             value={command}
             onChange={(event) => {
               setCommand(event.target.value);
@@ -281,8 +288,22 @@ function ConsolePage() {
           </button>
         </form>
       </section>
+    </>
+  );
+
+  if (mode === "pane") {
+    return <div className="console-pane-shell">{panelContent}</div>;
+  }
+
+  return (
+    <main className="console-shell">
+      {panelContent}
     </main>
   );
+}
+
+function ConsolePage() {
+  return <ConsolePanel connectedModelAzName={readConnectedModelAzName()} mode="page" />;
 }
 
 export function App() {
@@ -302,6 +323,7 @@ export function App() {
   const [modelConnectionState, setModelConnectionState] = useState<ModelConnectionState>("disconnected");
   const [diagramHasContent, setDiagramHasContent] = useState(false);
   const [diagramMessage, setDiagramMessage] = useState(DIAGRAM_EMPTY_MESSAGE);
+  const [isConsolePaneOpen, setIsConsolePaneOpen] = useState(false);
 
   useEffect(() => {
     selectedModelAzNameRef.current = selectedModelAzName;
@@ -476,57 +498,65 @@ export function App() {
   const showDiagramPlaceholder = !diagramHasContent && diagramMessage === DIAGRAM_EMPTY_MESSAGE;
 
   return (
-    <main className="app-shell">
-      <section className="card">
-        <div className="model-panel">
-          <label htmlFor="model-select">Select model</label>
-          <div className="model-controls">
-            <select
-              id="model-select"
-              value={selectedModelAzName}
-              onChange={(event) => setSelectedModelAzName(event.target.value)}
-              disabled={modelLoadState === "loading" || models.length === 0}
-            >
-              {models.length === 0 ? (
-                <option value="">No models available</option>
-              ) : (
-                models.map((model) => (
-                  <option key={model.azName} value={model.azName}>
-                    {model.visName} ({model.azName}) version {model.version}
-                  </option>
-                ))
+    <main className={isConsolePaneOpen ? "workspace-shell workspace-shell-console-open" : "workspace-shell"}>
+      <section className="app-shell">
+        <section className="card">
+          <div className="model-panel">
+            <label htmlFor="model-select">Select model</label>
+            <div className="model-controls">
+              <select
+                id="model-select"
+                value={selectedModelAzName}
+                onChange={(event) => setSelectedModelAzName(event.target.value)}
+                disabled={modelLoadState === "loading" || models.length === 0}
+              >
+                {models.length === 0 ? (
+                  <option value="">No models available</option>
+                ) : (
+                  models.map((model) => (
+                    <option key={model.azName} value={model.azName}>
+                      {model.visName} ({model.azName}) version {model.version}
+                    </option>
+                  ))
+                )}
+              </select>
+              <button type="button" onClick={() => void refreshModels()} disabled={modelLoadState === "loading"}>
+                Refresh model list
+              </button>
+              <button
+                type="button"
+                className="connect-button"
+                onClick={() => void toggleModelConnection()}
+                disabled={modelConnectionState === "connecting"}
+              >
+                {modelConnectionState === "connected" ? "Disconnect" : "Connect"}
+              </button>
+            </div>
+            <span className={`model-status model-status-${modelLoadState}`}>{modelMessage}</span>
+            <div className="diagram-viewport" aria-label="PlantUML class diagram">
+              <div id={PLANTUML_TARGET_ID} className="diagram-svg" />
+              {showDiagramPlaceholder && (
+                <div className="diagram-placeholder">{DIAGRAM_EMPTY_MESSAGE}</div>
               )}
-            </select>
-            <button type="button" onClick={() => void refreshModels()} disabled={modelLoadState === "loading"}>
-              Refresh model list
-            </button>
-            <button
-              type="button"
-              className="connect-button"
-              onClick={() => void toggleModelConnection()}
-              disabled={modelConnectionState === "connecting"}
-            >
-              {modelConnectionState === "connected" ? "Disconnect" : "Connect"}
-            </button>
-            <a
-              className="console-link"
-              href={modelConnectionState === "connected" && selectedModelAzName
-                ? `/console?connectedModelAzName=${encodeURIComponent(selectedModelAzName)}`
-                : "/console"}
-            >
-              Console
-            </a>
+            </div>
+            {footerDiagramMessage && <span className="diagram-status">{footerDiagramMessage}</span>}
           </div>
-          <span className={`model-status model-status-${modelLoadState}`}>{modelMessage}</span>
-          <div className="diagram-viewport" aria-label="PlantUML class diagram">
-            <div id={PLANTUML_TARGET_ID} className="diagram-svg" />
-            {showDiagramPlaceholder && (
-              <div className="diagram-placeholder">{DIAGRAM_EMPTY_MESSAGE}</div>
-            )}
-          </div>
-          {footerDiagramMessage && <span className="diagram-status">{footerDiagramMessage}</span>}
-        </div>
+        </section>
       </section>
+      {isConsolePaneOpen && (
+        <section className="console-pane" aria-label="Vedenemo console pane">
+          <ConsolePanel mode="pane" />
+        </section>
+      )}
+      <button
+        type="button"
+        className="console-toggle"
+        onClick={() => setIsConsolePaneOpen((current) => !current)}
+        aria-label={isConsolePaneOpen ? "Hide console pane" : "Show console pane"}
+        title={isConsolePaneOpen ? "Hide console pane" : "Show console pane"}
+      >
+        {isConsolePaneOpen ? "⌄" : "⌃"}
+      </button>
     </main>
   );
 }

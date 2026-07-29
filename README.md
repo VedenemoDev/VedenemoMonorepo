@@ -283,10 +283,11 @@ cd vedenemo-ux
 npm run dev
 ```
 
-The main page shows model selection and the PlantUML diagram. The browser
-console is available at `/console`; if opened from the main page while a model
-is connected, it starts attached to that model. The browser console supports
-the same authoring commands as `VedenemoCli`, including `add`, `attr add`, and
+The main page shows model selection and the PlantUML diagram. Use the
+bottom-left arrow to open the browser console as a lower split pane; use the
+same arrow to minimize it again. The full-page browser console remains
+available directly at `/console`. The browser console supports the same
+authoring commands as `VedenemoCli`, including `add`, `attr add`, and
 `assoc add`. With the backend snapshot store configured, browser `save`,
 `snapshots`, and `load` use cloud snapshots; terminal `VedenemoCli` keeps using
 local `.vdos` files.

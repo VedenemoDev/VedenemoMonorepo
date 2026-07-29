@@ -4738,3 +4738,44 @@ Current status and next steps:
 - Opening the console from the connected model page still passes
   `connectedModelAzName` in the URL and can start attached.
 - `npm run build` passes.
+
+## 2026-07-29 16:53 EEST
+
+Session goal: add a collapsible embedded browser console pane to the main UX
+while keeping the standalone `/console` route.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `docs/architecture_doc.md`
+- `README.md`
+- `SESSION.md`
+
+Commands run:
+
+- `rg -n "console|Console|virtual" README.md docs/architecture_doc.md docs/cli-reference.md SESSION.md tasks/current-task.md`
+- `git diff --stat`
+- `git status --short`
+- `sed -n '1,120p' docs/architecture_doc.md`
+- `sed -n '470,510p' docs/architecture_doc.md`
+- `sed -n '680,735p' docs/architecture_doc.md`
+- `sed -n '270,300p' README.md`
+- `sed -n '1,80p' docs/architecture_doc_instructions.md`
+- `rg -n "CONNECTED_MODEL_STORAGE_KEY|console-link|ConsolePanel|console-pane" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `sed -n '220,305p' vedenemo-ux/src/App.tsx`
+- `npm run build` in `vedenemo-ux`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Removed the main model view's visible `Console` button/link.
+- Added a bottom-left arrow toggle that opens and closes an embedded lower
+  browser console pane.
+- Refactored the browser console UI so `/console` and the embedded pane share
+  the same console implementation while using separate DOM input ids.
+- Kept `/console` as a standalone full-page virtual CLI route.
+- Updated README and current architecture documentation to describe the
+  embedded console pane and retained `/console` route.
+- `npm run build` passes; Vite still reports the existing large PlantUML chunk
+  warning.

@@ -10,11 +10,30 @@ body {
   min-height: 100vh;
 }
 
+.workspace-shell {
+  position: relative;
+  min-height: 100vh;
+  background: #fff;
+}
+
+.workspace-shell-console-open {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(16rem, 38vh);
+  height: 100vh;
+  overflow: hidden;
+}
+
 .app-shell {
   min-height: 100vh;
   display: grid;
   place-items: center;
   padding: 2rem;
+  box-sizing: border-box;
+}
+
+.workspace-shell-console-open .app-shell {
+  min-height: 0;
+  overflow: auto;
 }
 
 .card {
@@ -74,7 +93,6 @@ body {
   background: #f3f4f6;
 }
 
-.console-link,
 .secondary-link {
   display: inline-flex;
   align-items: center;
@@ -147,6 +165,16 @@ body {
   background: #f8fafc;
 }
 
+.console-pane-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  padding: 0.75rem 1rem 1rem;
+  background: #f8fafc;
+}
+
 .console-header {
   display: flex;
   align-items: center;
@@ -156,10 +184,20 @@ body {
   margin: 0 auto 1rem;
 }
 
+.console-pane-shell .console-header {
+  width: 100%;
+  max-width: none;
+  margin: 0 0 0.5rem;
+}
+
 .console-header h1 {
   margin: 0;
   color: #111827;
   font-size: 1.5rem;
+}
+
+.console-pane-shell .console-header h1 {
+  font-size: 1rem;
 }
 
 .console-status {
@@ -194,6 +232,20 @@ body {
   border-radius: 0.5rem;
   overflow: hidden;
   background: #0f172a;
+}
+
+.console-pane-shell .console-surface {
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  margin: 0;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.console-pane {
+  min-height: 0;
+  border-top: 1px solid #cbd5e1;
+  overflow: hidden;
 }
 
 .console-output {
@@ -237,6 +289,30 @@ body {
   font: inherit;
 }
 
+.console-toggle {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 10;
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border: 1px solid #1f2937;
+  border-radius: 999px;
+  color: #fff;
+  background: #1f2937;
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 0.25rem 0.75rem rgb(15 23 42 / 0.2);
+}
+
+.console-toggle:hover {
+  background: #334155;
+}
+
 @media (max-width: 36rem) {
   .model-controls,
   .console-header,
@@ -254,7 +330,6 @@ body {
   }
 
   .model-controls button,
-  .console-link,
   .secondary-link,
   .console-input-row button {
     width: 100%;
