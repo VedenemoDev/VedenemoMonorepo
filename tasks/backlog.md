@@ -241,20 +241,20 @@ First implementation should include deterministic tests for:
 ### Open Questions
 
 1. Should the first implementation include only scalar entity-instance data, or
-   should it also create association/relation links immediately?
+   should it also create association/relation links immediately? => Answer: Even normally preferring small steps, I'm afraid that plan/design gets unbalanced, if we do not take into account also associations. Even in a simple model having separate Album and Artist entities, those are naturally related, and there is need e.g. search albums by artist, so data search condition comes via the association between the entities. So this should be considered in HTTP APIs to be planned.
 2. Should schema-version mismatch reject all operations, reject only writes, or
-   be ignored until explicit schema migration work exists?
+   be ignored until explicit schema migration work exists? => Answer: Let's ignore schema-version mismatches until real migration strategies and rules are planned separately (so let tackle this concern at later stages, can be marked however to the list of uncovered future design items).
 3. Should `InstanceId` be a UUID string, a monotonic per-entity number, or
-   another opaque identifier?
+   another opaque identifier? => Answer: Let's start with UUID.
 4. Should `URL` values be validated as strict absolute URLs, or is any valid
-   JDK `URI` acceptable initially?
+   JDK `URI` acceptable initially? => Answer: Let's start with strict absolute URLs at this stage.
 5. Should `POST /data/{modelAzName}/{entityAzName}/_query` be the only first
    query mechanism, or should simple exact-match filters also be accepted on
-   `GET /data/{modelAzName}/{entityAzName}`?
+   `GET /data/{modelAzName}/{entityAzName}`? => Answer: I would like to see both ways to be possible to query data.
 6. Should instance operations broadcast model-change events, or should runtime
-   data changes get a separate event channel later?
+   data changes get a separate event channel later? => Answer: data changes will get a sperate event channel later
 7. Should terminal/browser CLI commands for instance data be planned in the
-   same implementation slice, or should the first slice be HTTP-only?
+   same implementation slice, or should the first slice be HTTP-only? => Answer: First slice HTTP-only (it might be even so that data access will be HTTP-only also in later stages, and cli is only for model building, and for troubleshooting/maintenance related services)
 
 ## Plan Association Semantics For Vedenemo Models
 
