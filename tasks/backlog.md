@@ -2,7 +2,7 @@
 
 ## Plan Multiple Model Instance Roots Per Model
 
-Status: planned.
+Status: executed.
 
 ### Goal
 
@@ -29,11 +29,20 @@ root for HTTP requests.
   roots without relying on a model-scoped compound key.
 - Treat the UX-provided instance root name as visual display metadata only, not
   as the URL identity.
+- Allow initial data-loading flows to provide the visual instance root name
+  when a root is created or loaded.
 - Keep each model-instance root bound to one model `azName` and the model
   version visible when the root is created.
 - Support listing all instance roots for a model with deterministic ordering.
 - Support creating, reading, and renaming a model-instance root.
 - Keep entity instances and association links isolated per model-instance root.
+- In the UX `Model instances` tree view, show each model as a parent node and
+  show one child node per loaded model-instance root.
+- In the UX, display the root alias name when one has been set. If no alias is
+  set, display a short form of the globally unique `instanceRootId`; expose the
+  full id as a tooltip where practical.
+- Keep the existing `Rename...` behavior as the user-facing way to assign or
+  change the visual alias for a model-instance root.
 - Existing single-root development data can be reloaded; do not spend this
   planning task preserving old test-data compatibility.
 - Define HTTP endpoint shape in `vedenemo-web-api`; keep JSON DTOs and routing
@@ -45,11 +54,20 @@ root for HTTP requests.
 - Do not add database persistence, authentication, generated source code, or
   distributed runtime behavior in this planning task.
 
-### Planning Questions
+### Completion Notes
 
-- Does the first implementation need a UX list/create/open flow for multiple
-  roots, or is backend support plus the existing rename/display-name feature
-  enough for the first slice?
+- Added backend-assigned globally unique `instanceRootId` metadata for
+  model-instance roots.
+- Changed process-local instance storage to support multiple isolated roots per
+  loaded model.
+- Added HTTP root management routes and root-scoped instance-data routes.
+- Kept model API description available at `/data/{modelAzName}/_api` and added
+  root-scoped `_api` descriptions under `/roots/{instanceRootId}`.
+- Updated loader scripts to create or reuse named roots and then load instance
+  data through explicit root URLs.
+- Updated the UX `Model instances` tree to render one root node per loaded root
+  under each model, with alias display and short-id fallback.
+- Kept `.vdos` model-definition import/export unchanged.
 
 ## Plan Dynamic Model Instance Data API
 

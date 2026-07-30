@@ -72,57 +72,67 @@ final class InstanceDataResourceTest {
 
     @Test
     void describesDynamicApiForEntitiesAndAssociations() throws Exception {
-        HttpResponse<String> response = get("/data/Music/_api");
+        String rootId = createRoot(null);
+        HttpResponse<String> response = get(rootPath(rootId, "/_api"));
 
         assertEquals(200, response.statusCode());
         assertTrue(response.body().contains("\"modelAzName\":\"Music\""));
         assertTrue(response.body().contains("\"azName\":\"Artist\""));
         assertTrue(response.body().contains("\"azName\":\"Name\",\"visName\":\"Name\",\"dataType\":\"TEXT\""));
         assertTrue(response.body().contains("\"azName\":\"Album_Artist\""));
-        assertTrue(response.body().contains("\"create\":\"/data/{modelAzName}/_links/Album_Artist\""));
+        assertTrue(response.body().contains("\"create\":\"/data/{modelAzName}/roots/{instanceRootId}/_links/Album_Artist\""));
     }
 
     @Test
-    void readsAndRenamesModelInstanceRoot() throws Exception {
-        HttpResponse<String> initial = get("/data/Music/_instance-root");
-        HttpResponse<String> renamed = put("/data/Music/_instance-root", """
+    void createsListsReadsAndRenamesModelInstanceRoots() throws Exception {
+        HttpResponse<String> initial = post("/data/Music/roots", "{}");
+        String rootId = responseField(initial, "instanceRootId");
+        HttpResponse<String> second = post("/data/Music/roots", """
+                {"visName":"Second archive"}
+                """);
+        HttpResponse<String> list = get("/data/Music/roots");
+        HttpResponse<String> renamed = put("/data/Music/roots/" + rootId, """
                 {"visName":"Blue Note archive"}
                 """);
-        HttpResponse<String> afterRename = get("/data/Music/_instance-root");
+        HttpResponse<String> afterRename = get("/data/Music/roots/" + rootId);
 
-        assertEquals(200, initial.statusCode());
+        assertEquals(201, initial.statusCode());
         assertTrue(initial.body().contains("\"modelAzName\":\"Music\""));
         assertTrue(initial.body().contains("\"modelVersion\":\"1.2.3\""));
-        assertTrue(initial.body().contains("\"visName\":\"Model instance 1\""));
+        assertTrue(initial.body().contains("\"visName\":null"));
+        assertEquals(201, second.statusCode());
+        assertEquals(200, list.statusCode());
+        assertTrue(list.body().indexOf(rootId) < list.body().indexOf(responseField(second, "instanceRootId")));
         assertEquals(200, renamed.statusCode());
         assertTrue(renamed.body().contains("\"visName\":\"Blue Note archive\""));
         assertEquals(200, afterRename.statusCode());
         assertTrue(afterRename.body().contains("\"visName\":\"Blue Note archive\""));
-        assertEquals(400, put("/data/Music/_instance-root", """
+        assertEquals(400, put("/data/Music/roots/" + rootId, """
                 {"visName":" "}
                 """).statusCode());
-        assertEquals(404, get("/data/Missing/_instance-root").statusCode());
+        assertEquals(404, get("/data/Missing/roots").statusCode());
+        assertEquals(404, get("/data/Music/roots/00000000-0000-0000-0000-000000000000").statusCode());
     }
 
     @Test
     void createsListsReadsAndFiltersEntityInstances() throws Exception {
-        HttpResponse<String> first = post("/data/Music/Artist", """
+        String rootId = createRoot(null);
+        HttpResponse<String> first = post(rootPath(rootId, "/Artist"), """
                 {"Website":"https://example.com","Name":"Miles Davis","Rating":99.5}
                 """);
-        HttpResponse<String> second = post("/data/Music/Artist", """
+        HttpResponse<String> second = post(rootPath(rootId, "/Artist"), """
                 {"Name":"Bill Evans","Rating":"98","Website":"https://example.org"}
                 """);
 
         assertEquals(201, first.statusCode());
         assertEquals(201, second.statusCode());
-        Map<String, Object> firstBody = objectMapper.readValue(first.body(), MAP_TYPE);
-        String firstId = firstBody.get("id").toString();
+        String firstId = responseField(first, "id");
         assertTrue(first.body().contains("\"values\":{\"Name\":\"Miles Davis\",\"Rating\":99.5,\"Website\":\"https://example.com\"}"));
 
-        HttpResponse<String> list = get("/data/Music/Artist");
-        HttpResponse<String> filtered = get("/data/Music/Artist?Name=Miles%20Davis");
-        HttpResponse<String> count = get("/data/Music/Artist/_count");
-        HttpResponse<String> read = get("/data/Music/Artist/" + firstId);
+        HttpResponse<String> list = get(rootPath(rootId, "/Artist"));
+        HttpResponse<String> filtered = get(rootPath(rootId, "/Artist?Name=Miles%20Davis"));
+        HttpResponse<String> count = get(rootPath(rootId, "/Artist/_count"));
+        HttpResponse<String> read = get(rootPath(rootId, "/Artist/" + firstId));
 
         assertEquals(200, list.statusCode());
         assertTrue(list.body().indexOf("Miles Davis") < list.body().indexOf("Bill Evans"));
@@ -137,27 +147,28 @@ final class InstanceDataResourceTest {
 
     @Test
     void createsLinksAndQueriesThroughRelationshipPredicate() throws Exception {
-        String artistId = responseId(post("/data/Music/Artist", """
+        String rootId = createRoot(null);
+        String artistId = responseId(post(rootPath(rootId, "/Artist"), """
                 {"Name":"Miles Davis","Rating":99,"Website":"https://example.com"}
                 """));
-        String otherArtistId = responseId(post("/data/Music/Artist", """
+        String otherArtistId = responseId(post(rootPath(rootId, "/Artist"), """
                 {"Name":"Bill Evans","Rating":98,"Website":"https://example.org"}
                 """));
-        String albumId = responseId(post("/data/Music/Album", """
+        String albumId = responseId(post(rootPath(rootId, "/Album"), """
                 {"Title":"Kind of Blue"}
                 """));
-        String otherAlbumId = responseId(post("/data/Music/Album", """
+        String otherAlbumId = responseId(post(rootPath(rootId, "/Album"), """
                 {"Title":"Portrait in Jazz"}
                 """));
 
-        HttpResponse<String> link = post("/data/Music/_links/Album_Artist", """
+        HttpResponse<String> link = post(rootPath(rootId, "/_links/Album_Artist"), """
                 {"sourceInstanceId":"%s","targetInstanceId":"%s"}
                 """.formatted(albumId, artistId));
-        post("/data/Music/_links/Album_Artist", """
+        post(rootPath(rootId, "/_links/Album_Artist"), """
                 {"sourceInstanceId":"%s","targetInstanceId":"%s"}
                 """.formatted(otherAlbumId, otherArtistId));
 
-        HttpResponse<String> query = post("/data/Music/Album/_query", """
+        HttpResponse<String> query = post(rootPath(rootId, "/Album/_query"), """
                 {
                   "where": {"equals": {"Title": "Kind of Blue"}},
                   "relationships": [
@@ -170,7 +181,7 @@ final class InstanceDataResourceTest {
                   ]
                 }
                 """);
-        HttpResponse<String> links = get("/data/Music/_links/Album_Artist");
+        HttpResponse<String> links = get(rootPath(rootId, "/_links/Album_Artist"));
 
         assertEquals(201, link.statusCode());
         assertEquals(200, query.statusCode());
@@ -181,36 +192,75 @@ final class InstanceDataResourceTest {
     }
 
     @Test
+    void keepsEntityInstancesIsolatedByRoot() throws Exception {
+        String firstRootId = createRoot("First archive");
+        String secondRootId = createRoot("Second archive");
+
+        responseId(post(rootPath(firstRootId, "/Artist"), """
+                {"Name":"Miles Davis"}
+                """));
+        responseId(post(rootPath(secondRootId, "/Artist"), """
+                {"Name":"Bill Evans"}
+                """));
+
+        HttpResponse<String> firstList = get(rootPath(firstRootId, "/Artist"));
+        HttpResponse<String> secondList = get(rootPath(secondRootId, "/Artist"));
+
+        assertEquals(200, firstList.statusCode());
+        assertTrue(firstList.body().contains("Miles Davis"));
+        assertTrue(!firstList.body().contains("Bill Evans"));
+        assertEquals(200, secondList.statusCode());
+        assertTrue(secondList.body().contains("Bill Evans"));
+        assertTrue(!secondList.body().contains("Miles Davis"));
+    }
+
+    @Test
     void rejectsInvalidDynamicDataRequests() throws Exception {
-        String artistId = responseId(post("/data/Music/Artist", """
+        String rootId = createRoot(null);
+        String artistId = responseId(post(rootPath(rootId, "/Artist"), """
                 {"Name":"Miles Davis","Rating":99,"Website":"https://example.com"}
                 """));
-        String albumId = responseId(post("/data/Music/Album", """
+        String albumId = responseId(post(rootPath(rootId, "/Album"), """
                 {"Title":"Kind of Blue"}
                 """));
 
-        assertEquals(404, get("/data/Missing/_api").statusCode());
-        assertEquals(404, post("/data/Music/Missing", "{}").statusCode());
-        assertEquals(404, post("/data/Music/_links/Missing", """
+        assertEquals(404, get(rootPath("00000000-0000-0000-0000-000000000000", "/_api")).statusCode());
+        assertEquals(404, post(rootPath(rootId, "/Missing"), "{}").statusCode());
+        assertEquals(404, post(rootPath(rootId, "/_links/Missing"), """
                 {"sourceInstanceId":"%s","targetInstanceId":"%s"}
                 """.formatted(albumId, artistId)).statusCode());
-        assertEquals(400, post("/data/Music/Artist", """
+        assertEquals(400, post(rootPath(rootId, "/Artist"), """
                 {"Unknown":"value"}
                 """).statusCode());
-        assertEquals(400, post("/data/Music/Artist", """
+        assertEquals(400, post(rootPath(rootId, "/Artist"), """
                 {"Rating":"not numeric"}
                 """).statusCode());
-        assertEquals(400, post("/data/Music/Artist", """
+        assertEquals(400, post(rootPath(rootId, "/Artist"), """
                 {"Website":"/relative"}
                 """).statusCode());
-        assertEquals(400, post("/data/Music/_links/Album_Artist", """
+        assertEquals(400, post(rootPath(rootId, "/_links/Album_Artist"), """
                 {"sourceInstanceId":"%s","targetInstanceId":"%s"}
                 """.formatted(artistId, albumId)).statusCode());
     }
 
     private String responseId(HttpResponse<String> response) throws IOException {
         assertEquals(201, response.statusCode());
-        return objectMapper.readValue(response.body(), MAP_TYPE).get("id").toString();
+        return responseField(response, "id");
+    }
+
+    private String createRoot(String visName) throws IOException, InterruptedException {
+        String body = visName == null ? "{}" : """
+                {"visName":"%s"}
+                """.formatted(visName);
+        return responseField(post("/data/Music/roots", body), "instanceRootId");
+    }
+
+    private String responseField(HttpResponse<String> response, String fieldName) throws IOException {
+        return objectMapper.readValue(response.body(), MAP_TYPE).get(fieldName).toString();
+    }
+
+    private String rootPath(String instanceRootId, String suffix) {
+        return "/data/Music/roots/" + instanceRootId + suffix;
     }
 
     private void seedMusicModel() {

@@ -48,18 +48,49 @@ public final class InstanceDataResource {
                 writeError(context, statusFor(exception), exception);
             }
         });
-        routes.get("/data/{modelAzName}/_instance-root", context -> {
+        routes.get("/data/{modelAzName}/roots", context -> {
             try {
-                ModelInstanceRoot root = instanceService.readRoot(context.pathParam("modelAzName"));
+                List<ModelInstanceRootResponse> roots = instanceService.listRoots(context.pathParam("modelAzName"))
+                        .stream()
+                        .map(ModelInstanceRootResponse::from)
+                        .toList();
+                writeJson(context, 200, roots);
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
+        routes.post("/data/{modelAzName}/roots", context -> {
+            try {
+                CreateModelInstanceRootRequest request = context.body().isBlank()
+                        ? new CreateModelInstanceRootRequest(null)
+                        : objectMapper.readValue(context.body(), CreateModelInstanceRootRequest.class);
+                ModelInstanceRoot root = instanceService.createRoot(context.pathParam("modelAzName"), request.visName());
+                writeJson(context, 201, ModelInstanceRootResponse.from(root));
+            } catch (JsonProcessingException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
+        routes.get("/data/{modelAzName}/roots/{instanceRootId}", context -> {
+            try {
+                ModelInstanceRoot root = instanceService.readRoot(
+                        context.pathParam("modelAzName"),
+                        context.pathParam("instanceRootId")
+                );
                 writeJson(context, 200, ModelInstanceRootResponse.from(root));
             } catch (IllegalArgumentException exception) {
                 writeError(context, statusFor(exception), exception);
             }
         });
-        routes.put("/data/{modelAzName}/_instance-root", context -> {
+        routes.put("/data/{modelAzName}/roots/{instanceRootId}", context -> {
             try {
                 RenameModelInstanceRootRequest request = objectMapper.readValue(context.body(), RenameModelInstanceRootRequest.class);
-                ModelInstanceRoot root = instanceService.renameRoot(context.pathParam("modelAzName"), request.visName());
+                ModelInstanceRoot root = instanceService.renameRoot(
+                        context.pathParam("modelAzName"),
+                        context.pathParam("instanceRootId"),
+                        request.visName()
+                );
                 writeJson(context, 200, ModelInstanceRootResponse.from(root));
             } catch (JsonProcessingException exception) {
                 writeJson(context, 400, new ErrorResponse(exception.getMessage()));
@@ -67,12 +98,22 @@ public final class InstanceDataResource {
                 writeError(context, statusFor(exception), exception);
             }
         });
-        routes.post("/data/{modelAzName}/_links/{associationAzName}", context -> {
+        routes.get("/data/{modelAzName}/roots/{instanceRootId}/_api", context -> {
+            try {
+                ModelRoot modelRoot = instanceService.describeApi(context.pathParam("modelAzName"));
+                instanceService.readRoot(context.pathParam("modelAzName"), context.pathParam("instanceRootId"));
+                writeJson(context, 200, ApiDescriptionResponse.from(modelRoot));
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
+        routes.post("/data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}", context -> {
             try {
                 CreateLinkRequest request = objectMapper.readValue(context.body(), CreateLinkRequest.class);
                 request.requireComplete();
                 AssociationInstanceLink link = instanceService.createAssociationLink(
                         context.pathParam("modelAzName"),
+                        context.pathParam("instanceRootId"),
                         context.pathParam("associationAzName"),
                         request.sourceInstanceId(),
                         request.targetInstanceId()
@@ -84,10 +125,14 @@ public final class InstanceDataResource {
                 writeError(context, statusFor(exception), exception);
             }
         });
-        routes.get("/data/{modelAzName}/_links/{associationAzName}", context -> {
+        routes.get("/data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}", context -> {
             try {
                 List<LinkResponse> links = instanceService
-                        .listAssociationLinks(context.pathParam("modelAzName"), context.pathParam("associationAzName"))
+                        .listAssociationLinks(
+                                context.pathParam("modelAzName"),
+                                context.pathParam("instanceRootId"),
+                                context.pathParam("associationAzName")
+                        )
                         .stream()
                         .map(LinkResponse::from)
                         .toList();
@@ -96,12 +141,17 @@ public final class InstanceDataResource {
                 writeError(context, statusFor(exception), exception);
             }
         });
-        routes.post("/data/{modelAzName}/{entityAzName}/_query", context -> {
+        routes.post("/data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query", context -> {
             try {
                 QueryRequest request = objectMapper.readValue(context.body(), QueryRequest.class);
                 EntityInstanceQuery query = request.toCoreQuery();
                 List<EntityInstanceResponse> instances = instanceService
-                        .queryEntityInstances(context.pathParam("modelAzName"), context.pathParam("entityAzName"), query)
+                        .queryEntityInstances(
+                                context.pathParam("modelAzName"),
+                                context.pathParam("instanceRootId"),
+                                context.pathParam("entityAzName"),
+                                query
+                        )
                         .stream()
                         .map(EntityInstanceResponse::from)
                         .toList();
@@ -112,11 +162,12 @@ public final class InstanceDataResource {
                 writeError(context, statusFor(exception), exception);
             }
         });
-        routes.post("/data/{modelAzName}/{entityAzName}", context -> {
+        routes.post("/data/{modelAzName}/roots/{instanceRootId}/{entityAzName}", context -> {
             try {
                 LinkedHashMap<String, Object> values = objectMapper.readValue(context.body(), ATTRIBUTE_MAP_TYPE);
                 EntityInstance instance = instanceService.createEntityInstance(
                         context.pathParam("modelAzName"),
+                        context.pathParam("instanceRootId"),
                         context.pathParam("entityAzName"),
                         values
                 );
@@ -127,11 +178,12 @@ public final class InstanceDataResource {
                 writeError(context, statusFor(exception), exception);
             }
         });
-        routes.get("/data/{modelAzName}/{entityAzName}", context -> {
+        routes.get("/data/{modelAzName}/roots/{instanceRootId}/{entityAzName}", context -> {
             try {
                 List<EntityInstanceResponse> instances = instanceService
                         .listEntityInstances(
                                 context.pathParam("modelAzName"),
+                                context.pathParam("instanceRootId"),
                                 context.pathParam("entityAzName"),
                                 queryFilters(context)
                         )
@@ -143,10 +195,11 @@ public final class InstanceDataResource {
                 writeError(context, statusFor(exception), exception);
             }
         });
-        routes.get("/data/{modelAzName}/{entityAzName}/_count", context -> {
+        routes.get("/data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_count", context -> {
             try {
                 int count = instanceService.countEntityInstances(
                         context.pathParam("modelAzName"),
+                        context.pathParam("instanceRootId"),
                         context.pathParam("entityAzName")
                 );
                 writeJson(context, 200, new CountResponse(count));
@@ -154,10 +207,11 @@ public final class InstanceDataResource {
                 writeError(context, statusFor(exception), exception);
             }
         });
-        routes.get("/data/{modelAzName}/{entityAzName}/{instanceId}", context -> {
+        routes.get("/data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}", context -> {
             try {
                 EntityInstance instance = instanceService.readEntityInstance(
                         context.pathParam("modelAzName"),
+                        context.pathParam("instanceRootId"),
                         context.pathParam("entityAzName"),
                         context.pathParam("instanceId")
                 );
@@ -187,7 +241,8 @@ public final class InstanceDataResource {
         if ("model not found".equals(message)
                 || "entity not found".equals(message)
                 || "association not found".equals(message)
-                || "instance not found".equals(message)) {
+                || "instance not found".equals(message)
+                || "model instance root not found".equals(message)) {
             return 404;
         }
         return 400;
@@ -250,10 +305,13 @@ public final class InstanceDataResource {
     private record RenameModelInstanceRootRequest(String visName) {
     }
 
-    private record ModelInstanceRootResponse(String modelAzName, String modelVersion, String visName) {
+    private record CreateModelInstanceRootRequest(String visName) {
+    }
+
+    private record ModelInstanceRootResponse(String instanceRootId, String modelAzName, String modelVersion, String visName) {
 
         private static ModelInstanceRootResponse from(ModelInstanceRoot root) {
-            return new ModelInstanceRootResponse(root.modelAzName(), root.modelVersion(), root.visName());
+            return new ModelInstanceRootResponse(root.instanceRootId(), root.modelAzName(), root.modelVersion(), root.visName());
         }
     }
 
@@ -286,11 +344,11 @@ public final class InstanceDataResource {
 
         private static EntityDescriptionResponse from(VEntity entity) {
             Map<String, String> operations = new LinkedHashMap<>();
-            operations.put("create", "/data/{modelAzName}/" + entity.azName());
-            operations.put("list", "/data/{modelAzName}/" + entity.azName());
-            operations.put("read", "/data/{modelAzName}/" + entity.azName() + "/{instanceId}");
-            operations.put("query", "/data/{modelAzName}/" + entity.azName() + "/_query");
-            operations.put("count", "/data/{modelAzName}/" + entity.azName() + "/_count");
+            operations.put("create", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName());
+            operations.put("list", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName());
+            operations.put("read", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName() + "/{instanceId}");
+            operations.put("query", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName() + "/_query");
+            operations.put("count", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName() + "/_count");
             Map<String, String> example = new LinkedHashMap<>();
             entity.attributes().forEach(attribute -> example.put(attribute.azName(), exampleValue(attribute)));
             return new EntityDescriptionResponse(
@@ -336,8 +394,8 @@ public final class InstanceDataResource {
 
         private static AssociationDescriptionResponse from(Association association) {
             Map<String, String> operations = new LinkedHashMap<>();
-            operations.put("create", "/data/{modelAzName}/_links/" + association.azName());
-            operations.put("list", "/data/{modelAzName}/_links/" + association.azName());
+            operations.put("create", "/data/{modelAzName}/roots/{instanceRootId}/_links/" + association.azName());
+            operations.put("list", "/data/{modelAzName}/roots/{instanceRootId}/_links/" + association.azName());
             Map<String, String> example = new LinkedHashMap<>();
             example.put("sourceInstanceId", "00000000-0000-0000-0000-000000000000");
             example.put("targetInstanceId", "00000000-0000-0000-0000-000000000000");

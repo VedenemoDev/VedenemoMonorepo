@@ -1,6 +1,6 @@
 # Current Task
 
-## Implement Dynamic Model Instance Data API
+## Implement Dynamic Model Instance Data API With Multiple Roots
 
 Status: executed.
 
@@ -15,8 +15,9 @@ Vedenemo model definition.
 - Add pure JDK instance-data types and validation/service behavior in
   `vedenemo-core`.
 - Keep instance data process-local and in memory.
-- Bind instance datasets by model `azName` and record the model version visible
-  when the dataset is created.
+- Bind instance datasets by model `azName` plus backend-assigned globally
+  unique `instanceRootId`, and record the model version visible when each root
+  is created.
 - Validate entity instance values against loaded `ModelRoot` entity attributes
   and `DataType`.
 - Store association instance links separately from scalar attribute maps.
@@ -32,15 +33,18 @@ Vedenemo model definition.
 
 ```text
 GET  /data/{modelAzName}/_api
-GET  /data/{modelAzName}/_instance-root
-PUT  /data/{modelAzName}/_instance-root
-POST /data/{modelAzName}/{entityAzName}
-GET  /data/{modelAzName}/{entityAzName}
-GET  /data/{modelAzName}/{entityAzName}/_count
-GET  /data/{modelAzName}/{entityAzName}/{instanceId}
-POST /data/{modelAzName}/{entityAzName}/_query
-POST /data/{modelAzName}/_links/{associationAzName}
-GET  /data/{modelAzName}/_links/{associationAzName}
+GET  /data/{modelAzName}/roots
+POST /data/{modelAzName}/roots
+GET  /data/{modelAzName}/roots/{instanceRootId}
+PUT  /data/{modelAzName}/roots/{instanceRootId}
+GET  /data/{modelAzName}/roots/{instanceRootId}/_api
+POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}
+GET  /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}
+GET  /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_count
+GET  /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}
+POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query
+POST /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}
+GET  /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}
 ```
 
 ### Completion Notes
@@ -54,8 +58,10 @@ GET  /data/{modelAzName}/_links/{associationAzName}
   values.
 - Implemented deterministic entity instance listing and exact-match filters.
 - Implemented entity-instance count reads for UX grouped instance summaries.
-- Implemented process-local model-instance root display-name metadata with
-  backend read and rename endpoints.
+- Implemented process-local model-instance root metadata with globally unique
+  root ids, optional visual aliases, backend create/list/read/rename endpoints,
+  and root-scoped instance-data routes.
+- Implemented multiple isolated model-instance roots per loaded model.
 - Implemented one-hop relationship `_query` predicates that match related
   entity attributes through stored association links.
 - Added focused core and web API tests.

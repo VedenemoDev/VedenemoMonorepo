@@ -5839,3 +5839,145 @@ Current status and next steps:
   persistence straightforward.
 - Narrowed the remaining UX question to whether the first slice needs
   list/create/open UI beyond the existing visual rename/display-name behavior.
+
+## 2026-07-30 23:45 EEST
+
+Session goal: finalize UX expectations for multiple model-instance roots.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,70p' tasks/backlog.md`
+- `tail -n 45 SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check`
+- `git diff -- tasks/backlog.md SESSION.md`
+- `git status --short`
+
+Current status and next steps:
+
+- Updated the multiple-root planning item so the UX `Model instances` tree
+  shows model nodes with one child node per loaded instance root.
+- Captured alias behavior: loaders may provide an initial visual name,
+  `Rename...` changes that alias, and unnamed roots display a shortened global
+  id with full id tooltip where practical.
+- Removed the remaining UX planning question.
+
+## 2026-07-31 00:04 EEST
+
+Session goal: implement multiple model-instance roots per model.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `scripts/LoadFamilyTreeModelData.bash`
+- `scripts/LoadLevykokoelmaSimpleModelData.bash`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceDataset.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceRegistry.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceRoot.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `rg -n "ModelInstance|InstanceRoot|_instance-root|/data/|InstanceData|visName|Model instances|model instances|instance root" -S vedenemo-core vedenemo-web-api vedenemo-ux scripts`
+- `rg --files vedenemo-core vedenemo-web-api vedenemo-ux scripts | rg '(Instance|Data|Model|Resource|Test|tsx|ts|bash)$'`
+- `git status --short`
+- `sed -n '1,420p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceDataset.java`
+- `sed -n '1,420p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceRegistry.java`
+- `sed -n '1,80p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceRoot.java`
+- `sed -n '1,390p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,280p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `sed -n '390,470p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,230p' scripts/LoadLevykokoelmaSimpleModelData.bash`
+- `sed -n '390,620p' scripts/LoadFamilyTreeModelData.bash`
+- `sed -n '1,230p' vedenemo-ux/src/App.tsx`
+- `sed -n '600,760p' vedenemo-ux/src/App.tsx`
+- `sed -n '820,980p' vedenemo-ux/src/App.tsx`
+- `rg -n "readRoot\\(|renameRoot\\(|createEntityInstance\\(|listEntityInstances\\(|countEntityInstances\\(|queryEntityInstances\\(|createAssociationLink\\(|listAssociationLinks\\(|datasetFor\\(|_instance-root|/data/[^\\\"]+/(Artist|Album|_links|_api)|/data/Music" vedenemo-core vedenemo-web-api/src/test vedenemo-web-api/src/main -S`
+- `sed -n '1,180p' vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `rg -n "openRootMenuModelAzName|RenameDialogState|ModelInstanceRootNode|fetchEntityInstanceCount|fetchModelInstanceRoot|renameModelInstanceRoot|buildEntityInstanceGroup|root\\.visName|root\\." vedenemo-ux/src/App.tsx`
+- `sed -n '450,540p' vedenemo-ux/src/App.tsx`
+- `sed -n '760,830p' vedenemo-ux/src/App.tsx`
+- `sed -n '980,1035p' vedenemo-ux/src/App.tsx`
+- `rg -n "openRootMenuModelAzName|setOpenRootMenuModelAzName|fetchModelInstanceRoot\\(|renameModelInstanceRoot\\(|fetchEntityInstanceCount\\(" vedenemo-ux/src/App.tsx`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `rg -n "instance|/data|root|Model instances|_instance-root" docs/architecture_doc.md README.md docs/cli-reference.md tasks/current-task.md tasks/backlog.md -S`
+- `sed -n '1,260p' docs/architecture_doc.md`
+- `mvn -B -pl vedenemo-web-api -am test`
+- `npm run build`
+- `sed -n '130,225p' README.md`
+- `sed -n '320,345p' README.md`
+- `sed -n '235,260p' docs/architecture_doc.md && sed -n '410,442p' docs/architecture_doc.md && sed -n '540,552p' docs/architecture_doc.md && sed -n '775,795p' docs/architecture_doc.md`
+- `sed -n '1,70p' tasks/current-task.md`
+- `sed -n '1,60p' tasks/backlog.md`
+- `rg -n "_instance-root|/data/\\{modelAzName\\}/\\{entityAzName\\}|/data/\\{modelAzName\\}/_links|/data/\\{modelAzName\\}/[A-Za-z_]+|dataset keyed by model|one process-local model-instance root|one process-local root" README.md docs/architecture_doc.md tasks/current-task.md vedenemo-core vedenemo-web-api vedenemo-ux scripts -S`
+- `bash -n scripts/LoadLevykokoelmaSimpleModelData.bash`
+- `bash -n scripts/LoadFamilyTreeModelData.bash`
+- `sed -n '250,280p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `rg -n "_instance-root|/data/\\{modelAzName\\}/\\{entityAzName\\}|/data/\\{modelAzName\\}/_links|one process-local model-instance root|one process-local root" README.md docs/architecture_doc.md tasks/current-task.md vedenemo-core vedenemo-web-api vedenemo-ux scripts -S`
+- `rg -n "createEntityInstance\\(|listEntityInstances\\(|countEntityInstances\\(|readEntityInstance\\(|queryEntityInstances\\(|createAssociationLink\\(|listAssociationLinks\\(|readRoot\\(|renameRoot\\(" vedenemo-core/src vedenemo-web-api/src -S`
+- `mvn -B verify`
+- `npm run build`
+- packaged-backend smoke for `scripts/LoadLevykokoelmaSimpleModelData.bash`
+  against local port `18094`; first attempt was blocked by sandbox loopback
+  permissions and the escalated retry passed
+- `git diff --check`
+- `git status --short`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented multiple process-local model-instance roots per model with
+  backend-assigned globally unique `instanceRootId` values and optional
+  backend-stored visual aliases.
+- Instance entities and association links are now isolated by
+  `{modelAzName, instanceRootId}` and all instance-data routes use
+  `/data/{modelAzName}/roots/{instanceRootId}/...`.
+- Added root management endpoints for create/list/read/rename and updated web
+  API responses/descriptions to include root ids.
+- Updated the UX `Model instances` tree to render one root child per loaded
+  root under each model, display aliases when set, and fall back to shortened
+  root ids with full-id tooltips.
+- Updated loader scripts to create or reuse named roots, then load data through
+  explicit root URLs.
+- Updated README, current architecture docs, current task, and backlog status.
+- Verified `mvn -B -pl vedenemo-web-api -am test`, `mvn -B verify`,
+  `npm run build`, shell syntax for both loader scripts, `git diff --check`,
+  and a packaged-backend loader smoke for `AlbumCollectionSimple`.
+
+## 2026-07-31 00:13 EEST
+
+Session goal: commit and push multiple model-instance root implementation.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git add README.md SESSION.md docs/architecture_doc.md scripts/LoadFamilyTreeModelData.bash scripts/LoadLevykokoelmaSimpleModelData.bash tasks/backlog.md tasks/current-task.md vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceDataset.java vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceRegistry.java vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceRoot.java vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java vedenemo-ux/src/App.tsx vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `git commit -m "Support multiple model instance roots"`
+- `git push`
+
+Current status and next steps:
+
+- Preparing to commit the completed multiple model-instance root implementation
+  and push it to `origin/main`.

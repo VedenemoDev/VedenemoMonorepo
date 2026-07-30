@@ -248,13 +248,15 @@ stored in ordered maps keyed by modeled attribute `azName`; values are
 normalized as pure JDK values according to `DataType`. `NUMERIC` values are
 stored as `BigDecimal`, and `URL` values must be strict absolute URLs.
 
-`ModelInstanceRegistry` stores process-local runtime datasets keyed by model
-`azName`. Each dataset records the canonical model `azName`, the model version
-visible when the dataset is first created, entity instances keyed by UUID
-`InstanceId`, and association links keyed by association `azName`. Association
-links are separate from scalar attribute maps and validate source/target entity
-types, but cardinality is not enforced in this first slice. Instance data is
-not persisted and does not emit model-change WebSocket events.
+`ModelInstanceRegistry` stores process-local runtime datasets grouped by model
+`azName` and addressed by backend-assigned globally unique `instanceRootId`
+values. Each dataset records its root id, the canonical model `azName`, the
+model version visible when the root is created, optional visual root alias
+metadata, entity instances keyed by UUID `InstanceId`, and association links
+keyed by association `azName`. Association links are separate from scalar
+attribute maps and validate source/target entity types, but cardinality is not
+enforced in this first slice. Instance data is not persisted and does not emit
+model-change WebSocket events.
 
 User-visible attribute deletion as a standalone edit operation is not
 implemented yet; `DeleteAttributeCommand` exists only as the internal inverse
@@ -417,26 +419,34 @@ and exposes:
 - `GET /data/{modelAzName}/_api`, which describes the runtime instance API for
   one loaded model, including entities, attributes, associations, supported
   operations, and JSON body examples
-- `GET /data/{modelAzName}/_instance-root`, which reads the process-local
-  model-instance root metadata for one loaded model
-- `PUT /data/{modelAzName}/_instance-root`, which renames that model-instance
-  root display label
-- `POST /data/{modelAzName}/{entityAzName}`, which creates one entity instance
-  after validating submitted attribute values against the modeled entity
-- `GET /data/{modelAzName}/{entityAzName}`, which lists entity instances in
-  deterministic insertion order and supports exact-match query-parameter
-  filters
-- `GET /data/{modelAzName}/{entityAzName}/_count`, which returns the total
-  process-local instance count for one modeled entity
-- `GET /data/{modelAzName}/{entityAzName}/{instanceId}`, which reads one entity
-  instance
-- `POST /data/{modelAzName}/{entityAzName}/_query`, which supports exact
-  attribute predicates and one-hop relationship predicates through association
-  links
-- `POST /data/{modelAzName}/_links/{associationAzName}`, which creates one
-  source/target instance link for a modeled association
-- `GET /data/{modelAzName}/_links/{associationAzName}`, which lists stored
-  links for one modeled association
+- `GET /data/{modelAzName}/roots`, which lists process-local model-instance
+  roots for one loaded model
+- `POST /data/{modelAzName}/roots`, which creates a model-instance root with a
+  backend-assigned globally unique root id and optional visual alias metadata
+- `GET /data/{modelAzName}/roots/{instanceRootId}`, which reads one
+  model-instance root's metadata
+- `PUT /data/{modelAzName}/roots/{instanceRootId}`, which renames that
+  model-instance root's visual alias without changing URL identity
+- `GET /data/{modelAzName}/roots/{instanceRootId}/_api`, which describes the
+  root-scoped runtime instance API for one loaded model
+- `POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}`, which
+  creates one entity instance after validating submitted attribute values
+  against the modeled entity
+- `GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}`, which lists
+  entity instances in deterministic insertion order and supports exact-match
+  query-parameter filters
+- `GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_count`, which
+  returns the total process-local instance count for one modeled entity in one
+  root
+- `GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}`,
+  which reads one entity instance
+- `POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query`,
+  which supports exact attribute predicates and one-hop relationship predicates
+  through association links
+- `POST /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}`,
+  which creates one source/target instance link for a modeled association
+- `GET /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}`,
+  which lists stored links for one modeled association
 - `POST /sessions/start`, which creates a backend session and returns its UUID
 - `DELETE /sessions/{uuid}`, which ends/removes a backend session
 - `PUT /sessions/{uuid}/selected-model`, which selects an existing model for a
@@ -543,11 +553,13 @@ Current user-facing behavior:
 - shows a `Model instances` tab that automatically refreshes on entry and also
   has an explicit Refresh model instances button
 - renders a three-level model-instance tree:
-  model definition labels as `ModelVisName (Model azName)`, the backend-stored
-  model-instance root label only when counted runtime entity data exists, and
-  entity-type count nodes such as `Album (460)`
+  model definition labels as `ModelVisName (Model azName)`, one
+  model-instance root node per loaded root for that model, and entity-type
+  count nodes such as `Album (460)`
+- displays the backend-stored root alias when available, otherwise a short form
+  of the globally unique root id with the full root id exposed as a tooltip
 - lets the user rename the model-instance root from the root node menu; the
-  updated name is persisted in the process-local backend dataset metadata
+  updated alias is persisted in the process-local backend dataset metadata
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle
@@ -783,14 +795,14 @@ sequenceDiagram
     loop each loaded model
         UX->>API: GET /data/{modelAzName}/_api
         API-->>UX: entity descriptions
-        UX->>API: GET /data/{modelAzName}/_instance-root
-        API-->>UX: model-instance root metadata
-        loop each entity
-            UX->>API: GET /data/{modelAzName}/{entityAzName}/_count
-            API-->>UX: entity instance count
+        UX->>API: GET /data/{modelAzName}/roots
+        API-->>UX: model-instance root metadata list
+        loop each root and entity
+            UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_count
+            API-->>UX: entity instance count for root
         end
     end
-    UX->>UX: render model -> backend-named instance root -> entity count tree
+    UX->>UX: render model -> instance roots -> entity count tree
 ```
 
 ### Web Console Command Execution

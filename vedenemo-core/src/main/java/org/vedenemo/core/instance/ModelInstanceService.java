@@ -33,17 +33,30 @@ public final class ModelInstanceService {
         return requireModel(modelAzName);
     }
 
-    public ModelInstanceRoot readRoot(String modelAzName) {
+    public ModelInstanceRoot createRoot(String modelAzName, String visName) {
         ModelRoot modelRoot = requireModel(modelAzName);
-        return instanceRegistry.datasetFor(modelRoot).root();
+        return instanceRegistry.createDataset(modelRoot, normalizeOptionalRootVisName(visName)).root();
     }
 
-    public ModelInstanceRoot renameRoot(String modelAzName, String visName) {
+    public List<ModelInstanceRoot> listRoots(String modelAzName) {
         ModelRoot modelRoot = requireModel(modelAzName);
-        return instanceRegistry.datasetFor(modelRoot).renameRoot(normalizeRootVisName(visName));
+        return instanceRegistry.listDatasets(modelRoot)
+                .stream()
+                .map(ModelInstanceDataset::root)
+                .toList();
     }
 
-    public EntityInstance createEntityInstance(String modelAzName, String entityAzName, Map<String, Object> submittedValues) {
+    public ModelInstanceRoot readRoot(String modelAzName, String instanceRootId) {
+        ModelRoot modelRoot = requireModel(modelAzName);
+        return requireDataset(modelRoot, instanceRootId).root();
+    }
+
+    public ModelInstanceRoot renameRoot(String modelAzName, String instanceRootId, String visName) {
+        ModelRoot modelRoot = requireModel(modelAzName);
+        return requireDataset(modelRoot, instanceRootId).renameRoot(normalizeRootVisName(visName));
+    }
+
+    public EntityInstance createEntityInstance(String modelAzName, String instanceRootId, String entityAzName, Map<String, Object> submittedValues) {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);
         Map<String, InstanceValue> values = normalizeValues(entity, submittedValues);
@@ -54,14 +67,14 @@ public final class ModelInstanceService {
                 entity.azName(),
                 values
         );
-        return instanceRegistry.datasetFor(modelRoot).addEntityInstance(instance);
+        return requireDataset(modelRoot, instanceRootId).addEntityInstance(instance);
     }
 
-    public List<EntityInstance> listEntityInstances(String modelAzName, String entityAzName, Map<String, Object> filters) {
+    public List<EntityInstance> listEntityInstances(String modelAzName, String instanceRootId, String entityAzName, Map<String, Object> filters) {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);
         Map<String, InstanceValue> normalizedFilters = normalizeValues(entity, filters);
-        return instanceRegistry.datasetFor(modelRoot)
+        return requireDataset(modelRoot, instanceRootId)
                 .listEntityInstances(entity.azName())
                 .stream()
                 .filter(instance -> matchesAll(instance, normalizedFilters))
@@ -69,29 +82,29 @@ public final class ModelInstanceService {
                 .toList();
     }
 
-    public int countEntityInstances(String modelAzName, String entityAzName) {
+    public int countEntityInstances(String modelAzName, String instanceRootId, String entityAzName) {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);
-        return instanceRegistry.datasetFor(modelRoot).countEntityInstances(entity.azName());
+        return requireDataset(modelRoot, instanceRootId).countEntityInstances(entity.azName());
     }
 
-    public EntityInstance readEntityInstance(String modelAzName, String entityAzName, String instanceId) {
+    public EntityInstance readEntityInstance(String modelAzName, String instanceRootId, String entityAzName, String instanceId) {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);
         InstanceId id = new InstanceId(instanceId);
-        return instanceRegistry.datasetFor(modelRoot)
+        return requireDataset(modelRoot, instanceRootId)
                 .findEntityInstance(entity.azName(), id)
                 .orElseThrow(() -> new IllegalArgumentException("instance not found"));
     }
 
-    public List<EntityInstance> queryEntityInstances(String modelAzName, String entityAzName, EntityInstanceQuery query) {
+    public List<EntityInstance> queryEntityInstances(String modelAzName, String instanceRootId, String entityAzName, EntityInstanceQuery query) {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);
         Map<String, InstanceValue> normalizedEquals = normalizeValues(entity, query.equals());
         List<NormalizedRelationshipPredicate> relationships = query.relationships().stream()
                 .map(predicate -> normalizeRelationshipPredicate(modelRoot, entity, predicate))
                 .toList();
-        ModelInstanceDataset dataset = instanceRegistry.datasetFor(modelRoot);
+        ModelInstanceDataset dataset = requireDataset(modelRoot, instanceRootId);
         return dataset.listEntityInstances(entity.azName())
                 .stream()
                 .filter(instance -> matchesAll(instance, normalizedEquals))
@@ -102,13 +115,14 @@ public final class ModelInstanceService {
 
     public AssociationInstanceLink createAssociationLink(
             String modelAzName,
+            String instanceRootId,
             String associationAzName,
             String sourceInstanceId,
             String targetInstanceId
     ) {
         ModelRoot modelRoot = requireModel(modelAzName);
         Association association = requireAssociation(modelRoot, associationAzName);
-        ModelInstanceDataset dataset = instanceRegistry.datasetFor(modelRoot);
+        ModelInstanceDataset dataset = requireDataset(modelRoot, instanceRootId);
         InstanceId sourceId = new InstanceId(sourceInstanceId);
         InstanceId targetId = new InstanceId(targetInstanceId);
         requireInstanceForAssociationEndpoint(dataset, association.sourceEntityAzName(), sourceId, "source");
@@ -116,15 +130,23 @@ public final class ModelInstanceService {
         return dataset.addAssociationLink(AssociationInstanceLink.create(modelRoot.azName(), association.azName(), sourceId, targetId));
     }
 
-    public List<AssociationInstanceLink> listAssociationLinks(String modelAzName, String associationAzName) {
+    public List<AssociationInstanceLink> listAssociationLinks(String modelAzName, String instanceRootId, String associationAzName) {
         ModelRoot modelRoot = requireModel(modelAzName);
         Association association = requireAssociation(modelRoot, associationAzName);
-        return instanceRegistry.datasetFor(modelRoot).listAssociationLinks(association.azName());
+        return requireDataset(modelRoot, instanceRootId).listAssociationLinks(association.azName());
     }
 
     private ModelRoot requireModel(String modelAzName) {
         return modelRegistry.find(modelAzName)
                 .orElseThrow(() -> new IllegalArgumentException("model not found"));
+    }
+
+    private ModelInstanceDataset requireDataset(ModelRoot modelRoot, String instanceRootId) {
+        if (instanceRootId == null || instanceRootId.isBlank()) {
+            throw new IllegalArgumentException("model instance root not found");
+        }
+        return instanceRegistry.findDataset(modelRoot, instanceRootId)
+                .orElseThrow(() -> new IllegalArgumentException("model instance root not found"));
     }
 
     private static VEntity requireEntity(ModelRoot modelRoot, String entityAzName) {
@@ -323,6 +345,21 @@ public final class ModelInstanceService {
         String normalized = visName.trim();
         if (normalized.isEmpty()) {
             throw new IllegalArgumentException("model instance root name is required");
+        }
+        if (normalized.length() > MAX_ROOT_VIS_NAME_LENGTH) {
+            throw new IllegalArgumentException("model instance root name must be at most "
+                    + MAX_ROOT_VIS_NAME_LENGTH + " characters");
+        }
+        return normalized;
+    }
+
+    private static String normalizeOptionalRootVisName(String visName) {
+        if (visName == null) {
+            return null;
+        }
+        String normalized = visName.trim();
+        if (normalized.isEmpty()) {
+            return null;
         }
         if (normalized.length() > MAX_ROOT_VIS_NAME_LENGTH) {
             throw new IllegalArgumentException("model instance root name must be at most "

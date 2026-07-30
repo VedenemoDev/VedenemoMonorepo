@@ -402,9 +402,13 @@ def quoted(value):
     return urllib.parse.quote(value, safe="")
 
 
+def root_path(path):
+    return f"/data/{quoted(model_az_name)}/roots/{quoted(instance_root_id)}{path}"
+
+
 def find_first_instance(entity_az_name, filters):
     query = urllib.parse.urlencode(filters)
-    status, body = request("GET", f"/data/{quoted(model_az_name)}/{quoted(entity_az_name)}?{query}")
+    status, body = request("GET", root_path(f"/{quoted(entity_az_name)}?{query}"))
     instances = json_body(status, body, f"Listing {entity_az_name} instances")
     return instances[0] if instances else None
 
@@ -472,13 +476,13 @@ def ensure_entity(entity_az_name, values, identity_keys, action_name):
     existing = find_first_instance(entity_az_name, filters)
     if existing:
         return existing["id"], False
-    status, body = request("POST", f"/data/{quoted(model_az_name)}/{quoted(entity_az_name)}", values)
+    status, body = request("POST", root_path(f"/{quoted(entity_az_name)}"), values)
     created = json_body(status, body, action_name)
     return created["id"], True
 
 
 def list_links(association_az_name):
-    status, body = request("GET", f"/data/{quoted(model_az_name)}/_links/{quoted(association_az_name)}")
+    status, body = request("GET", root_path(f"/_links/{quoted(association_az_name)}"))
     return json_body(status, body, f"Listing {association_az_name} links")
 
 
@@ -491,21 +495,26 @@ def ensure_link(association_az_name, source_id, target_id):
         return False
     status, body = request(
         "POST",
-        f"/data/{quoted(model_az_name)}/_links/{quoted(association_az_name)}",
+        root_path(f"/_links/{quoted(association_az_name)}"),
         {"sourceInstanceId": source_id, "targetInstanceId": target_id},
     )
     require_success(status, body, f"Creating {association_az_name} link")
     return True
 
 
-def rename_model_instance_root():
+def ensure_model_instance_root():
+    status, body = request("GET", f"/data/{quoted(model_az_name)}/roots")
+    roots = json_body(status, body, "Listing model instance roots")
+    for root in roots:
+        if root.get("visName") == model_instance_root_name:
+            return root["instanceRootId"], root.get("visName", model_instance_root_name)
     status, body = request(
-        "PUT",
-        f"/data/{quoted(model_az_name)}/_instance-root",
+        "POST",
+        f"/data/{quoted(model_az_name)}/roots",
         {"visName": model_instance_root_name},
     )
-    renamed = json_body(status, body, "Renaming model instance root")
-    return renamed.get("visName", model_instance_root_name)
+    created = json_body(status, body, "Creating model instance root")
+    return created["instanceRootId"], created.get("visName", model_instance_root_name)
 
 
 def source_ids_for_person(person_key):
@@ -515,6 +524,7 @@ def source_ids_for_person(person_key):
 
 
 ensure_model_loaded()
+instance_root_id, instance_root_name = ensure_model_instance_root()
 
 place_ids = {}
 person_ids = {}
@@ -600,10 +610,9 @@ for event in LIFE_EVENTS:
     created_links += int(ensure_link("LifeEvent_Place", event_id, place_ids[event["place"]]))
     created_links += int(ensure_link("LifeEvent_Sources", event_id, source_record_ids["royal_king"]))
 
-renamed_root_name = rename_model_instance_root()
-
 print(f"Model: {model_az_name}")
-print(f"Model instance root name: {renamed_root_name}")
+print(f"Model instance root id: {instance_root_id}")
+print(f"Model instance root name: {instance_root_name}")
 print(f"Places created: {created_places}")
 print(f"People created: {created_persons}")
 print(f"Family units created: {created_family_units}")

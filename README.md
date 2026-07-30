@@ -141,15 +141,18 @@ GET    /models/{modelAzName}/script
 POST   /models/script
 
 GET    /data/{modelAzName}/_api
-GET    /data/{modelAzName}/_instance-root
-PUT    /data/{modelAzName}/_instance-root
-POST   /data/{modelAzName}/{entityAzName}
-GET    /data/{modelAzName}/{entityAzName}
-GET    /data/{modelAzName}/{entityAzName}/_count
-GET    /data/{modelAzName}/{entityAzName}/{instanceId}
-POST   /data/{modelAzName}/{entityAzName}/_query
-POST   /data/{modelAzName}/_links/{associationAzName}
-GET    /data/{modelAzName}/_links/{associationAzName}
+GET    /data/{modelAzName}/roots
+POST   /data/{modelAzName}/roots
+GET    /data/{modelAzName}/roots/{instanceRootId}
+PUT    /data/{modelAzName}/roots/{instanceRootId}
+GET    /data/{modelAzName}/roots/{instanceRootId}/_api
+POST   /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}
+GET    /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}
+GET    /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_count
+GET    /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}
+POST   /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query
+POST   /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}
+GET    /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}
 
 POST   /sessions/start
 DELETE /sessions/{uuid}
@@ -193,25 +196,28 @@ and validated against the selected entity's `DataType`. Association links are
 created through dedicated `_links` endpoints using source and target instance
 ids.
 
-Each loaded model has one process-local model-instance root metadata record.
-`GET /data/{modelAzName}/_instance-root` reads its display name, and
-`PUT /data/{modelAzName}/_instance-root` renames it with a JSON body such as
-`{"visName":"Family tree of King Charles III"}`.
+Each loaded model can have multiple process-local model-instance roots. Create
+one with `POST /data/{modelAzName}/roots`; the backend returns a globally
+unique `instanceRootId`. A request body may include a visual alias such as
+`{"visName":"Family tree of King Charles III"}`. The alias is display metadata
+only. `PUT /data/{modelAzName}/roots/{instanceRootId}` renames the alias
+without changing the root id or any instance-data URLs.
 
 Entity instance counts are available through
-`GET /data/{modelAzName}/{entityAzName}/_count`, which returns a JSON object
-such as `{"count":2}`.
+`GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_count`, which
+returns a JSON object such as `{"count":2}`.
 
 Example:
 
 ```bash
-curl -X POST http://127.0.0.1:8080/data/Music/Artist \
+curl -X POST http://127.0.0.1:8080/data/Music/roots/<instance-root-id>/Artist \
   -H 'Content-Type: application/json' \
   -d '{"Name":"Miles Davis","Website":"https://example.com"}'
 ```
 
-Relationship-aware queries use `POST /data/{modelAzName}/{entityAzName}/_query`
-with one-hop relationship predicates through modeled associations.
+Relationship-aware queries use
+`POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query` with
+one-hop relationship predicates through modeled associations.
 
 ## Run VedenemoCli Locally
 
@@ -332,11 +338,11 @@ to open the browser console as a lower split pane under the `Models` tab; drag
 the pane's top border to resize it, and use the same arrow to minimize it
 again. The `Model instances` tab refreshes runtime instance counts when opened
 and shows a read-only tree:
-`ModelVisName (Model azName)` -> backend-stored model-instance root name ->
-entity groups such as `Album (460)`. The model-instance node is shown only when
-counted runtime entity data exists; otherwise the model node shows an empty
-instance state. Use the root node's menu `Rename...` action to update the
-backend-stored root name.
+`ModelVisName (Model azName)` -> one node per loaded model-instance root ->
+entity groups such as `Album (460)`. Root nodes show the backend-stored visual
+alias when available, otherwise a short form of the globally unique root id
+with the full id as a tooltip. Use the root node's menu `Rename...` action to
+update the backend-stored root alias.
 The console output scrolls to the latest line as commands run. The full-page
 browser console remains available directly at `/console`. The browser console
 supports the same authoring commands as `VedenemoCli`, including `add`,

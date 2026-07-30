@@ -56,9 +56,10 @@ type CountResponse = {
 };
 
 type ModelInstanceRootResponse = {
+  instanceRootId: string;
   modelAzName: string;
   modelVersion: string;
-  visName: string;
+  visName?: string | null;
 };
 
 type EntityInstanceGroup = {
@@ -69,7 +70,8 @@ type EntityInstanceGroup = {
 };
 
 type ModelInstanceRootNode = {
-  visName: string;
+  instanceRootId: string;
+  visName?: string | null;
   entityGroups: EntityInstanceGroup[];
 };
 
@@ -87,6 +89,7 @@ type ConsolePanelProps = {
 
 type RenameDialogState = {
   modelAzName: string;
+  instanceRootId: string;
   nextName: string;
 };
 
@@ -139,8 +142,8 @@ async function fetchModelInstanceApi(apiBaseUrl: string, modelAzName: string): P
   return response.json() as Promise<ApiDescriptionResponse>;
 }
 
-async function fetchEntityInstanceCount(apiBaseUrl: string, modelAzName: string, entityAzName: string): Promise<number> {
-  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/${encodeURIComponent(entityAzName)}/_count`, {
+async function fetchEntityInstanceCount(apiBaseUrl: string, modelAzName: string, instanceRootId: string, entityAzName: string): Promise<number> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}/${encodeURIComponent(entityAzName)}/_count`, {
     headers: {
       Accept: "application/json",
     },
@@ -154,8 +157,8 @@ async function fetchEntityInstanceCount(apiBaseUrl: string, modelAzName: string,
   return body.count;
 }
 
-async function fetchModelInstanceRoot(apiBaseUrl: string, modelAzName: string): Promise<ModelInstanceRootResponse> {
-  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/_instance-root`, {
+async function fetchModelInstanceRoots(apiBaseUrl: string, modelAzName: string): Promise<ModelInstanceRootResponse[]> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots`, {
     headers: {
       Accept: "application/json",
     },
@@ -165,11 +168,11 @@ async function fetchModelInstanceRoot(apiBaseUrl: string, modelAzName: string): 
     throw new Error(`HTTP ${response.status}`);
   }
 
-  return response.json() as Promise<ModelInstanceRootResponse>;
+  return response.json() as Promise<ModelInstanceRootResponse[]>;
 }
 
-async function renameModelInstanceRoot(apiBaseUrl: string, modelAzName: string, visName: string): Promise<ModelInstanceRootResponse> {
-  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/_instance-root`, {
+async function renameModelInstanceRoot(apiBaseUrl: string, modelAzName: string, instanceRootId: string, visName: string): Promise<ModelInstanceRootResponse> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}`, {
     method: "PUT",
     headers: {
       Accept: "application/json",
@@ -187,6 +190,18 @@ async function renameModelInstanceRoot(apiBaseUrl: string, modelAzName: string, 
 
 function readConnectedModelAzName(): string {
   return new URLSearchParams(window.location.search).get("connectedModelAzName") ?? "";
+}
+
+function rootDisplayName(root: ModelInstanceRootNode): string {
+  return root.visName?.trim() || shortRootId(root.instanceRootId);
+}
+
+function rootResponseDisplayName(root: ModelInstanceRootResponse): string {
+  return root.visName?.trim() || shortRootId(root.instanceRootId);
+}
+
+function shortRootId(instanceRootId: string): string {
+  return instanceRootId.length <= 8 ? instanceRootId : instanceRootId.slice(0, 8);
 }
 
 function clampConsolePaneHeight(value: number): number {
@@ -470,7 +485,7 @@ export function App() {
   const [modelInstanceLoadState, setModelInstanceLoadState] = useState<ModelInstanceLoadState>("idle");
   const [modelInstanceMessage, setModelInstanceMessage] = useState("Model instances not loaded");
   const [modelInstanceTree, setModelInstanceTree] = useState<ModelInstanceModelNode[]>([]);
-  const [openRootMenuModelAzName, setOpenRootMenuModelAzName] = useState<string | null>(null);
+  const [openRootMenuKey, setOpenRootMenuKey] = useState<string | null>(null);
   const [renameDialog, setRenameDialog] = useState<RenameDialogState | null>(null);
   const [renameMessage, setRenameMessage] = useState("");
   const [isRenamingRoot, setIsRenamingRoot] = useState(false);
@@ -657,23 +672,19 @@ export function App() {
   async function buildModelInstanceNode(apiBaseUrl: string, model: ModelSummary): Promise<ModelInstanceModelNode> {
     try {
       const apiDescription = await fetchModelInstanceApi(apiBaseUrl, model.azName);
-      const entityGroups = await Promise.all(apiDescription.entities.map((entity) => buildEntityInstanceGroup(apiBaseUrl, model.azName, entity)));
-      const hasCountedInstances = entityGroups.some((group) => typeof group.count === "number" && group.count > 0);
-      const hasEntityErrors = entityGroups.some((group) => group.error);
-      const root = hasCountedInstances ? await fetchModelInstanceRoot(apiBaseUrl, model.azName) : undefined;
+      const roots = await fetchModelInstanceRoots(apiBaseUrl, model.azName);
+      const rootNodes = await Promise.all(roots.map(async (root) => ({
+        instanceRootId: root.instanceRootId,
+        visName: root.visName,
+        entityGroups: await Promise.all(apiDescription.entities.map((entity) => buildEntityInstanceGroup(apiBaseUrl, model.azName, root.instanceRootId, entity))),
+      })));
+      const hasEntityErrors = rootNodes.some((root) => root.entityGroups.some((group) => group.error));
 
       return {
         modelAzName: model.azName,
         modelVisName: model.visName,
-        roots: hasCountedInstances
-          ? [
-              {
-                visName: root?.visName ?? "Model instance 1",
-                entityGroups,
-              },
-            ]
-          : [],
-        error: !hasCountedInstances && hasEntityErrors ? "Entity counts unavailable" : undefined,
+        roots: rootNodes,
+        error: hasEntityErrors ? "Entity counts unavailable" : undefined,
       };
     } catch (error) {
       return {
@@ -685,11 +696,12 @@ export function App() {
     }
   }
 
-  function openRenameDialog(modelAzName: string, currentName: string) {
-    setOpenRootMenuModelAzName(null);
+  function openRenameDialog(modelAzName: string, instanceRootId: string, currentName: string) {
+    setOpenRootMenuKey(null);
     setRenameMessage("");
     setRenameDialog({
       modelAzName,
+      instanceRootId,
       nextName: currentName,
     });
   }
@@ -709,21 +721,23 @@ export function App() {
     setIsRenamingRoot(true);
     setRenameMessage("");
     try {
-      const renamed = await renameModelInstanceRoot(apiBaseUrl, renameDialog.modelAzName, nextName);
+      const renamed = await renameModelInstanceRoot(apiBaseUrl, renameDialog.modelAzName, renameDialog.instanceRootId, nextName);
       setModelInstanceTree((current) => current.map((model) => {
         if (model.modelAzName !== renamed.modelAzName) {
           return model;
         }
         return {
           ...model,
-          roots: model.roots.map((root) => ({
-            ...root,
-            visName: renamed.visName,
-          })),
+          roots: model.roots.map((root) => root.instanceRootId === renamed.instanceRootId
+            ? {
+                ...root,
+                visName: renamed.visName,
+              }
+            : root),
         };
       }));
       setRenameDialog(null);
-      setModelInstanceMessage(`Renamed model instance root to ${renamed.visName}`);
+      setModelInstanceMessage(`Renamed model instance root to ${rootResponseDisplayName(renamed)}`);
     } catch (error) {
       setRenameMessage(error instanceof Error ? error.message : "Rename failed");
     } finally {
@@ -731,12 +745,12 @@ export function App() {
     }
   }
 
-  async function buildEntityInstanceGroup(apiBaseUrl: string, modelAzName: string, entity: EntityDescription): Promise<EntityInstanceGroup> {
+  async function buildEntityInstanceGroup(apiBaseUrl: string, modelAzName: string, instanceRootId: string, entity: EntityDescription): Promise<EntityInstanceGroup> {
     try {
       return {
         entityAzName: entity.azName,
         entityVisName: entity.visName,
-        count: await fetchEntityInstanceCount(apiBaseUrl, modelAzName, entity.azName),
+        count: await fetchEntityInstanceCount(apiBaseUrl, modelAzName, instanceRootId, entity.azName),
       };
     } catch (error) {
       return {
@@ -896,52 +910,56 @@ export function App() {
                           <div className="tree-empty">Model instance details unavailable: {model.error}</div>
                         ) : model.roots.length === 0 ? (
                           <div className="tree-empty">No model instances loaded</div>
-                        ) : model.roots.map((root) => (
-                          <details key={`${model.modelAzName}-${root.visName}`} open className="tree-node tree-node-root">
-                            <summary>
-                              <span>{root.visName}</span>
-                              <span className="tree-node-actions">
-                                <button
-                                  type="button"
-                                  className="tree-menu-button"
-                                  aria-haspopup="menu"
-                                  aria-expanded={openRootMenuModelAzName === model.modelAzName}
-                                  onClick={(event) => {
-                                    event.preventDefault();
-                                    setOpenRootMenuModelAzName((current) => current === model.modelAzName ? null : model.modelAzName);
-                                  }}
-                                >
-                                  ...
-                                </button>
-                                {openRootMenuModelAzName === model.modelAzName && (
-                                  <span className="tree-menu" role="menu">
-                                    <button
-                                      type="button"
-                                      role="menuitem"
-                                      onClick={(event) => {
-                                        event.preventDefault();
-                                        openRenameDialog(model.modelAzName, root.visName);
-                                      }}
-                                    >
-                                      Rename...
-                                    </button>
-                                  </span>
+                        ) : model.roots.map((root) => {
+                          const displayName = rootDisplayName(root);
+                          const rootMenuKey = `${model.modelAzName}:${root.instanceRootId}`;
+                          return (
+                            <details key={`${model.modelAzName}-${root.instanceRootId}`} open className="tree-node tree-node-root">
+                              <summary>
+                                <span title={root.instanceRootId}>{displayName}</span>
+                                <span className="tree-node-actions">
+                                  <button
+                                    type="button"
+                                    className="tree-menu-button"
+                                    aria-haspopup="menu"
+                                    aria-expanded={openRootMenuKey === rootMenuKey}
+                                    onClick={(event) => {
+                                      event.preventDefault();
+                                      setOpenRootMenuKey((current) => current === rootMenuKey ? null : rootMenuKey);
+                                    }}
+                                  >
+                                    ...
+                                  </button>
+                                  {openRootMenuKey === rootMenuKey && (
+                                    <span className="tree-menu" role="menu">
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={(event) => {
+                                          event.preventDefault();
+                                          openRenameDialog(model.modelAzName, root.instanceRootId, root.visName ?? "");
+                                        }}
+                                      >
+                                        Rename...
+                                      </button>
+                                    </span>
+                                  )}
+                                </span>
+                              </summary>
+                              <ul className="tree-children tree-entity-groups">
+                                {root.entityGroups.length === 0 ? (
+                                  <li className="tree-empty">No entity types</li>
+                                ) : (
+                                  root.entityGroups.map((group) => (
+                                    <li key={`${model.modelAzName}-${root.instanceRootId}-${group.entityAzName}`}>
+                                      {group.error ? `${group.entityVisName} (?) - ${group.error}` : `${group.entityVisName} (${group.count})`}
+                                    </li>
+                                  ))
                                 )}
-                              </span>
-                            </summary>
-                            <ul className="tree-children tree-entity-groups">
-                              {root.entityGroups.length === 0 ? (
-                                <li className="tree-empty">No entity types</li>
-                              ) : (
-                                root.entityGroups.map((group) => (
-                                  <li key={`${model.modelAzName}-${root.visName}-${group.entityAzName}`}>
-                                    {group.error ? `${group.entityVisName} (?) - ${group.error}` : `${group.entityVisName} (${group.count})`}
-                                  </li>
-                                ))
-                              )}
-                            </ul>
-                          </details>
-                        ))}
+                              </ul>
+                            </details>
+                          );
+                        })}
                       </div>
                     </details>
                   ))

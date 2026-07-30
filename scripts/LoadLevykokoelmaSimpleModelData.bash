@@ -61,9 +61,13 @@ def quoted(value):
     return urllib.parse.quote(value, safe="")
 
 
+def root_path(path):
+    return f"/data/{quoted(model_az_name)}/roots/{quoted(instance_root_id)}{path}"
+
+
 def find_first_instance(entity_az_name, filters):
     query = urllib.parse.urlencode(filters)
-    status, body = request("GET", f"/data/{quoted(model_az_name)}/{quoted(entity_az_name)}?{query}")
+    status, body = request("GET", root_path(f"/{quoted(entity_az_name)}?{query}"))
     instances = json_body(status, body, f"Listing {entity_az_name} instances")
     return instances[0] if instances else None
 
@@ -80,7 +84,7 @@ def query_album(album_name, album_comment, artist_name):
             }
         ],
     }
-    status, response = request("POST", f"/data/{quoted(model_az_name)}/Album/_query", body)
+    status, response = request("POST", root_path("/Album/_query"), body)
     instances = json_body(status, response, "Querying existing Album instance")
     return instances[0] if instances else None
 
@@ -134,7 +138,7 @@ def ensure_artist(artist_name):
     existing = find_first_instance("Artist", {"Name": artist_name})
     if existing:
         return existing["id"], False
-    status, body = request("POST", f"/data/{quoted(model_az_name)}/Artist", {"Name": artist_name})
+    status, body = request("POST", root_path("/Artist"), {"Name": artist_name})
     created = json_body(status, body, f"Creating Artist {artist_name}")
     return created["id"], True
 
@@ -145,7 +149,7 @@ def ensure_album(album_name, album_comment, artist_name):
         return existing["id"], False
     status, body = request(
         "POST",
-        f"/data/{quoted(model_az_name)}/Album",
+        root_path("/Album"),
         {"Name": album_name, "Comment": album_comment},
     )
     created = json_body(status, body, f"Creating Album {album_name}")
@@ -153,7 +157,7 @@ def ensure_album(album_name, album_comment, artist_name):
 
 
 def link_exists(album_id, artist_id):
-    status, body = request("GET", f"/data/{quoted(model_az_name)}/_links/Albumilla_on_esittajia")
+    status, body = request("GET", root_path("/_links/Albumilla_on_esittajia"))
     links = json_body(status, body, "Listing Albumilla_on_esittajia links")
     return any(
         link.get("sourceInstanceId") == album_id and link.get("targetInstanceId") == artist_id
@@ -166,24 +170,30 @@ def ensure_album_artist_link(album_id, artist_id):
         return False
     status, body = request(
         "POST",
-        f"/data/{quoted(model_az_name)}/_links/Albumilla_on_esittajia",
+        root_path("/_links/Albumilla_on_esittajia"),
         {"sourceInstanceId": album_id, "targetInstanceId": artist_id},
     )
     require_success(status, body, "Creating Albumilla_on_esittajia link")
     return True
 
 
-def rename_model_instance_root():
+def ensure_model_instance_root():
+    status, body = request("GET", f"/data/{quoted(model_az_name)}/roots")
+    roots = json_body(status, body, "Listing model instance roots")
+    for root in roots:
+        if root.get("visName") == model_instance_root_name:
+            return root["instanceRootId"], root.get("visName", model_instance_root_name)
     status, body = request(
-        "PUT",
-        f"/data/{quoted(model_az_name)}/_instance-root",
+        "POST",
+        f"/data/{quoted(model_az_name)}/roots",
         {"visName": model_instance_root_name},
     )
-    renamed = json_body(status, body, "Renaming model instance root")
-    return renamed.get("visName", model_instance_root_name)
+    created = json_body(status, body, "Creating model instance root")
+    return created["instanceRootId"], created.get("visName", model_instance_root_name)
 
 
 ensure_model_loaded()
+instance_root_id, instance_root_name = ensure_model_instance_root()
 
 created_artists = 0
 created_albums = 0
@@ -218,10 +228,9 @@ with open(csv_file, newline="", encoding="utf-8-sig") as handle:
         created_albums += int(album_created)
         created_links += int(link_created)
 
-renamed_root_name = rename_model_instance_root()
-
 print(f"Model: {model_az_name}")
-print(f"Model instance root name: {renamed_root_name}")
+print(f"Model instance root id: {instance_root_id}")
+print(f"Model instance root name: {instance_root_name}")
 print(f"CSV rows processed: {processed_rows}")
 print(f"Rows skipped: {skipped_rows}")
 print(f"Artists created: {created_artists}")

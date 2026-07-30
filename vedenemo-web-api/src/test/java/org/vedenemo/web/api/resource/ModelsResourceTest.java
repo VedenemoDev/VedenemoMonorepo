@@ -268,7 +268,7 @@ final class ModelsResourceTest {
 
     @Test
     void corsPreflightAllowsWriteMethods() throws Exception {
-        HttpResponse<String> response = options("/data/Example_Model/_instance-root", "PUT");
+        HttpResponse<String> response = options("/data/Example_Model/roots/00000000-0000-0000-0000-000000000000", "PUT");
 
         assertEquals(204, response.statusCode());
         assertEquals("*", response.headers().firstValue("Access-Control-Allow-Origin").orElse(""));
