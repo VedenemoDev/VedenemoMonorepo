@@ -266,6 +266,16 @@ final class ModelsResourceTest {
         webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "done").join();
     }
 
+    @Test
+    void corsPreflightAllowsWriteMethods() throws Exception {
+        HttpResponse<String> response = options("/data/Example_Model/_instance-root", "PUT");
+
+        assertEquals(204, response.statusCode());
+        assertEquals("*", response.headers().firstValue("Access-Control-Allow-Origin").orElse(""));
+        assertEquals("DELETE, GET, OPTIONS, POST, PUT", response.headers().firstValue("Access-Control-Allow-Methods").orElse(""));
+        assertTrue(response.headers().firstValue("Access-Control-Allow-Headers").orElse("").contains("Content-Type"));
+    }
+
     private HttpResponse<String> post(String path, String body) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
                 .header("Content-Type", "application/json")
@@ -293,6 +303,15 @@ final class ModelsResourceTest {
     private HttpResponse<String> get(String path) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
                 .GET()
+                .build();
+        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> options(String path, String requestMethod) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
+                .header("Origin", "http://127.0.0.1:5173")
+                .header("Access-Control-Request-Method", requestMethod)
+                .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
                 .build();
         return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     }

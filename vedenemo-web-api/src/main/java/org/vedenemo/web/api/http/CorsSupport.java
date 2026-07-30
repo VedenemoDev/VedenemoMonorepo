@@ -14,7 +14,7 @@ public final class CorsSupport {
 
         context.header("Vary", "Origin");
         context.header("Access-Control-Allow-Origin", config.allowsAnyOrigin() ? "*" : origin);
-        context.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+        context.header("Access-Control-Allow-Methods", "DELETE, GET, OPTIONS, POST, PUT");
         context.header("Access-Control-Allow-Headers", "Accept, Content-Type");
         context.header("Access-Control-Max-Age", "3600");
     }

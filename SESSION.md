@@ -5650,3 +5650,52 @@ Current status and next steps:
   `npm run build`, and `git diff --check`; Vite still reports the existing
   large PlantUML chunk warning.
 - Vite dev server is running at `http://127.0.0.1:5173/`.
+
+## 2026-07-30 20:56 EEST
+
+Session goal: diagnose and fix the rename dialog's `Failed to fetch` error.
+
+Files changed:
+
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/http/CorsSupport.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,120p' vedenemo-ux/public/config.json`
+- `rg -n "cors|allowedOrigins|WebApiConfig|VEDENEMO_WEB|apiBaseUrl|config.json|_instance-root" vedenemo-web-api vedenemo-ux/src vedenemo-ux/public -S`
+- `curl -i -sS https://vedenemo-wsl.tail64b6af.ts.net/models/ping`
+- `curl -i -sS https://vedenemo-wsl.tail64b6af.ts.net/models/list`
+- `curl -i -sS https://vedenemo-wsl.tail64b6af.ts.net/data/FamilyTree/_instance-root`
+- `sed -n '1,180p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/http/CorsSupport.java`
+- `sed -n '1,100p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/http/WebApiConfig.java`
+- `sed -n '55,120p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `curl -i -sS -X OPTIONS https://vedenemo-wsl.tail64b6af.ts.net/data/FamilyTree/_instance-root -H 'Origin: http://127.0.0.1:5173' -H 'Access-Control-Request-Method: PUT' -H 'Access-Control-Request-Headers: content-type'`
+- `curl -i -sS -X PUT https://vedenemo-wsl.tail64b6af.ts.net/data/FamilyTree/_instance-root -H 'Origin: http://127.0.0.1:5173' -H 'Content-Type: application/json' -d '{"visName":"Family tree test"}'`
+- `rg -n "Access-Control-Allow-Methods|CorsSupport|OPTIONS" vedenemo-web-api/src/test vedenemo-web-api/src/main -S`
+- `sed -n '1,360p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `git diff --check`
+- `mvn -B -pl vedenemo-web-api -am test`
+- `mvn -B verify`
+- local packaged-backend smoke checking CORS preflight allows `PUT` and
+  `PUT /data/FamilyTree/_instance-root` succeeds
+- `ps -ef | rg 'vedenemo-web-api|VedenemoWebApi|java -jar'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+
+Current status and next steps:
+
+- Root cause: browser preflight for the rename `PUT` was blocked because
+  `CorsSupport` returned `Access-Control-Allow-Methods: GET, OPTIONS`.
+- Changed CORS support to advertise `DELETE, GET, OPTIONS, POST, PUT`.
+- Added a regression test that verifies preflight responses include the write
+  methods and `Content-Type`.
+- Verified `mvn -B -pl vedenemo-web-api -am test`, `mvn -B verify`, and
+  `git diff --check`.
+- Local packaged-backend smoke confirmed that preflight now allows `PUT` and
+  the rename endpoint succeeds.
+- The currently running remote backend at `https://vedenemo-wsl.tail64b6af.ts.net`
+  still advertises the old CORS methods, so it must be restarted/deployed from
+  this rebuilt code before the browser rename dialog will work against that
+  URL.
