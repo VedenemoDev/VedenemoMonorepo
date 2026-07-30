@@ -38,8 +38,10 @@ List album-artist links:
 
 curl -s "http://127.0.0.1:8080/data/AlbumCollectionSimple/_links/Albumilla_on_esittajia" | jq
 
-Read one album instance by ID:
+Read the first listed album instance by ID:
 
-curl -s "http://127.0.0.1:8080/data/AlbumCollectionSimple/Album/{instanceId}" | jq
+id=$(curl -s "http://127.0.0.1:8080/data/AlbumCollectionSimple/Album" | jq -r '.[0].id'); curl -s "http://127.0.0.1:8080/data/AlbumCollectionSimple/Album/$id" | jq
 
-Replace {instanceId} with an id returned from the album list or query.
+Read the Kent / B-sidor 95-00 album instance by ID:
+
+id=$(curl -s -X POST "http://127.0.0.1:8080/data/AlbumCollectionSimple/Album/_query" -H "Content-Type: application/json" -d '{"where":{"equals":{"Name":"B-sidor 95-00","Comment":"KOKOELMA"}},"relationships":[{"associationAzName":"Albumilla_on_esittajia","direction":"outgoing","entityAzName":"Artist","where":{"equals":{"Name":"Kent"}}}]}' | jq -r '.[0].id'); curl -s "http://127.0.0.1:8080/data/AlbumCollectionSimple/Album/$id" | jq

@@ -5254,3 +5254,28 @@ Current status and next steps:
   `http://127.0.0.1:8080` and `AlbumCollectionSimple`.
 - Confirmed the curl commands remain one-liners without backslash
   continuations.
+
+## 2026-07-30 17:29 EEST
+
+Session goal: replace dangling album instance placeholder note with executable
+curl examples.
+
+Files changed:
+
+- `misc_notes/AlbumModelCurlFetchSuggestions.txt`
+- `SESSION.md`
+
+Commands run:
+
+- `tail -n 30 misc_notes/AlbumModelCurlFetchSuggestions.txt`
+- `git status --short`
+- `rg -n '\\{instanceId\\}|\\$API|\\$MODEL|\\\\$' misc_notes/AlbumModelCurlFetchSuggestions.txt`
+- `tail -n 35 misc_notes/AlbumModelCurlFetchSuggestions.txt`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Replaced the `{instanceId}` placeholder section with one-line shell commands
+  that fetch an album id first and then read that album by id.
+- Confirmed no `{instanceId}`, `$API`, `$MODEL`, or backslash continuation
+  remains in the curl notes.
