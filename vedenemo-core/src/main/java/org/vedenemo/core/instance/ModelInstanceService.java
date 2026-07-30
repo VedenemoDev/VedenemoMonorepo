@@ -58,6 +58,12 @@ public final class ModelInstanceService {
                 .toList();
     }
 
+    public int countEntityInstances(String modelAzName, String entityAzName) {
+        ModelRoot modelRoot = requireModel(modelAzName);
+        VEntity entity = requireEntity(modelRoot, entityAzName);
+        return instanceRegistry.datasetFor(modelRoot).countEntityInstances(entity.azName());
+    }
+
     public EntityInstance readEntityInstance(String modelAzName, String entityAzName, String instanceId) {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);

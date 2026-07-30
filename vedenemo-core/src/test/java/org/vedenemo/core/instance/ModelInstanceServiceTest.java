@@ -36,6 +36,8 @@ final class ModelInstanceServiceTest {
         assertEquals(List.of("Name", "Rating", "Website"), List.copyOf(instance.values().keySet()));
         assertEquals(1, listed.size());
         assertEquals(instance.id(), listed.getFirst().id());
+        assertEquals(1, fixture.service.countEntityInstances("Music", "Artist"));
+        assertEquals(0, fixture.service.countEntityInstances("Music", "Album"));
     }
 
     @Test

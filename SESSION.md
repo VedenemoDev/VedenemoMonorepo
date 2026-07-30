@@ -5279,3 +5279,182 @@ Current status and next steps:
   that fetch an album id first and then read that album by id.
 - Confirmed no `{instanceId}`, `$API`, `$MODEL`, or backslash continuation
   remains in the curl notes.
+
+## 2026-07-30 17:42 EEST
+
+Session goal: create backlog planning item for a top-level UX tab split and
+model-instance tree view.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 140 SESSION.md`
+- `sed -n '1,360p' tasks/backlog.md`
+- `sed -n '360,760p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short`
+
+Current status and next steps:
+
+- Added planned backlog item `Add Model Instances UX Tab`.
+- Captured the requested tab split: `Models` leftmost/default with existing UX
+  and horizontal console split, plus `Model instances` with refresh and a
+  two-level model/instance tree.
+- Included initial scope, suggested UX behavior, implementation notes,
+  out-of-scope items, testing scope, and open questions.
+- No build was run because this was a planning-only documentation change.
+
+## 2026-07-30 17:50 EEST
+
+Session goal: fold answers to `Add Model Instances UX Tab` open questions into
+the backlog plan.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `rg -n "Add Model Instances UX Tab|Open Questions|Suggested UX Behavior|Initial Scope|Implementation Notes" tasks/backlog.md`
+- `sed -n '408,520p' tasks/backlog.md`
+- `git status --short`
+- `sed -n '420,530p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Converted the open questions into resolved decisions.
+- Clarified the first tree level as model-instance roots labeled
+  `visName (azName)`.
+- Clarified the second tree level as entity-type groups with counts, for
+  example `Album (460)`, rather than individual records.
+- Clarified that the first slice shows only entity-instance counts, refreshes
+  automatically when entering the tab, and reserves nicknames for whole
+  model-instance roots/datasets.
+- No build was run because this was a planning-only documentation change.
+
+## 2026-07-30 17:59 EEST
+
+Session goal: correct `Add Model Instances UX Tab` planning item from two
+levels to three levels.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '420,530p' tasks/backlog.md`
+- `git status --short`
+- `sed -n '420,545p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Updated the planned tree to three levels:
+  `ModelVisName (Model azName)` -> `ModelInstanceVisName` -> entity-type
+  counts such as `Album (460)` and `Artist (228)`.
+- Clarified that multiple model-instance roots may exist under the same model,
+  such as family trees for different families or album collections for
+  different people.
+- Clarified that `ModelInstanceVisName` can start generated and later become a
+  user-assigned nickname for the whole model-instance root/dataset.
+- Noted that current backend instance data is bound directly to a loaded model,
+  so supporting multiple roots per model may require backend discovery of root
+  identity and `ModelInstanceVisName`.
+- No build was run because this was a planning-only documentation change.
+
+## 2026-07-30 18:08 EEST
+
+Session goal: implement the model instances UX tab and supporting entity-count
+API.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceDataset.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,260p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,260p' vedenemo-ux/src/styles.css`
+- `find vedenemo-ux/src -maxdepth 3 -type f -print | sort`
+- `cat vedenemo-ux/package.json`
+- `sed -n '260,620p' vedenemo-ux/src/App.tsx`
+- `sed -n '620,760p' vedenemo-ux/src/App.tsx`
+- `sed -n '220,520p' vedenemo-ux/src/styles.css`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `sed -n '1,320p' docs/architecture_doc.md`
+- `rg -n "UX|frontend|PlantUML|console|data|instance|Model instances|tab" README.md docs/architecture_doc.md tasks/current-task.md tasks/backlog.md vedenemo-ux/src -S`
+- `sed -n '1,280p' vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceDataset.java`
+- `sed -n '120,230p' README.md`
+- `sed -n '500,575p' docs/architecture_doc.md`
+- `rg -n "listEntityInstances|EntityInstanceResponse|LinkResponse|operations.put|routes.get\\(\\\"/data/\\{modelAzName\\}/\\{entityAzName\\}" ...`
+- `sed -n '80,170p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '220,360p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `mvn -B -pl vedenemo-web-api -am test`
+- `npm run build`
+- `sed -n '132,153p' README.md`
+- `sed -n '187,207p' README.md`
+- `sed -n '312,323p' README.md`
+- `sed -n '408,545p' tasks/backlog.md`
+- `sed -n '410,432p' docs/architecture_doc.md`
+- `sed -n '522,552p' docs/architecture_doc.md`
+- `sed -n '728,752p' docs/architecture_doc.md`
+- `sed -n '30,43p' tasks/current-task.md`
+- `git diff --check`
+- `mvn -B verify`
+- local packaged-backend smoke loading `LevykokoelmaSimpleModelData.csv` and
+  checking `/data/AlbumCollectionSimple/Album/_count` and
+  `/data/AlbumCollectionSimple/Artist/_count`
+- `npm run dev -- --host 127.0.0.1`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Added `GET /data/{modelAzName}/{entityAzName}/_count` in core/web API so the
+  frontend can show exact entity-instance counts without relying on limited
+  list responses.
+- Added backend tests for count behavior.
+- Added top-level UX tabs: `Models` and `Model instances`.
+- Kept the existing model selector, PlantUML diagram, model-event connection,
+  embedded split console, and console toggle under the `Models` tab only.
+- Added `Model instances` auto-refresh on tab entry and an explicit
+  `Refresh model instances` button.
+- Rendered a read-only tree:
+  `ModelVisName (Model azName)` -> generated `Model instance 1` ->
+  entity-type count nodes such as `Album (460)`.
+- Updated README, current task notes, backlog completion notes, and living
+  architecture documentation.
+- Verified `mvn -B -pl vedenemo-web-api -am test`, `npm run build`,
+  `git diff --check`, `mvn -B verify`, and a local packaged-backend smoke
+  returning `{"count":460}` for albums and `{"count":228}` for artists.
+- Vite dev server is running at `http://127.0.0.1:5173/`.

@@ -34,6 +34,7 @@ Vedenemo model definition.
 GET  /data/{modelAzName}/_api
 POST /data/{modelAzName}/{entityAzName}
 GET  /data/{modelAzName}/{entityAzName}
+GET  /data/{modelAzName}/{entityAzName}/_count
 GET  /data/{modelAzName}/{entityAzName}/{instanceId}
 POST /data/{modelAzName}/{entityAzName}/_query
 POST /data/{modelAzName}/_links/{associationAzName}
@@ -50,6 +51,7 @@ GET  /data/{modelAzName}/_links/{associationAzName}
 - Implemented `TEXT`, `NUMERIC`, `URL`, and `DATA` validation for instance
   values.
 - Implemented deterministic entity instance listing and exact-match filters.
+- Implemented entity-instance count reads for UX grouped instance summaries.
 - Implemented one-hop relationship `_query` predicates that match related
   entity attributes through stored association links.
 - Added focused core and web API tests.

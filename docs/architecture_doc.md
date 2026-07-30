@@ -20,6 +20,7 @@ subgraph UX["Frontend"]
     UXModelEvents["ModelChangeEventAdapter<br/>browser WebSocket listener"]
     UXPlantUml["PlantUmlModelAdapter<br/>model-to-PlantUML source"]
     UXPlantUmlRenderer["PlantUmlDiagramRendererAdapter<br/>lazy PlantUML SVG renderer"]
+    UXInstanceTree["Model instances tab<br/>runtime entity count tree"]
     UXConsole["browser virtual CLI<br/>/console and embedded pane"]
 end
 
@@ -61,8 +62,10 @@ ViteUX --> RuntimeConfig
 ViteUX -->|fetch model data| UXPlantUml
 ViteUX -->|connect/disconnect| UXModelEvents
 ViteUX -->|lazy render diagram| UXPlantUmlRenderer
+ViteUX -->|fetch runtime instance counts| UXInstanceTree
 ViteUX --> UXConsole
 UXPlantUml -->|GET model/entity/attribute APIs| WebApi
+UXInstanceTree -->|GET /models/list and /data APIs| WebApi
 UXModelEvents -->|WebSocket /models/events| WebApi
 UXConsole -->|HTTP console commands| WebApi
 Cli -->|HTTP model and session APIs| WebApi
@@ -419,6 +422,8 @@ and exposes:
 - `GET /data/{modelAzName}/{entityAzName}`, which lists entity instances in
   deterministic insertion order and supports exact-match query-parameter
   filters
+- `GET /data/{modelAzName}/{entityAzName}/_count`, which returns the total
+  process-local instance count for one modeled entity
 - `GET /data/{modelAzName}/{entityAzName}/{instanceId}`, which reads one entity
   instance
 - `POST /data/{modelAzName}/{entityAzName}/_query`, which supports exact
@@ -519,6 +524,7 @@ event WebSocket.
 
 Current user-facing behavior:
 
+- organizes the main page into top-level `Models` and `Model instances` tabs
 - fetches available models from `{apiBaseUrl}/models/list` at page load
 - shows the number of available models after model list refresh
 - provides a Refresh model list button
@@ -528,6 +534,14 @@ Current user-facing behavior:
 - renders the selected model as an automatically laid out PlantUML SVG class
   diagram in a scrollable viewport
 - shows transient diagram rendering status below the diagram viewport
+- shows the existing model selection, PlantUML diagram, model-event connection,
+  and embedded console split only under the `Models` tab
+- shows a `Model instances` tab that automatically refreshes on entry and also
+  has an explicit Refresh model instances button
+- renders a read-only three-level model-instance tree:
+  model definition labels as `ModelVisName (Model azName)`, one generated
+  model-instance root label for the current backend dataset, and entity-type
+  count nodes such as `Album (460)`
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle
@@ -746,6 +760,29 @@ sequenceDiagram
     UX->>UX: lazy-load PlantUML renderer and render SVG
     Events-->>UX: model-changed
     UX->>API: refresh selected model data
+```
+
+### UX Model Instance Tree Refresh
+
+```mermaid
+sequenceDiagram
+    participant UX as vedenemo-ux Model instances tab
+    participant Config as /config.json
+    participant API as vedenemo-web-api
+
+    UX->>Config: fetch runtime config
+    Config-->>UX: apiBaseUrl
+    UX->>API: GET /models/list
+    API-->>UX: model summaries
+    loop each loaded model
+        UX->>API: GET /data/{modelAzName}/_api
+        API-->>UX: entity descriptions
+        loop each entity
+            UX->>API: GET /data/{modelAzName}/{entityAzName}/_count
+            API-->>UX: entity instance count
+        end
+    end
+    UX->>UX: render model -> generated instance root -> entity count tree
 ```
 
 ### Web Console Command Execution

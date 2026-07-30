@@ -143,6 +143,7 @@ POST   /models/script
 GET    /data/{modelAzName}/_api
 POST   /data/{modelAzName}/{entityAzName}
 GET    /data/{modelAzName}/{entityAzName}
+GET    /data/{modelAzName}/{entityAzName}/_count
 GET    /data/{modelAzName}/{entityAzName}/{instanceId}
 POST   /data/{modelAzName}/{entityAzName}/_query
 POST   /data/{modelAzName}/_links/{associationAzName}
@@ -189,6 +190,10 @@ instance fields are JSON object properties keyed by modeled attribute `azName`
 and validated against the selected entity's `DataType`. Association links are
 created through dedicated `_links` endpoints using source and target instance
 ids.
+
+Entity instance counts are available through
+`GET /data/{modelAzName}/{entityAzName}/_count`, which returns a JSON object
+such as `{"count":2}`.
 
 Example:
 
@@ -314,9 +319,14 @@ cd vedenemo-ux
 npm run dev
 ```
 
-The main page shows model selection and the PlantUML diagram. Use the
-bottom-left arrow to open the browser console as a lower split pane; drag the
-pane's top border to resize it, and use the same arrow to minimize it again.
+The main page has top-level `Models` and `Model instances` tabs. The `Models`
+tab shows model selection and the PlantUML diagram. Use the bottom-left arrow
+to open the browser console as a lower split pane under the `Models` tab; drag
+the pane's top border to resize it, and use the same arrow to minimize it
+again. The `Model instances` tab refreshes runtime instance counts when opened
+and shows a read-only tree:
+`ModelVisName (Model azName)` -> generated `ModelInstanceVisName` -> entity
+groups such as `Album (460)`.
 The console output scrolls to the latest line as commands run. The full-page
 browser console remains available directly at `/console`. The browser console
 supports the same authoring commands as `VedenemoCli`, including `add`,

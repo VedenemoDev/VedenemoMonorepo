@@ -99,6 +99,7 @@ final class InstanceDataResourceTest {
 
         HttpResponse<String> list = get("/data/Music/Artist");
         HttpResponse<String> filtered = get("/data/Music/Artist?Name=Miles%20Davis");
+        HttpResponse<String> count = get("/data/Music/Artist/_count");
         HttpResponse<String> read = get("/data/Music/Artist/" + firstId);
 
         assertEquals(200, list.statusCode());
@@ -106,6 +107,8 @@ final class InstanceDataResourceTest {
         assertEquals(200, filtered.statusCode());
         assertTrue(filtered.body().contains("Miles Davis"));
         assertTrue(!filtered.body().contains("Bill Evans"));
+        assertEquals(200, count.statusCode());
+        assertTrue(count.body().contains("\"count\":2"));
         assertEquals(200, read.statusCode());
         assertTrue(read.body().contains("\"id\":\"" + firstId + "\""));
     }

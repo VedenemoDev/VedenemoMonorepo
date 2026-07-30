@@ -123,6 +123,17 @@ public final class InstanceDataResource {
                 writeError(context, statusFor(exception), exception);
             }
         });
+        routes.get("/data/{modelAzName}/{entityAzName}/_count", context -> {
+            try {
+                int count = instanceService.countEntityInstances(
+                        context.pathParam("modelAzName"),
+                        context.pathParam("entityAzName")
+                );
+                writeJson(context, 200, new CountResponse(count));
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
         routes.get("/data/{modelAzName}/{entityAzName}/{instanceId}", context -> {
             try {
                 EntityInstance instance = instanceService.readEntityInstance(
@@ -249,6 +260,7 @@ public final class InstanceDataResource {
             operations.put("list", "/data/{modelAzName}/" + entity.azName());
             operations.put("read", "/data/{modelAzName}/" + entity.azName() + "/{instanceId}");
             operations.put("query", "/data/{modelAzName}/" + entity.azName() + "/_query");
+            operations.put("count", "/data/{modelAzName}/" + entity.azName() + "/_count");
             Map<String, String> example = new LinkedHashMap<>();
             entity.attributes().forEach(attribute -> example.put(attribute.azName(), exampleValue(attribute)));
             return new EntityDescriptionResponse(
@@ -339,6 +351,9 @@ public final class InstanceDataResource {
         private static Object rawValue(InstanceValue value) {
             return value.value();
         }
+    }
+
+    private record CountResponse(int count) {
     }
 
     private record LinkResponse(

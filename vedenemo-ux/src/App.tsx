@@ -13,6 +13,8 @@ import { PlantUmlModelAdapter } from "./adapters/PlantUmlModelAdapter";
 type ModelLoadState = "idle" | "loading" | "ok" | "error";
 type ModelConnectionState = "disconnected" | "connecting" | "connected" | "error";
 type ConsoleStatus = "loading" | "ready" | "error";
+type ActiveTab = "models" | "modelInstances";
+type ModelInstanceLoadState = "idle" | "loading" | "ok" | "error";
 
 type RuntimeConfig = {
   apiBaseUrl?: string;
@@ -36,6 +38,38 @@ type ConsoleCommandResponse = {
   outputLines: string[];
   prompt: string;
   attachedModelAzName?: string | null;
+};
+
+type EntityDescription = {
+  azName: string;
+  visName: string;
+};
+
+type ApiDescriptionResponse = {
+  modelAzName: string;
+  modelVisName: string;
+  entities: EntityDescription[];
+};
+
+type CountResponse = {
+  count: number;
+};
+
+type EntityInstanceGroup = {
+  entityAzName: string;
+  entityVisName: string;
+  count: number;
+};
+
+type ModelInstanceRootNode = {
+  visName: string;
+  entityGroups: EntityInstanceGroup[];
+};
+
+type ModelInstanceModelNode = {
+  modelAzName: string;
+  modelVisName: string;
+  roots: ModelInstanceRootNode[];
 };
 
 type ConsolePanelProps = {
@@ -76,6 +110,35 @@ async function fetchModels(apiBaseUrl: string): Promise<ModelSummary[]> {
   }
 
   return response.json() as Promise<ModelSummary[]>;
+}
+
+async function fetchModelInstanceApi(apiBaseUrl: string, modelAzName: string): Promise<ApiDescriptionResponse> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/_api`, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json() as Promise<ApiDescriptionResponse>;
+}
+
+async function fetchEntityInstanceCount(apiBaseUrl: string, modelAzName: string, entityAzName: string): Promise<number> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/${encodeURIComponent(entityAzName)}/_count`, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  const body = (await response.json()) as CountResponse;
+  return body.count;
 }
 
 function readConnectedModelAzName(): string {
@@ -359,6 +422,10 @@ export function App() {
   const [diagramMessage, setDiagramMessage] = useState(DIAGRAM_EMPTY_MESSAGE);
   const [isConsolePaneOpen, setIsConsolePaneOpen] = useState(false);
   const [consolePaneHeight, setConsolePaneHeight] = useState(readConsolePaneHeight);
+  const [activeTab, setActiveTab] = useState<ActiveTab>("models");
+  const [modelInstanceLoadState, setModelInstanceLoadState] = useState<ModelInstanceLoadState>("idle");
+  const [modelInstanceMessage, setModelInstanceMessage] = useState("Model instances not loaded");
+  const [modelInstanceTree, setModelInstanceTree] = useState<ModelInstanceModelNode[]>([]);
 
   useEffect(() => {
     selectedModelAzNameRef.current = selectedModelAzName;
@@ -414,6 +481,12 @@ export function App() {
     }, 1800);
     return () => window.clearTimeout(timeoutId);
   }, [diagramMessage]);
+
+  useEffect(() => {
+    if (activeTab === "modelInstances" && apiBaseUrl) {
+      void refreshModelInstances();
+    }
+  }, [activeTab, apiBaseUrl]);
 
   async function refreshModels(baseUrl = apiBaseUrl, isCancelled: () => boolean = () => false) {
     if (!baseUrl) {
@@ -486,6 +559,61 @@ export function App() {
     return plantUmlDiagramRendererRef.current.renderSvg(plantUmlSource, PLANTUML_TARGET_ID);
   }
 
+  async function refreshModelInstances(baseUrl = apiBaseUrl) {
+    if (!baseUrl) {
+      setModelInstanceLoadState("error");
+      setModelInstanceMessage("Backend URL is not configured");
+      return;
+    }
+
+    setModelInstanceLoadState("loading");
+    setModelInstanceMessage("Refreshing model instances...");
+
+    try {
+      const nextModels = await fetchModels(baseUrl);
+      setModels(nextModels);
+      setSelectedModelAzName((current) => {
+        if (nextModels.some((model) => model.azName === current)) {
+          return current;
+        }
+        return nextModels[0]?.azName ?? "";
+      });
+      const nextTree = await Promise.all(nextModels.map((model) => buildModelInstanceNode(baseUrl, model)));
+      setModelInstanceTree(nextTree);
+      setModelInstanceLoadState("ok");
+      const entityGroupCount = nextTree.reduce(
+        (total, model) => total + model.roots.reduce((rootTotal, root) => rootTotal + root.entityGroups.length, 0),
+        0,
+      );
+      setModelInstanceMessage(nextModels.length === 0
+        ? "No models available"
+        : `${nextModels.length} model${nextModels.length === 1 ? "" : "s"}, ${entityGroupCount} entity group${entityGroupCount === 1 ? "" : "s"}`);
+    } catch (error) {
+      setModelInstanceLoadState("error");
+      setModelInstanceMessage(error instanceof Error ? error.message : "Model instance refresh failed");
+    }
+  }
+
+  async function buildModelInstanceNode(apiBaseUrl: string, model: ModelSummary): Promise<ModelInstanceModelNode> {
+    const apiDescription = await fetchModelInstanceApi(apiBaseUrl, model.azName);
+    const entityGroups = await Promise.all(apiDescription.entities.map(async (entity) => ({
+      entityAzName: entity.azName,
+      entityVisName: entity.visName,
+      count: await fetchEntityInstanceCount(apiBaseUrl, model.azName, entity.azName),
+    })));
+
+    return {
+      modelAzName: model.azName,
+      modelVisName: model.visName,
+      roots: [
+        {
+          visName: "Model instance 1",
+          entityGroups,
+        },
+      ],
+    };
+  }
+
   async function toggleModelConnection() {
     if (modelConnectionState === "connected" || modelConnectionState === "connecting") {
       eventAdapterRef.current.disconnect();
@@ -531,6 +659,8 @@ export function App() {
 
   const footerDiagramMessage = diagramMessage === DIAGRAM_EMPTY_MESSAGE ? "" : diagramMessage;
   const showDiagramPlaceholder = !diagramHasContent && diagramMessage === DIAGRAM_EMPTY_MESSAGE;
+  const isModelsTab = activeTab === "models";
+  const isConsolePaneVisible = isModelsTab && isConsolePaneOpen;
   const workspaceStyle = {
     "--console-pane-height": `${consolePaneHeight}px`,
   } as CSSProperties;
@@ -545,54 +675,116 @@ export function App() {
 
   return (
     <main
-      className={isConsolePaneOpen ? "workspace-shell workspace-shell-console-open" : "workspace-shell"}
+      className={isConsolePaneVisible ? "workspace-shell workspace-shell-console-open" : "workspace-shell"}
       style={workspaceStyle}
     >
       <section className="app-shell">
+        <nav className="workspace-tabs" aria-label="Vedenemo workspace tabs">
+          <button
+            type="button"
+            className={activeTab === "models" ? "workspace-tab workspace-tab-active" : "workspace-tab"}
+            onClick={() => setActiveTab("models")}
+            aria-pressed={activeTab === "models"}
+          >
+            Models
+          </button>
+          <button
+            type="button"
+            className={activeTab === "modelInstances" ? "workspace-tab workspace-tab-active" : "workspace-tab"}
+            onClick={() => setActiveTab("modelInstances")}
+            aria-pressed={activeTab === "modelInstances"}
+          >
+            Model instances
+          </button>
+        </nav>
         <section className="card">
-          <div className="model-panel">
-            <label htmlFor="model-select">Select model</label>
-            <div className="model-controls">
-              <select
-                id="model-select"
-                value={selectedModelAzName}
-                onChange={(event) => setSelectedModelAzName(event.target.value)}
-                disabled={modelLoadState === "loading" || models.length === 0}
-              >
-                {models.length === 0 ? (
-                  <option value="">No models available</option>
+          {isModelsTab ? (
+            <div className="model-panel">
+              <label htmlFor="model-select">Select model</label>
+              <div className="model-controls">
+                <select
+                  id="model-select"
+                  value={selectedModelAzName}
+                  onChange={(event) => setSelectedModelAzName(event.target.value)}
+                  disabled={modelLoadState === "loading" || models.length === 0}
+                >
+                  {models.length === 0 ? (
+                    <option value="">No models available</option>
+                  ) : (
+                    models.map((model) => (
+                      <option key={model.azName} value={model.azName}>
+                        {model.visName} ({model.azName}) version {model.version}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <button type="button" onClick={() => void refreshModels()} disabled={modelLoadState === "loading"}>
+                  Refresh model list
+                </button>
+                <button
+                  type="button"
+                  className="connect-button"
+                  onClick={() => void toggleModelConnection()}
+                  disabled={modelConnectionState === "connecting"}
+                >
+                  {modelConnectionState === "connected" ? "Disconnect" : "Connect"}
+                </button>
+              </div>
+              <span className={`model-status model-status-${modelLoadState}`}>{modelMessage}</span>
+              <div className="diagram-viewport" aria-label="PlantUML class diagram">
+                <div id={PLANTUML_TARGET_ID} className="diagram-svg" />
+                {showDiagramPlaceholder && (
+                  <div className="diagram-placeholder">{DIAGRAM_EMPTY_MESSAGE}</div>
+                )}
+              </div>
+              {footerDiagramMessage && <span className="diagram-status">{footerDiagramMessage}</span>}
+            </div>
+          ) : (
+            <div className="model-instances-panel">
+              <div className="model-instances-toolbar">
+                <button
+                  type="button"
+                  onClick={() => void refreshModelInstances()}
+                  disabled={modelInstanceLoadState === "loading"}
+                >
+                  Refresh model instances
+                </button>
+                <span className={`model-status model-status-${modelInstanceLoadState}`}>{modelInstanceMessage}</span>
+              </div>
+              <div className="model-instance-tree" aria-label="Model instance tree">
+                {modelInstanceTree.length === 0 ? (
+                  <div className="model-instance-empty">No model instances available</div>
                 ) : (
-                  models.map((model) => (
-                    <option key={model.azName} value={model.azName}>
-                      {model.visName} ({model.azName}) version {model.version}
-                    </option>
+                  modelInstanceTree.map((model) => (
+                    <details key={model.modelAzName} open className="tree-node tree-node-model">
+                      <summary>{model.modelVisName} ({model.modelAzName})</summary>
+                      <div className="tree-children">
+                        {model.roots.map((root) => (
+                          <details key={`${model.modelAzName}-${root.visName}`} open className="tree-node tree-node-root">
+                            <summary>{root.visName}</summary>
+                            <ul className="tree-children tree-entity-groups">
+                              {root.entityGroups.length === 0 ? (
+                                <li className="tree-empty">No entity types</li>
+                              ) : (
+                                root.entityGroups.map((group) => (
+                                  <li key={`${model.modelAzName}-${root.visName}-${group.entityAzName}`}>
+                                    {group.entityVisName} ({group.count})
+                                  </li>
+                                ))
+                              )}
+                            </ul>
+                          </details>
+                        ))}
+                      </div>
+                    </details>
                   ))
                 )}
-              </select>
-              <button type="button" onClick={() => void refreshModels()} disabled={modelLoadState === "loading"}>
-                Refresh model list
-              </button>
-              <button
-                type="button"
-                className="connect-button"
-                onClick={() => void toggleModelConnection()}
-                disabled={modelConnectionState === "connecting"}
-              >
-                {modelConnectionState === "connected" ? "Disconnect" : "Connect"}
-              </button>
+              </div>
             </div>
-            <span className={`model-status model-status-${modelLoadState}`}>{modelMessage}</span>
-            <div className="diagram-viewport" aria-label="PlantUML class diagram">
-              <div id={PLANTUML_TARGET_ID} className="diagram-svg" />
-              {showDiagramPlaceholder && (
-                <div className="diagram-placeholder">{DIAGRAM_EMPTY_MESSAGE}</div>
-              )}
-            </div>
-            {footerDiagramMessage && <span className="diagram-status">{footerDiagramMessage}</span>}
-          </div>
+          )}
         </section>
       </section>
-      {isConsolePaneOpen && (
+      {isConsolePaneVisible && (
         <section className="console-pane" aria-label="Vedenemo console pane">
           <button
             type="button"
@@ -609,15 +801,17 @@ export function App() {
           <ConsolePanel mode="pane" />
         </section>
       )}
-      <button
-        type="button"
-        className="console-toggle"
-        onClick={() => setIsConsolePaneOpen((current) => !current)}
-        aria-label={isConsolePaneOpen ? "Hide console pane" : "Show console pane"}
-        title={isConsolePaneOpen ? "Hide console pane" : "Show console pane"}
-      >
-        {isConsolePaneOpen ? "⌄" : "⌃"}
-      </button>
+      {isModelsTab && (
+        <button
+          type="button"
+          className="console-toggle"
+          onClick={() => setIsConsolePaneOpen((current) => !current)}
+          aria-label={isConsolePaneOpen ? "Hide console pane" : "Show console pane"}
+          title={isConsolePaneOpen ? "Hide console pane" : "Show console pane"}
+        >
+          {isConsolePaneOpen ? "⌄" : "⌃"}
+        </button>
+      )}
     </main>
   );
 }

@@ -50,6 +50,14 @@ public final class ModelInstanceDataset {
         return List.copyOf(instances.values());
     }
 
+    synchronized int countEntityInstances(String entityAzName) {
+        Map<InstanceId, EntityInstance> instances = instancesByEntity.get(entityAzName);
+        if (instances == null) {
+            return 0;
+        }
+        return instances.size();
+    }
+
     synchronized AssociationInstanceLink addAssociationLink(AssociationInstanceLink link) {
         linksByAssociation
                 .computeIfAbsent(link.associationAzName(), ignored -> new ArrayList<>())

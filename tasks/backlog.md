@@ -408,6 +408,152 @@ None currently.
   authentication, generated source, or schema migration.
 - Added deterministic core and web API tests for the implemented behavior.
 
+## Add Model Instances UX Tab
+
+Status: executed first slice.
+
+### Goal
+
+Extend the existing browser UX so model-authoring and runtime model-instance
+inspection are separated into top-level tabs.
+
+The existing model visualization and browser console workflow should remain
+under a leftmost `Models` tab. A new `Model instances` tab should provide an
+initial read-only overview of loaded models, model-instance roots based on
+those models, and the runtime entity instance counts available under each
+model-instance root.
+
+### Initial Scope
+
+- Add a top-level tab section near the top of `vedenemo-ux`.
+- Make `Models` the leftmost/default tab.
+- Move the existing UX content under the `Models` tab without changing its
+  current behavior.
+- Keep the horizontal split console functionality available only inside the
+  `Models` tab view.
+- Add a second tab named `Model instances`.
+- Under the `Model instances` tab, add a `Refresh model instances` button.
+- Under the refresh button, add a three-level tree view:
+  - first-level nodes are loaded model definitions, displayed as
+    `ModelVisName (Model azName)`;
+  - second-level nodes are model-instance roots based on that model, displayed
+    by `ModelInstanceVisName`;
+  - third-level nodes are entity-type instance groups under that model-instance
+    root, for example `Album (460)` and `Artist (228)`.
+- Keep this first slice read-only. It should inspect/list existing instance
+  data but not create, edit, delete, nickname, or persist runtime instances.
+- Use the existing dynamic instance-data HTTP API. Do not add backend API
+  changes unless frontend implementation proves that a required list/discovery
+  operation is missing.
+
+### Resolved UX Behavior
+
+- Entering the `Model instances` tab should automatically refresh the model
+  instance tree.
+- `Refresh model instances` should reload the model list and instance data
+  explicitly.
+- First-level model labels should always use `ModelVisName (Model azName)`,
+  even when no duplicate visual names are currently loaded.
+- Second-level model-instance labels should use only `ModelInstanceVisName`.
+  The parent model node already identifies the exact model the instance root is
+  based on.
+- Third-level nodes should represent all entity types in the model-instance
+  root, each with the currently loaded instance count in parentheses. This
+  avoids guessing which entity is the natural or most important root for a
+  model.
+- Multiple model-instance roots may exist under the same model, for example
+  family trees for different families or album collections for different
+  people.
+- Empty models should remain visible and show an empty/none state under the
+  model node.
+- Error states should be local to the `Model instances` tab and should not
+  disturb the `Models` tab console or diagram view.
+
+### Implementation Notes
+
+- Keep tab state and instance-tree state in `vedenemo-ux`.
+- Reuse existing frontend HTTP configuration and model-fetching conventions
+  where possible.
+- Fetch loaded models from the existing model list API.
+- For each loaded model, use `GET /data/{modelAzName}/_api` to discover entity
+  definitions, then use `GET /data/{modelAzName}/{entityAzName}` to list
+  runtime entity instances for the third-level entity-type count nodes.
+- The current backend API binds runtime instance data directly to a loaded
+  model. If multiple model-instance roots per model are implemented, backend
+  discovery may need to expose dataset/root identity and `ModelInstanceVisName`
+  before the UX can render more than one second-level node per model.
+- Association links should not appear in the first tree view. This first slice
+  should show only entity-instance counts grouped by entity type.
+- Future nickname support should be planned as separate metadata because
+  nicknames are user-facing labels for a whole model-instance root/dataset.
+  A generated `ModelInstanceVisName` can be used first and later replaced by a
+  user-assigned nickname.
+
+### Out Of Scope
+
+- Runtime instance creation, editing, deletion, and association-link editing in
+  the browser UX.
+- Persistence of instance data or instance nicknames.
+- Live WebSocket updates for runtime instance data.
+- Backend authentication/authorization.
+- Backend schema changes unless the existing API is insufficient for discovery.
+
+### Testing Scope
+
+- Frontend build should pass with `npm run build`.
+- Add focused frontend tests only if the existing UX test setup supports them.
+- Manually verify that:
+  - the existing model diagram and console remain under the `Models` tab;
+  - the console split controls do not appear under `Model instances`;
+  - refresh populates loaded models by visual name;
+  - model-instance roots appear under the correct model;
+  - entity-type count nodes appear under the correct model-instance root;
+  - empty and error states are understandable.
+
+### Resolved Decisions
+
+- The tree should not list individual runtime records in the first slice.
+  Third-level nodes are entity-type groups with instance counts, for example
+  `Album (460)`.
+- The first slice should show only entity instances. Association-link counts and
+  relationship summaries are deferred.
+- Model definition labels should always be displayed as
+  `ModelVisName (Model azName)`.
+- Model-instance root labels should be displayed as `ModelInstanceVisName`
+  only.
+- Multiple model-instance roots may exist under the same model.
+- Entering the `Model instances` tab should automatically refresh the tree, and
+  the explicit `Refresh model instances` button should remain available.
+- Future nicknames are for the whole model-instance root/dataset loaded from or
+  associated with one model, for example `Mika's album collection`, not for
+  individual entity instances. The first generated `ModelInstanceVisName` may
+  later be replaced by a user-assigned nickname.
+
+### Open Questions
+
+None currently.
+
+### Completion Notes
+
+- Added a top-level tab section in `vedenemo-ux`.
+- Kept the existing model selector, PlantUML diagram, model-event connection,
+  and horizontal embedded console split under the leftmost/default `Models` tab.
+- Added a `Model instances` tab that refreshes automatically when opened and
+  also provides a `Refresh model instances` button.
+- Added a read-only tree shaped as:
+  `ModelVisName (Model azName)` -> generated `ModelInstanceVisName` ->
+  entity-type count nodes such as `Album (460)` and `Artist (228)`.
+- Added `GET /data/{modelAzName}/{entityAzName}/_count` so the UX can show
+  exact entity-instance counts even when list endpoints return a limited page.
+- Kept association-link counts, relationship summaries, runtime instance
+  editing, nickname editing, persistence, and live runtime-data updates out of
+  scope.
+- Current backend runtime data still has one process-local dataset per loaded
+  model. The UX represents that dataset as a generated `Model instance 1`.
+  True multiple model-instance roots per model still require backend dataset
+  identity/discovery and generated or user-assigned `ModelInstanceVisName`
+  metadata.
+
 ## Plan Association Semantics For Vedenemo Models
 
 Status: executed.
