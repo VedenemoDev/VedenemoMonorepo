@@ -6,10 +6,11 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 API_BASE_URL="${VEDENEMO_API_BASE_URL:-http://127.0.0.1:8080}"
 MODEL_AZ_NAME="AlbumCollectionSimple"
+MODEL_INSTANCE_ROOT_NAME="Mikan levykokoelma"
 VDOS_FILE="${REPO_ROOT}/.vedenemo/LevykokoelmaSimple.vdos"
 CSV_FILE="${REPO_ROOT}/model_test_data/LevykokoelmaSimpleModelData.csv"
 
-python3 - "$API_BASE_URL" "$MODEL_AZ_NAME" "$VDOS_FILE" "$CSV_FILE" <<'PY'
+python3 - "$API_BASE_URL" "$MODEL_AZ_NAME" "$MODEL_INSTANCE_ROOT_NAME" "$VDOS_FILE" "$CSV_FILE" <<'PY'
 import csv
 import json
 import sys
@@ -17,7 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-api_base_url, model_az_name, vdos_file, csv_file = sys.argv[1:]
+api_base_url, model_az_name, model_instance_root_name, vdos_file, csv_file = sys.argv[1:]
 api_base_url = api_base_url.rstrip("/")
 
 
@@ -172,6 +173,16 @@ def ensure_album_artist_link(album_id, artist_id):
     return True
 
 
+def rename_model_instance_root():
+    status, body = request(
+        "PUT",
+        f"/data/{quoted(model_az_name)}/_instance-root",
+        {"visName": model_instance_root_name},
+    )
+    renamed = json_body(status, body, "Renaming model instance root")
+    return renamed.get("visName", model_instance_root_name)
+
+
 ensure_model_loaded()
 
 created_artists = 0
@@ -207,7 +218,10 @@ with open(csv_file, newline="", encoding="utf-8-sig") as handle:
         created_albums += int(album_created)
         created_links += int(link_created)
 
+renamed_root_name = rename_model_instance_root()
+
 print(f"Model: {model_az_name}")
+print(f"Model instance root name: {renamed_root_name}")
 print(f"CSV rows processed: {processed_rows}")
 print(f"Rows skipped: {skipped_rows}")
 print(f"Artists created: {created_artists}")

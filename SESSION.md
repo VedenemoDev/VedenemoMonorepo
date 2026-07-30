@@ -5699,3 +5699,44 @@ Current status and next steps:
   still advertises the old CORS methods, so it must be restarted/deployed from
   this rebuilt code before the browser rename dialog will work against that
   URL.
+
+## 2026-07-30 22:53 EEST
+
+Session goal: update data loader scripts to set backend model-instance root
+names after loading data.
+
+Files changed:
+
+- `scripts/LoadLevykokoelmaSimpleModelData.bash`
+- `scripts/LoadFamilyTreeModelData.bash`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,260p' scripts/LoadLevykokoelmaSimpleModelData.bash`
+- `sed -n '1,720p' scripts/LoadFamilyTreeModelData.bash`
+- `tail -n 80 SESSION.md`
+- `git status --short --branch`
+- `bash -n scripts/LoadLevykokoelmaSimpleModelData.bash`
+- `bash -n scripts/LoadFamilyTreeModelData.bash`
+- `git diff -- scripts/LoadLevykokoelmaSimpleModelData.bash scripts/LoadFamilyTreeModelData.bash`
+- local packaged-backend smoke running both loader scripts and checking
+  `/data/{modelAzName}/_instance-root`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Updated `scripts/LoadLevykokoelmaSimpleModelData.bash` so it renames the
+  `AlbumCollectionSimple` model-instance root to `Mikan levykokoelma` after
+  data and links have been ensured.
+- Updated `scripts/LoadFamilyTreeModelData.bash` so it renames the
+  `FamilyTree` model-instance root to `Charles III Family Tree` after data and
+  links have been ensured.
+- Both scripts now print `Model instance root name: ...` in their summaries.
+- Verified shell syntax for both scripts.
+- Local packaged-backend smoke confirmed
+  `AlbumCollectionSimple={"modelAzName":"AlbumCollectionSimple","modelVersion":"1.0.0","visName":"Mikan levykokoelma"}`
+  and
+  `FamilyTree={"modelAzName":"FamilyTree","modelVersion":"1.0.0","visName":"Charles III Family Tree"}`.

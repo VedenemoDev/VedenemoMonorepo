@@ -6,16 +6,17 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 API_BASE_URL="${VEDENEMO_API_BASE_URL:-http://127.0.0.1:8080}"
 MODEL_AZ_NAME="FamilyTree"
+MODEL_INSTANCE_ROOT_NAME="Charles III Family Tree"
 VDOS_FILE="${REPO_ROOT}/.vedenemo/FamilyTree.vdos"
 
-python3 - "$API_BASE_URL" "$MODEL_AZ_NAME" "$VDOS_FILE" <<'PY'
+python3 - "$API_BASE_URL" "$MODEL_AZ_NAME" "$MODEL_INSTANCE_ROOT_NAME" "$VDOS_FILE" <<'PY'
 import json
 import sys
 import urllib.error
 import urllib.parse
 import urllib.request
 
-api_base_url, model_az_name, vdos_file = sys.argv[1:]
+api_base_url, model_az_name, model_instance_root_name, vdos_file = sys.argv[1:]
 api_base_url = api_base_url.rstrip("/")
 
 PLACES = [
@@ -497,6 +498,16 @@ def ensure_link(association_az_name, source_id, target_id):
     return True
 
 
+def rename_model_instance_root():
+    status, body = request(
+        "PUT",
+        f"/data/{quoted(model_az_name)}/_instance-root",
+        {"visName": model_instance_root_name},
+    )
+    renamed = json_body(status, body, "Renaming model instance root")
+    return renamed.get("visName", model_instance_root_name)
+
+
 def source_ids_for_person(person_key):
     if person_key == "charles":
         return ["royal_king", "canada_kings_queens"]
@@ -589,7 +600,10 @@ for event in LIFE_EVENTS:
     created_links += int(ensure_link("LifeEvent_Place", event_id, place_ids[event["place"]]))
     created_links += int(ensure_link("LifeEvent_Sources", event_id, source_record_ids["royal_king"]))
 
+renamed_root_name = rename_model_instance_root()
+
 print(f"Model: {model_az_name}")
+print(f"Model instance root name: {renamed_root_name}")
 print(f"Places created: {created_places}")
 print(f"People created: {created_persons}")
 print(f"Family units created: {created_family_units}")
