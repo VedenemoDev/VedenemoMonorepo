@@ -73,6 +73,9 @@ terminal CLI, `save`, `snapshots`, and `load` use local `.vdos` files. In the
 browser console, the same command names use backend cloud snapshots when the
 backend snapshot store is configured.
 
+Runtime model-instance data access is HTTP-only in the current implementation;
+there are no terminal or browser CLI commands for the `/data` API yet.
+
 ### `ping`
 
 Checks backend connectivity through `GET /models/ping`.

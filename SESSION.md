@@ -5042,3 +5042,113 @@ Current status and next steps:
 - Defined first-slice relationship query `direction` values:
   `outgoing`, `incoming`, and `either`.
 - No build was run because this was a documentation-only proofreading change.
+
+## 2026-07-30 14:02 EEST
+
+Session goal: implement the planned dynamic model instance data API.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/AssociationInstanceLink.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/EntityInstance.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/EntityInstanceQuery.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/InstanceId.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/InstanceValue.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceDataset.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceRegistry.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/RelationshipDirection.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/RelationshipPredicate.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ConsoleResourceTest.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,460p' tasks/backlog.md`
+- `rg -n "instance|data|association|link|relationship|attribute|Command|Controller|Route|DTO|VEntity|VAttribute|VAssociation|vdos|script" -S . -g '!vedenemo-ux/node_modules/**'`
+- `find . -maxdepth 3 -type f \( -name 'pom.xml' -o -name '*.java' -o -name '*.md' \) | sort`
+- `git status --short`
+- `find vedenemo-model-api/src/main/java vedenemo-core/src/main/java vedenemo-web-api/src/main/java -type f | sort`
+- `find vedenemo-web-api/src/test/java vedenemo-core/src/test/java vedenemo-model-api/src/test/java -type f | sort`
+- `sed -n '1,280p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java`
+- `sed -n '1,260p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VEntity.java`
+- `sed -n '1,260p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/Association.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VAttribute.java`
+- `sed -n '1,180p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/registry/ModelRegistry.java`
+- `sed -n '1,220p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `sed -n '220,520p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `sed -n '1,220p' vedenemo-web-api/pom.xml`
+- `sed -n '1,220p' vedenemo-core/pom.xml`
+- `sed -n '1,220p' vedenemo-model-api/pom.xml`
+- `sed -n '1,220p' pom.xml`
+- `sed -n '1,180p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelTextRules.java`
+- `sed -n '1,180p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelVersion.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/OwnershipAssociation.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ReferenceAssociation.java`
+- `sed -n '1,260p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/RelationAssociation.java`
+- `sed -n '1,240p' docs/architecture_doc_instructions.md`
+- `sed -n '1,260p' docs/architecture_doc.md`
+- `sed -n '1,180p' README.md`
+- `mkdir -p vedenemo-core/src/main/java/org/vedenemo/core/instance vedenemo-core/src/test/java/org/vedenemo/core/instance`
+- `mvn -B -pl vedenemo-web-api -am test -DskipTests`
+- `mvn -B -pl vedenemo-web-api -am test`
+- `sed -n '1,220p' vedenemo-web-api/target/surefire-reports/org.vedenemo.web.api.resource.ConsoleResourceTest.txt`
+- `sed -n '1,230p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ConsoleResourceTest.java`
+- `sed -n '230,520p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ConsoleResourceTest.java`
+- `rg -n "ConsoleResourceTest|MissingCloud|startsConsole" vedenemo-web-api/target/surefire-reports -S`
+- `nl -ba vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ConsoleResourceTest.java | sed -n '130,155p'`
+- `sed -n '130,170p' vedenemo-web-api/target/surefire-reports/TEST-org.vedenemo.web.api.resource.ConsoleResourceTest.xml`
+- `rg -n "Cloud snapshot store|save|snapshots|load|snapshot" vedenemo-command-console/src/main/java vedenemo-web-api/src/main/java -S`
+- `sed -n '1,260p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '1,180p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ConsoleResource.java`
+- `sed -n '1,160p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/WebConsoleSessionRegistryFactory.java`
+- `sed -n '1,140p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleCapabilities.java`
+- `env | rg '^VEDENEMO_'`
+- `nl -ba vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ConsoleResourceTest.java | sed -n '1,160p'`
+- `sed -n '1,70p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `sed -n '180,420p' docs/architecture_doc.md`
+- `sed -n '180,340p' README.md`
+- `sed -n '1,130p' docs/cli-reference.md`
+- `sed -n '1,420p' tasks/backlog.md`
+- `mvn -B verify`
+- `git status --short`
+- `git diff --stat`
+- `git diff --check`
+- `git diff -- vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java | sed -n '1,260p'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,360p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `find vedenemo-core/src/main/java/org/vedenemo/core/instance -type f -maxdepth 1 -print | sort`
+- `find vedenemo-core/src/test/java/org/vedenemo/core/instance vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource -maxdepth 1 -type f -name '*Instance*Test.java' -print | sort`
+- `sed -n '260,360p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `mvn -B verify`
+
+Current status and next steps:
+
+- Implemented the first process-local dynamic model-instance API under
+  `/data`.
+- Added pure JDK core instance data records, registry, dataset, validation, and
+  query service.
+- Added web API DTO/routing for dynamic API description, entity instance
+  create/list/read/query, and association link create/list.
+- Added one-hop relationship predicates through modeled associations.
+- Updated current implementation docs and task records.
+- Verified with `mvn -B -pl vedenemo-web-api -am test` and `mvn -B verify`.
+- Next likely work: add update/delete instance operations and plan cardinality
+  enforcement for association links.

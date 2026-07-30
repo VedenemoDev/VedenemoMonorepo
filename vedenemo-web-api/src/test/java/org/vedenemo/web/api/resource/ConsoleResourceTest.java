@@ -37,7 +37,16 @@ final class ConsoleResourceTest {
         ModelRegistry modelRegistry = new ModelRegistry();
         modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
 
-        Javalin app = VedenemoWebApi.create(testConfig(), modelRegistry);
+        ModelCommandJournal commandJournal = new ModelCommandJournal();
+        Javalin app = VedenemoWebApi.create(
+                testConfig(),
+                modelRegistry,
+                VedenemoApp.createSessionManager(modelRegistry, commandJournal),
+                commandJournal,
+                Optional.empty(),
+                "dev",
+                Clock.systemUTC()
+        );
         try {
             start(app);
             URI baseUri = URI.create("http://127.0.0.1:" + app.port());
@@ -127,7 +136,16 @@ final class ConsoleResourceTest {
         ModelRegistry modelRegistry = new ModelRegistry();
         modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
 
-        Javalin app = VedenemoWebApi.create(testConfig(), modelRegistry);
+        ModelCommandJournal commandJournal = new ModelCommandJournal();
+        Javalin app = VedenemoWebApi.create(
+                testConfig(),
+                modelRegistry,
+                VedenemoApp.createSessionManager(modelRegistry, commandJournal),
+                commandJournal,
+                Optional.empty(),
+                "dev",
+                Clock.systemUTC()
+        );
         try {
             start(app);
             URI baseUri = URI.create("http://127.0.0.1:" + app.port());

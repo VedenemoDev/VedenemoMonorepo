@@ -16,11 +16,14 @@ development, command-flow testing, and shaping the core model/API boundaries.
   metadata, and initial `DataType` values.
 - Core command execution for creating entities, attributes, directed
   ownership/reference associations, and bidirectional relations.
+- Process-local runtime instance data validated against loaded model
+  definitions.
 - Stack-based undo for the latest successful command in the current session.
 - Model-level command journal used by Vedenemo Script export.
 - Backend-owned `.vdos` Vedenemo Script import/export.
 - Javalin HTTP/WebSocket API for models, model-change events, sessions,
-  commands, undo, script import/export, and browser console sessions.
+  commands, undo, script import/export, dynamic instance data, and browser
+  console sessions.
 - Shared Java command-flow module for terminal and browser CLI-like command
   behavior.
 - HTTP-backed interactive `VedenemoCli`.
@@ -34,6 +37,7 @@ development, command-flow testing, and shaping the core model/API boundaries.
 Not currently implemented:
 
 - Database persistence.
+- Durable model-instance data storage.
 - Distributed runtime.
 - REST API authentication.
 - Durable event streaming or cross-process model-change notifications.
@@ -136,6 +140,14 @@ GET    /models/{modelAzName}/entities/{entityAzName}/associations
 GET    /models/{modelAzName}/script
 POST   /models/script
 
+GET    /data/{modelAzName}/_api
+POST   /data/{modelAzName}/{entityAzName}
+GET    /data/{modelAzName}/{entityAzName}
+GET    /data/{modelAzName}/{entityAzName}/{instanceId}
+POST   /data/{modelAzName}/{entityAzName}/_query
+POST   /data/{modelAzName}/_links/{associationAzName}
+GET    /data/{modelAzName}/_links/{associationAzName}
+
 POST   /sessions/start
 DELETE /sessions/{uuid}
 PUT    /sessions/{uuid}/selected-model
@@ -169,6 +181,25 @@ curl -X DELETE http://127.0.0.1:8080/sessions/<session-id>
 ```
 
 Successful cleanup returns HTTP `204`.
+
+## Dynamic Instance Data API
+
+The `/data` API stores process-local runtime records for loaded models. Entity
+instance fields are JSON object properties keyed by modeled attribute `azName`
+and validated against the selected entity's `DataType`. Association links are
+created through dedicated `_links` endpoints using source and target instance
+ids.
+
+Example:
+
+```bash
+curl -X POST http://127.0.0.1:8080/data/Music/Artist \
+  -H 'Content-Type: application/json' \
+  -d '{"Name":"Miles Davis","Website":"https://example.com"}'
+```
+
+Relationship-aware queries use `POST /data/{modelAzName}/{entityAzName}/_query`
+with one-hop relationship predicates through modeled associations.
 
 ## Run VedenemoCli Locally
 

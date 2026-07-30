@@ -28,6 +28,7 @@ subgraph Web["Web API Runtime"]
     ModelsResource["ModelsResource<br/>ping/add/list/read model endpoints"]
     SessionResource["SessionResource<br/>session lifecycle, selected model, and command endpoints"]
     ConsoleResource["ConsoleResource<br/>browser console-session endpoints"]
+    InstanceDataResource["InstanceDataResource<br/>dynamic /data instance endpoints"]
     ConsoleRegistry["WebConsoleSessionRegistry<br/>browser session wrapper"]
     ModelEvents["ModelChangeBroadcaster<br/>/models/events WebSocket"]
 end
@@ -41,6 +42,8 @@ end
 subgraph Core["Core"]
     CoreModule["vedenemo-core<br/>CommandExecutor, commands, undo"]
     ScriptService["VedenemoScriptService<br/>.vdos import/export"]
+    InstanceService["ModelInstanceService<br/>schema-validated instance data"]
+    InstanceRegistry["ModelInstanceRegistry<br/>process-local runtime data"]
     CommandJournal["ModelCommandJournal<br/>model-level command history"]
     SessionManager["SessionManager<br/>process-local active sessions"]
     Session["Session<br/>UUID, selected model, command history"]
@@ -67,6 +70,7 @@ Cli --> CommandConsole
 WebApi --> ModelsResource
 WebApi --> SessionResource
 WebApi --> ConsoleResource
+WebApi --> InstanceDataResource
 WebApi --> ModelEvents
 WebApi --> AppRoot
 WebApi --> GcsStorage
@@ -80,6 +84,7 @@ ModelsResource --> ModelEvents
 SessionResource --> SessionManager
 SessionResource --> ModelRegistry
 SessionResource --> ModelEvents
+InstanceDataResource --> InstanceService
 AppRoot --> CoreModule
 AppRoot --> ModelRegistry
 AppRoot --> SessionManager
@@ -91,6 +96,9 @@ CoreModule --> CommandJournal
 ScriptService --> ModelRegistry
 ScriptService --> CommandJournal
 ScriptService --> ModelApi
+InstanceService --> InstanceRegistry
+InstanceService --> ModelRegistry
+InstanceService --> ModelApi
 ModelRegistry --> ModelApi
 CoreModule --> Spi
 CoreModule --> ModelApi
@@ -171,7 +179,7 @@ Core command module. It currently contains a sealed `Command` marker interface,
 `DeleteAttributeCommand`, and `DeleteAssociationCommand` counterparts,
 `UndoResult`,
 `ModelCommandJournal`, `VedenemoScriptService`, `CommandExecutor`, `Session`,
-`SessionManager`, and `ModelRegistry`.
+`SessionManager`, `ModelRegistry`, and process-local instance-data support.
 
 `Session` represents a process-local user work session. It has a UUID, an
 optional selected model reference stored as `ModelRoot.azName`, execution-order
@@ -229,6 +237,21 @@ added to any active session undo stack.
 `ModelRegistry` is the process-local registry of currently known models. It
 stores `ModelRoot` instances in insertion order and enforces case-insensitive
 `azName` uniqueness while preserving the original submitted casing.
+
+`ModelInstanceService` validates runtime entity-instance and association-link
+operations against the currently loaded `ModelRoot` in `ModelRegistry`.
+Instances are generic records, not generated Java classes. Attribute values are
+stored in ordered maps keyed by modeled attribute `azName`; values are
+normalized as pure JDK values according to `DataType`. `NUMERIC` values are
+stored as `BigDecimal`, and `URL` values must be strict absolute URLs.
+
+`ModelInstanceRegistry` stores process-local runtime datasets keyed by model
+`azName`. Each dataset records the canonical model `azName`, the model version
+visible when the dataset is first created, entity instances keyed by UUID
+`InstanceId`, and association links keyed by association `azName`. Association
+links are separate from scalar attribute maps and validate source/target entity
+types, but cardinality is not enforced in this first slice. Instance data is
+not persisted and does not emit model-change WebSocket events.
 
 User-visible attribute deletion as a standalone edit operation is not
 implemented yet; `DeleteAttributeCommand` exists only as the internal inverse
@@ -388,6 +411,23 @@ and exposes:
   state and returns the imported model `azName` and command count
 - `GET /models/events` as a WebSocket endpoint that emits model change events
   to connected clients
+- `GET /data/{modelAzName}/_api`, which describes the runtime instance API for
+  one loaded model, including entities, attributes, associations, supported
+  operations, and JSON body examples
+- `POST /data/{modelAzName}/{entityAzName}`, which creates one entity instance
+  after validating submitted attribute values against the modeled entity
+- `GET /data/{modelAzName}/{entityAzName}`, which lists entity instances in
+  deterministic insertion order and supports exact-match query-parameter
+  filters
+- `GET /data/{modelAzName}/{entityAzName}/{instanceId}`, which reads one entity
+  instance
+- `POST /data/{modelAzName}/{entityAzName}/_query`, which supports exact
+  attribute predicates and one-hop relationship predicates through association
+  links
+- `POST /data/{modelAzName}/_links/{associationAzName}`, which creates one
+  source/target instance link for a modeled association
+- `GET /data/{modelAzName}/_links/{associationAzName}`, which lists stored
+  links for one modeled association
 - `POST /sessions/start`, which creates a backend session and returns its UUID
 - `DELETE /sessions/{uuid}`, which ends/removes a backend session
 - `PUT /sessions/{uuid}/selected-model`, which selects an existing model for a

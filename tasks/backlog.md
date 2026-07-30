@@ -2,7 +2,7 @@
 
 ## Plan Dynamic Model Instance Data API
 
-Status: planning.
+Status: executed.
 
 ### Goal
 
@@ -391,6 +391,22 @@ First implementation should include deterministic tests for:
 ### Open Questions
 
 None currently.
+
+### Completion Notes
+
+- Implemented the first runtime instance-data slice in `vedenemo-core` and
+  `vedenemo-web-api`.
+- Added process-local `ModelInstanceRegistry`/`ModelInstanceDataset` storage,
+  UUID-backed entity instance ids, typed `InstanceValue` validation, and
+  separately stored `AssociationInstanceLink` records.
+- Added `/data` endpoints for dynamic API description, entity instance
+  create/list/read/query, and association link create/list.
+- Implemented one-hop relationship-aware `_query` predicates using explicit
+  `outgoing`, `incoming`, and `either` directions and related entity attribute
+  filters.
+- Kept the first slice HTTP-only and did not add persistence, WebSockets,
+  authentication, generated source, or schema migration.
+- Added deterministic core and web API tests for the implemented behavior.
 
 ## Plan Association Semantics For Vedenemo Models
 
