@@ -6019,3 +6019,89 @@ Current status and next steps:
 - Verified shell syntax for both loader scripts.
 - Verified the FamilyTree loader creates a named root and loads data against
   root-scoped URLs.
+
+## 2026-07-31 00:38 EEST
+
+Session goal: recover accidentally exited session and identify continuation
+state.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 220 SESSION.md`
+- `git status --short`
+- `git status --short --branch`
+- `git log --oneline --decorate -n 8`
+- `git diff --stat`
+- `git diff --cached --stat`
+- `sed -n '1,120p' tasks/backlog.md`
+- `sed -n '1,120p' tasks/current-task.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Confirmed the multiple model-instance root work was committed and pushed.
+- `main` is clean and even with `origin/main`; latest commits are
+  `999dff2 Record loader script multiple-root API verification` and
+  `723a5c8 Support multiple model instance roots`.
+- Current task and relevant backlog item are marked executed.
+- No unfinished local implementation work was found from the interrupted
+  session.
+
+## 2026-07-31 00:45 EEST
+
+Session goal: add a Swedish royal FamilyTree model-instance loader.
+
+Files changed:
+
+- `SESSION.md`
+- `scripts/LoadSwedishRoyalFamilyTreeModelData.bash`
+
+Commands run:
+
+- `sed -n '1,260p' scripts/LoadFamilyTreeModelData.bash`
+- `rg -n "FamilyTree|Person|Parent|Spouse|roots|_links|MODEL_INSTANCE_ROOT|visName" .vedenemo scripts vedenemo-web-api/src/test vedenemo-core/src/test -S`
+- `sed -n '1,220p' .vedenemo/FamilyTree.vdos`
+- `git status --short --branch`
+- web search for current Swedish monarch and official Swedish Royal Court
+  royal-family facts
+- `sed -n '260,680p' scripts/LoadFamilyTreeModelData.bash`
+- `rg -n "LoadFamilyTree|FamilyTreeModelData|Charles III|model-instance|multiple-root|loader" README.md docs scripts tasks SESSION.md -S`
+- `ls -l scripts`
+- `sed -n '170,220p' README.md`
+- `chmod +x scripts/LoadSwedishRoyalFamilyTreeModelData.bash`
+- `bash -n scripts/LoadSwedishRoyalFamilyTreeModelData.bash`
+- `git diff --stat`
+- `ls -l scripts/LoadSwedishRoyalFamilyTreeModelData.bash`
+- `rg -n "[^\\x00-\\x7F]" scripts/LoadSwedishRoyalFamilyTreeModelData.bash`
+- `ls -l vedenemo-web-api/target/vedenemo-web-api-0.1.0-SNAPSHOT.jar`
+- packaged-backend smoke running the existing Charles III FamilyTree loader and
+  new Swedish loader in one API process; first attempt was blocked by sandbox
+  loopback permissions and the escalated retry passed
+- packaged-backend idempotency smoke running the new Swedish loader twice in
+  one API process; first attempt was blocked by sandbox loopback permissions and
+  the escalated retry passed
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added executable `scripts/LoadSwedishRoyalFamilyTreeModelData.bash` for the
+  current King of Sweden, King Carl XVI Gustaf, using the same `FamilyTree`
+  model as the Charles III loader.
+- The script creates or reuses a separate `Carl XVI Gustaf Family Tree`
+  model-instance root and loads varied demo data: places, people, family units,
+  life events, source records, and association links.
+- Verified running the Charles III and Sweden loaders in the same backend
+  process creates two distinct roots under `FamilyTree`.
+- Verified the Sweden loader is idempotent: the second run reused the same root
+  and created zero new records or links.
