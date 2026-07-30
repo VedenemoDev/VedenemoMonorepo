@@ -5536,3 +5536,49 @@ Current status and next steps:
   behavior.
 - Verified `npm run build` and `git diff --check`; Vite still reports the
   existing large PlantUML chunk warning.
+
+## 2026-07-30 20:15 EEST
+
+Session goal: add a FamilyTree model-instance data loader for King Charles III's
+family tree.
+
+Files changed:
+
+- `scripts/LoadFamilyTreeModelData.bash`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,260p' scripts/LoadLevykokoelmaSimpleModelData.bash`
+- `sed -n '1,260p' .vedenemo/FamilyTree.vdos`
+- `rg -n "POST .*/_links|AssociationInstance|sourceInstanceId|targetInstanceId|_query" vedenemo-core vedenemo-web-api/src/test vedenemo-web-api/src/main/java`
+- `ls -l scripts .vedenemo model_test_data`
+- `git status --short --branch`
+- `sed -n '1,380p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `chmod +x scripts/LoadFamilyTreeModelData.bash`
+- `bash -n scripts/LoadFamilyTreeModelData.bash`
+- local packaged-backend smoke loading `FamilyTree.vdos`, running
+  `scripts/LoadFamilyTreeModelData.bash` twice, and checking entity counts
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short`
+- `wc -l scripts/LoadFamilyTreeModelData.bash`
+
+Current status and next steps:
+
+- Added an idempotent FamilyTree model-instance loader with embedded curated
+  public data for King Charles III's parents, sibling context, marriages,
+  children, grandchildren, places, life events, source records, and association
+  links.
+- First smoke run created 20 people, 6 family units, 5 life events, 20 places,
+  2 source records, and 99 association links.
+- Second smoke run created zero additional records, confirming duplicate checks.
+- Count checks returned `Person={"count":20}`,
+  `FamilyUnit={"count":6}`, `LifeEvent={"count":5}`, `Place={"count":20}`,
+  and `SourceRecord={"count":2}`.
