@@ -11,41 +11,45 @@ definition, so one `ModelRoot` schema can have several separate runtime data
 sets.
 
 Today instance data is keyed by model `azName`, which effectively gives each
-model one process-local instance root. The next planning pass should define how
-clients create, select, rename, list, query, and eventually persist multiple
-instance roots for the same model while keeping each root's entity instances
-and association links isolated.
+model one process-local instance root. The next planning pass should change
+instance-data URLs so they identify both the model definition and the model
+instance root target directly. The backend should not keep a hidden selected
+root for HTTP requests.
 
 ### Initial Scope
 
 - Introduce a stable Vedenemo-owned identity for an instance root that is
   distinct from model `azName` and display name.
+- Keep `modelAzName` in the HTTP path as the model-definition anchor.
+- Include the instance root id in instance-data paths, for example
+  `/data/{modelAzName}/roots/{instanceRootId}/{entityAzName}`.
+- Treat the instance root id as backend-assigned identity created
+  automatically when a root is created.
+- Make the instance root id globally unique so future persistence can identify
+  roots without relying on a model-scoped compound key.
+- Treat the UX-provided instance root name as visual display metadata only, not
+  as the URL identity.
 - Keep each model-instance root bound to one model `azName` and the model
   version visible when the root is created.
 - Support listing all instance roots for a model with deterministic ordering.
-- Support creating, reading, renaming, and selecting a model-instance root for
-  instance-data operations.
+- Support creating, reading, and renaming a model-instance root.
 - Keep entity instances and association links isolated per model-instance root.
-- Preserve the existing default-root behavior or define an explicit migration
-  path so current `/data/{modelAzName}/...` clients do not break abruptly.
+- Existing single-root development data can be reloaded; do not spend this
+  planning task preserving old test-data compatibility.
 - Define HTTP endpoint shape in `vedenemo-web-api`; keep JSON DTOs and routing
   there.
 - Keep validation and registry behavior pure JDK in `vedenemo-core` or
   Vedenemo-owned model/API modules.
+- Keep `.vdos` import/export focused on model definitions in this task; do not
+  mix runtime instance data or multiple-root export concerns into `.vdos` yet.
 - Do not add database persistence, authentication, generated source code, or
   distributed runtime behavior in this planning task.
 
 ### Planning Questions
 
-- Should instance-data routes include the root id in the path, or should a
-  selected/default root remain addressable through the current route shape?
-- What should the default root be named and how should it be created for
-  existing models?
-- Should instance root ids be backend-assigned opaque ids, `azName`-like user
-  names, or both?
-- How should `.vdos` import/export or future data export represent multiple
-  instance roots without confusing model-definition history with runtime data?
-- Which UX flows need root selection before any broader persistence work?
+- Does the first implementation need a UX list/create/open flow for multiple
+  roots, or is backend support plus the existing rename/display-name feature
+  enough for the first slice?
 
 ## Plan Dynamic Model Instance Data API
 

@@ -5781,3 +5781,61 @@ Current status and next steps:
   model-instance roots per model.
 - No code changes or verification build were needed for this documentation-only
   update.
+
+## 2026-07-30 23:28 EEST
+
+Session goal: update multiple model-instance roots planning after route and
+identity discussion.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,90p' tasks/backlog.md`
+- `tail -n 70 SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short`
+- `git diff --check`
+- `git diff -- tasks/backlog.md SESSION.md`
+- `git status --short`
+
+Current status and next steps:
+
+- Updated the backlog plan to keep `modelAzName` in instance-data paths and add
+  a backend-assigned `instanceRootId` path parameter as part of resource
+  identity.
+- Clarified that UX-provided instance root names are visual aliases only.
+- Removed the previous default-root compatibility and route-shape questions;
+  remaining planning questions are about export representation and UX root
+  selection flow.
+
+## 2026-07-30 23:37 EEST
+
+Session goal: refine remaining multiple-root planning questions.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,70p' tasks/backlog.md`
+- `tail -n 50 SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check`
+- `git diff -- tasks/backlog.md SESSION.md`
+- `git status --short`
+
+Current status and next steps:
+
+- Deferred `.vdos` and future runtime-data export concerns out of the
+  multiple-root planning item because `.vdos` currently covers model
+  definitions only.
+- Added that `instanceRootId` should be globally unique to keep future
+  persistence straightforward.
+- Narrowed the remaining UX question to whether the first slice needs
+  list/create/open UI beyond the existing visual rename/display-name behavior.
