@@ -1,5 +1,52 @@
 # Backlog
 
+## Plan Multiple Model Instance Roots Per Model
+
+Status: planned.
+
+### Goal
+
+Plan support for multiple named model-instance roots under one model
+definition, so one `ModelRoot` schema can have several separate runtime data
+sets.
+
+Today instance data is keyed by model `azName`, which effectively gives each
+model one process-local instance root. The next planning pass should define how
+clients create, select, rename, list, query, and eventually persist multiple
+instance roots for the same model while keeping each root's entity instances
+and association links isolated.
+
+### Initial Scope
+
+- Introduce a stable Vedenemo-owned identity for an instance root that is
+  distinct from model `azName` and display name.
+- Keep each model-instance root bound to one model `azName` and the model
+  version visible when the root is created.
+- Support listing all instance roots for a model with deterministic ordering.
+- Support creating, reading, renaming, and selecting a model-instance root for
+  instance-data operations.
+- Keep entity instances and association links isolated per model-instance root.
+- Preserve the existing default-root behavior or define an explicit migration
+  path so current `/data/{modelAzName}/...` clients do not break abruptly.
+- Define HTTP endpoint shape in `vedenemo-web-api`; keep JSON DTOs and routing
+  there.
+- Keep validation and registry behavior pure JDK in `vedenemo-core` or
+  Vedenemo-owned model/API modules.
+- Do not add database persistence, authentication, generated source code, or
+  distributed runtime behavior in this planning task.
+
+### Planning Questions
+
+- Should instance-data routes include the root id in the path, or should a
+  selected/default root remain addressable through the current route shape?
+- What should the default root be named and how should it be created for
+  existing models?
+- Should instance root ids be backend-assigned opaque ids, `azName`-like user
+  names, or both?
+- How should `.vdos` import/export or future data export represent multiple
+  instance roots without confusing model-definition history with runtime data?
+- Which UX flows need root selection before any broader persistence work?
+
 ## Plan Dynamic Model Instance Data API
 
 Status: executed.

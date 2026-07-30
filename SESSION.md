@@ -5740,3 +5740,44 @@ Current status and next steps:
   `AlbumCollectionSimple={"modelAzName":"AlbumCollectionSimple","modelVersion":"1.0.0","visName":"Mikan levykokoelma"}`
   and
   `FamilyTree={"modelAzName":"FamilyTree","modelVersion":"1.0.0","visName":"Charles III Family Tree"}`.
+
+## 2026-07-30 23:02 EEST
+
+Session goal: add backlog ordering rule and plan multiple model-instance roots
+per model.
+
+Files changed:
+
+- `AGENTS.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `pwd`
+- `rg --files -g 'AGENTS.md' -g 'AGENTS.MD' -g 'SESSION.md' -g 'tasks/current-task.md' -g 'docs/architecture/dependency-boundaries.md' -g 'docs/architecture/module-map.md' -g 'docs/architecture/coding-rules.md' -g 'docs/architecture/testing-strategy.md' -g 'docs/roadmap/current-milestone.md' -g '*backlog*'`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,240p' docs/architecture/coding-rules.md`
+- `sed -n '1,240p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `sed -n '1,220p' AGENTS.md`
+- `sed -n '1,180p' tasks/backlog.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check`
+- `git diff -- AGENTS.md tasks/backlog.md SESSION.md`
+- `git status --short`
+
+Current status and next steps:
+
+- Added an `AGENTS.md` backlog-ordering rule: new backlog items go at the
+  beginning of `tasks/backlog.md`, newest to oldest, without rewriting old
+  history unless explicitly requested.
+- Added a top-of-file planning backlog item for supporting multiple
+  model-instance roots per model.
+- No code changes or verification build were needed for this documentation-only
+  update.

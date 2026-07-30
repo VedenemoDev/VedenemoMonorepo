@@ -135,6 +135,13 @@ Architectural documents include:
 - `docs/architecture/*`
 - `decisions/*`
 
+## Backlog ordering
+
+Backlog items in `tasks/backlog.md` are listed from newest to oldest.
+
+Add each new backlog item at the beginning of the backlog file. Do not reorder
+or rewrite older backlog history unless explicitly requested.
+
 ## Persistent session record
 
 Each agent session must be recorded in `SESSION.md`.
