@@ -5981,3 +5981,41 @@ Current status and next steps:
 
 - Preparing to commit the completed multiple model-instance root implementation
   and push it to `origin/main`.
+
+## 2026-07-31 00:18 EEST
+
+Session goal: verify data loader scripts against multiple-root HTTP API.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,260p' docs/roadmap/current-milestone.md`
+- `sed -n '1,140p' tasks/current-task.md`
+- `tail -n 140 SESSION.md`
+- `rg --files scripts && rg -n "_instance-root|/data/|roots|instance_root_id|MODEL_INSTANCE_ROOT" scripts -S`
+- `git status --short --branch`
+- `bash -n scripts/LoadLevykokoelmaSimpleModelData.bash`
+- `bash -n scripts/LoadFamilyTreeModelData.bash`
+- `sed -n '1,160p' scripts/status`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- packaged-backend smoke for `scripts/LoadFamilyTreeModelData.bash` against
+  local port `18095`; first attempt was blocked by sandbox loopback permissions
+  and the escalated retry passed
+
+Current status and next steps:
+
+- Confirmed `scripts/LoadLevykokoelmaSimpleModelData.bash` and
+  `scripts/LoadFamilyTreeModelData.bash` already use the multiple-root API:
+  they list/create roots, keep the returned `instanceRootId`, and load data
+  through `/data/{modelAzName}/roots/{instanceRootId}/...`.
+- `scripts/status` does not call the data API.
+- Verified shell syntax for both loader scripts.
+- Verified the FamilyTree loader creates a named root and loads data against
+  root-scoped URLs.
