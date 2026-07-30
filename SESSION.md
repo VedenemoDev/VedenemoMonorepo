@@ -5152,3 +5152,58 @@ Current status and next steps:
 - Verified with `mvn -B -pl vedenemo-web-api -am test` and `mvn -B verify`.
 - Next likely work: add update/delete instance operations and plan cardinality
   enforcement for association links.
+
+## 2026-07-30 15:30 EEST
+
+Session goal: add a development-time loader for
+`model_test_data/LevykokoelmaSimpleModelData.csv`.
+
+Files changed:
+
+- `scripts/LoadLevykokoelmaSimpleModelData.bash`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg --files`
+- `sed -n '1,360p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `sed -n '1,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,220p' .vedenemo/LevykokoelmaSimple.vdos`
+- `sed -n '1,40p' model_test_data/LevykokoelmaSimpleModelData.csv`
+- `sed -n '1,320p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `rg -n "script|vdos|models/script|/models" README.md docs/cli-reference.md vedenemo-web-api/src/test/java -S`
+- `find scripts -maxdepth 2 -type f -print | sort`
+- `git status --short`
+- `sed -n '1,320p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '1,320p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `wc -l model_test_data/LevykokoelmaSimpleModelData.csv`
+- `tail -n 20 model_test_data/LevykokoelmaSimpleModelData.csv`
+- `chmod +x scripts/LoadLevykokoelmaSimpleModelData.bash`
+- `bash -n scripts/LoadLevykokoelmaSimpleModelData.bash`
+- `ls -l scripts/LoadLevykokoelmaSimpleModelData.bash vedenemo-web-api/target`
+- `nl -ba model_test_data/LevykokoelmaSimpleModelData.csv | sed -n '176,186p'`
+- `python3 - <<'PY' ...`
+- local web API smoke loading the CSV once through
+  `scripts/LoadLevykokoelmaSimpleModelData.bash`
+- local web API smoke running the loader twice against the same process
+
+Current status and next steps:
+
+- Added executable bash loader that defaults to
+  `VEDENEMO_API_BASE_URL` or `http://127.0.0.1:8080`.
+- The loader checks/imports `AlbumCollectionSimple` from
+  `.vedenemo/LevykokoelmaSimple.vdos`, validates the expected dynamic API
+  shape, creates/reuses `Artist` and `Album` instances, omits `Album.year`, and
+  creates/reuses `Albumilla_on_esittajia` links.
+- Verified a full load: 460 rows processed, 228 artists created, 460 albums
+  created, 460 links created.
+- Verified repeatability in the same backend process: second run created 0
+  artists, 0 albums, and 0 links.
+- Noted one row with ignored extra columns; extra CSV columns are reported but
+  not loaded into `Julkaisuvuosi`.
