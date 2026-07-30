@@ -58,7 +58,8 @@ type CountResponse = {
 type EntityInstanceGroup = {
   entityAzName: string;
   entityVisName: string;
-  count: number;
+  count?: number;
+  error?: string;
 };
 
 type ModelInstanceRootNode = {
@@ -70,6 +71,7 @@ type ModelInstanceModelNode = {
   modelAzName: string;
   modelVisName: string;
   roots: ModelInstanceRootNode[];
+  error?: string;
 };
 
 type ConsolePanelProps = {
@@ -581,13 +583,25 @@ export function App() {
       const nextTree = await Promise.all(nextModels.map((model) => buildModelInstanceNode(baseUrl, model)));
       setModelInstanceTree(nextTree);
       setModelInstanceLoadState("ok");
+      const modelErrorCount = nextTree.filter((model) => model.error).length;
+      const entityErrorCount = nextTree.reduce(
+        (total, model) => total + model.roots.reduce(
+          (rootTotal, root) => rootTotal + root.entityGroups.filter((group) => group.error).length,
+          0,
+        ),
+        0,
+      );
       const entityGroupCount = nextTree.reduce(
         (total, model) => total + model.roots.reduce((rootTotal, root) => rootTotal + root.entityGroups.length, 0),
         0,
       );
-      setModelInstanceMessage(nextModels.length === 0
-        ? "No models available"
-        : `${nextModels.length} model${nextModels.length === 1 ? "" : "s"}, ${entityGroupCount} entity group${entityGroupCount === 1 ? "" : "s"}`);
+      if (nextModels.length === 0) {
+        setModelInstanceMessage("No models available");
+      } else if (modelErrorCount > 0 || entityErrorCount > 0) {
+        setModelInstanceMessage(`${nextModels.length} model${nextModels.length === 1 ? "" : "s"} loaded, ${modelErrorCount + entityErrorCount} instance detail issue${modelErrorCount + entityErrorCount === 1 ? "" : "s"}`);
+      } else {
+        setModelInstanceMessage(`${nextModels.length} model${nextModels.length === 1 ? "" : "s"}, ${entityGroupCount} entity group${entityGroupCount === 1 ? "" : "s"}`);
+      }
     } catch (error) {
       setModelInstanceLoadState("error");
       setModelInstanceMessage(error instanceof Error ? error.message : "Model instance refresh failed");
@@ -595,23 +609,49 @@ export function App() {
   }
 
   async function buildModelInstanceNode(apiBaseUrl: string, model: ModelSummary): Promise<ModelInstanceModelNode> {
-    const apiDescription = await fetchModelInstanceApi(apiBaseUrl, model.azName);
-    const entityGroups = await Promise.all(apiDescription.entities.map(async (entity) => ({
-      entityAzName: entity.azName,
-      entityVisName: entity.visName,
-      count: await fetchEntityInstanceCount(apiBaseUrl, model.azName, entity.azName),
-    })));
+    try {
+      const apiDescription = await fetchModelInstanceApi(apiBaseUrl, model.azName);
+      const entityGroups = await Promise.all(apiDescription.entities.map((entity) => buildEntityInstanceGroup(apiBaseUrl, model.azName, entity)));
 
-    return {
-      modelAzName: model.azName,
-      modelVisName: model.visName,
-      roots: [
-        {
-          visName: "Model instance 1",
-          entityGroups,
-        },
-      ],
-    };
+      return {
+        modelAzName: model.azName,
+        modelVisName: model.visName,
+        roots: [
+          {
+            visName: "Model instance 1",
+            entityGroups,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        modelAzName: model.azName,
+        modelVisName: model.visName,
+        roots: [
+          {
+            visName: "Model instance 1",
+            entityGroups: [],
+          },
+        ],
+        error: error instanceof Error ? error.message : "Model instance details unavailable",
+      };
+    }
+  }
+
+  async function buildEntityInstanceGroup(apiBaseUrl: string, modelAzName: string, entity: EntityDescription): Promise<EntityInstanceGroup> {
+    try {
+      return {
+        entityAzName: entity.azName,
+        entityVisName: entity.visName,
+        count: await fetchEntityInstanceCount(apiBaseUrl, modelAzName, entity.azName),
+      };
+    } catch (error) {
+      return {
+        entityAzName: entity.azName,
+        entityVisName: entity.visName,
+        error: error instanceof Error ? error.message : "Count unavailable",
+      };
+    }
   }
 
   async function toggleModelConnection() {
@@ -763,12 +803,14 @@ export function App() {
                           <details key={`${model.modelAzName}-${root.visName}`} open className="tree-node tree-node-root">
                             <summary>{root.visName}</summary>
                             <ul className="tree-children tree-entity-groups">
-                              {root.entityGroups.length === 0 ? (
+                              {model.error ? (
+                                <li className="tree-empty">Entity groups unavailable: {model.error}</li>
+                              ) : root.entityGroups.length === 0 ? (
                                 <li className="tree-empty">No entity types</li>
                               ) : (
                                 root.entityGroups.map((group) => (
                                   <li key={`${model.modelAzName}-${root.visName}-${group.entityAzName}`}>
-                                    {group.entityVisName} ({group.count})
+                                    {group.error ? `${group.entityVisName} (?) - ${group.error}` : `${group.entityVisName} (${group.count})`}
                                   </li>
                                 ))
                               )}

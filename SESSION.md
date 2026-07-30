@@ -5458,3 +5458,39 @@ Current status and next steps:
   `git diff --check`, `mvn -B verify`, and a local packaged-backend smoke
   returning `{"count":460}` for albums and `{"count":228}` for artists.
 - Vite dev server is running at `http://127.0.0.1:5173/`.
+
+## 2026-07-30 19:04 EEST
+
+Session goal: answer backend restart question and make the model instances tab
+render model nodes even when instance details fail.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `git status --short --branch`
+- `rg -n "ModelInstance|refreshModelInstances|buildModelInstanceNode|model-instance" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `npm run build`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Confirmed that a backend already running before `GET /data/{modelAzName}/{entityAzName}/_count`
+  was added must be restarted before exact model-instance counts can load.
+- Changed model-instance tree refresh so `/models/list` still produces
+  first-level model nodes even when `/data` API description or count calls fail.
+- Count failures now render entity groups with `?`; model detail failures render
+  the generated `Model instance 1` root with an unavailable-state child.
+- Verified `npm run build`; Vite still reports the existing large chunk warning.
