@@ -1,53 +1,45 @@
 Album model curl fetch suggestions
 
-Assumptions:
-
-API=http://127.0.0.1:8080
-MODEL=AlbumCollectionSimple
-
-Set shell variables:
-
-API=http://127.0.0.1:8080
-MODEL=AlbumCollectionSimple
+These examples assume the backend is available at http://127.0.0.1:8080 and the loaded model is AlbumCollectionSimple.
 
 Check the dynamic API shape:
 
-curl -s "$API/data/$MODEL/_api" | jq
+curl -s "http://127.0.0.1:8080/data/AlbumCollectionSimple/_api" | jq
 
 List artists:
 
-curl -s "$API/data/$MODEL/Artist" | jq
+curl -s "http://127.0.0.1:8080/data/AlbumCollectionSimple/Artist" | jq
 
 Find one artist by name:
 
-curl -s --get "$API/data/$MODEL/Artist" --data-urlencode "Name=Kent" | jq
+curl -s --get "http://127.0.0.1:8080/data/AlbumCollectionSimple/Artist" --data-urlencode "Name=Kent" | jq
 
 List albums:
 
-curl -s "$API/data/$MODEL/Album" | jq
+curl -s "http://127.0.0.1:8080/data/AlbumCollectionSimple/Album" | jq
 
 Find albums by album name:
 
-curl -s --get "$API/data/$MODEL/Album" --data-urlencode "Name=B-sidor 95-00" | jq
+curl -s --get "http://127.0.0.1:8080/data/AlbumCollectionSimple/Album" --data-urlencode "Name=B-sidor 95-00" | jq
 
 Find albums by comment:
 
-curl -s --get "$API/data/$MODEL/Album" --data-urlencode "Comment=KOKOELMA" | jq
+curl -s --get "http://127.0.0.1:8080/data/AlbumCollectionSimple/Album" --data-urlencode "Comment=KOKOELMA" | jq
 
 Query albums by artist relationship:
 
-curl -s -X POST "$API/data/$MODEL/Album/_query" -H "Content-Type: application/json" -d '{"relationships":[{"associationAzName":"Albumilla_on_esittajia","direction":"outgoing","entityAzName":"Artist","where":{"equals":{"Name":"Kent"}}}]}' | jq
+curl -s -X POST "http://127.0.0.1:8080/data/AlbumCollectionSimple/Album/_query" -H "Content-Type: application/json" -d '{"relationships":[{"associationAzName":"Albumilla_on_esittajia","direction":"outgoing","entityAzName":"Artist","where":{"equals":{"Name":"Kent"}}}]}' | jq
 
 Query a specific album by name, comment, and artist:
 
-curl -s -X POST "$API/data/$MODEL/Album/_query" -H "Content-Type: application/json" -d '{"where":{"equals":{"Name":"B-sidor 95-00","Comment":"KOKOELMA"}},"relationships":[{"associationAzName":"Albumilla_on_esittajia","direction":"outgoing","entityAzName":"Artist","where":{"equals":{"Name":"Kent"}}}]}' | jq
+curl -s -X POST "http://127.0.0.1:8080/data/AlbumCollectionSimple/Album/_query" -H "Content-Type: application/json" -d '{"where":{"equals":{"Name":"B-sidor 95-00","Comment":"KOKOELMA"}},"relationships":[{"associationAzName":"Albumilla_on_esittajia","direction":"outgoing","entityAzName":"Artist","where":{"equals":{"Name":"Kent"}}}]}' | jq
 
 List album-artist links:
 
-curl -s "$API/data/$MODEL/_links/Albumilla_on_esittajia" | jq
+curl -s "http://127.0.0.1:8080/data/AlbumCollectionSimple/_links/Albumilla_on_esittajia" | jq
 
 Read one album instance by ID:
 
-curl -s "$API/data/$MODEL/Album/{instanceId}" | jq
+curl -s "http://127.0.0.1:8080/data/AlbumCollectionSimple/Album/{instanceId}" | jq
 
 Replace {instanceId} with an id returned from the album list or query.

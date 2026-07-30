@@ -5231,3 +5231,26 @@ Current status and next steps:
   attribute filters, relationship queries, link listing, and direct instance
   reads.
 - Kept all curl commands as one-liners without backslash continuations.
+
+## 2026-07-30 17:19 EEST
+
+Session goal: rewrite album model curl notes with expanded URL and model values.
+
+Files changed:
+
+- `misc_notes/AlbumModelCurlFetchSuggestions.txt`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' misc_notes/AlbumModelCurlFetchSuggestions.txt`
+- `git status --short`
+- `rg -n '\\$API|\\$MODEL|\\\\$' misc_notes/AlbumModelCurlFetchSuggestions.txt`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Replaced `$API` and `$MODEL` command references with
+  `http://127.0.0.1:8080` and `AlbumCollectionSimple`.
+- Confirmed the curl commands remain one-liners without backslash
+  continuations.
