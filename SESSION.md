@@ -5207,3 +5207,27 @@ Current status and next steps:
   artists, 0 albums, and 0 links.
 - Noted one row with ignored extra columns; extra CSV columns are reported but
   not loaded into `Julkaisuvuosi`.
+
+## 2026-07-30 17:15 EEST
+
+Session goal: store album model HTTP fetch examples as one-line curl notes.
+
+Files changed:
+
+- `misc_notes/AlbumModelCurlFetchSuggestions.txt`
+- `SESSION.md`
+
+Commands run:
+
+- `ls -ld misc_notes SESSION.md`
+- `git status --short`
+- `rg -n '\\$' misc_notes/AlbumModelCurlFetchSuggestions.txt`
+- `sed -n '1,220p' misc_notes/AlbumModelCurlFetchSuggestions.txt`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added curl examples for dynamic API shape, artist and album listing,
+  attribute filters, relationship queries, link listing, and direct instance
+  reads.
+- Kept all curl commands as one-liners without backslash continuations.

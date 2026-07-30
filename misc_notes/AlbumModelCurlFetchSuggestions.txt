@@ -1,0 +1,53 @@
+Album model curl fetch suggestions
+
+Assumptions:
+
+API=http://127.0.0.1:8080
+MODEL=AlbumCollectionSimple
+
+Set shell variables:
+
+API=http://127.0.0.1:8080
+MODEL=AlbumCollectionSimple
+
+Check the dynamic API shape:
+
+curl -s "$API/data/$MODEL/_api" | jq
+
+List artists:
+
+curl -s "$API/data/$MODEL/Artist" | jq
+
+Find one artist by name:
+
+curl -s --get "$API/data/$MODEL/Artist" --data-urlencode "Name=Kent" | jq
+
+List albums:
+
+curl -s "$API/data/$MODEL/Album" | jq
+
+Find albums by album name:
+
+curl -s --get "$API/data/$MODEL/Album" --data-urlencode "Name=B-sidor 95-00" | jq
+
+Find albums by comment:
+
+curl -s --get "$API/data/$MODEL/Album" --data-urlencode "Comment=KOKOELMA" | jq
+
+Query albums by artist relationship:
+
+curl -s -X POST "$API/data/$MODEL/Album/_query" -H "Content-Type: application/json" -d '{"relationships":[{"associationAzName":"Albumilla_on_esittajia","direction":"outgoing","entityAzName":"Artist","where":{"equals":{"Name":"Kent"}}}]}' | jq
+
+Query a specific album by name, comment, and artist:
+
+curl -s -X POST "$API/data/$MODEL/Album/_query" -H "Content-Type: application/json" -d '{"where":{"equals":{"Name":"B-sidor 95-00","Comment":"KOKOELMA"}},"relationships":[{"associationAzName":"Albumilla_on_esittajia","direction":"outgoing","entityAzName":"Artist","where":{"equals":{"Name":"Kent"}}}]}' | jq
+
+List album-artist links:
+
+curl -s "$API/data/$MODEL/_links/Albumilla_on_esittajia" | jq
+
+Read one album instance by ID:
+
+curl -s "$API/data/$MODEL/Album/{instanceId}" | jq
+
+Replace {instanceId} with an id returned from the album list or query.
