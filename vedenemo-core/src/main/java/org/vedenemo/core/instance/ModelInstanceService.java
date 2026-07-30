@@ -19,6 +19,7 @@ import java.util.Optional;
 public final class ModelInstanceService {
 
     private static final int DEFAULT_LIMIT = 100;
+    private static final int MAX_ROOT_VIS_NAME_LENGTH = 120;
 
     private final ModelRegistry modelRegistry;
     private final ModelInstanceRegistry instanceRegistry;
@@ -30,6 +31,16 @@ public final class ModelInstanceService {
 
     public ModelRoot describeApi(String modelAzName) {
         return requireModel(modelAzName);
+    }
+
+    public ModelInstanceRoot readRoot(String modelAzName) {
+        ModelRoot modelRoot = requireModel(modelAzName);
+        return instanceRegistry.datasetFor(modelRoot).root();
+    }
+
+    public ModelInstanceRoot renameRoot(String modelAzName, String visName) {
+        ModelRoot modelRoot = requireModel(modelAzName);
+        return instanceRegistry.datasetFor(modelRoot).renameRoot(normalizeRootVisName(visName));
     }
 
     public EntityInstance createEntityInstance(String modelAzName, String entityAzName, Map<String, Object> submittedValues) {
@@ -303,6 +314,21 @@ public final class ModelInstanceService {
 
     private static boolean sameAzName(String left, String right) {
         return VEntity.uniquenessKey(left).equals(VEntity.uniquenessKey(right));
+    }
+
+    private static String normalizeRootVisName(String visName) {
+        if (visName == null) {
+            throw new IllegalArgumentException("model instance root name is required");
+        }
+        String normalized = visName.trim();
+        if (normalized.isEmpty()) {
+            throw new IllegalArgumentException("model instance root name is required");
+        }
+        if (normalized.length() > MAX_ROOT_VIS_NAME_LENGTH) {
+            throw new IllegalArgumentException("model instance root name must be at most "
+                    + MAX_ROOT_VIS_NAME_LENGTH + " characters");
+        }
+        return normalized;
     }
 
     private record NormalizedRelationshipPredicate(

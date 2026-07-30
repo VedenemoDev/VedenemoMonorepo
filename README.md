@@ -141,6 +141,8 @@ GET    /models/{modelAzName}/script
 POST   /models/script
 
 GET    /data/{modelAzName}/_api
+GET    /data/{modelAzName}/_instance-root
+PUT    /data/{modelAzName}/_instance-root
 POST   /data/{modelAzName}/{entityAzName}
 GET    /data/{modelAzName}/{entityAzName}
 GET    /data/{modelAzName}/{entityAzName}/_count
@@ -190,6 +192,11 @@ instance fields are JSON object properties keyed by modeled attribute `azName`
 and validated against the selected entity's `DataType`. Association links are
 created through dedicated `_links` endpoints using source and target instance
 ids.
+
+Each loaded model has one process-local model-instance root metadata record.
+`GET /data/{modelAzName}/_instance-root` reads its display name, and
+`PUT /data/{modelAzName}/_instance-root` renames it with a JSON body such as
+`{"visName":"Family tree of King Charles III"}`.
 
 Entity instance counts are available through
 `GET /data/{modelAzName}/{entityAzName}/_count`, which returns a JSON object
@@ -325,10 +332,11 @@ to open the browser console as a lower split pane under the `Models` tab; drag
 the pane's top border to resize it, and use the same arrow to minimize it
 again. The `Model instances` tab refreshes runtime instance counts when opened
 and shows a read-only tree:
-`ModelVisName (Model azName)` -> generated `ModelInstanceVisName` -> entity
-groups such as `Album (460)`. The generated model-instance node is shown only
-when counted runtime entity data exists; otherwise the model node shows an
-empty instance state.
+`ModelVisName (Model azName)` -> backend-stored model-instance root name ->
+entity groups such as `Album (460)`. The model-instance node is shown only when
+counted runtime entity data exists; otherwise the model node shows an empty
+instance state. Use the root node's menu `Rename...` action to update the
+backend-stored root name.
 The console output scrolls to the latest line as commands run. The full-page
 browser console remains available directly at `/console`. The browser console
 supports the same authoring commands as `VedenemoCli`, including `add`,

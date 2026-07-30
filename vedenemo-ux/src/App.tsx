@@ -55,6 +55,12 @@ type CountResponse = {
   count: number;
 };
 
+type ModelInstanceRootResponse = {
+  modelAzName: string;
+  modelVersion: string;
+  visName: string;
+};
+
 type EntityInstanceGroup = {
   entityAzName: string;
   entityVisName: string;
@@ -77,6 +83,11 @@ type ModelInstanceModelNode = {
 type ConsolePanelProps = {
   connectedModelAzName?: string;
   mode: "page" | "pane";
+};
+
+type RenameDialogState = {
+  modelAzName: string;
+  nextName: string;
 };
 
 const PLANTUML_TARGET_ID = "plantuml-diagram";
@@ -141,6 +152,37 @@ async function fetchEntityInstanceCount(apiBaseUrl: string, modelAzName: string,
 
   const body = (await response.json()) as CountResponse;
   return body.count;
+}
+
+async function fetchModelInstanceRoot(apiBaseUrl: string, modelAzName: string): Promise<ModelInstanceRootResponse> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/_instance-root`, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json() as Promise<ModelInstanceRootResponse>;
+}
+
+async function renameModelInstanceRoot(apiBaseUrl: string, modelAzName: string, visName: string): Promise<ModelInstanceRootResponse> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/_instance-root`, {
+    method: "PUT",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ visName }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json() as Promise<ModelInstanceRootResponse>;
 }
 
 function readConnectedModelAzName(): string {
@@ -428,6 +470,10 @@ export function App() {
   const [modelInstanceLoadState, setModelInstanceLoadState] = useState<ModelInstanceLoadState>("idle");
   const [modelInstanceMessage, setModelInstanceMessage] = useState("Model instances not loaded");
   const [modelInstanceTree, setModelInstanceTree] = useState<ModelInstanceModelNode[]>([]);
+  const [openRootMenuModelAzName, setOpenRootMenuModelAzName] = useState<string | null>(null);
+  const [renameDialog, setRenameDialog] = useState<RenameDialogState | null>(null);
+  const [renameMessage, setRenameMessage] = useState("");
+  const [isRenamingRoot, setIsRenamingRoot] = useState(false);
 
   useEffect(() => {
     selectedModelAzNameRef.current = selectedModelAzName;
@@ -614,6 +660,7 @@ export function App() {
       const entityGroups = await Promise.all(apiDescription.entities.map((entity) => buildEntityInstanceGroup(apiBaseUrl, model.azName, entity)));
       const hasCountedInstances = entityGroups.some((group) => typeof group.count === "number" && group.count > 0);
       const hasEntityErrors = entityGroups.some((group) => group.error);
+      const root = hasCountedInstances ? await fetchModelInstanceRoot(apiBaseUrl, model.azName) : undefined;
 
       return {
         modelAzName: model.azName,
@@ -621,7 +668,7 @@ export function App() {
         roots: hasCountedInstances
           ? [
               {
-                visName: "Model instance 1",
+                visName: root?.visName ?? "Model instance 1",
                 entityGroups,
               },
             ]
@@ -635,6 +682,52 @@ export function App() {
         roots: [],
         error: error instanceof Error ? error.message : "Model instance details unavailable",
       };
+    }
+  }
+
+  function openRenameDialog(modelAzName: string, currentName: string) {
+    setOpenRootMenuModelAzName(null);
+    setRenameMessage("");
+    setRenameDialog({
+      modelAzName,
+      nextName: currentName,
+    });
+  }
+
+  async function submitRootRename(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!apiBaseUrl || renameDialog === null) {
+      return;
+    }
+
+    const nextName = renameDialog.nextName.trim();
+    if (!nextName) {
+      setRenameMessage("Name is required");
+      return;
+    }
+
+    setIsRenamingRoot(true);
+    setRenameMessage("");
+    try {
+      const renamed = await renameModelInstanceRoot(apiBaseUrl, renameDialog.modelAzName, nextName);
+      setModelInstanceTree((current) => current.map((model) => {
+        if (model.modelAzName !== renamed.modelAzName) {
+          return model;
+        }
+        return {
+          ...model,
+          roots: model.roots.map((root) => ({
+            ...root,
+            visName: renamed.visName,
+          })),
+        };
+      }));
+      setRenameDialog(null);
+      setModelInstanceMessage(`Renamed model instance root to ${renamed.visName}`);
+    } catch (error) {
+      setRenameMessage(error instanceof Error ? error.message : "Rename failed");
+    } finally {
+      setIsRenamingRoot(false);
     }
   }
 
@@ -805,7 +898,37 @@ export function App() {
                           <div className="tree-empty">No model instances loaded</div>
                         ) : model.roots.map((root) => (
                           <details key={`${model.modelAzName}-${root.visName}`} open className="tree-node tree-node-root">
-                            <summary>{root.visName}</summary>
+                            <summary>
+                              <span>{root.visName}</span>
+                              <span className="tree-node-actions">
+                                <button
+                                  type="button"
+                                  className="tree-menu-button"
+                                  aria-haspopup="menu"
+                                  aria-expanded={openRootMenuModelAzName === model.modelAzName}
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    setOpenRootMenuModelAzName((current) => current === model.modelAzName ? null : model.modelAzName);
+                                  }}
+                                >
+                                  ...
+                                </button>
+                                {openRootMenuModelAzName === model.modelAzName && (
+                                  <span className="tree-menu" role="menu">
+                                    <button
+                                      type="button"
+                                      role="menuitem"
+                                      onClick={(event) => {
+                                        event.preventDefault();
+                                        openRenameDialog(model.modelAzName, root.visName);
+                                      }}
+                                    >
+                                      Rename...
+                                    </button>
+                                  </span>
+                                )}
+                              </span>
+                            </summary>
                             <ul className="tree-children tree-entity-groups">
                               {root.entityGroups.length === 0 ? (
                                 <li className="tree-empty">No entity types</li>
@@ -824,6 +947,47 @@ export function App() {
                   ))
                 )}
               </div>
+              {renameDialog !== null && (
+                <div className="dialog-backdrop" role="presentation">
+                  <form
+                    className="rename-dialog"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="model-instance-root-dialog-title"
+                    onSubmit={(event) => void submitRootRename(event)}
+                  >
+                    <h2 id="model-instance-root-dialog-title">Rename model instance root</h2>
+                    <label htmlFor="model-instance-root-name">Name</label>
+                    <input
+                      id="model-instance-root-name"
+                      value={renameDialog.nextName}
+                      maxLength={120}
+                      autoFocus
+                      onChange={(event) => setRenameDialog({
+                        ...renameDialog,
+                        nextName: event.target.value,
+                      })}
+                    />
+                    {renameMessage && <span className="dialog-error">{renameMessage}</span>}
+                    <div className="dialog-actions">
+                      <button
+                        type="button"
+                        className="dialog-secondary"
+                        onClick={() => {
+                          setRenameDialog(null);
+                          setRenameMessage("");
+                        }}
+                        disabled={isRenamingRoot}
+                      >
+                        Cancel
+                      </button>
+                      <button type="submit" disabled={isRenamingRoot}>
+                        Rename
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
             </div>
           )}
         </section>

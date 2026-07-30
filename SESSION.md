@@ -5582,3 +5582,71 @@ Current status and next steps:
 - Count checks returned `Person={"count":20}`,
   `FamilyUnit={"count":6}`, `LifeEvent={"count":5}`, `Place={"count":20}`,
   and `SourceRecord={"count":2}`.
+
+## 2026-07-30 20:35 EEST
+
+Session goal: make the model-instance root name a backend-owned concept and
+allow renaming it from the UX.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceDataset.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceRoot.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `sed -n '1,430p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,260p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `sed -n '1,240p' vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceDataset.java`
+- `sed -n '1,180p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceRegistry.java`
+- `sed -n '1,180p' vedenemo-ux/src/App.tsx`
+- `sed -n '540,835p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,560p' vedenemo-ux/src/styles.css`
+- `mvn -B -pl vedenemo-web-api -am test`
+- `npm run build`
+- `rg -n 'generated ModelInstanceVisName|generated model-instance|generated Model instance 1|ModelInstanceVisName|nickname|nicknames' README.md docs/architecture_doc.md tasks/current-task.md tasks/backlog.md vedenemo-ux/src/App.tsx -S`
+- `mvn -B verify`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+- `git diff --stat`
+- `npm run dev -- --host 127.0.0.1`
+
+Current status and next steps:
+
+- Added pure-JDK `ModelInstanceRoot` metadata and a backend-owned root display
+  name on the existing one-dataset-per-model runtime instance store.
+- The default root name remains `Model instance 1`, but it now lives in core
+  dataset metadata instead of only in UX code.
+- Added `GET /data/{modelAzName}/_instance-root` and
+  `PUT /data/{modelAzName}/_instance-root` for reading and renaming the root
+  display name.
+- The `Model instances` tab fetches the backend root name and shows a root
+  menu with `Rename...`; the dialog persists the rename through the new API and
+  updates the tree label.
+- Updated README, current task notes, backlog notes, and living architecture
+  documentation to match the new backend-owned root metadata flow.
+- Verified `mvn -B -pl vedenemo-web-api -am test`, `mvn -B verify`,
+  `npm run build`, and `git diff --check`; Vite still reports the existing
+  large PlantUML chunk warning.
+- Vite dev server is running at `http://127.0.0.1:5173/`.

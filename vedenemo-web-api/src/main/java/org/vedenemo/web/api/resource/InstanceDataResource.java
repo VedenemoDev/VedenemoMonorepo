@@ -10,6 +10,7 @@ import org.vedenemo.core.instance.AssociationInstanceLink;
 import org.vedenemo.core.instance.EntityInstance;
 import org.vedenemo.core.instance.EntityInstanceQuery;
 import org.vedenemo.core.instance.InstanceValue;
+import org.vedenemo.core.instance.ModelInstanceRoot;
 import org.vedenemo.core.instance.ModelInstanceService;
 import org.vedenemo.core.instance.RelationshipDirection;
 import org.vedenemo.core.instance.RelationshipPredicate;
@@ -43,6 +44,25 @@ public final class InstanceDataResource {
             try {
                 ModelRoot modelRoot = instanceService.describeApi(context.pathParam("modelAzName"));
                 writeJson(context, 200, ApiDescriptionResponse.from(modelRoot));
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
+        routes.get("/data/{modelAzName}/_instance-root", context -> {
+            try {
+                ModelInstanceRoot root = instanceService.readRoot(context.pathParam("modelAzName"));
+                writeJson(context, 200, ModelInstanceRootResponse.from(root));
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
+        routes.put("/data/{modelAzName}/_instance-root", context -> {
+            try {
+                RenameModelInstanceRootRequest request = objectMapper.readValue(context.body(), RenameModelInstanceRootRequest.class);
+                ModelInstanceRoot root = instanceService.renameRoot(context.pathParam("modelAzName"), request.visName());
+                writeJson(context, 200, ModelInstanceRootResponse.from(root));
+            } catch (JsonProcessingException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
             } catch (IllegalArgumentException exception) {
                 writeError(context, statusFor(exception), exception);
             }
@@ -224,6 +244,16 @@ public final class InstanceDataResource {
                     entityAzName,
                     equals
             );
+        }
+    }
+
+    private record RenameModelInstanceRootRequest(String visName) {
+    }
+
+    private record ModelInstanceRootResponse(String modelAzName, String modelVersion, String visName) {
+
+        private static ModelInstanceRootResponse from(ModelInstanceRoot root) {
+            return new ModelInstanceRootResponse(root.modelAzName(), root.modelVersion(), root.visName());
         }
     }
 

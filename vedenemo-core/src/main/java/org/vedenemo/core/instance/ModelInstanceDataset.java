@@ -9,10 +9,13 @@ import java.util.Optional;
 
 public final class ModelInstanceDataset {
 
+    private static final String DEFAULT_ROOT_VIS_NAME = "Model instance 1";
+
     private final String modelAzName;
     private final String modelVersion;
     private final Map<String, Map<InstanceId, EntityInstance>> instancesByEntity = new LinkedHashMap<>();
     private final Map<String, List<AssociationInstanceLink>> linksByAssociation = new LinkedHashMap<>();
+    private String rootVisName = DEFAULT_ROOT_VIS_NAME;
 
     public ModelInstanceDataset(String modelAzName, String modelVersion) {
         this.modelAzName = Objects.requireNonNull(modelAzName, "modelAzName must not be null");
@@ -25,6 +28,15 @@ public final class ModelInstanceDataset {
 
     public String modelVersion() {
         return modelVersion;
+    }
+
+    synchronized ModelInstanceRoot root() {
+        return new ModelInstanceRoot(modelAzName, modelVersion, rootVisName);
+    }
+
+    synchronized ModelInstanceRoot renameRoot(String visName) {
+        rootVisName = Objects.requireNonNull(visName, "visName must not be null");
+        return root();
     }
 
     synchronized EntityInstance addEntityInstance(EntityInstance instance) {

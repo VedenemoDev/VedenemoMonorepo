@@ -437,14 +437,15 @@ model-instance root.
   - first-level nodes are loaded model definitions, displayed as
     `ModelVisName (Model azName)`;
   - second-level nodes are model-instance roots based on that model, displayed
-    by `ModelInstanceVisName`;
+    by the backend-stored model-instance root name;
   - third-level nodes are entity-type instance groups under that model-instance
     root, for example `Album (460)` and `Artist (228)`.
-- Keep this first slice read-only. It should inspect/list existing instance
-  data but not create, edit, delete, nickname, or persist runtime instances.
+- Keep this first slice focused on inspection and root naming. It should
+  inspect/list existing instance data and rename the model-instance root, but
+  not create, edit, delete, or persist runtime entity instances.
 - Use the existing dynamic instance-data HTTP API. Do not add backend API
-  changes unless frontend implementation proves that a required list/discovery
-  operation is missing.
+  changes except the root metadata endpoints needed to move the root display
+  name out of UX-only state.
 
 ### Resolved UX Behavior
 
@@ -454,9 +455,9 @@ model-instance root.
   explicitly.
 - First-level model labels should always use `ModelVisName (Model azName)`,
   even when no duplicate visual names are currently loaded.
-- Second-level model-instance labels should use only `ModelInstanceVisName`.
-  The parent model node already identifies the exact model the instance root is
-  based on.
+- Second-level model-instance labels should use only the backend-stored root
+  display name. The parent model node already identifies the exact model the
+  instance root is based on.
 - Third-level nodes should represent all entity types in the model-instance
   root, each with the currently loaded instance count in parentheses. This
   avoids guessing which entity is the natural or most important root for a
@@ -476,24 +477,25 @@ model-instance root.
   where possible.
 - Fetch loaded models from the existing model list API.
 - For each loaded model, use `GET /data/{modelAzName}/_api` to discover entity
-  definitions, then use `GET /data/{modelAzName}/{entityAzName}` to list
-  runtime entity instances for the third-level entity-type count nodes.
+  definitions, `GET /data/{modelAzName}/_instance-root` to read the root
+  display name, and `GET /data/{modelAzName}/{entityAzName}/_count` to read
+  third-level entity-type counts.
 - The current backend API binds runtime instance data directly to a loaded
   model. If multiple model-instance roots per model are implemented, backend
-  discovery may need to expose dataset/root identity and `ModelInstanceVisName`
-  before the UX can render more than one second-level node per model.
+  discovery may need to expose dataset/root identity before the UX can render
+  more than one second-level node per model.
 - Association links should not appear in the first tree view. This first slice
   should show only entity-instance counts grouped by entity type.
-- Future nickname support should be planned as separate metadata because
-  nicknames are user-facing labels for a whole model-instance root/dataset.
-  A generated `ModelInstanceVisName` can be used first and later replaced by a
-  user-assigned nickname.
+- The root display name is backend-owned process-local metadata for the whole
+  model-instance root/dataset. It defaults to `Model instance 1` and can be
+  renamed through `PUT /data/{modelAzName}/_instance-root`.
 
 ### Out Of Scope
 
 - Runtime instance creation, editing, deletion, and association-link editing in
   the browser UX.
-- Persistence of instance data or instance nicknames.
+- Persistence of instance data or root display names beyond the current
+  process-local backend lifetime.
 - Live WebSocket updates for runtime instance data.
 - Backend authentication/authorization.
 - Backend schema changes unless the existing API is insufficient for discovery.
@@ -519,15 +521,16 @@ model-instance root.
   relationship summaries are deferred.
 - Model definition labels should always be displayed as
   `ModelVisName (Model azName)`.
-- Model-instance root labels should be displayed as `ModelInstanceVisName`
-  only.
-- Multiple model-instance roots may exist under the same model.
+- Model-instance root labels should be displayed as the backend-stored root
+  display name only.
+- Multiple model-instance roots may exist under the same model in a future
+  implementation; the current backend owns one process-local root per loaded
+  model dataset.
 - Entering the `Model instances` tab should automatically refresh the tree, and
   the explicit `Refresh model instances` button should remain available.
-- Future nicknames are for the whole model-instance root/dataset loaded from or
-  associated with one model, for example `Mika's album collection`, not for
-  individual entity instances. The first generated `ModelInstanceVisName` may
-  later be replaced by a user-assigned nickname.
+- Root display names are for the whole model-instance root/dataset loaded from
+  or associated with one model, for example `Mika's album collection`, not for
+  individual entity instances.
 
 ### Open Questions
 
@@ -541,22 +544,25 @@ None currently.
 - Added a `Model instances` tab that refreshes automatically when opened and
   also provides a `Refresh model instances` button.
 - Added a read-only tree shaped as:
-  `ModelVisName (Model azName)` -> generated `ModelInstanceVisName` ->
+  `ModelVisName (Model azName)` -> backend-stored model-instance root name ->
   entity-type count nodes such as `Album (460)` and `Artist (228)`.
-- The generated model-instance root is shown only when at least one entity
+- The model-instance root is shown only when at least one entity
   count is greater than zero. If a model is loaded but no runtime entity data
   exists yet, the model node remains visible and shows an empty model-instance
   state instead of a misleading generated root.
 - Added `GET /data/{modelAzName}/{entityAzName}/_count` so the UX can show
   exact entity-instance counts even when list endpoints return a limited page.
+- Added backend-stored model-instance root naming through
+  `GET /data/{modelAzName}/_instance-root` and
+  `PUT /data/{modelAzName}/_instance-root`; the UX root menu exposes a
+  `Rename...` action and persists the updated root label through those
+  endpoints.
 - Kept association-link counts, relationship summaries, runtime instance
-  editing, nickname editing, persistence, and live runtime-data updates out of
-  scope.
+  editing, persistence, and live runtime-data updates out of scope.
 - Current backend runtime data still has one process-local dataset per loaded
-  model. When that dataset has runtime entity data, the UX represents it as a
-  generated `Model instance 1`. True multiple model-instance roots per model
-  still require backend dataset identity/discovery and generated or
-  user-assigned `ModelInstanceVisName` metadata.
+  model. That dataset owns one mutable root display name, defaulting to
+  `Model instance 1`. True multiple model-instance roots per model still
+  require backend dataset identity/discovery.
 
 ## Plan Association Semantics For Vedenemo Models
 

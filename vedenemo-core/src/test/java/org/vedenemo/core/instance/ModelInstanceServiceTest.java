@@ -41,6 +41,22 @@ final class ModelInstanceServiceTest {
     }
 
     @Test
+    void readsAndRenamesModelInstanceRootMetadata() {
+        Fixture fixture = fixture();
+
+        ModelInstanceRoot defaultRoot = fixture.service.readRoot("Music");
+        ModelInstanceRoot renamed = fixture.service.renameRoot("Music", "Blue Note archive");
+
+        assertEquals("Music", defaultRoot.modelAzName());
+        assertEquals("1.2.3", defaultRoot.modelVersion());
+        assertEquals("Model instance 1", defaultRoot.visName());
+        assertEquals("Blue Note archive", renamed.visName());
+        assertEquals("Blue Note archive", fixture.service.readRoot("Music").visName());
+        assertThrows(IllegalArgumentException.class, () -> fixture.service.renameRoot("Music", " "));
+        assertThrows(IllegalArgumentException.class, () -> fixture.service.renameRoot("Missing", "Archive"));
+    }
+
+    @Test
     void rejectsUnknownModelEntityAttributeAndInvalidValues() {
         Fixture fixture = fixture();
 

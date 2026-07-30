@@ -83,6 +83,28 @@ final class InstanceDataResourceTest {
     }
 
     @Test
+    void readsAndRenamesModelInstanceRoot() throws Exception {
+        HttpResponse<String> initial = get("/data/Music/_instance-root");
+        HttpResponse<String> renamed = put("/data/Music/_instance-root", """
+                {"visName":"Blue Note archive"}
+                """);
+        HttpResponse<String> afterRename = get("/data/Music/_instance-root");
+
+        assertEquals(200, initial.statusCode());
+        assertTrue(initial.body().contains("\"modelAzName\":\"Music\""));
+        assertTrue(initial.body().contains("\"modelVersion\":\"1.2.3\""));
+        assertTrue(initial.body().contains("\"visName\":\"Model instance 1\""));
+        assertEquals(200, renamed.statusCode());
+        assertTrue(renamed.body().contains("\"visName\":\"Blue Note archive\""));
+        assertEquals(200, afterRename.statusCode());
+        assertTrue(afterRename.body().contains("\"visName\":\"Blue Note archive\""));
+        assertEquals(400, put("/data/Music/_instance-root", """
+                {"visName":" "}
+                """).statusCode());
+        assertEquals(404, get("/data/Missing/_instance-root").statusCode());
+    }
+
+    @Test
     void createsListsReadsAndFiltersEntityInstances() throws Exception {
         HttpResponse<String> first = post("/data/Music/Artist", """
                 {"Website":"https://example.com","Name":"Miles Davis","Rating":99.5}
@@ -213,6 +235,14 @@ final class InstanceDataResourceTest {
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+        return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> put(String path, String body) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + path))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(body))
                 .build();
         return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     }

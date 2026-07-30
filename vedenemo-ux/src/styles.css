@@ -234,7 +234,12 @@ body {
 }
 
 .tree-node summary {
+  position: relative;
+  display: flex;
+  min-width: 0;
   min-height: 2rem;
+  align-items: center;
+  gap: 0.5rem;
   cursor: pointer;
   font-weight: 700;
 }
@@ -260,6 +265,139 @@ body {
   border-left: 3px solid #64748b;
   background: #fff;
   font-weight: 600;
+}
+
+.tree-node-actions {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tree-menu-button {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.375rem;
+  color: #334155;
+  background: #fff;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tree-menu-button:hover,
+.tree-menu-button:focus-visible {
+  color: #111827;
+  border-color: #64748b;
+}
+
+.tree-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  z-index: 5;
+  min-width: 8rem;
+  padding: 0.25rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.375rem;
+  background: #fff;
+  box-shadow: 0 0.5rem 1.5rem rgb(15 23 42 / 0.14);
+}
+
+.tree-menu button {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  border-radius: 0.25rem;
+  color: #111827;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tree-menu button:hover,
+.tree-menu button:focus-visible {
+  background: #eef2f7;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(15 23 42 / 0.35);
+}
+
+.rename-dialog {
+  display: grid;
+  width: min(100%, 24rem);
+  gap: 0.65rem;
+  padding: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  background: #fff;
+  box-shadow: 0 1rem 2.5rem rgb(15 23 42 / 0.2);
+}
+
+.rename-dialog h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 1.1rem;
+}
+
+.rename-dialog label {
+  color: #334155;
+  font-weight: 700;
+}
+
+.rename-dialog input {
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #9ca3af;
+  border-radius: 0.375rem;
+  color: #111827;
+  background: #fff;
+  font: inherit;
+}
+
+.dialog-error {
+  color: #b91c1c;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.dialog-actions button {
+  min-width: 5rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid #1f2937;
+  border-radius: 0.375rem;
+  color: #fff;
+  background: #1f2937;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dialog-actions button:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.dialog-actions .dialog-secondary {
+  color: #1f2937;
+  background: #fff;
 }
 
 .console-shell {

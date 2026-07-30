@@ -417,6 +417,10 @@ and exposes:
 - `GET /data/{modelAzName}/_api`, which describes the runtime instance API for
   one loaded model, including entities, attributes, associations, supported
   operations, and JSON body examples
+- `GET /data/{modelAzName}/_instance-root`, which reads the process-local
+  model-instance root metadata for one loaded model
+- `PUT /data/{modelAzName}/_instance-root`, which renames that model-instance
+  root display label
 - `POST /data/{modelAzName}/{entityAzName}`, which creates one entity instance
   after validating submitted attribute values against the modeled entity
 - `GET /data/{modelAzName}/{entityAzName}`, which lists entity instances in
@@ -538,10 +542,12 @@ Current user-facing behavior:
   and embedded console split only under the `Models` tab
 - shows a `Model instances` tab that automatically refreshes on entry and also
   has an explicit Refresh model instances button
-- renders a read-only three-level model-instance tree:
-  model definition labels as `ModelVisName (Model azName)`, a generated
+- renders a three-level model-instance tree:
+  model definition labels as `ModelVisName (Model azName)`, the backend-stored
   model-instance root label only when counted runtime entity data exists, and
   entity-type count nodes such as `Album (460)`
+- lets the user rename the model-instance root from the root node menu; the
+  updated name is persisted in the process-local backend dataset metadata
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle
@@ -777,12 +783,14 @@ sequenceDiagram
     loop each loaded model
         UX->>API: GET /data/{modelAzName}/_api
         API-->>UX: entity descriptions
+        UX->>API: GET /data/{modelAzName}/_instance-root
+        API-->>UX: model-instance root metadata
         loop each entity
             UX->>API: GET /data/{modelAzName}/{entityAzName}/_count
             API-->>UX: entity instance count
         end
     end
-    UX->>UX: render model -> generated instance root -> entity count tree
+    UX->>UX: render model -> backend-named instance root -> entity count tree
 ```
 
 ### Web Console Command Execution

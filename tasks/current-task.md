@@ -32,6 +32,8 @@ Vedenemo model definition.
 
 ```text
 GET  /data/{modelAzName}/_api
+GET  /data/{modelAzName}/_instance-root
+PUT  /data/{modelAzName}/_instance-root
 POST /data/{modelAzName}/{entityAzName}
 GET  /data/{modelAzName}/{entityAzName}
 GET  /data/{modelAzName}/{entityAzName}/_count
@@ -52,6 +54,8 @@ GET  /data/{modelAzName}/_links/{associationAzName}
   values.
 - Implemented deterministic entity instance listing and exact-match filters.
 - Implemented entity-instance count reads for UX grouped instance summaries.
+- Implemented process-local model-instance root display-name metadata with
+  backend read and rename endpoints.
 - Implemented one-hop relationship `_query` predicates that match related
   entity attributes through stored association links.
 - Added focused core and web API tests.
