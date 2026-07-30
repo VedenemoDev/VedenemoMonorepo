@@ -5494,3 +5494,45 @@ Current status and next steps:
 - Count failures now render entity groups with `?`; model detail failures render
   the generated `Model instance 1` root with an unavailable-state child.
 - Verified `npm run build`; Vite still reports the existing large chunk warning.
+
+## 2026-07-30 19:33 EEST
+
+Session goal: avoid showing a generated model-instance root when no runtime
+entity instances are loaded.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `tasks/backlog.md`
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '560,835p' vedenemo-ux/src/App.tsx`
+- `git status --short --branch`
+- `tail -n 80 SESSION.md`
+- `rg -n "ModelInstance|refreshModelInstances|buildModelInstanceNode|model-instance" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `rg -n "Model instance 1|generated model-instance|generated ModelInstanceVisName|generated instance|entity-type count|No model instances" README.md docs/architecture_doc.md tasks/backlog.md SESSION.md vedenemo-ux/src/App.tsx -S`
+- `sed -n '320,333p' README.md`
+- `sed -n '536,546p' docs/architecture_doc.md`
+- `sed -n '536,557p' tasks/backlog.md`
+- `npm run build`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+- `git status --short`
+
+Current status and next steps:
+
+- Changed `Model instances` rendering so `Model instance 1` appears only when
+  at least one entity count is greater than zero.
+- Loaded model nodes remain visible when no runtime data exists, and show
+  `No model instances loaded` instead of a generated instance root.
+- If instance detail or count calls fail, the model node still appears with an
+  unavailable-state message rather than hanging on refresh.
+- Updated README, backlog, and living architecture documentation to match this
+  behavior.
+- Verified `npm run build` and `git diff --check`; Vite still reports the
+  existing large PlantUML chunk warning.

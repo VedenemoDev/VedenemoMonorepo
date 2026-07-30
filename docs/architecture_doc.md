@@ -539,9 +539,9 @@ Current user-facing behavior:
 - shows a `Model instances` tab that automatically refreshes on entry and also
   has an explicit Refresh model instances button
 - renders a read-only three-level model-instance tree:
-  model definition labels as `ModelVisName (Model azName)`, one generated
-  model-instance root label for the current backend dataset, and entity-type
-  count nodes such as `Album (460)`
+  model definition labels as `ModelVisName (Model azName)`, a generated
+  model-instance root label only when counted runtime entity data exists, and
+  entity-type count nodes such as `Album (460)`
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle

@@ -612,27 +612,27 @@ export function App() {
     try {
       const apiDescription = await fetchModelInstanceApi(apiBaseUrl, model.azName);
       const entityGroups = await Promise.all(apiDescription.entities.map((entity) => buildEntityInstanceGroup(apiBaseUrl, model.azName, entity)));
+      const hasCountedInstances = entityGroups.some((group) => typeof group.count === "number" && group.count > 0);
+      const hasEntityErrors = entityGroups.some((group) => group.error);
 
       return {
         modelAzName: model.azName,
         modelVisName: model.visName,
-        roots: [
-          {
-            visName: "Model instance 1",
-            entityGroups,
-          },
-        ],
+        roots: hasCountedInstances
+          ? [
+              {
+                visName: "Model instance 1",
+                entityGroups,
+              },
+            ]
+          : [],
+        error: !hasCountedInstances && hasEntityErrors ? "Entity counts unavailable" : undefined,
       };
     } catch (error) {
       return {
         modelAzName: model.azName,
         modelVisName: model.visName,
-        roots: [
-          {
-            visName: "Model instance 1",
-            entityGroups: [],
-          },
-        ],
+        roots: [],
         error: error instanceof Error ? error.message : "Model instance details unavailable",
       };
     }
@@ -799,13 +799,15 @@ export function App() {
                     <details key={model.modelAzName} open className="tree-node tree-node-model">
                       <summary>{model.modelVisName} ({model.modelAzName})</summary>
                       <div className="tree-children">
-                        {model.roots.map((root) => (
+                        {model.error ? (
+                          <div className="tree-empty">Model instance details unavailable: {model.error}</div>
+                        ) : model.roots.length === 0 ? (
+                          <div className="tree-empty">No model instances loaded</div>
+                        ) : model.roots.map((root) => (
                           <details key={`${model.modelAzName}-${root.visName}`} open className="tree-node tree-node-root">
                             <summary>{root.visName}</summary>
                             <ul className="tree-children tree-entity-groups">
-                              {model.error ? (
-                                <li className="tree-empty">Entity groups unavailable: {model.error}</li>
-                              ) : root.entityGroups.length === 0 ? (
+                              {root.entityGroups.length === 0 ? (
                                 <li className="tree-empty">No entity types</li>
                               ) : (
                                 root.entityGroups.map((group) => (

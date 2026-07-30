@@ -543,16 +543,20 @@ None currently.
 - Added a read-only tree shaped as:
   `ModelVisName (Model azName)` -> generated `ModelInstanceVisName` ->
   entity-type count nodes such as `Album (460)` and `Artist (228)`.
+- The generated model-instance root is shown only when at least one entity
+  count is greater than zero. If a model is loaded but no runtime entity data
+  exists yet, the model node remains visible and shows an empty model-instance
+  state instead of a misleading generated root.
 - Added `GET /data/{modelAzName}/{entityAzName}/_count` so the UX can show
   exact entity-instance counts even when list endpoints return a limited page.
 - Kept association-link counts, relationship summaries, runtime instance
   editing, nickname editing, persistence, and live runtime-data updates out of
   scope.
 - Current backend runtime data still has one process-local dataset per loaded
-  model. The UX represents that dataset as a generated `Model instance 1`.
-  True multiple model-instance roots per model still require backend dataset
-  identity/discovery and generated or user-assigned `ModelInstanceVisName`
-  metadata.
+  model. When that dataset has runtime entity data, the UX represents it as a
+  generated `Model instance 1`. True multiple model-instance roots per model
+  still require backend dataset identity/discovery and generated or
+  user-assigned `ModelInstanceVisName` metadata.
 
 ## Plan Association Semantics For Vedenemo Models
 

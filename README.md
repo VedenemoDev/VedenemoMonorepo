@@ -326,7 +326,9 @@ the pane's top border to resize it, and use the same arrow to minimize it
 again. The `Model instances` tab refreshes runtime instance counts when opened
 and shows a read-only tree:
 `ModelVisName (Model azName)` -> generated `ModelInstanceVisName` -> entity
-groups such as `Album (460)`.
+groups such as `Album (460)`. The generated model-instance node is shown only
+when counted runtime entity data exists; otherwise the model node shows an
+empty instance state.
 The console output scrolls to the latest line as commands run. The full-page
 browser console remains available directly at `/console`. The browser console
 supports the same authoring commands as `VedenemoCli`, including `add`,
