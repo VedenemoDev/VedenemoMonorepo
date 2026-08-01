@@ -6520,3 +6520,42 @@ Current status and next steps:
 - Updated the executed backlog task completion notes.
 - Verification passed: `npm run build` and `git diff --check`. Vite still
   reports the existing large chunk warning for bundled visualization assets.
+## 2026-08-01 23:30 EEST
+
+Session goal: fix Query Console association wildcard field so the visible `*`
+is an actual submitted value.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+- `vedenemo-ux/src/App.tsx`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `git status --short --branch`
+- `sed -n '660,825p' vedenemo-ux/src/App.tsx`
+- `sed -n '1000,1075p' vedenemo-ux/src/App.tsx`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx tasks/backlog.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Changed Query Console association wildcard behavior from placeholder-only to
+  an actual controlled input value.
+- Seeded `*` when the console loads a traversable association, when the selected
+  entity changes to one with a traversable association, when association
+  criteria are enabled with an empty value, and when a new association is
+  selected while the value is empty.
+- Updated backlog completion notes to record the corrected wildcard default.
+- Verification passed: `npm run build` and `git diff --check`. Vite still
+  reports the existing large chunk warning for bundled visualization assets.

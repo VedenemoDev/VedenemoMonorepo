@@ -96,6 +96,9 @@ album-to-artist association.
   one-hop relationship predicate without related-attribute comparisons and
   therefore returns query target entities that have at least one matching
   association link.
+- Defaulted the association criterion value field to an actual `*` value when a
+  traversable association is available, so the visible wildcard can be submitted
+  immediately without erasing and retyping it.
 - Added a result display-field selector for choosing which returned-entity
   attribute labels first-level result nodes.
 - Used combined association labels including association display name, `azName`,

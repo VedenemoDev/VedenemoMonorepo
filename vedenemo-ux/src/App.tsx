@@ -700,6 +700,7 @@ function QueryConsolePage() {
         setSelectedTraversalValue(firstTraversal === null ? "" : traversalOptionValue(firstTraversal));
         setSelectedRelatedAttributeAzName(firstTraversal?.relatedEntity.attributes[0]?.azName ?? "");
         setSelectedRelationshipOperator("=");
+        setRelationshipCriterionValue(firstTraversal === null ? "" : "*");
         setStatus("ok");
         setStatusMessage(nextApiDescription.entities.length === 0 ? "No entity types available" : "Ready");
       } catch (error) {
@@ -739,7 +740,7 @@ function QueryConsolePage() {
     setSelectedTraversalValue(nextTraversal === null ? "" : traversalOptionValue(nextTraversal));
     setSelectedRelatedAttributeAzName(nextTraversal?.relatedEntity.attributes[0]?.azName ?? "");
     setSelectedRelationshipOperator("=");
-    setRelationshipCriterionValue("");
+    setRelationshipCriterionValue(nextTraversal === null ? "" : "*");
     setStatusMessage(nextEntity === null ? "Select an entity type" : "Ready");
   }
 
@@ -980,6 +981,9 @@ function QueryConsolePage() {
                 checked={useRelationshipCriterion}
                 onChange={(event) => {
                   setUseRelationshipCriterion(event.target.checked);
+                  if (event.target.checked && selectedTraversal !== null && !relationshipCriterionValue.trim()) {
+                    setRelationshipCriterionValue("*");
+                  }
                   setResults([]);
                   setStatusMessage("Ready");
                 }}
@@ -999,6 +1003,9 @@ function QueryConsolePage() {
                 setSelectedTraversalValue(event.target.value);
                 setSelectedRelatedAttributeAzName(nextTraversal?.relatedEntity.attributes[0]?.azName ?? "");
                 setSelectedRelationshipOperator("=");
+                if (nextTraversal !== null && !relationshipCriterionValue.trim()) {
+                  setRelationshipCriterionValue("*");
+                }
                 setResults([]);
                 setStatusMessage("Ready");
               }}
