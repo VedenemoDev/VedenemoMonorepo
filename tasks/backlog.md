@@ -2,7 +2,7 @@
 
 ## Add Non-Equality Query Operators For Instance Data
 
-Status: planning
+Status: executed.
 
 ### Goal
 
@@ -22,9 +22,21 @@ behavior and keeping HTTP DTO parsing in `vedenemo-web-api`.
 - Keep JSON query DTO shape and parsing in `vedenemo-web-api`.
 - Update Query Console UX operator choices after backend support exists.
 
+### Completion Notes
+
+- Added pure core scalar comparison types and operators.
+- Kept existing `where.equals` query bodies working for compatibility.
+- Added explicit `where.comparisons` query bodies with `attributeAzName`,
+  `operator`, and `value`.
+- Implemented `=`, numeric `<`, numeric `>`, and string-like `contains`.
+- Rejected operators that do not match the selected attribute `DataType`.
+- Updated relationship predicates to support the same scalar comparison model.
+- Updated Query Console UX operator choices based on selected attribute type.
+- Added focused core and web API tests.
+
 ## Add First Version Of Query Console UX
 
-Status: planning
+Status: executed.
 
 ### Goal
 

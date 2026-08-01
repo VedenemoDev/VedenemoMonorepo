@@ -141,6 +141,78 @@ final class ModelInstanceServiceTest {
     }
 
     @Test
+    void queriesWithScalarComparisonOperators() {
+        Fixture fixture = fixture();
+        String rootId = fixture.rootId();
+        EntityInstance miles = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Name", "Miles Davis", "Rating", 99));
+        EntityInstance bill = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Name", "Bill Evans", "Rating", 98));
+        EntityInstance coltrane = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Name", "John Coltrane", "Rating", 100));
+
+        List<EntityInstance> greaterThan = fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(new ScalarComparison("Rating", ScalarComparisonOperator.GREATER_THAN, 98)),
+                        List.of()
+                )
+        );
+        List<EntityInstance> lessThan = fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(new ScalarComparison("Rating", ScalarComparisonOperator.LESS_THAN, 99)),
+                        List.of()
+                )
+        );
+        List<EntityInstance> contains = fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(new ScalarComparison("Name", ScalarComparisonOperator.CONTAINS, "Davis")),
+                        List.of()
+                )
+        );
+
+        assertEquals(List.of(miles.id()), contains.stream().map(EntityInstance::id).toList());
+        assertEquals(List.of(miles.id(), coltrane.id()), greaterThan.stream().map(EntityInstance::id).toList());
+        assertEquals(List.of(bill.id()), lessThan.stream().map(EntityInstance::id).toList());
+    }
+
+    @Test
+    void rejectsComparisonOperatorsThatDoNotMatchAttributeType() {
+        Fixture fixture = fixture();
+        String rootId = fixture.rootId();
+        fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Name", "Miles Davis", "Rating", 99));
+
+        assertThrows(IllegalArgumentException.class, () -> fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(new ScalarComparison("Name", ScalarComparisonOperator.GREATER_THAN, "Miles Davis")),
+                        List.of()
+                )
+        ));
+        assertThrows(IllegalArgumentException.class, () -> fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(new ScalarComparison("Rating", ScalarComparisonOperator.CONTAINS, 99)),
+                        List.of()
+                )
+        ));
+    }
+
+    @Test
     void rejectsInvalidAssociationLinks() {
         Fixture fixture = fixture();
         String rootId = fixture.rootId();

@@ -192,6 +192,58 @@ final class InstanceDataResourceTest {
     }
 
     @Test
+    void queriesEntityInstancesWithComparisonOperators() throws Exception {
+        String rootId = createRoot(null);
+        String milesId = responseId(post(rootPath(rootId, "/Artist"), """
+                {"Name":"Miles Davis","Rating":99,"Website":"https://example.com"}
+                """));
+        String billId = responseId(post(rootPath(rootId, "/Artist"), """
+                {"Name":"Bill Evans","Rating":98,"Website":"https://example.org"}
+                """));
+        responseId(post(rootPath(rootId, "/Artist"), """
+                {"Name":"John Coltrane","Rating":100,"Website":"https://example.net"}
+                """));
+
+        HttpResponse<String> greaterThan = post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "comparisons": [
+                      {"attributeAzName": "Rating", "operator": ">", "value": 98}
+                    ]
+                  }
+                }
+                """);
+        HttpResponse<String> lessThan = post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "comparisons": [
+                      {"attributeAzName": "Rating", "operator": "<", "value": 99}
+                    ]
+                  }
+                }
+                """);
+        HttpResponse<String> contains = post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "comparisons": [
+                      {"attributeAzName": "Name", "operator": "contains", "value": "Davis"}
+                    ]
+                  }
+                }
+                """);
+
+        assertEquals(200, greaterThan.statusCode());
+        assertTrue(greaterThan.body().contains("\"id\":\"" + milesId + "\""));
+        assertTrue(!greaterThan.body().contains("\"id\":\"" + billId + "\""));
+        assertEquals(200, lessThan.statusCode());
+        assertTrue(lessThan.body().contains("\"id\":\"" + billId + "\""));
+        assertTrue(!lessThan.body().contains("\"id\":\"" + milesId + "\""));
+        assertEquals(200, contains.statusCode());
+        assertTrue(contains.body().contains("\"id\":\"" + milesId + "\""));
+        assertTrue(!contains.body().contains("\"id\":\"" + billId + "\""));
+    }
+
+    @Test
     void keepsEntityInstancesIsolatedByRoot() throws Exception {
         String firstRootId = createRoot("First archive");
         String secondRootId = createRoot("Second archive");
@@ -237,6 +289,24 @@ final class InstanceDataResourceTest {
                 """).statusCode());
         assertEquals(400, post(rootPath(rootId, "/Artist"), """
                 {"Website":"/relative"}
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "comparisons": [
+                      {"attributeAzName": "Name", "operator": ">", "value": "Miles Davis"}
+                    ]
+                  }
+                }
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "comparisons": [
+                      {"attributeAzName": "Rating", "operator": "contains", "value": 99}
+                    ]
+                  }
+                }
                 """).statusCode());
         assertEquals(400, post(rootPath(rootId, "/_links/Album_Artist"), """
                 {"sourceInstanceId":"%s","targetInstanceId":"%s"}

@@ -6211,3 +6211,67 @@ Current status and next steps:
 - `npm run build` in `vedenemo-ux` passed. Vite reported the existing large
   chunk warning for bundled visualization assets.
 - `git diff --check` passed.
+## 2026-08-01 15:49 EEST
+
+Session goal: plan and implement the extended model-instance query operator set.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/EntityInstanceQuery.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/RelationshipPredicate.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ScalarComparison.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ScalarComparisonOperator.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `vedenemo-ux/src/App.tsx`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,260p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 160 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,80p' tasks/backlog.md`
+- `sed -n '1,460p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,120p' vedenemo-core/src/main/java/org/vedenemo/core/instance/EntityInstanceQuery.java`
+- `sed -n '1,120p' vedenemo-core/src/main/java/org/vedenemo/core/instance/RelationshipPredicate.java`
+- `rg -n "EntityInstanceQuery|_query|equals|contains|queryEntityInstances|RelationshipPredicate" vedenemo-core/src/test vedenemo-web-api/src/test vedenemo-ux/src/App.tsx -S`
+- `sed -n '1,380p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '520,820p' vedenemo-ux/src/App.tsx`
+- `rg --files vedenemo-core/src/test vedenemo-web-api/src/test | sort`
+- `sed -n '1,260p' vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `sed -n '1,260p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `sed -n '260,560p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `mvn -B clean verify` twice; first run failed due an incorrect test expectation, second and final rerun passed
+- `npm run build` from `vedenemo-ux`
+- `git diff --check`
+- `git status --short`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added pure core `ScalarComparison` and `ScalarComparisonOperator` types.
+- Extended `EntityInstanceQuery` and `RelationshipPredicate` to support
+  explicit scalar comparisons while preserving existing equality-map
+  constructors and `where.equals` compatibility.
+- Implemented `=`, numeric `<`, numeric `>`, and string-like `contains`
+  matching in pure `vedenemo-core`.
+- Added web API parsing for `where.comparisons` arrays and kept existing
+  `where.equals` bodies working.
+- Updated Query Console UX operator choices by selected attribute type and
+  changed query submission to send explicit comparison predicates.
+- Marked the extended operator and Query Console backlog items executed.
+- Added focused core and web API tests for successful comparisons and rejected
+  invalid operator/type combinations.
+- Verification passed: `mvn -B clean verify`, `npm run build`, and
+  `git diff --check`. Vite still reports the existing large chunk warning for
+  visualization assets.

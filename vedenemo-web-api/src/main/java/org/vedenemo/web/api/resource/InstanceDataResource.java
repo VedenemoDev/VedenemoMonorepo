@@ -14,6 +14,8 @@ import org.vedenemo.core.instance.ModelInstanceRoot;
 import org.vedenemo.core.instance.ModelInstanceService;
 import org.vedenemo.core.instance.RelationshipDirection;
 import org.vedenemo.core.instance.RelationshipPredicate;
+import org.vedenemo.core.instance.ScalarComparison;
+import org.vedenemo.core.instance.ScalarComparisonOperator;
 import org.vedenemo.core.model.Association;
 import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.VAttribute;
@@ -272,14 +274,34 @@ public final class InstanceDataResource {
             Map<String, Object> equals = where == null || where.equals() == null
                     ? Map.of()
                     : where.equals();
+            List<ScalarComparison> comparisons = where == null || where.comparisons() == null
+                    ? List.of()
+                    : where.comparisons().stream().map(ComparisonRequest::toCoreComparison).toList();
             List<RelationshipPredicate> predicates = relationships == null
                     ? List.of()
                     : relationships.stream().map(RelationshipRequest::toCorePredicate).toList();
-            return new EntityInstanceQuery(equals, predicates);
+            return new EntityInstanceQuery(equals, comparisons, predicates);
         }
     }
 
-    private record WhereRequest(Map<String, Object> equals) {
+    private record WhereRequest(Map<String, Object> equals, List<ComparisonRequest> comparisons) {
+    }
+
+    private record ComparisonRequest(String attributeAzName, String operator, Object value) {
+
+        ScalarComparison toCoreComparison() {
+            if (attributeAzName == null || attributeAzName.isBlank()) {
+                throw new IllegalArgumentException("comparison attributeAzName is required");
+            }
+            if (value == null) {
+                throw new IllegalArgumentException("comparison value is required");
+            }
+            return new ScalarComparison(
+                    attributeAzName,
+                    ScalarComparisonOperator.parse(operator),
+                    value
+            );
+        }
     }
 
     private record RelationshipRequest(
@@ -293,11 +315,15 @@ public final class InstanceDataResource {
             Map<String, Object> equals = where == null || where.equals() == null
                     ? Map.of()
                     : where.equals();
+            List<ScalarComparison> comparisons = where == null || where.comparisons() == null
+                    ? List.of()
+                    : where.comparisons().stream().map(ComparisonRequest::toCoreComparison).toList();
             return new RelationshipPredicate(
                     associationAzName,
                     RelationshipDirection.parse(direction),
                     entityAzName,
-                    equals
+                    equals,
+                    comparisons
             );
         }
     }

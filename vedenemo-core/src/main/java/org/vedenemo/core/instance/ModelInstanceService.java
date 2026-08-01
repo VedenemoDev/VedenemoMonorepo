@@ -10,6 +10,7 @@ import org.vedenemo.core.registry.ModelRegistry;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,14 +101,14 @@ public final class ModelInstanceService {
     public List<EntityInstance> queryEntityInstances(String modelAzName, String instanceRootId, String entityAzName, EntityInstanceQuery query) {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);
-        Map<String, InstanceValue> normalizedEquals = normalizeValues(entity, query.equals());
+        List<NormalizedScalarComparison> comparisons = normalizeScalarComparisons(entity, query.equals(), query.comparisons());
         List<NormalizedRelationshipPredicate> relationships = query.relationships().stream()
                 .map(predicate -> normalizeRelationshipPredicate(modelRoot, entity, predicate))
                 .toList();
         ModelInstanceDataset dataset = requireDataset(modelRoot, instanceRootId);
         return dataset.listEntityInstances(entity.azName())
                 .stream()
-                .filter(instance -> matchesAll(instance, normalizedEquals))
+                .filter(instance -> matchesAll(instance, comparisons))
                 .filter(instance -> relationships.stream().allMatch(predicate -> matchesRelationship(dataset, instance, predicate)))
                 .limit(DEFAULT_LIMIT)
                 .toList();
@@ -252,6 +253,94 @@ public final class ModelInstanceService {
         return true;
     }
 
+    private static List<NormalizedScalarComparison> normalizeScalarComparisons(
+            VEntity entity,
+            Map<String, Object> equals,
+            List<ScalarComparison> comparisons
+    ) {
+        Objects.requireNonNull(equals, "equals must not be null");
+        Objects.requireNonNull(comparisons, "comparisons must not be null");
+        Map<String, VAttribute> attributesByKey = attributesByKey(entity);
+        List<ScalarComparison> allComparisons = new ArrayList<>();
+        equals.forEach((attributeAzName, value) -> allComparisons.add(ScalarComparison.equals(attributeAzName, value)));
+        allComparisons.addAll(comparisons);
+
+        ArrayList<NormalizedScalarComparison> normalized = new ArrayList<>();
+        for (ScalarComparison comparison : allComparisons) {
+            VAttribute attribute = requireAttribute(attributesByKey, comparison.attributeAzName());
+            InstanceValue value = normalizeValue(attribute, comparison.value());
+            requireOperatorAllowed(attribute, comparison.operator());
+            normalized.add(new NormalizedScalarComparison(attribute.azName(), comparison.operator(), value));
+        }
+        return List.copyOf(normalized);
+    }
+
+    private static Map<String, VAttribute> attributesByKey(VEntity entity) {
+        Map<String, VAttribute> attributesByKey = new LinkedHashMap<>();
+        for (VAttribute attribute : entity.attributes()) {
+            attributesByKey.put(VAttribute.uniquenessKey(attribute.azName()), attribute);
+        }
+        return attributesByKey;
+    }
+
+    private static VAttribute requireAttribute(Map<String, VAttribute> attributesByKey, String attributeAzName) {
+        String attributeKey = VAttribute.uniquenessKey(attributeAzName);
+        VAttribute attribute = attributesByKey.get(attributeKey);
+        if (attribute == null) {
+            throw new IllegalArgumentException("unknown attribute: " + attributeAzName);
+        }
+        return attribute;
+    }
+
+    private static void requireOperatorAllowed(VAttribute attribute, ScalarComparisonOperator operator) {
+        switch (operator) {
+            case EQUALS -> {
+            }
+            case LESS_THAN, GREATER_THAN -> {
+                if (attribute.type() != DataType.NUMERIC) {
+                    throw new IllegalArgumentException(operatorMessage(operator) + " requires NUMERIC attribute: " + attribute.azName());
+                }
+            }
+            case CONTAINS -> {
+                if (!isStringLike(attribute.type())) {
+                    throw new IllegalArgumentException("contains requires string-like attribute: " + attribute.azName());
+                }
+            }
+        }
+    }
+
+    private static String operatorMessage(ScalarComparisonOperator operator) {
+        return switch (operator) {
+            case LESS_THAN -> "less-than comparison";
+            case GREATER_THAN -> "greater-than comparison";
+            case EQUALS -> "equals comparison";
+            case CONTAINS -> "contains comparison";
+        };
+    }
+
+    private static boolean isStringLike(DataType type) {
+        return type == DataType.TEXT || type == DataType.URL || type == DataType.DATA;
+    }
+
+    private static boolean matchesAll(EntityInstance instance, List<NormalizedScalarComparison> comparisons) {
+        for (NormalizedScalarComparison comparison : comparisons) {
+            InstanceValue actual = instance.values().get(comparison.attributeAzName());
+            if (actual == null || !matchesComparison(actual, comparison)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean matchesComparison(InstanceValue actual, NormalizedScalarComparison comparison) {
+        return switch (comparison.operator()) {
+            case EQUALS -> actual.matches(comparison.value());
+            case LESS_THAN -> ((BigDecimal) actual.value()).compareTo((BigDecimal) comparison.value().value()) < 0;
+            case GREATER_THAN -> ((BigDecimal) actual.value()).compareTo((BigDecimal) comparison.value().value()) > 0;
+            case CONTAINS -> ((String) actual.value()).contains((String) comparison.value().value());
+        };
+    }
+
     private static void requireInstanceForAssociationEndpoint(
             ModelInstanceDataset dataset,
             String entityAzName,
@@ -277,7 +366,7 @@ public final class ModelInstanceService {
                 association,
                 predicate.direction(),
                 relatedEntity,
-                normalizeValues(relatedEntity, predicate.equals())
+                normalizeScalarComparisons(relatedEntity, predicate.equals(), predicate.comparisons())
         );
     }
 
@@ -309,7 +398,7 @@ public final class ModelInstanceService {
                 .flatMap(Optional::stream)
                 .map(relatedId -> dataset.findEntityInstance(predicate.relatedEntity().azName(), relatedId))
                 .flatMap(Optional::stream)
-                .anyMatch(relatedInstance -> matchesAll(relatedInstance, predicate.equals()));
+                .anyMatch(relatedInstance -> matchesAll(relatedInstance, predicate.comparisons()));
     }
 
     private static Optional<InstanceId> relatedInstanceId(
@@ -372,7 +461,14 @@ public final class ModelInstanceService {
             Association association,
             RelationshipDirection direction,
             VEntity relatedEntity,
-            Map<String, InstanceValue> equals
+            List<NormalizedScalarComparison> comparisons
+    ) {
+    }
+
+    private record NormalizedScalarComparison(
+            String attributeAzName,
+            ScalarComparisonOperator operator,
+            InstanceValue value
     ) {
     }
 }

@@ -15,6 +15,7 @@ type ModelConnectionState = "disconnected" | "connecting" | "connected" | "error
 type ConsoleStatus = "loading" | "ready" | "error";
 type ActiveTab = "models" | "modelInstances";
 type ModelInstanceLoadState = "idle" | "loading" | "ok" | "error";
+type QueryOperator = "=" | "<" | ">" | "contains";
 
 type RuntimeConfig = {
   apiBaseUrl?: string;
@@ -223,6 +224,7 @@ async function queryEntityInstances(
   instanceRootId: string,
   entityAzName: string,
   attributeAzName: string,
+  operator: QueryOperator,
   value: string | number,
 ): Promise<EntityInstanceResponse[]> {
   const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}/${encodeURIComponent(entityAzName)}/_query`, {
@@ -233,9 +235,13 @@ async function queryEntityInstances(
     },
     body: JSON.stringify({
       where: {
-        equals: {
-          [attributeAzName]: value,
-        },
+        comparisons: [
+          {
+            attributeAzName,
+            operator,
+            value,
+          },
+        ],
       },
     }),
   });
@@ -278,6 +284,16 @@ function formatInstanceValue(value: unknown): string {
     return String(value);
   }
   return JSON.stringify(value);
+}
+
+function queryOperatorsFor(attribute: AttributeDescription | null): QueryOperator[] {
+  if (attribute === null) {
+    return ["="];
+  }
+  if (attribute.dataType === "NUMERIC") {
+    return ["=", "<", ">"];
+  }
+  return ["=", "contains"];
 }
 
 function clampConsolePaneHeight(value: number): number {
@@ -546,6 +562,7 @@ function QueryConsolePage() {
   const [root, setRoot] = useState<ModelInstanceRootResponse | null>(null);
   const [selectedEntityAzName, setSelectedEntityAzName] = useState("");
   const [selectedAttributeAzName, setSelectedAttributeAzName] = useState("");
+  const [selectedOperator, setSelectedOperator] = useState<QueryOperator>("=");
   const [criterionValue, setCriterionValue] = useState("");
   const [results, setResults] = useState<EntityInstanceResponse[]>([]);
   const [status, setStatus] = useState<ModelInstanceLoadState>("loading");
@@ -582,6 +599,7 @@ function QueryConsolePage() {
         const firstEntity = nextApiDescription.entities[0];
         setSelectedEntityAzName(firstEntity?.azName ?? "");
         setSelectedAttributeAzName(firstEntity?.attributes[0]?.azName ?? "");
+        setSelectedOperator("=");
         setStatus("ok");
         setStatusMessage(nextApiDescription.entities.length === 0 ? "No entity types available" : "Ready");
       } catch (error) {
@@ -601,12 +619,14 @@ function QueryConsolePage() {
 
   const selectedEntity = apiDescription?.entities.find((entity) => entity.azName === selectedEntityAzName) ?? null;
   const selectedAttribute = selectedEntity?.attributes.find((attribute) => attribute.azName === selectedAttributeAzName) ?? null;
+  const selectedOperators = queryOperatorsFor(selectedAttribute);
   const rootName = root === null ? instanceRootId : rootResponseDisplayName(root);
 
   function selectEntity(nextEntityAzName: string) {
     const nextEntity = apiDescription?.entities.find((entity) => entity.azName === nextEntityAzName) ?? null;
     setSelectedEntityAzName(nextEntityAzName);
     setSelectedAttributeAzName(nextEntity?.attributes[0]?.azName ?? "");
+    setSelectedOperator("=");
     setResults([]);
     setStatusMessage(nextEntity === null ? "Select an entity type" : "Ready");
   }
@@ -643,6 +663,7 @@ function QueryConsolePage() {
         instanceRootId,
         selectedEntity.azName,
         selectedAttribute.azName,
+        selectedOperator,
         queryValue,
       );
       setResults(nextResults);
@@ -700,6 +721,7 @@ function QueryConsolePage() {
               value={selectedAttributeAzName}
               onChange={(event) => {
                 setSelectedAttributeAzName(event.target.value);
+                setSelectedOperator("=");
                 setResults([]);
                 setStatusMessage("Ready");
               }}
@@ -719,8 +741,15 @@ function QueryConsolePage() {
 
           <div className="query-field query-field-operator">
             <label htmlFor="query-operator">Operator</label>
-            <select id="query-operator" value="=" disabled>
-              <option value="=">=</option>
+            <select
+              id="query-operator"
+              value={selectedOperator}
+              onChange={(event) => setSelectedOperator(event.target.value as QueryOperator)}
+              disabled={status === "loading" || selectedAttribute === null}
+            >
+              {selectedOperators.map((operator) => (
+                <option key={operator} value={operator}>{operator}</option>
+              ))}
             </select>
           </div>
 
