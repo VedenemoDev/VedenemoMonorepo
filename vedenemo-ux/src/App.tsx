@@ -290,6 +290,10 @@ function readQueryParam(name: string): string {
   return new URLSearchParams(window.location.search).get(name) ?? "";
 }
 
+function readInitialActiveTab(): ActiveTab {
+  return readQueryParam("tab") === "modelInstances" ? "modelInstances" : "models";
+}
+
 function rootDisplayName(root: ModelInstanceRootNode): string {
   return root.visName?.trim() || shortRootId(root.instanceRootId);
 }
@@ -846,7 +850,7 @@ function QueryConsolePage() {
             <span>{rootName}</span>
           </div>
         </div>
-        <a className="secondary-link" href="/">
+        <a className="secondary-link" href="/?tab=modelInstances">
           Model instances
         </a>
       </header>
@@ -1112,7 +1116,7 @@ export function App() {
   const [diagramMessage, setDiagramMessage] = useState(DIAGRAM_EMPTY_MESSAGE);
   const [isConsolePaneOpen, setIsConsolePaneOpen] = useState(false);
   const [consolePaneHeight, setConsolePaneHeight] = useState(readConsolePaneHeight);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("models");
+  const [activeTab, setActiveTab] = useState<ActiveTab>(readInitialActiveTab);
   const [modelInstanceLoadState, setModelInstanceLoadState] = useState<ModelInstanceLoadState>("idle");
   const [modelInstanceMessage, setModelInstanceMessage] = useState("Model instances not loaded");
   const [modelInstanceTree, setModelInstanceTree] = useState<ModelInstanceModelNode[]>([]);

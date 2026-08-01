@@ -6449,3 +6449,33 @@ Current status and next steps:
   executed with completion notes.
 - Verification passed: `npm run build` and `git diff --check`. Vite still
   reports the existing large chunk warning for bundled visualization assets.
+## 2026-08-01 22:26 EEST
+
+Session goal: fix Query Console return navigation so the Model instances link
+opens the Model instances tab.
+
+Files changed:
+
+- `SESSION.md`
+- `vedenemo-ux/src/App.tsx`
+
+Commands run:
+
+- `rg -n "activeTab|setActiveTab|Model instances|secondary-link|location|hash|search" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css -S`
+- `sed -n '1040,1360p' vedenemo-ux/src/App.tsx`
+- `git status --short --branch`
+- `sed -n '1440,1515p' vedenemo-ux/src/App.tsx`
+- `sed -n '120,155p' vedenemo-ux/src/styles.css`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check`
+
+Current status and next steps:
+
+- Changed the Query Console `Model instances` link to target
+  `/?tab=modelInstances`.
+- Added initial workspace tab selection from the `tab=modelInstances` query
+  parameter while preserving the default `Models` tab.
+- Verification passed: `npm run build` and `git diff --check`. Vite still
+  reports the existing large chunk warning for bundled visualization assets.
