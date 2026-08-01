@@ -92,6 +92,10 @@ album-to-artist association.
   incoming/outgoing association choices.
 - Submitted relationship criteria through the existing root-scoped `_query`
   request shape using the top-level `relationships` array.
+- Added association criterion wildcard value `*`, which submits the selected
+  one-hop relationship predicate without related-attribute comparisons and
+  therefore returns query target entities that have at least one matching
+  association link.
 - Added a result display-field selector for choosing which returned-entity
   attribute labels first-level result nodes.
 - Used combined association labels including association display name, `azName`,

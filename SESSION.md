@@ -6479,3 +6479,44 @@ Current status and next steps:
   parameter while preserving the default `Models` tab.
 - Verification passed: `npm run build` and `git diff --check`. Vite still
   reports the existing large chunk warning for bundled visualization assets.
+## 2026-08-01 22:45 EEST
+
+Session goal: add `*` wildcard support for Query Console association criteria.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+- `vedenemo-ux/src/App.tsx`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `git status --short --branch`
+- `sed -n '720,840p' vedenemo-ux/src/App.tsx`
+- `sed -n '960,1040p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,125p' tasks/backlog.md`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx tasks/backlog.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added association criterion value `*` handling in Query Console.
+- `*` now submits the selected one-hop relationship predicate with an empty
+  comparison list, so the backend returns query target entities that have at
+  least one matching association link.
+- Direct criteria still require a non-empty value.
+- Switched the association criterion value input to text with numeric input
+  mode for numeric related attributes so `*` can be entered for any related
+  attribute type.
+- Updated the executed backlog task completion notes.
+- Verification passed: `npm run build` and `git diff --check`. Vite still
+  reports the existing large chunk warning for bundled visualization assets.

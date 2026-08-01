@@ -783,34 +783,42 @@ function QueryConsolePage() {
 
     const relationships: QueryRelationshipRequest[] = [];
     if (useRelationshipCriterion) {
-      if (selectedTraversal === null || selectedRelatedAttribute === null) {
+      if (selectedTraversal === null) {
         setStatus("error");
         setStatusMessage("Select an association criterion");
         return;
       }
-      if (!relationshipCriterionValue.trim()) {
+      const trimmedRelationshipCriterionValue = relationshipCriterionValue.trim();
+      if (!trimmedRelationshipCriterionValue) {
         setStatus("error");
         setStatusMessage("Association criterion value is required");
         return;
       }
-      const relatedQueryValue = parseCriterionValue(selectedRelatedAttribute, relationshipCriterionValue);
-      if (selectedRelatedAttribute.dataType === "NUMERIC" && !Number.isFinite(relatedQueryValue)) {
-        setStatus("error");
-        setStatusMessage("Association numeric criterion must be a valid number");
-        return;
+      const relatedComparisons: QueryComparisonRequest[] = [];
+      if (trimmedRelationshipCriterionValue !== "*") {
+        if (selectedRelatedAttribute === null) {
+          setStatus("error");
+          setStatusMessage("Select a related attribute");
+          return;
+        }
+        const relatedQueryValue = parseCriterionValue(selectedRelatedAttribute, relationshipCriterionValue);
+        if (selectedRelatedAttribute.dataType === "NUMERIC" && !Number.isFinite(relatedQueryValue)) {
+          setStatus("error");
+          setStatusMessage("Association numeric criterion must be a valid number");
+          return;
+        }
+        relatedComparisons.push({
+          attributeAzName: selectedRelatedAttribute.azName,
+          operator: selectedRelationshipOperator,
+          value: relatedQueryValue,
+        });
       }
       relationships.push({
         associationAzName: selectedTraversal.association.azName,
         direction: selectedTraversal.direction,
         entityAzName: selectedTraversal.relatedEntity.azName,
         where: {
-          comparisons: [
-            {
-              attributeAzName: selectedRelatedAttribute.azName,
-              operator: selectedRelationshipOperator,
-              value: relatedQueryValue,
-            },
-          ],
+          comparisons: relatedComparisons,
         },
       });
     }
@@ -1052,9 +1060,11 @@ function QueryConsolePage() {
             <input
               id="query-related-value"
               value={relationshipCriterionValue}
-              type={selectedRelatedAttribute?.dataType === "NUMERIC" ? "number" : "text"}
+              type="text"
+              inputMode={selectedRelatedAttribute?.dataType === "NUMERIC" ? "decimal" : undefined}
+              placeholder="*"
               onChange={(event) => setRelationshipCriterionValue(event.target.value)}
-              disabled={status === "loading" || !useRelationshipCriterion || selectedRelatedAttribute === null}
+              disabled={status === "loading" || !useRelationshipCriterion || selectedTraversal === null}
             />
           </div>
 
