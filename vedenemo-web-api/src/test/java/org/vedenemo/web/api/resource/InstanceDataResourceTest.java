@@ -203,6 +203,9 @@ final class InstanceDataResourceTest {
         responseId(post(rootPath(rootId, "/Artist"), """
                 {"Name":"John Coltrane","Rating":100,"Website":"https://example.net"}
                 """));
+        String shorterId = responseId(post(rootPath(rootId, "/Artist"), """
+                {"Name":"Wayne Shorter","Rating":97,"Website":"https://example.org/artists/wayne-shorter"}
+                """));
 
         HttpResponse<String> greaterThan = post(rootPath(rootId, "/Artist/_query"), """
                 {
@@ -231,6 +234,15 @@ final class InstanceDataResourceTest {
                   }
                 }
                 """);
+        HttpResponse<String> urlContains = post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "comparisons": [
+                      {"attributeAzName": "Website", "operator": "contains", "value": "example.org"}
+                    ]
+                  }
+                }
+                """);
 
         assertEquals(200, greaterThan.statusCode());
         assertTrue(greaterThan.body().contains("\"id\":\"" + milesId + "\""));
@@ -241,6 +253,9 @@ final class InstanceDataResourceTest {
         assertEquals(200, contains.statusCode());
         assertTrue(contains.body().contains("\"id\":\"" + milesId + "\""));
         assertTrue(!contains.body().contains("\"id\":\"" + billId + "\""));
+        assertEquals(200, urlContains.statusCode());
+        assertTrue(urlContains.body().contains("\"id\":\"" + shorterId + "\""));
+        assertTrue(!urlContains.body().contains("\"id\":\"" + milesId + "\""));
     }
 
     @Test

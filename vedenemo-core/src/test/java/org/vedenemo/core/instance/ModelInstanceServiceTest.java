@@ -147,6 +147,7 @@ final class ModelInstanceServiceTest {
         EntityInstance miles = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Name", "Miles Davis", "Rating", 99));
         EntityInstance bill = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Name", "Bill Evans", "Rating", 98));
         EntityInstance coltrane = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Name", "John Coltrane", "Rating", 100));
+        EntityInstance shorter = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Name", "Wayne Shorter", "Rating", 97, "Website", "https://example.org/artists/wayne-shorter"));
 
         List<EntityInstance> greaterThan = fixture.service.queryEntityInstances(
                 "Music",
@@ -178,10 +179,22 @@ final class ModelInstanceServiceTest {
                         List.of()
                 )
         );
+        List<EntityInstance> urlContains = fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(new ScalarComparison("Website", ScalarComparisonOperator.CONTAINS, "example.org")),
+                        List.of()
+                )
+        );
 
         assertEquals(List.of(miles.id()), contains.stream().map(EntityInstance::id).toList());
+        assertEquals(1, urlContains.size());
+        assertEquals("Wayne Shorter", urlContains.getFirst().values().get("Name").value());
         assertEquals(List.of(miles.id(), coltrane.id()), greaterThan.stream().map(EntityInstance::id).toList());
-        assertEquals(List.of(bill.id()), lessThan.stream().map(EntityInstance::id).toList());
+        assertEquals(List.of(bill.id(), shorter.id()), lessThan.stream().map(EntityInstance::id).toList());
     }
 
     @Test

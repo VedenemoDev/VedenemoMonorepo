@@ -268,11 +268,18 @@ public final class ModelInstanceService {
         ArrayList<NormalizedScalarComparison> normalized = new ArrayList<>();
         for (ScalarComparison comparison : allComparisons) {
             VAttribute attribute = requireAttribute(attributesByKey, comparison.attributeAzName());
-            InstanceValue value = normalizeValue(attribute, comparison.value());
             requireOperatorAllowed(attribute, comparison.operator());
+            InstanceValue value = normalizeComparisonValue(attribute, comparison.operator(), comparison.value());
             normalized.add(new NormalizedScalarComparison(attribute.azName(), comparison.operator(), value));
         }
         return List.copyOf(normalized);
+    }
+
+    private static InstanceValue normalizeComparisonValue(VAttribute attribute, ScalarComparisonOperator operator, Object submittedValue) {
+        if (operator == ScalarComparisonOperator.CONTAINS) {
+            return stringValue(attribute, submittedValue);
+        }
+        return normalizeValue(attribute, submittedValue);
     }
 
     private static Map<String, VAttribute> attributesByKey(VEntity entity) {

@@ -6275,3 +6275,49 @@ Current status and next steps:
 - Verification passed: `mvn -B clean verify`, `npm run build`, and
   `git diff --check`. Vite still reports the existing large chunk warning for
   visualization assets.
+## 2026-08-01 16:04 EEST
+
+Session goal: diagnose and fix HTTP 400 for `contains` queries on URL attributes.
+
+Files changed:
+
+- `SESSION.md`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,260p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,260p' vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `sed -n '1,260p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `rg -n "Source|Url|URL|SourceRecord|Source_Record" .vedenemo scripts vedenemo-core vedenemo-web-api -S`
+- `sed -n '260,380p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `mvn -B clean verify`; first run failed due a test expectation after adding a new fixture row, second run passed
+- `npm run build` from `vedenemo-ux`
+- `git diff --check`
+- `git status --short`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Confirmed `SourceRecord.Url` is a `URL` attribute in `.vedenemo/FamilyTree.vdos`.
+- Found that `contains` was allowed for URL attributes, but comparison values
+  were normalized through full URL validation before matching.
+- Changed `contains` comparison normalization so string-like attributes use a
+  plain string comparison value; `=` on URL attributes still requires an
+  absolute URL.
+- Added core and web API tests proving URL substring `contains` queries return
+  matches instead of HTTP 400.
+- Verification passed: `mvn -B clean verify`, `npm run build`, and
+  `git diff --check`. Vite still reports the existing large chunk warning for
+  visualization assets.
