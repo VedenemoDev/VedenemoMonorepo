@@ -51,12 +51,23 @@ type ApiDescriptionResponse = {
   modelAzName: string;
   modelVisName: string;
   entities: EntityDescription[];
+  associations?: AssociationDescription[];
 };
 
 type AttributeDescription = {
   azName: string;
   visName: string;
   dataType: string;
+};
+
+type AssociationDescription = {
+  azName: string;
+  visName: string;
+  kind: string;
+  sourceEntityAzName: string;
+  targetEntityAzName: string;
+  sourceRoleName?: string | null;
+  targetRoleName?: string | null;
 };
 
 type CountResponse = {
@@ -107,6 +118,36 @@ type EntityInstanceResponse = {
   modelVersion: string;
   entityAzName: string;
   values: Record<string, unknown>;
+};
+
+type QueryComparisonRequest = {
+  attributeAzName: string;
+  operator: QueryOperator;
+  value: string | number;
+};
+
+type QueryRelationshipRequest = {
+  associationAzName: string;
+  direction: RelationshipDirection;
+  entityAzName: string;
+  where: {
+    comparisons: QueryComparisonRequest[];
+  };
+};
+
+type QueryRequest = {
+  where?: {
+    comparisons: QueryComparisonRequest[];
+  };
+  relationships?: QueryRelationshipRequest[];
+};
+
+type RelationshipDirection = "outgoing" | "incoming";
+
+type TraversalOption = {
+  association: AssociationDescription;
+  direction: RelationshipDirection;
+  relatedEntity: EntityDescription;
 };
 
 const PLANTUML_TARGET_ID = "plantuml-diagram";
@@ -223,9 +264,7 @@ async function queryEntityInstances(
   modelAzName: string,
   instanceRootId: string,
   entityAzName: string,
-  attributeAzName: string,
-  operator: QueryOperator,
-  value: string | number,
+  request: QueryRequest,
 ): Promise<EntityInstanceResponse[]> {
   const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}/${encodeURIComponent(entityAzName)}/_query`, {
     method: "POST",
@@ -233,17 +272,7 @@ async function queryEntityInstances(
       Accept: "application/json",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      where: {
-        comparisons: [
-          {
-            attributeAzName,
-            operator,
-            value,
-          },
-        ],
-      },
-    }),
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {
@@ -294,6 +323,61 @@ function queryOperatorsFor(attribute: AttributeDescription | null): QueryOperato
     return ["=", "<", ">"];
   }
   return ["=", "contains"];
+}
+
+function findEntity(entities: EntityDescription[], entityAzName: string): EntityDescription | null {
+  return entities.find((entity) => sameAzName(entity.azName, entityAzName)) ?? null;
+}
+
+function sameAzName(left: string, right: string): boolean {
+  return left.toLocaleLowerCase() === right.toLocaleLowerCase();
+}
+
+function traversalOptionsFor(entity: EntityDescription | null, apiDescription: ApiDescriptionResponse | null): TraversalOption[] {
+  if (entity === null || apiDescription === null) {
+    return [];
+  }
+
+  return (apiDescription.associations ?? []).flatMap((association) => {
+    const options: TraversalOption[] = [];
+    if (sameAzName(association.sourceEntityAzName, entity.azName)) {
+      const relatedEntity = findEntity(apiDescription.entities, association.targetEntityAzName);
+      if (relatedEntity !== null) {
+        options.push({ association, direction: "outgoing", relatedEntity });
+      }
+    }
+    if (sameAzName(association.targetEntityAzName, entity.azName)) {
+      const relatedEntity = findEntity(apiDescription.entities, association.sourceEntityAzName);
+      if (relatedEntity !== null) {
+        options.push({ association, direction: "incoming", relatedEntity });
+      }
+    }
+    return options;
+  });
+}
+
+function traversalOptionValue(option: TraversalOption): string {
+  return `${option.association.azName}::${option.direction}::${option.relatedEntity.azName}`;
+}
+
+function traversalLabel(option: TraversalOption): string {
+  const association = option.association;
+  const directionLabel = option.direction === "outgoing"
+    ? `${association.sourceEntityAzName} -> ${association.targetEntityAzName}`
+    : `${association.targetEntityAzName} -> ${association.sourceEntityAzName}`;
+  const roles = [association.sourceRoleName, association.targetRoleName]
+    .filter((role): role is string => typeof role === "string" && role.trim().length > 0)
+    .join(" / ");
+  const roleLabel = roles ? `, ${roles}` : "";
+  return `${association.visName} (${association.azName}, ${association.kind}, ${directionLabel}${roleLabel})`;
+}
+
+function parseCriterionValue(attribute: AttributeDescription, rawValue: string): string | number {
+  const trimmedValue = rawValue.trim();
+  if (attribute.dataType !== "NUMERIC") {
+    return trimmedValue;
+  }
+  return Number(trimmedValue);
 }
 
 function clampConsolePaneHeight(value: number): number {
@@ -561,9 +645,16 @@ function QueryConsolePage() {
   const [apiDescription, setApiDescription] = useState<ApiDescriptionResponse | null>(null);
   const [root, setRoot] = useState<ModelInstanceRootResponse | null>(null);
   const [selectedEntityAzName, setSelectedEntityAzName] = useState("");
+  const [selectedDisplayAttributeAzName, setSelectedDisplayAttributeAzName] = useState("");
+  const [useDirectCriterion, setUseDirectCriterion] = useState(true);
   const [selectedAttributeAzName, setSelectedAttributeAzName] = useState("");
   const [selectedOperator, setSelectedOperator] = useState<QueryOperator>("=");
   const [criterionValue, setCriterionValue] = useState("");
+  const [useRelationshipCriterion, setUseRelationshipCriterion] = useState(false);
+  const [selectedTraversalValue, setSelectedTraversalValue] = useState("");
+  const [selectedRelatedAttributeAzName, setSelectedRelatedAttributeAzName] = useState("");
+  const [selectedRelationshipOperator, setSelectedRelationshipOperator] = useState<QueryOperator>("=");
+  const [relationshipCriterionValue, setRelationshipCriterionValue] = useState("");
   const [results, setResults] = useState<EntityInstanceResponse[]>([]);
   const [status, setStatus] = useState<ModelInstanceLoadState>("loading");
   const [statusMessage, setStatusMessage] = useState("Loading query console...");
@@ -598,8 +689,13 @@ function QueryConsolePage() {
         setRoot(nextRoot);
         const firstEntity = nextApiDescription.entities[0];
         setSelectedEntityAzName(firstEntity?.azName ?? "");
+        setSelectedDisplayAttributeAzName(firstEntity?.attributes[0]?.azName ?? "");
         setSelectedAttributeAzName(firstEntity?.attributes[0]?.azName ?? "");
         setSelectedOperator("=");
+        const firstTraversal = traversalOptionsFor(firstEntity ?? null, nextApiDescription)[0] ?? null;
+        setSelectedTraversalValue(firstTraversal === null ? "" : traversalOptionValue(firstTraversal));
+        setSelectedRelatedAttributeAzName(firstTraversal?.relatedEntity.attributes[0]?.azName ?? "");
+        setSelectedRelationshipOperator("=");
         setStatus("ok");
         setStatusMessage(nextApiDescription.entities.length === 0 ? "No entity types available" : "Ready");
       } catch (error) {
@@ -618,39 +714,101 @@ function QueryConsolePage() {
   }, [modelAzName, instanceRootId]);
 
   const selectedEntity = apiDescription?.entities.find((entity) => entity.azName === selectedEntityAzName) ?? null;
+  const selectedDisplayAttribute = selectedEntity?.attributes.find((attribute) => attribute.azName === selectedDisplayAttributeAzName) ?? selectedEntity?.attributes[0] ?? null;
   const selectedAttribute = selectedEntity?.attributes.find((attribute) => attribute.azName === selectedAttributeAzName) ?? null;
   const selectedOperators = queryOperatorsFor(selectedAttribute);
+  const traversalOptions = traversalOptionsFor(selectedEntity, apiDescription);
+  const selectedTraversal = traversalOptions.find((option) => traversalOptionValue(option) === selectedTraversalValue) ?? traversalOptions[0] ?? null;
+  const selectedRelatedAttribute = selectedTraversal?.relatedEntity.attributes.find((attribute) => attribute.azName === selectedRelatedAttributeAzName) ?? selectedTraversal?.relatedEntity.attributes[0] ?? null;
+  const selectedRelationshipOperators = queryOperatorsFor(selectedRelatedAttribute);
   const rootName = root === null ? instanceRootId : rootResponseDisplayName(root);
 
   function selectEntity(nextEntityAzName: string) {
     const nextEntity = apiDescription?.entities.find((entity) => entity.azName === nextEntityAzName) ?? null;
+    const nextTraversal = traversalOptionsFor(nextEntity, apiDescription)[0] ?? null;
     setSelectedEntityAzName(nextEntityAzName);
+    setSelectedDisplayAttributeAzName(nextEntity?.attributes[0]?.azName ?? "");
     setSelectedAttributeAzName(nextEntity?.attributes[0]?.azName ?? "");
     setSelectedOperator("=");
     setResults([]);
+    setCriterionValue("");
+    setSelectedTraversalValue(nextTraversal === null ? "" : traversalOptionValue(nextTraversal));
+    setSelectedRelatedAttributeAzName(nextTraversal?.relatedEntity.attributes[0]?.azName ?? "");
+    setSelectedRelationshipOperator("=");
+    setRelationshipCriterionValue("");
     setStatusMessage(nextEntity === null ? "Select an entity type" : "Ready");
   }
 
   async function submitQuery(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!apiBaseUrl || apiDescription === null || selectedEntity === null || selectedAttribute === null) {
+    if (!apiBaseUrl || apiDescription === null || selectedEntity === null) {
       setStatus("error");
-      setStatusMessage("Select an entity type and attribute");
+      setStatusMessage("Select an entity type");
+      return;
+    }
+    if (!useDirectCriterion && !useRelationshipCriterion) {
+      setStatus("error");
+      setStatusMessage("Select at least one criterion");
       return;
     }
 
-    const trimmedValue = criterionValue.trim();
-    if (!trimmedValue) {
-      setStatus("error");
-      setStatusMessage("Criterion value is required");
-      return;
+    const comparisons: QueryComparisonRequest[] = [];
+    if (useDirectCriterion) {
+      if (selectedAttribute === null) {
+        setStatus("error");
+        setStatusMessage("Select a direct attribute");
+        return;
+      }
+      if (!criterionValue.trim()) {
+        setStatus("error");
+        setStatusMessage("Direct criterion value is required");
+        return;
+      }
+      const queryValue = parseCriterionValue(selectedAttribute, criterionValue);
+      if (selectedAttribute.dataType === "NUMERIC" && !Number.isFinite(queryValue)) {
+        setStatus("error");
+        setStatusMessage("Direct numeric criterion must be a valid number");
+        return;
+      }
+      comparisons.push({
+        attributeAzName: selectedAttribute.azName,
+        operator: selectedOperator,
+        value: queryValue,
+      });
     }
 
-    const queryValue = selectedAttribute.dataType === "NUMERIC" ? Number(trimmedValue) : trimmedValue;
-    if (selectedAttribute.dataType === "NUMERIC" && !Number.isFinite(queryValue)) {
-      setStatus("error");
-      setStatusMessage("Numeric criterion must be a valid number");
-      return;
+    const relationships: QueryRelationshipRequest[] = [];
+    if (useRelationshipCriterion) {
+      if (selectedTraversal === null || selectedRelatedAttribute === null) {
+        setStatus("error");
+        setStatusMessage("Select an association criterion");
+        return;
+      }
+      if (!relationshipCriterionValue.trim()) {
+        setStatus("error");
+        setStatusMessage("Association criterion value is required");
+        return;
+      }
+      const relatedQueryValue = parseCriterionValue(selectedRelatedAttribute, relationshipCriterionValue);
+      if (selectedRelatedAttribute.dataType === "NUMERIC" && !Number.isFinite(relatedQueryValue)) {
+        setStatus("error");
+        setStatusMessage("Association numeric criterion must be a valid number");
+        return;
+      }
+      relationships.push({
+        associationAzName: selectedTraversal.association.azName,
+        direction: selectedTraversal.direction,
+        entityAzName: selectedTraversal.relatedEntity.azName,
+        where: {
+          comparisons: [
+            {
+              attributeAzName: selectedRelatedAttribute.azName,
+              operator: selectedRelationshipOperator,
+              value: relatedQueryValue,
+            },
+          ],
+        },
+      });
     }
 
     setIsQuerying(true);
@@ -662,9 +820,10 @@ function QueryConsolePage() {
         apiDescription.modelAzName,
         instanceRootId,
         selectedEntity.azName,
-        selectedAttribute.azName,
-        selectedOperator,
-        queryValue,
+        {
+          where: comparisons.length === 0 ? undefined : { comparisons },
+          relationships: relationships.length === 0 ? undefined : relationships,
+        },
       );
       setResults(nextResults);
       setStatus("ok");
@@ -715,6 +874,43 @@ function QueryConsolePage() {
           </div>
 
           <div className="query-field">
+            <label htmlFor="query-display-attribute">Display field</label>
+            <select
+              id="query-display-attribute"
+              value={selectedDisplayAttributeAzName}
+              onChange={(event) => setSelectedDisplayAttributeAzName(event.target.value)}
+              disabled={status === "loading" || selectedEntity === null || selectedEntity.attributes.length === 0}
+            >
+              {selectedEntity === null || selectedEntity.attributes.length === 0 ? (
+                <option value="">No attributes</option>
+              ) : (
+                selectedEntity.attributes.map((attribute) => (
+                  <option key={attribute.azName} value={attribute.azName}>
+                    {attribute.visName} ({attribute.azName})
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div className="query-criterion-toggle">
+            <label htmlFor="query-use-direct">
+              <input
+                id="query-use-direct"
+                type="checkbox"
+                checked={useDirectCriterion}
+                onChange={(event) => {
+                  setUseDirectCriterion(event.target.checked);
+                  setResults([]);
+                  setStatusMessage("Ready");
+                }}
+                disabled={status === "loading" || selectedEntity === null || selectedEntity.attributes.length === 0}
+              />
+              Direct criterion
+            </label>
+          </div>
+
+          <div className="query-field">
             <label htmlFor="query-attribute">Attribute</label>
             <select
               id="query-attribute"
@@ -725,7 +921,7 @@ function QueryConsolePage() {
                 setResults([]);
                 setStatusMessage("Ready");
               }}
-              disabled={status === "loading" || selectedEntity === null || selectedEntity.attributes.length === 0}
+              disabled={status === "loading" || !useDirectCriterion || selectedEntity === null || selectedEntity.attributes.length === 0}
             >
               {selectedEntity === null || selectedEntity.attributes.length === 0 ? (
                 <option value="">No attributes</option>
@@ -745,7 +941,7 @@ function QueryConsolePage() {
               id="query-operator"
               value={selectedOperator}
               onChange={(event) => setSelectedOperator(event.target.value as QueryOperator)}
-              disabled={status === "loading" || selectedAttribute === null}
+              disabled={status === "loading" || !useDirectCriterion || selectedAttribute === null}
             >
               {selectedOperators.map((operator) => (
                 <option key={operator} value={operator}>{operator}</option>
@@ -760,11 +956,105 @@ function QueryConsolePage() {
               value={criterionValue}
               type={selectedAttribute?.dataType === "NUMERIC" ? "number" : "text"}
               onChange={(event) => setCriterionValue(event.target.value)}
-              disabled={status === "loading" || selectedAttribute === null}
+              disabled={status === "loading" || !useDirectCriterion || selectedAttribute === null}
             />
           </div>
 
-          <button type="submit" disabled={isQuerying || status === "loading" || selectedAttribute === null}>
+          <div className="query-criterion-toggle">
+            <label htmlFor="query-use-relationship">
+              <input
+                id="query-use-relationship"
+                type="checkbox"
+                checked={useRelationshipCriterion}
+                onChange={(event) => {
+                  setUseRelationshipCriterion(event.target.checked);
+                  setResults([]);
+                  setStatusMessage("Ready");
+                }}
+                disabled={status === "loading" || traversalOptions.length === 0}
+              />
+              Association criterion
+            </label>
+          </div>
+
+          <div className="query-field query-field-wide">
+            <label htmlFor="query-association">Association</label>
+            <select
+              id="query-association"
+              value={selectedTraversal === null ? "" : traversalOptionValue(selectedTraversal)}
+              onChange={(event) => {
+                const nextTraversal = traversalOptions.find((option) => traversalOptionValue(option) === event.target.value) ?? null;
+                setSelectedTraversalValue(event.target.value);
+                setSelectedRelatedAttributeAzName(nextTraversal?.relatedEntity.attributes[0]?.azName ?? "");
+                setSelectedRelationshipOperator("=");
+                setResults([]);
+                setStatusMessage("Ready");
+              }}
+              disabled={status === "loading" || !useRelationshipCriterion || traversalOptions.length === 0}
+            >
+              {traversalOptions.length === 0 ? (
+                <option value="">No traversable associations</option>
+              ) : (
+                traversalOptions.map((option) => (
+                  <option key={traversalOptionValue(option)} value={traversalOptionValue(option)}>
+                    {traversalLabel(option)}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div className="query-field">
+            <label htmlFor="query-related-attribute">Related attribute</label>
+            <select
+              id="query-related-attribute"
+              value={selectedRelatedAttribute?.azName ?? ""}
+              onChange={(event) => {
+                setSelectedRelatedAttributeAzName(event.target.value);
+                setSelectedRelationshipOperator("=");
+                setResults([]);
+                setStatusMessage("Ready");
+              }}
+              disabled={status === "loading" || !useRelationshipCriterion || selectedTraversal === null || selectedTraversal.relatedEntity.attributes.length === 0}
+            >
+              {selectedTraversal === null || selectedTraversal.relatedEntity.attributes.length === 0 ? (
+                <option value="">No related attributes</option>
+              ) : (
+                selectedTraversal.relatedEntity.attributes.map((attribute) => (
+                  <option key={attribute.azName} value={attribute.azName}>
+                    {attribute.visName} ({attribute.azName})
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div className="query-field query-field-operator">
+            <label htmlFor="query-related-operator">Operator</label>
+            <select
+              id="query-related-operator"
+              value={selectedRelationshipOperator}
+              onChange={(event) => setSelectedRelationshipOperator(event.target.value as QueryOperator)}
+              disabled={status === "loading" || !useRelationshipCriterion || selectedRelatedAttribute === null}
+            >
+              {selectedRelationshipOperators.map((operator) => (
+                <option key={operator} value={operator}>{operator}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="query-field">
+            <label htmlFor="query-related-value">Related value</label>
+            <input
+              id="query-related-value"
+              value={relationshipCriterionValue}
+              type={selectedRelatedAttribute?.dataType === "NUMERIC" ? "number" : "text"}
+              onChange={(event) => setRelationshipCriterionValue(event.target.value)}
+              disabled={status === "loading" || !useRelationshipCriterion || selectedRelatedAttribute === null}
+            />
+          </div>
+
+          <button type="submit" disabled={isQuerying || status === "loading" || (!useDirectCriterion && !useRelationshipCriterion)}>
             Query
           </button>
         </form>
@@ -778,7 +1068,7 @@ function QueryConsolePage() {
             results.map((result) => (
               <details key={result.id} className="tree-node query-result-node">
                 <summary>
-                  {selectedEntity?.visName ?? result.entityAzName}: {formatInstanceValue(result.values[selectedAttributeAzName])}
+                  {selectedEntity?.visName ?? result.entityAzName}: {formatInstanceValue(result.values[selectedDisplayAttribute?.azName ?? ""])}
                 </summary>
                 <ul className="tree-children query-result-values">
                   {Object.entries(result.values).map(([attributeAzName, value]) => {

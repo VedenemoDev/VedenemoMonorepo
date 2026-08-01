@@ -6321,3 +6321,131 @@ Current status and next steps:
 - Verification passed: `mvn -B clean verify`, `npm run build`, and
   `git diff --check`. Vite still reports the existing large chunk warning for
   visualization assets.
+## 2026-08-01 21:16 EEST
+
+Session goal: add a backlog planning task for one-hop association criteria in
+the Query Console.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,180p' tasks/backlog.md`
+- `git status --short --branch`
+- `rg -n "Query console|RelationshipPredicate|one-hop|_query|relationships|association" tasks docs/architecture_doc.md vedenemo-ux/src/App.tsx vedenemo-core/src/main/java/org/vedenemo/core/instance vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource -S`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added planned backlog item `Add One-Hop Association Criteria To Query Console`
+  at the top of `tasks/backlog.md`.
+- Scoped the task to Query Console UX support over the existing one-hop
+  relationship `_query` backend shape.
+- Included explicit acceptance criteria and numbered open questions.
+- Verification passed: `git diff --check`.
+## 2026-08-01 21:38 EEST
+
+Session goal: incorporate user answers to the one-hop association Query Console
+backlog questions.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `sed -n '1,95p' tasks/backlog.md`
+- `git status --short --branch`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Replaced the one-hop Query Console open questions with concrete decisions.
+- Updated scope to combine direct and one-hop predicates when the existing
+  `_query` request shape supports it.
+- Clarified that result rows stay anchored to the selected entity type and that
+  Query Console should provide a display-field selector for result node labels,
+  without adding model-level display-name metadata in this task.
+- Verification passed: `git diff --check`.
+## 2026-08-01 21:44 EEST
+
+Session goal: implement one-hop association criteria in the Query Console.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '1,360p' vedenemo-ux/src/App.tsx`
+- `sed -n '520,760p' vedenemo-ux/src/App.tsx`
+- `sed -n '760,1040p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,260p' vedenemo-ux/src/App.css` failed because the stylesheet is
+  `styles.css`
+- `sed -n '260,560p' vedenemo-ux/src/App.css` failed because the stylesheet is
+  `styles.css`
+- `sed -n '260,340p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `rg --files vedenemo-ux/src`
+- `sed -n '340,520p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/instance/RelationshipDirection.java`
+- `sed -n '1,120p' vedenemo-core/src/main/java/org/vedenemo/core/instance/RelationshipPredicate.java`
+- `rg -n "query-console|query-form|query-results" vedenemo-ux/src -S`
+- `sed -n '560,760p' vedenemo-ux/src/styles.css`
+- `sed -n '740,790p' vedenemo-ux/src/styles.css`
+- `sed -n '360,500p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,110p' tasks/backlog.md`
+- `git status --short`
+- `npm run build` from `vedenemo-ux`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css tasks/backlog.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Extended Query Console API typing to include association descriptions and
+  relationship query request bodies.
+- Added direct and association criterion toggles so direct comparisons can be
+  combined with one one-hop association comparison.
+- Added traversal option derivation from selected entity plus association
+  endpoint metadata, with incoming/outgoing represented as distinct options
+  where needed.
+- Added related attribute/operator/value controls and submitted them through
+  the existing `_query` `relationships` array.
+- Added a result display-field selector for returned entity node labels.
+- Marked the backlog task `Add One-Hop Association Criteria To Query Console`
+  executed with completion notes.
+- Verification passed: `npm run build` and `git diff --check`. Vite still
+  reports the existing large chunk warning for bundled visualization assets.

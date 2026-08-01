@@ -640,7 +640,7 @@ body {
 
 .query-form {
   display: grid;
-  grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 1fr) 5rem minmax(10rem, 1fr) auto;
+  grid-template-columns: minmax(9rem, 1fr) minmax(9rem, 1fr) minmax(9rem, 1fr) 5rem minmax(10rem, 1fr) auto;
   gap: 0.5rem;
   align-items: end;
 }
@@ -650,12 +650,35 @@ body {
   gap: 0.3rem;
 }
 
-.query-field label {
+.query-field-wide {
+  grid-column: span 2;
+}
+
+.query-field label,
+.query-criterion-toggle label {
   display: grid;
   gap: 0.3rem;
   color: #334155;
   font-size: 0.85rem;
   font-weight: 700;
+}
+
+.query-criterion-toggle {
+  display: grid;
+  align-items: center;
+  min-height: 2.5rem;
+}
+
+.query-criterion-toggle label {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  padding: 0.55rem 0;
+}
+
+.query-criterion-toggle input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
 }
 
 .query-form select,
@@ -667,6 +690,10 @@ body {
   color: #111827;
   background: #fff;
   font: inherit;
+}
+
+.query-form select {
+  text-overflow: ellipsis;
 }
 
 .query-form select:disabled,
@@ -747,6 +774,10 @@ body {
   .query-form,
   .console-input-row {
     grid-template-columns: 1fr;
+  }
+
+  .query-field-wide {
+    grid-column: auto;
   }
 
   .model-controls button,

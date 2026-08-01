@@ -1,5 +1,103 @@
 # Backlog
 
+## Add One-Hop Association Criteria To Query Console
+
+Status: executed.
+
+### Goal
+
+Make the Query Console usable for common linked-data searches by letting users
+query one entity type through one modeled association and filter on attributes
+of the related entity.
+
+For `AlbumCollectionSimple`, this should support a natural workflow such as
+searching `Album` instances by a related `Artist` criterion through the modeled
+album-to-artist association.
+
+### Initial Scope
+
+- Extend the Query Console UI so a query can combine:
+  - direct attribute criteria on the selected result entity; and
+  - one-hop association criteria from the selected result entity to a related
+    entity.
+- Load association metadata from the existing root-scoped model-instance API
+  description.
+- When a result entity is selected, show only associations that can be traversed
+  from that entity.
+- Let the user select the association, related entity attribute, operator, and
+  comparison value.
+- Infer traversal direction where possible from the selected result entity,
+  selected association, and selected related entity.
+- For bidirectional `relation` associations, prefer explicit incoming and
+  outgoing choices rather than exposing `either` in the first UI slice.
+- Reuse the same operator choices currently available for direct attribute
+  predicates, based on the related attribute `DataType`.
+- Submit relationship criteria using the existing `_query` relationship
+  predicate request shape instead of introducing a new endpoint.
+- Keep the first Query Console version to one association hop only; do not add
+  nested or chained relationship criteria.
+- Render matched result entities using the existing result tree behavior.
+- Add a query-console result display-field control that selects one attribute
+  of the returned entity type as the first-level result node label. The query
+  still returns the selected result entity type; for example, an albums-by-artist
+  search returns `Album` entities, and the display field controls which `Album`
+  attribute labels each result node. All other returned fields remain available
+  under the result node.
+- Use a combined label for association choices when needed to disambiguate
+  multiple associations between the same entity types. The label should include
+  useful pieces such as association `visName`, `azName`, kind, roles, and
+  endpoint direction without relying on only one field.
+- Add or update focused frontend tests where the current UX test setup allows
+  it; otherwise verify with `npm run build`.
+- Keep backend changes out of scope unless the API description lacks metadata
+  the Query Console needs to build safe association controls.
+
+### Acceptance Criteria
+
+- From an `AlbumCollectionSimple` model-instance root, a user can search
+  `Album` records by an associated `Artist` attribute.
+- The UI prevents selecting association/entity combinations that cannot be
+  represented as a valid one-hop relationship predicate.
+- The submitted request is compatible with the existing root-scoped `_query`
+  endpoint and does not require CLI changes.
+- Direct attribute queries continue to work.
+- `npm run build` succeeds in `vedenemo-ux`.
+
+### Decisions
+
+1. Infer traversal direction where the selected result entity and association
+   make the direction unambiguous.
+2. Allow combining direct result-entity predicates and one-hop association
+   predicates in the same query when the existing `_query` request shape can
+   represent it.
+3. Keep query results anchored to the selected result entity type. Add a
+   Query Console display-field selector for choosing which returned-entity
+   attribute labels result nodes; do not introduce a model-level display-name
+   abstraction in this task.
+4. Prefer explicit incoming and outgoing choices for relation traversal in the
+   first UI slice instead of exposing `either`.
+5. Use a combined association label when multiple associations could otherwise
+   be ambiguous.
+
+### Completion Notes
+
+- Added Query Console support for combining direct result-entity comparisons
+  with one one-hop association comparison.
+- Loaded and used association metadata from the existing model-instance API
+  description response.
+- Added association criterion controls for selecting a traversable association,
+  related attribute, operator, and value.
+- Inferred relationship direction from the selected result entity and selected
+  traversable association option; ambiguous cases are represented as distinct
+  incoming/outgoing association choices.
+- Submitted relationship criteria through the existing root-scoped `_query`
+  request shape using the top-level `relationships` array.
+- Added a result display-field selector for choosing which returned-entity
+  attribute labels first-level result nodes.
+- Used combined association labels including association display name, `azName`,
+  kind, endpoint direction, and roles when available.
+- Verified the frontend with `npm run build`.
+
 ## Add Non-Equality Query Operators For Instance Data
 
 Status: executed.
