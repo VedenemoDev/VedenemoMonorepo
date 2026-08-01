@@ -6105,3 +6105,109 @@ Current status and next steps:
   process creates two distinct roots under `FamilyTree`.
 - Verified the Sweden loader is idempotent: the second run reused the same root
   and created zero new records or links.
+## 2026-08-01 15:19 EEST
+
+Session goal: review newly added Query Console UX planning idea and identify open questions.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,260p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short`
+- `sed -n '1,220p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `rg -n "association|relationship|instance|data API|model-instance|query|root" docs tasks README.md vedenemo-core vedenemo-web-api vedenemo-ux -S`
+- `rg --files vedenemo-ux/src`
+- `rg -n "Rename|Model instances|queryConsole|router|/data|_query|contains|comparison|equals|roots" vedenemo-ux/src vedenemo-web-api/src/main/java vedenemo-core/src/main/java -S`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/EntityInstanceQuery.java`
+- `sed -n '90,180p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,220p' vedenemo-ux/src/App.tsx`
+- `sed -n '620,1020p' vedenemo-ux/src/App.tsx`
+- `sed -n '130,170p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '260,305p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '320,390p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '220,320p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,220p' vedenemo-ux/src/styles.css`
+- `sed -n '220,520p' vedenemo-ux/src/styles.css`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Reviewed the new backlog item for the first Query Console UX.
+- Confirmed the first slice can mostly use existing root-scoped instance-data API and model API description endpoints.
+- Identified that scalar `_query` currently supports equality only; numeric `<`/`>` and string `contains` require backend/core query extension unless deferred.
+- No implementation changes were made beyond this session record.
+## 2026-08-01 15:27 EEST
+
+Session goal: incorporate Query Console planning answers and clean up backlog formatting.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,80p' tasks/backlog.md`
+- `tail -n 80 SESSION.md`
+- `sed -n '1,110p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Cleaned the Query Console UX planning item wording and formatting.
+- Recorded decisions: use a new `/queryConsole` route, pass `modelAzName` and
+  `instanceRootId` in URL query parameters, require a criterion, support only
+  equality in the first version, and label result root nodes with entity display
+  name plus matched attribute value.
+- Added a newer backlog item for future non-equality query operators, including
+  numeric `<`/`>` and string `contains`.
+## 2026-08-01 15:34 EEST
+
+Session goal: implement the first Query Console UX slice.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+
+Commands run:
+
+- `sed -n '1,260p' vedenemo-ux/src/App.tsx`
+- `sed -n '260,620p' vedenemo-ux/src/App.tsx`
+- `sed -n '620,1060p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,620p' vedenemo-ux/src/styles.css`
+- `rg -n "record EntityInstanceResponse|InstanceValueResponse" vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java -n -C 3`
+- `sed -n '416,470p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `npm run build` from `vedenemo-ux`
+- `git status --short`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check`
+
+Current status and next steps:
+
+- Added a `/queryConsole` frontend page selected by path, following the
+  existing `/console` page pattern.
+- Added `Query console...` to each model-instance root action menu. It opens a
+  new tab with `modelAzName` and `instanceRootId` URL query parameters.
+- Implemented equality-only query controls driven by the model-instance API
+  description endpoint and root metadata endpoint.
+- Queries post to the existing root-scoped `_query` endpoint and render results
+  as expandable entity nodes with attribute-value child rows.
+- `npm run build` in `vedenemo-ux` passed. Vite reported the existing large
+  chunk warning for bundled visualization assets.
+- `git diff --check` passed.

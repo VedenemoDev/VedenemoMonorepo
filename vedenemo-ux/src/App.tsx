@@ -43,12 +43,19 @@ type ConsoleCommandResponse = {
 type EntityDescription = {
   azName: string;
   visName: string;
+  attributes: AttributeDescription[];
 };
 
 type ApiDescriptionResponse = {
   modelAzName: string;
   modelVisName: string;
   entities: EntityDescription[];
+};
+
+type AttributeDescription = {
+  azName: string;
+  visName: string;
+  dataType: string;
 };
 
 type CountResponse = {
@@ -91,6 +98,14 @@ type RenameDialogState = {
   modelAzName: string;
   instanceRootId: string;
   nextName: string;
+};
+
+type EntityInstanceResponse = {
+  id: string;
+  modelAzName: string;
+  modelVersion: string;
+  entityAzName: string;
+  values: Record<string, unknown>;
 };
 
 const PLANTUML_TARGET_ID = "plantuml-diagram";
@@ -171,6 +186,20 @@ async function fetchModelInstanceRoots(apiBaseUrl: string, modelAzName: string):
   return response.json() as Promise<ModelInstanceRootResponse[]>;
 }
 
+async function fetchModelInstanceRoot(apiBaseUrl: string, modelAzName: string, instanceRootId: string): Promise<ModelInstanceRootResponse> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}`, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json() as Promise<ModelInstanceRootResponse>;
+}
+
 async function renameModelInstanceRoot(apiBaseUrl: string, modelAzName: string, instanceRootId: string, visName: string): Promise<ModelInstanceRootResponse> {
   const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}`, {
     method: "PUT",
@@ -188,8 +217,42 @@ async function renameModelInstanceRoot(apiBaseUrl: string, modelAzName: string, 
   return response.json() as Promise<ModelInstanceRootResponse>;
 }
 
+async function queryEntityInstances(
+  apiBaseUrl: string,
+  modelAzName: string,
+  instanceRootId: string,
+  entityAzName: string,
+  attributeAzName: string,
+  value: string | number,
+): Promise<EntityInstanceResponse[]> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}/${encodeURIComponent(entityAzName)}/_query`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      where: {
+        equals: {
+          [attributeAzName]: value,
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json() as Promise<EntityInstanceResponse[]>;
+}
+
 function readConnectedModelAzName(): string {
   return new URLSearchParams(window.location.search).get("connectedModelAzName") ?? "";
+}
+
+function readQueryParam(name: string): string {
+  return new URLSearchParams(window.location.search).get(name) ?? "";
 }
 
 function rootDisplayName(root: ModelInstanceRootNode): string {
@@ -202,6 +265,19 @@ function rootResponseDisplayName(root: ModelInstanceRootResponse): string {
 
 function shortRootId(instanceRootId: string): string {
   return instanceRootId.length <= 8 ? instanceRootId : instanceRootId.slice(0, 8);
+}
+
+function formatInstanceValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return String(value);
+  }
+  return JSON.stringify(value);
 }
 
 function clampConsolePaneHeight(value: number): number {
@@ -462,9 +538,245 @@ function ConsolePage() {
   return <ConsolePanel connectedModelAzName={readConnectedModelAzName()} mode="page" />;
 }
 
+function QueryConsolePage() {
+  const modelAzName = readQueryParam("modelAzName");
+  const instanceRootId = readQueryParam("instanceRootId");
+  const [apiBaseUrl, setApiBaseUrl] = useState("");
+  const [apiDescription, setApiDescription] = useState<ApiDescriptionResponse | null>(null);
+  const [root, setRoot] = useState<ModelInstanceRootResponse | null>(null);
+  const [selectedEntityAzName, setSelectedEntityAzName] = useState("");
+  const [selectedAttributeAzName, setSelectedAttributeAzName] = useState("");
+  const [criterionValue, setCriterionValue] = useState("");
+  const [results, setResults] = useState<EntityInstanceResponse[]>([]);
+  const [status, setStatus] = useState<ModelInstanceLoadState>("loading");
+  const [statusMessage, setStatusMessage] = useState("Loading query console...");
+  const [isQuerying, setIsQuerying] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadQueryConsole() {
+      if (!modelAzName || !instanceRootId) {
+        setStatus("error");
+        setStatusMessage("Query console URL is missing modelAzName or instanceRootId");
+        return;
+      }
+
+      try {
+        const config = await loadRuntimeConfig();
+        const baseUrl = normalizeBaseUrl(config.apiBaseUrl ?? "");
+        if (!baseUrl) {
+          throw new Error("Backend URL is not configured");
+        }
+        const [nextApiDescription, nextRoot] = await Promise.all([
+          fetchModelInstanceApi(baseUrl, modelAzName),
+          fetchModelInstanceRoot(baseUrl, modelAzName, instanceRootId),
+        ]);
+        if (cancelled) {
+          return;
+        }
+
+        setApiBaseUrl(baseUrl);
+        setApiDescription(nextApiDescription);
+        setRoot(nextRoot);
+        const firstEntity = nextApiDescription.entities[0];
+        setSelectedEntityAzName(firstEntity?.azName ?? "");
+        setSelectedAttributeAzName(firstEntity?.attributes[0]?.azName ?? "");
+        setStatus("ok");
+        setStatusMessage(nextApiDescription.entities.length === 0 ? "No entity types available" : "Ready");
+      } catch (error) {
+        if (!cancelled) {
+          setStatus("error");
+          setStatusMessage(error instanceof Error ? error.message : "Query console load failed");
+        }
+      }
+    }
+
+    void loadQueryConsole();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [modelAzName, instanceRootId]);
+
+  const selectedEntity = apiDescription?.entities.find((entity) => entity.azName === selectedEntityAzName) ?? null;
+  const selectedAttribute = selectedEntity?.attributes.find((attribute) => attribute.azName === selectedAttributeAzName) ?? null;
+  const rootName = root === null ? instanceRootId : rootResponseDisplayName(root);
+
+  function selectEntity(nextEntityAzName: string) {
+    const nextEntity = apiDescription?.entities.find((entity) => entity.azName === nextEntityAzName) ?? null;
+    setSelectedEntityAzName(nextEntityAzName);
+    setSelectedAttributeAzName(nextEntity?.attributes[0]?.azName ?? "");
+    setResults([]);
+    setStatusMessage(nextEntity === null ? "Select an entity type" : "Ready");
+  }
+
+  async function submitQuery(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!apiBaseUrl || apiDescription === null || selectedEntity === null || selectedAttribute === null) {
+      setStatus("error");
+      setStatusMessage("Select an entity type and attribute");
+      return;
+    }
+
+    const trimmedValue = criterionValue.trim();
+    if (!trimmedValue) {
+      setStatus("error");
+      setStatusMessage("Criterion value is required");
+      return;
+    }
+
+    const queryValue = selectedAttribute.dataType === "NUMERIC" ? Number(trimmedValue) : trimmedValue;
+    if (selectedAttribute.dataType === "NUMERIC" && !Number.isFinite(queryValue)) {
+      setStatus("error");
+      setStatusMessage("Numeric criterion must be a valid number");
+      return;
+    }
+
+    setIsQuerying(true);
+    setStatus("loading");
+    setStatusMessage("Running query...");
+    try {
+      const nextResults = await queryEntityInstances(
+        apiBaseUrl,
+        apiDescription.modelAzName,
+        instanceRootId,
+        selectedEntity.azName,
+        selectedAttribute.azName,
+        queryValue,
+      );
+      setResults(nextResults);
+      setStatus("ok");
+      setStatusMessage(`${nextResults.length} result${nextResults.length === 1 ? "" : "s"}`);
+    } catch (error) {
+      setStatus("error");
+      setStatusMessage(error instanceof Error ? error.message : "Query failed");
+    } finally {
+      setIsQuerying(false);
+    }
+  }
+
+  return (
+    <main className="query-console-shell">
+      <header className="query-console-header">
+        <div>
+          <h1>Query Console</h1>
+          <div className="query-console-targets">
+            <span>{apiDescription?.modelVisName ?? modelAzName}</span>
+            <span>{rootName}</span>
+          </div>
+        </div>
+        <a className="secondary-link" href="/">
+          Model instances
+        </a>
+      </header>
+
+      <section className="query-console-surface">
+        <form className="query-form" onSubmit={(event) => void submitQuery(event)}>
+          <div className="query-field">
+            <label htmlFor="query-entity">Entity type</label>
+            <select
+              id="query-entity"
+              value={selectedEntityAzName}
+              onChange={(event) => selectEntity(event.target.value)}
+              disabled={status === "loading" || apiDescription === null || apiDescription.entities.length === 0}
+            >
+              {apiDescription === null || apiDescription.entities.length === 0 ? (
+                <option value="">No entity types</option>
+              ) : (
+                apiDescription.entities.map((entity) => (
+                  <option key={entity.azName} value={entity.azName}>
+                    {entity.visName} ({entity.azName})
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div className="query-field">
+            <label htmlFor="query-attribute">Attribute</label>
+            <select
+              id="query-attribute"
+              value={selectedAttributeAzName}
+              onChange={(event) => {
+                setSelectedAttributeAzName(event.target.value);
+                setResults([]);
+                setStatusMessage("Ready");
+              }}
+              disabled={status === "loading" || selectedEntity === null || selectedEntity.attributes.length === 0}
+            >
+              {selectedEntity === null || selectedEntity.attributes.length === 0 ? (
+                <option value="">No attributes</option>
+              ) : (
+                selectedEntity.attributes.map((attribute) => (
+                  <option key={attribute.azName} value={attribute.azName}>
+                    {attribute.visName} ({attribute.azName})
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <div className="query-field query-field-operator">
+            <label htmlFor="query-operator">Operator</label>
+            <select id="query-operator" value="=" disabled>
+              <option value="=">=</option>
+            </select>
+          </div>
+
+          <div className="query-field">
+            <label htmlFor="query-value">Value</label>
+            <input
+              id="query-value"
+              value={criterionValue}
+              type={selectedAttribute?.dataType === "NUMERIC" ? "number" : "text"}
+              onChange={(event) => setCriterionValue(event.target.value)}
+              disabled={status === "loading" || selectedAttribute === null}
+            />
+          </div>
+
+          <button type="submit" disabled={isQuerying || status === "loading" || selectedAttribute === null}>
+            Query
+          </button>
+        </form>
+
+        <span className={`model-status model-status-${status}`}>{statusMessage}</span>
+
+        <div className="query-results-tree" aria-label="Query results">
+          {results.length === 0 ? (
+            <div className="tree-empty">No query results</div>
+          ) : (
+            results.map((result) => (
+              <details key={result.id} className="tree-node query-result-node">
+                <summary>
+                  {selectedEntity?.visName ?? result.entityAzName}: {formatInstanceValue(result.values[selectedAttributeAzName])}
+                </summary>
+                <ul className="tree-children query-result-values">
+                  {Object.entries(result.values).map(([attributeAzName, value]) => {
+                    const attribute = selectedEntity?.attributes.find((candidate) => candidate.azName === attributeAzName);
+                    return (
+                      <li key={`${result.id}-${attributeAzName}`}>
+                        <span>{attribute?.visName ?? attributeAzName}</span>
+                        <span>{formatInstanceValue(value)}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </details>
+            ))
+          )}
+        </div>
+      </section>
+    </main>
+  );
+}
+
 export function App() {
   if (window.location.pathname === "/console") {
     return <ConsolePage />;
+  }
+  if (window.location.pathname === "/queryConsole") {
+    return <QueryConsolePage />;
   }
 
   const eventAdapterRef = useRef(new ModelChangeEventAdapter());
@@ -706,6 +1018,15 @@ export function App() {
     });
   }
 
+  function openQueryConsole(modelAzName: string, instanceRootId: string) {
+    setOpenRootMenuKey(null);
+    const params = new URLSearchParams({
+      modelAzName,
+      instanceRootId,
+    });
+    window.open(`/queryConsole?${params.toString()}`, "_blank", "noopener,noreferrer");
+  }
+
   async function submitRootRename(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!apiBaseUrl || renameDialog === null) {
@@ -941,6 +1262,16 @@ export function App() {
                                         }}
                                       >
                                         Rename...
+                                      </button>
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={(event) => {
+                                          event.preventDefault();
+                                          openQueryConsole(model.modelAzName, root.instanceRootId);
+                                        }}
+                                      >
+                                        Query console...
                                       </button>
                                     </span>
                                   )}

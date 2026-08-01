@@ -1,5 +1,77 @@
 # Backlog
 
+## Add Non-Equality Query Operators For Instance Data
+
+Status: planning
+
+### Goal
+
+Extend the model-instance query API beyond equality predicates so clients can
+query numeric ranges and partial text matches while preserving pure core query
+behavior and keeping HTTP DTO parsing in `vedenemo-web-api`.
+
+### Initial Scope
+
+- Add explicit scalar comparison operators to the Vedenemo-owned query model.
+- Support `<` and `>` for `NUMERIC` attributes.
+- Support `contains` for string-like attributes if the semantics can be kept
+  deterministic and simple.
+- Keep `=` as the existing baseline comparison.
+- Reject operators that do not match the selected attribute `DataType`.
+- Keep comparison validation and execution in pure JDK core code.
+- Keep JSON query DTO shape and parsing in `vedenemo-web-api`.
+- Update Query Console UX operator choices after backend support exists.
+
+## Add First Version Of Query Console UX
+
+Status: planning
+
+### Goal
+
+There is already a `Rename...` action in the model instance UX that can be
+selected for a model-instance root node. Add a `Query console...` action that
+opens a new `Query Console` UX route in a new browser tab.
+
+The new route should use `/queryConsole` and include `modelAzName` and
+`instanceRootId` as URL query parameters, for example:
+
+```text
+/queryConsole?modelAzName=FamilyTree&instanceRootId={instanceRootId}
+```
+
+The URL must identify the target model definition and model-instance root so
+queries are always sent to the intended root-scoped instance-data API.
+
+### Initial Scope
+
+- Add a new frontend route/page for `/queryConsole`.
+- Add `Query console...` to the existing model-instance root action menu.
+- Open the query console in a new browser tab from the selected root node.
+- Show the title `Query Console`.
+- Show the selected model name and selected model-instance root name.
+- Load model entity and attribute metadata from the existing model-instance API
+  description endpoint.
+- Require the user to select a query criterion before running a query.
+- Let the user select an entity type from a dropdown.
+- Let the user select one attribute from that entity as the search criterion.
+- In the first version, support only the equality operator `=`.
+- Let the user enter the string or number value to compare against.
+- Send queries to the existing root-scoped `_query` endpoint.
+- Render query results as a tree view:
+  - the first-level node label should include the entity display name and the
+    matched attribute value;
+  - second-level nodes should show all attribute values for that entity
+    instance.
+- Second-level nodes may be loaded lazily when the first-level node is selected
+  unless all values were already returned by the initial query response.
+
+### Deferred
+
+- Numeric `<` and `>` operators.
+- String `contains` operator.
+- Relationship-aware query controls.
+- Runtime instance create, edit, or delete behavior from the query console.
+
 ## Plan Multiple Model Instance Roots Per Model
 
 Status: executed.
