@@ -6559,3 +6559,52 @@ Current status and next steps:
 - Updated backlog completion notes to record the corrected wildcard default.
 - Verification passed: `npm run build` and `git diff --check`. Vite still
   reports the existing large chunk warning for bundled visualization assets.
+## 2026-08-01 23:39 EEST
+
+Session goal: show association-search match context in Query Console results.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `rg -n "matchesAll|contains|ScalarComparisonOperator|compare" vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java vedenemo-core/src/main/java/org/vedenemo/core/instance -S`
+- `sed -n '260,370p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,120p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ScalarComparisonOperator.java`
+- `rg -n "routes.get\\(\"/data/|listAssociationLinks|read" vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java -S`
+- `sed -n '70,155p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,180p' vedenemo-ux/src/App.tsx`
+- `sed -n '180,380p' vedenemo-ux/src/App.tsx`
+- `sed -n '640,860p' vedenemo-ux/src/App.tsx`
+- `sed -n '1040,1100p' vedenemo-ux/src/App.tsx`
+- `sed -n '700,735p' vedenemo-ux/src/styles.css`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+
+Current status and next steps:
+
+- Added frontend association-match context for Query Console association
+  searches without changing backend contracts.
+- Query results now use existing link-list and entity-read endpoints to show
+  which association and related entity matched each returned target entity.
+- Match context shows association label, criterion label, related entity label,
+  and matched related value when a concrete related-attribute comparison was
+  used.
+- Added styling for the match-context rows under expanded query result nodes.
+- Updated backlog completion notes.
+- Verification passed: `npm run build` and `git diff --check`. Vite still
+  reports the existing large chunk warning for bundled visualization assets.

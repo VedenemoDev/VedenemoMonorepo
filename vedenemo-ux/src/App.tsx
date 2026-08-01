@@ -120,6 +120,14 @@ type EntityInstanceResponse = {
   values: Record<string, unknown>;
 };
 
+type AssociationLinkResponse = {
+  id: string;
+  modelAzName: string;
+  associationAzName: string;
+  sourceInstanceId: string;
+  targetInstanceId: string;
+};
+
 type QueryComparisonRequest = {
   attributeAzName: string;
   operator: QueryOperator;
@@ -148,6 +156,14 @@ type TraversalOption = {
   association: AssociationDescription;
   direction: RelationshipDirection;
   relatedEntity: EntityDescription;
+};
+
+type AssociationMatchContext = {
+  associationLabel: string;
+  criterionLabel: string;
+  relatedEntityLabel: string;
+  relatedInstanceId: string;
+  matchedValueLabel?: string;
 };
 
 const PLANTUML_TARGET_ID = "plantuml-diagram";
@@ -282,6 +298,45 @@ async function queryEntityInstances(
   return response.json() as Promise<EntityInstanceResponse[]>;
 }
 
+async function fetchAssociationLinks(
+  apiBaseUrl: string,
+  modelAzName: string,
+  instanceRootId: string,
+  associationAzName: string,
+): Promise<AssociationLinkResponse[]> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}/_links/${encodeURIComponent(associationAzName)}`, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json() as Promise<AssociationLinkResponse[]>;
+}
+
+async function fetchEntityInstance(
+  apiBaseUrl: string,
+  modelAzName: string,
+  instanceRootId: string,
+  entityAzName: string,
+  instanceId: string,
+): Promise<EntityInstanceResponse> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}/${encodeURIComponent(entityAzName)}/${encodeURIComponent(instanceId)}`, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json() as Promise<EntityInstanceResponse>;
+}
+
 function readConnectedModelAzName(): string {
   return new URLSearchParams(window.location.search).get("connectedModelAzName") ?? "";
 }
@@ -382,6 +437,105 @@ function parseCriterionValue(attribute: AttributeDescription, rawValue: string):
     return trimmedValue;
   }
   return Number(trimmedValue);
+}
+
+function relatedInstanceIdForLink(resultId: string, link: AssociationLinkResponse, direction: RelationshipDirection): string | null {
+  if (direction === "outgoing") {
+    return link.sourceInstanceId === resultId ? link.targetInstanceId : null;
+  }
+  return link.targetInstanceId === resultId ? link.sourceInstanceId : null;
+}
+
+function matchesQueryComparison(value: unknown, comparison: QueryComparisonRequest): boolean {
+  if (value === null || value === undefined) {
+    return false;
+  }
+  if (comparison.operator === "contains") {
+    return typeof value === "string" && typeof comparison.value === "string" && value.includes(comparison.value);
+  }
+  if (comparison.operator === "<") {
+    return typeof value === "number" && typeof comparison.value === "number" && value < comparison.value;
+  }
+  if (comparison.operator === ">") {
+    return typeof value === "number" && typeof comparison.value === "number" && value > comparison.value;
+  }
+  return formatInstanceValue(value) === formatInstanceValue(comparison.value);
+}
+
+function defaultEntityDisplayAttribute(entity: EntityDescription): AttributeDescription | null {
+  return entity.attributes[0] ?? null;
+}
+
+function entityInstanceLabel(entity: EntityDescription, instance: EntityInstanceResponse): string {
+  const displayAttribute = defaultEntityDisplayAttribute(entity);
+  const displayValue = displayAttribute === null ? "" : formatInstanceValue(instance.values[displayAttribute.azName]);
+  return displayValue ? `${entity.visName}: ${displayValue}` : `${entity.visName}: ${instance.id}`;
+}
+
+function relationshipCriterionLabel(relationship: QueryRelationshipRequest, relatedEntity: EntityDescription): string {
+  const comparison = relationship.where.comparisons[0] ?? null;
+  if (comparison === null) {
+    return `${relatedEntity.visName} exists`;
+  }
+  const attribute = relatedEntity.attributes.find((candidate) => candidate.azName === comparison.attributeAzName);
+  return `${attribute?.visName ?? comparison.attributeAzName} ${comparison.operator} ${formatInstanceValue(comparison.value)}`;
+}
+
+async function buildAssociationMatchContexts(
+  apiBaseUrl: string,
+  modelAzName: string,
+  instanceRootId: string,
+  results: EntityInstanceResponse[],
+  traversal: TraversalOption,
+  relationship: QueryRelationshipRequest,
+): Promise<Record<string, AssociationMatchContext[]>> {
+  if (results.length === 0) {
+    return {};
+  }
+
+  const resultIds = new Set(results.map((result) => result.id));
+  const links = await fetchAssociationLinks(apiBaseUrl, modelAzName, instanceRootId, traversal.association.azName);
+  const relatedIdsByResultId = new Map<string, Set<string>>();
+  for (const link of links) {
+    for (const resultId of resultIds) {
+      const relatedId = relatedInstanceIdForLink(resultId, link, traversal.direction);
+      if (relatedId !== null) {
+        const relatedIds = relatedIdsByResultId.get(resultId) ?? new Set<string>();
+        relatedIds.add(relatedId);
+        relatedIdsByResultId.set(resultId, relatedIds);
+      }
+    }
+  }
+
+  const relatedInstancesById = new Map<string, EntityInstanceResponse>();
+  const uniqueRelatedIds = [...new Set([...relatedIdsByResultId.values()].flatMap((relatedIds) => [...relatedIds]))];
+  await Promise.all(uniqueRelatedIds.map(async (relatedId) => {
+    const relatedInstance = await fetchEntityInstance(apiBaseUrl, modelAzName, instanceRootId, traversal.relatedEntity.azName, relatedId);
+    relatedInstancesById.set(relatedId, relatedInstance);
+  }));
+
+  const contextsByResultId: Record<string, AssociationMatchContext[]> = {};
+  for (const result of results) {
+    const relatedIds = relatedIdsByResultId.get(result.id) ?? new Set<string>();
+    const contexts = [...relatedIds]
+      .map((relatedId) => relatedInstancesById.get(relatedId) ?? null)
+      .filter((instance): instance is EntityInstanceResponse => instance !== null)
+      .filter((instance) => relationship.where.comparisons.every((comparison) => matchesQueryComparison(instance.values[comparison.attributeAzName], comparison)))
+      .map((instance) => {
+        const comparison = relationship.where.comparisons[0] ?? null;
+        return {
+          associationLabel: traversalLabel(traversal),
+          criterionLabel: relationshipCriterionLabel(relationship, traversal.relatedEntity),
+          relatedEntityLabel: entityInstanceLabel(traversal.relatedEntity, instance),
+          relatedInstanceId: instance.id,
+          matchedValueLabel: comparison === null ? undefined : formatInstanceValue(instance.values[comparison.attributeAzName]),
+        };
+      });
+    if (contexts.length > 0) {
+      contextsByResultId[result.id] = contexts;
+    }
+  }
+  return contextsByResultId;
 }
 
 function clampConsolePaneHeight(value: number): number {
@@ -660,6 +814,7 @@ function QueryConsolePage() {
   const [selectedRelationshipOperator, setSelectedRelationshipOperator] = useState<QueryOperator>("=");
   const [relationshipCriterionValue, setRelationshipCriterionValue] = useState("");
   const [results, setResults] = useState<EntityInstanceResponse[]>([]);
+  const [associationMatchContexts, setAssociationMatchContexts] = useState<Record<string, AssociationMatchContext[]>>({});
   const [status, setStatus] = useState<ModelInstanceLoadState>("loading");
   const [statusMessage, setStatusMessage] = useState("Loading query console...");
   const [isQuerying, setIsQuerying] = useState(false);
@@ -736,6 +891,7 @@ function QueryConsolePage() {
     setSelectedAttributeAzName(nextEntity?.attributes[0]?.azName ?? "");
     setSelectedOperator("=");
     setResults([]);
+    setAssociationMatchContexts({});
     setCriterionValue("");
     setSelectedTraversalValue(nextTraversal === null ? "" : traversalOptionValue(nextTraversal));
     setSelectedRelatedAttributeAzName(nextTraversal?.relatedEntity.attributes[0]?.azName ?? "");
@@ -838,7 +994,18 @@ function QueryConsolePage() {
           relationships: relationships.length === 0 ? undefined : relationships,
         },
       );
+      const nextMatchContexts = relationships.length === 0 || selectedTraversal === null
+        ? {}
+        : await buildAssociationMatchContexts(
+          apiBaseUrl,
+          apiDescription.modelAzName,
+          instanceRootId,
+          nextResults,
+          selectedTraversal,
+          relationships[0],
+        );
       setResults(nextResults);
+      setAssociationMatchContexts(nextMatchContexts);
       setStatus("ok");
       setStatusMessage(`${nextResults.length} result${nextResults.length === 1 ? "" : "s"}`);
     } catch (error) {
@@ -1101,6 +1268,17 @@ function QueryConsolePage() {
                       </li>
                     );
                   })}
+                  {(associationMatchContexts[result.id] ?? []).map((context, index) => (
+                    <li key={`${result.id}-association-match-${index}`} className="query-association-match">
+                      <span>Matched association</span>
+                      <span>
+                        <strong>{context.associationLabel}</strong>
+                        <span>{context.criterionLabel}</span>
+                        <span>{context.relatedEntityLabel}</span>
+                        {context.matchedValueLabel ? <span>Matched value: {context.matchedValueLabel}</span> : null}
+                      </span>
+                    </li>
+                  ))}
                 </ul>
               </details>
             ))

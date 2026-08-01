@@ -101,6 +101,10 @@ album-to-artist association.
   immediately without erasing and retyping it.
 - Added a result display-field selector for choosing which returned-entity
   attribute labels first-level result nodes.
+- Added association-match context under query result nodes for association
+  searches. The Query Console now uses existing link-list and entity-read
+  endpoints to show the association label, relationship criterion, related
+  entity, and matched related value when applicable.
 - Used combined association labels including association display name, `azName`,
   kind, endpoint direction, and roles when available.
 - Verified the frontend with `npm run build`.
