@@ -529,18 +529,22 @@ function parseEditorFormValues(entity: EntityDescription, formValues: EditorForm
   const values: Record<string, unknown> = {};
   for (const attribute of entity.attributes) {
     const rawValue = formValues[attribute.azName] ?? "";
-    if (!rawValue.trim()) {
-      throw new Error(`${attribute.visName} is required`);
+    const trimmedValue = rawValue.trim();
+    if (!trimmedValue) {
+      continue;
     }
     if (attribute.dataType === "NUMERIC") {
-      const numericValue = Number(rawValue);
+      const numericValue = Number(trimmedValue);
       if (!Number.isFinite(numericValue)) {
         throw new Error(`${attribute.visName} must be a valid number`);
       }
       values[attribute.azName] = numericValue;
     } else {
-      values[attribute.azName] = rawValue.trim();
+      values[attribute.azName] = trimmedValue;
     }
+  }
+  if (Object.keys(values).length === 0) {
+    throw new Error("Fill at least one attribute");
   }
   return values;
 }
@@ -557,7 +561,9 @@ function matchesQueryComparison(value: unknown, comparison: QueryComparisonReque
     return false;
   }
   if (comparison.operator === "contains") {
-    return typeof value === "string" && typeof comparison.value === "string" && value.includes(comparison.value);
+    return typeof value === "string"
+      && typeof comparison.value === "string"
+      && value.toLowerCase().includes(comparison.value.toLowerCase());
   }
   if (comparison.operator === "<") {
     return typeof value === "number" && typeof comparison.value === "number" && value < comparison.value;

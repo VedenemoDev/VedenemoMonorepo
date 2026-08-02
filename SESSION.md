@@ -6755,3 +6755,59 @@ Current status and next steps:
   `/editor` loads the model schema and then reads the selected entity instance.
 - Verification passed: `npm run build` and `git diff --check`. Vite still
   reports the existing large chunk warning for visualization assets.
+## 2026-08-02 12:33 EEST
+
+Session goal: relax editor attribute requirements and make `contains` queries
+case-insensitive.
+
+Files changed:
+
+- `SESSION.md`
+- `docs/architecture_doc.md`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg -n "CONTAINS|contains|parseEditorFormValues|attribute value must not be null|normalizeValues|matchesQueryComparison" vedenemo-core/src/main/java vedenemo-core/src/test/java vedenemo-web-api/src/test/java vedenemo-ux/src/App.tsx -S`
+- `sed -n '260,360p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '120,230p' vedenemo-core/src/main/java/org/vedenemo/core/instance/InstanceValue.java`
+- `sed -n '130,240p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '500,540p' vedenemo-ux/src/App.tsx`
+- `sed -n '528,570p' vedenemo-ux/src/App.tsx`
+- `sed -n '180,225p' vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `sed -n '240,285p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `npm run build` from `vedenemo-ux`
+- `mvn -B clean verify`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `sed -n '430,450p' docs/architecture_doc.md`
+- `sed -n '450,465p' docs/architecture_doc.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check`
+- `git status --short --branch`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Changed `/editor` form serialization to omit blank attributes, validate
+  filled numeric values only, and reject saves where no attribute has data.
+- Added backend create/update validation so empty entity-instance payloads are
+  rejected while empty filters and unfiltered queries continue to work.
+- Made core `contains` comparisons case-insensitive using `Locale.ROOT`, and
+  aligned the Query Console's local association match-context filtering.
+- Added core and web API regression coverage for empty create/update payloads
+  and case-insensitive `contains` queries.
+- Updated `docs/architecture_doc.md` to reflect the current API semantics.
+- Verification passed: `npm run build`, `mvn -B clean verify`, and
+  `git diff --check`. Vite still reports the existing large chunk warning for
+  visualization assets; Maven still reports existing shade-plugin overlap
+  warnings while building the web API JAR.

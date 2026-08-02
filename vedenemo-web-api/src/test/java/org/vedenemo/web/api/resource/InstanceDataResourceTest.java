@@ -167,6 +167,22 @@ final class InstanceDataResourceTest {
     }
 
     @Test
+    void rejectsCreateOrUpdateWithoutAnyAttributeData() throws Exception {
+        String rootId = createRoot(null);
+        String artistId = responseId(post(rootPath(rootId, "/Artist"), """
+                {"Name":"Miles Davis"}
+                """));
+
+        HttpResponse<String> emptyCreate = post(rootPath(rootId, "/Artist"), "{}");
+        HttpResponse<String> emptyUpdate = put(rootPath(rootId, "/Artist/" + artistId), "{}");
+
+        assertEquals(400, emptyCreate.statusCode());
+        assertTrue(emptyCreate.body().contains("at least one attribute value is required"));
+        assertEquals(400, emptyUpdate.statusCode());
+        assertTrue(emptyUpdate.body().contains("at least one attribute value is required"));
+    }
+
+    @Test
     void createsLinksAndQueriesThroughRelationshipPredicate() throws Exception {
         String rootId = createRoot(null);
         String artistId = responseId(post(rootPath(rootId, "/Artist"), """
@@ -250,7 +266,7 @@ final class InstanceDataResourceTest {
                 {
                   "where": {
                     "comparisons": [
-                      {"attributeAzName": "Name", "operator": "contains", "value": "Davis"}
+                      {"attributeAzName": "Name", "operator": "contains", "value": "davis"}
                     ]
                   }
                 }

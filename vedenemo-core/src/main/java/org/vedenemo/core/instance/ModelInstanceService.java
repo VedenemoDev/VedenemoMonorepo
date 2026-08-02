@@ -60,6 +60,7 @@ public final class ModelInstanceService {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);
         Map<String, InstanceValue> values = normalizeValues(entity, submittedValues);
+        requireSubmittedAttributeData(values);
         EntityInstance instance = new EntityInstance(
                 InstanceId.random(),
                 modelRoot.azName(),
@@ -100,6 +101,7 @@ public final class ModelInstanceService {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);
         Map<String, InstanceValue> values = normalizeValues(entity, submittedValues);
+        requireSubmittedAttributeData(values);
         EntityInstance instance = new EntityInstance(
                 new InstanceId(instanceId),
                 modelRoot.azName(),
@@ -200,6 +202,12 @@ public final class ModelInstanceService {
             }
         }
         return normalizedValues;
+    }
+
+    private static void requireSubmittedAttributeData(Map<String, InstanceValue> values) {
+        if (values.isEmpty()) {
+            throw new IllegalArgumentException("at least one attribute value is required");
+        }
     }
 
     private static InstanceValue normalizeValue(VAttribute attribute, Object submittedValue) {
@@ -355,7 +363,8 @@ public final class ModelInstanceService {
             case EQUALS -> actual.matches(comparison.value());
             case LESS_THAN -> ((BigDecimal) actual.value()).compareTo((BigDecimal) comparison.value().value()) < 0;
             case GREATER_THAN -> ((BigDecimal) actual.value()).compareTo((BigDecimal) comparison.value().value()) > 0;
-            case CONTAINS -> ((String) actual.value()).contains((String) comparison.value().value());
+            case CONTAINS -> ((String) actual.value()).toLowerCase(java.util.Locale.ROOT)
+                    .contains(((String) comparison.value().value()).toLowerCase(java.util.Locale.ROOT));
         };
     }
 

@@ -434,7 +434,8 @@ and exposes:
   root-scoped runtime instance API for one loaded model
 - `POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}`, which
   creates one entity instance after validating submitted attribute values
-  against the modeled entity
+  against the modeled entity and requiring at least one submitted attribute
+  value
 - `GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}`, which lists
   entity instances in deterministic insertion order and supports exact-match
   query-parameter filters
@@ -445,10 +446,12 @@ and exposes:
   which reads one entity instance
 - `PUT /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}`,
   which overwrites one existing entity instance after validating submitted
-  attribute values against the modeled entity
+  attribute values against the modeled entity and requiring at least one
+  submitted attribute value
 - `POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query`,
   which supports exact attribute predicates and one-hop relationship predicates
-  through association links
+  through association links; string-like `contains` comparisons are
+  case-insensitive
 - `POST /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}`,
   which creates one source/target instance link for a modeled association
 - `GET /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}`,

@@ -67,6 +67,19 @@ final class ModelInstanceServiceTest {
     }
 
     @Test
+    void rejectsCreateOrUpdateWithoutAnySubmittedAttributeData() {
+        Fixture fixture = fixture();
+        String rootId = fixture.rootId();
+        EntityInstance instance = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Name", "Miles Davis"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of()));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.updateEntityInstance("Music", rootId, "Artist", instance.id().value(), Map.of()));
+        assertEquals(1, fixture.service.countEntityInstances("Music", rootId, "Artist"));
+    }
+
+    @Test
     void readsAndRenamesModelInstanceRootMetadata() {
         Fixture fixture = fixture();
         String rootId = fixture.rootId();
@@ -200,7 +213,7 @@ final class ModelInstanceServiceTest {
                 "Artist",
                 new EntityInstanceQuery(
                         Map.of(),
-                        List.of(new ScalarComparison("Name", ScalarComparisonOperator.CONTAINS, "Davis")),
+                        List.of(new ScalarComparison("Name", ScalarComparisonOperator.CONTAINS, "davis")),
                         List.of()
                 )
         );
