@@ -21,7 +21,7 @@ subgraph UX["Frontend"]
     UXPlantUml["PlantUmlModelAdapter<br/>model-to-PlantUML source"]
     UXPlantUmlRenderer["PlantUmlDiagramRendererAdapter<br/>lazy PlantUML SVG renderer"]
     UXInstanceTree["Model instances tab<br/>runtime entity count tree"]
-    UXEntityEditor["Entity data editor<br/>/editor create/edit form"]
+    UXEntityEditor["Data editor<br/>/editor entity and association tabs"]
     UXConsole["browser virtual CLI<br/>/console and embedded pane"]
 end
 
@@ -64,7 +64,7 @@ ViteUX -->|fetch model data| UXPlantUml
 ViteUX -->|connect/disconnect| UXModelEvents
 ViteUX -->|lazy render diagram| UXPlantUmlRenderer
 ViteUX -->|fetch runtime instance counts| UXInstanceTree
-ViteUX -->|create/update runtime entity data| UXEntityEditor
+ViteUX -->|create/update runtime entity data and links| UXEntityEditor
 ViteUX --> UXConsole
 UXPlantUml -->|GET model/entity/attribute APIs| WebApi
 UXInstanceTree -->|GET /models/list and /data APIs| WebApi
@@ -569,14 +569,17 @@ Current user-facing behavior:
   of the globally unique root id with the full root id exposed as a tooltip
 - lets the user rename the model-instance root from the root node menu; the
   updated alias is persisted in the process-local backend dataset metadata
-- opens `/editor` from the model-instance root node menu to create a new entity
-  instance for that model-instance root
-- exposes `/editor` as a dynamic schema-driven entity data form using URL
-  parameters `modelAzName`, `instanceRootId`, optional `entityAzName`, and
-  optional `instanceId`; omitted `instanceId` means create mode, while a
-  present `instanceId` loads that entity instance for edit
+- opens `/editor` from the model-instance root node menu to create entity
+  instances and association links for that model-instance root
+- exposes `/editor` as a dynamic schema-driven data editor with separate entity
+  and association tabs; the entity tab uses URL parameters `modelAzName`,
+  `instanceRootId`, optional `entityAzName`, and optional `instanceId`; omitted
+  `instanceId` means create mode, while a present `instanceId` loads that entity
+  instance for edit
 - supports editor copy mode for loaded instances by submitting the current form
   values through the create endpoint so the backend assigns a new instance id
+- lets the association editor tab create source/target instance links by
+  selecting a modeled association and existing endpoint entity instances
 - exposes `/queryConsole` for a model-instance root and lets entity-shaped
   query results open in `/editor` edit mode from the result node menu
 - exposes the browser virtual CLI both as a separate full-page `/console` route
@@ -824,7 +827,7 @@ sequenceDiagram
     UX->>UX: render model -> instance roots -> entity count tree
 ```
 
-### UX Entity Data Editing
+### UX Runtime Data Editing
 
 ```mermaid
 sequenceDiagram
@@ -840,16 +843,23 @@ sequenceDiagram
     API-->>UX: entity and attribute descriptions
     UX->>API: GET /data/{modelAzName}/roots
     API-->>UX: model-instance roots
-    opt edit mode with instanceId
+    opt entity tab edit mode with instanceId
         UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}
         API-->>UX: existing entity values
     end
-    alt create or copy mode
+    alt entity tab create or copy mode
         UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}
         API-->>UX: created entity instance with backend id
-    else overwrite edit mode
+    else entity tab overwrite edit mode
         UX->>API: PUT /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}
         API-->>UX: updated entity instance
+    else association tab
+        UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/{sourceEntityAzName}/_query
+        API-->>UX: source endpoint instances
+        UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/{targetEntityAzName}/_query
+        API-->>UX: target endpoint instances
+        UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}
+        API-->>UX: created association link
     end
 ```
 

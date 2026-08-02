@@ -6811,3 +6811,56 @@ Current status and next steps:
   `git diff --check`. Vite still reports the existing large chunk warning for
   visualization assets; Maven still reports existing shade-plugin overlap
   warnings while building the web API JAR.
+## 2026-08-02 13:04 EEST
+
+Session goal: split `/editor` into separate entity and association tabs.
+
+Files changed:
+
+- `SESSION.md`
+- `docs/architecture_doc.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `find . -maxdepth 3 -name AGENTS.md -print`
+- `rg -n "Editor|editor|Association|association|_links|Instance|Tab|tabs" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css -S`
+- `sed -n '1,260p' vedenemo-ux/src/App.tsx`
+- `sed -n '260,430p' vedenemo-ux/src/App.tsx`
+- `sed -n '880,1320p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,260p' vedenemo-ux/src/styles.css`
+- `sed -n '580,780p' vedenemo-ux/src/styles.css`
+- `rg -n "_links|Association.*Request|sourceInstanceId|targetInstanceId|create.*Link|post.*link" vedenemo-web-api/src/main/java vedenemo-web-api/src/test/java -S`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `git diff -- vedenemo-ux/src/styles.css`
+- `git status --short --branch`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `rg -n "editor|Frontend|UX|association|_links|runtime data" docs/architecture_doc.md -S`
+- `sed -n '430,525p' docs/architecture_doc.md`
+- `sed -n '540,590p' docs/architecture_doc.md`
+- `sed -n '760,820p' docs/architecture_doc.md`
+- `sed -n '827,858p' docs/architecture_doc.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Split `/editor` into shared model/root context plus separate `Entity` and
+  `Associations` tabs.
+- Kept entity create/update/copy behavior in the entity tab.
+- Added association link creation in the associations tab using the existing
+  runtime `_links/{associationAzName}` API and unfiltered entity queries to
+  populate source and target endpoint selectors.
+- Updated `docs/architecture_doc.md` for the concrete frontend editor workflow.
+- Verification passed: `npm run build` and `git diff --check`. Vite still
+  reports the existing large chunk warning for visualization assets.

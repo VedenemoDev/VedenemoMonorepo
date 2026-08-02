@@ -14,6 +14,7 @@ type ModelLoadState = "idle" | "loading" | "ok" | "error";
 type ModelConnectionState = "disconnected" | "connecting" | "connected" | "error";
 type ConsoleStatus = "loading" | "ready" | "error";
 type ActiveTab = "models" | "modelInstances";
+type EditorTab = "entity" | "associations";
 type ModelInstanceLoadState = "idle" | "loading" | "ok" | "error";
 type QueryOperator = "=" | "<" | ">" | "contains";
 
@@ -375,6 +376,30 @@ async function fetchAssociationLinks(
   return response.json() as Promise<AssociationLinkResponse[]>;
 }
 
+async function createAssociationLink(
+  apiBaseUrl: string,
+  modelAzName: string,
+  instanceRootId: string,
+  associationAzName: string,
+  sourceInstanceId: string,
+  targetInstanceId: string,
+): Promise<AssociationLinkResponse> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}/_links/${encodeURIComponent(associationAzName)}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ sourceInstanceId, targetInstanceId }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+
+  return response.json() as Promise<AssociationLinkResponse>;
+}
+
 async function fetchEntityInstance(
   apiBaseUrl: string,
   modelAzName: string,
@@ -547,6 +572,14 @@ function parseEditorFormValues(entity: EntityDescription, formValues: EditorForm
     throw new Error("Fill at least one attribute");
   }
   return values;
+}
+
+function associationEndpointLabel(entity: EntityDescription | null, roleName?: string | null): string {
+  const roleLabel = roleName?.trim();
+  if (entity === null) {
+    return roleLabel || "Entity";
+  }
+  return roleLabel ? `${entity.visName} (${roleLabel})` : entity.visName;
 }
 
 function relatedInstanceIdForLink(resultId: string, link: AssociationLinkResponse, direction: RelationshipDirection): string | null {
@@ -920,12 +953,20 @@ function EditorPage() {
   const [selectedModelAzName, setSelectedModelAzName] = useState(initialModelAzName);
   const [selectedRootId, setSelectedRootId] = useState(initialRootId);
   const [selectedEntityAzName, setSelectedEntityAzName] = useState(initialEntityAzName);
+  const [activeEditorTab, setActiveEditorTab] = useState<EditorTab>("entity");
   const [loadedInstanceId, setLoadedInstanceId] = useState(initialInstanceId);
   const [createCopy, setCreateCopy] = useState(false);
   const [formValues, setFormValues] = useState<EditorFormValues>({});
+  const [selectedAssociationAzName, setSelectedAssociationAzName] = useState("");
+  const [sourceInstances, setSourceInstances] = useState<EntityInstanceResponse[]>([]);
+  const [targetInstances, setTargetInstances] = useState<EntityInstanceResponse[]>([]);
+  const [selectedSourceInstanceId, setSelectedSourceInstanceId] = useState("");
+  const [selectedTargetInstanceId, setSelectedTargetInstanceId] = useState("");
+  const [createdAssociationLink, setCreatedAssociationLink] = useState<AssociationLinkResponse | null>(null);
   const [status, setStatus] = useState<ModelInstanceLoadState>("loading");
   const [statusMessage, setStatusMessage] = useState("Loading editor...");
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingAssociation, setIsSavingAssociation] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -997,7 +1038,16 @@ function EditorPage() {
           setCreateCopy(false);
         }
         const nextEntity = nextApiDescription.entities.find((entity) => entity.azName === nextEntityAzName) ?? null;
+        const nextAssociationAzName = nextApiDescription.associations?.some((association) => association.azName === selectedAssociationAzName)
+          ? selectedAssociationAzName
+          : nextApiDescription.associations?.[0]?.azName ?? "";
         setFormValues(emptyEditorValues(nextEntity));
+        setSelectedAssociationAzName(nextAssociationAzName);
+        setSourceInstances([]);
+        setTargetInstances([]);
+        setSelectedSourceInstanceId("");
+        setSelectedTargetInstanceId("");
+        setCreatedAssociationLink(null);
         setStatus("ok");
         if (nextRoots.length === 0) {
           setStatusMessage("No model instance roots available");
@@ -1023,6 +1073,13 @@ function EditorPage() {
 
   const selectedEntity = apiDescription?.entities.find((entity) => entity.azName === selectedEntityAzName) ?? null;
   const selectedRoot = roots.find((root) => root.instanceRootId === selectedRootId) ?? null;
+  const selectedAssociation = apiDescription?.associations?.find((association) => association.azName === selectedAssociationAzName) ?? null;
+  const selectedAssociationSourceEntity = selectedAssociation === null
+    ? null
+    : findEntity(apiDescription?.entities ?? [], selectedAssociation.sourceEntityAzName);
+  const selectedAssociationTargetEntity = selectedAssociation === null
+    ? null
+    : findEntity(apiDescription?.entities ?? [], selectedAssociation.targetEntityAzName);
   const isEditMode = Boolean(loadedInstanceId);
   const willCreate = !isEditMode || createCopy;
 
@@ -1059,10 +1116,75 @@ function EditorPage() {
     };
   }, [apiBaseUrl, selectedModelAzName, selectedRootId, selectedEntity, loadedInstanceId]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAssociationEntities() {
+      if (
+        activeEditorTab !== "associations"
+        || !apiBaseUrl
+        || !selectedModelAzName
+        || !selectedRootId
+        || selectedAssociation === null
+        || selectedAssociationSourceEntity === null
+        || selectedAssociationTargetEntity === null
+      ) {
+        return;
+      }
+
+      setStatus("loading");
+      setStatusMessage("Loading association endpoints...");
+      try {
+        const [nextSourceInstances, nextTargetInstances] = await Promise.all([
+          queryEntityInstances(apiBaseUrl, selectedModelAzName, selectedRootId, selectedAssociationSourceEntity.azName, {}),
+          queryEntityInstances(apiBaseUrl, selectedModelAzName, selectedRootId, selectedAssociationTargetEntity.azName, {}),
+        ]);
+        if (cancelled) {
+          return;
+        }
+        setSourceInstances(nextSourceInstances);
+        setTargetInstances(nextTargetInstances);
+        setSelectedSourceInstanceId((current) => nextSourceInstances.some((instance) => instance.id === current) ? current : nextSourceInstances[0]?.id ?? "");
+        setSelectedTargetInstanceId((current) => nextTargetInstances.some((instance) => instance.id === current) ? current : nextTargetInstances[0]?.id ?? "");
+        setStatus("ok");
+        if (nextSourceInstances.length === 0 || nextTargetInstances.length === 0) {
+          setStatusMessage("Association endpoint instances are missing");
+        } else {
+          setStatusMessage("Ready");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setStatus("error");
+          setStatusMessage(error instanceof Error ? error.message : "Association endpoints load failed");
+        }
+      }
+    }
+
+    void loadAssociationEntities();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeEditorTab,
+    apiBaseUrl,
+    selectedModelAzName,
+    selectedRootId,
+    selectedAssociation,
+    selectedAssociationSourceEntity,
+    selectedAssociationTargetEntity,
+  ]);
+
   function selectModel(nextModelAzName: string) {
     setSelectedModelAzName(nextModelAzName);
     setSelectedRootId("");
     setSelectedEntityAzName("");
+    setSelectedAssociationAzName("");
+    setSourceInstances([]);
+    setTargetInstances([]);
+    setSelectedSourceInstanceId("");
+    setSelectedTargetInstanceId("");
+    setCreatedAssociationLink(null);
     setLoadedInstanceId("");
     setCreateCopy(false);
     window.history.replaceState(null, "", "/editor");
@@ -1075,6 +1197,28 @@ function EditorPage() {
     setCreateCopy(false);
     setFormValues(emptyEditorValues(nextEntity));
     setStatusMessage(nextEntity === null ? "Select an entity type" : "Ready");
+  }
+
+  function selectRoot(nextRootId: string) {
+    setSelectedRootId(nextRootId);
+    setLoadedInstanceId("");
+    setCreateCopy(false);
+    setFormValues(emptyEditorValues(selectedEntity));
+    setSourceInstances([]);
+    setTargetInstances([]);
+    setSelectedSourceInstanceId("");
+    setSelectedTargetInstanceId("");
+    setCreatedAssociationLink(null);
+  }
+
+  function selectAssociation(nextAssociationAzName: string) {
+    setSelectedAssociationAzName(nextAssociationAzName);
+    setSourceInstances([]);
+    setTargetInstances([]);
+    setSelectedSourceInstanceId("");
+    setSelectedTargetInstanceId("");
+    setCreatedAssociationLink(null);
+    setStatusMessage(nextAssociationAzName ? "Ready" : "Select an association type");
   }
 
   async function submitEditor(event: FormEvent<HTMLFormElement>) {
@@ -1115,6 +1259,42 @@ function EditorPage() {
     }
   }
 
+  async function submitAssociation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!apiBaseUrl || !selectedModelAzName || !selectedRootId || selectedAssociation === null) {
+      setStatus("error");
+      setStatusMessage("Select model, root, and association type");
+      return;
+    }
+    if (!selectedSourceInstanceId || !selectedTargetInstanceId) {
+      setStatus("error");
+      setStatusMessage("Select both bound entities");
+      return;
+    }
+
+    setIsSavingAssociation(true);
+    setStatus("loading");
+    setStatusMessage("Creating association...");
+    try {
+      const saved = await createAssociationLink(
+        apiBaseUrl,
+        selectedModelAzName,
+        selectedRootId,
+        selectedAssociation.azName,
+        selectedSourceInstanceId,
+        selectedTargetInstanceId,
+      );
+      setCreatedAssociationLink(saved);
+      setStatus("ok");
+      setStatusMessage(`Created ${selectedAssociation.visName}`);
+    } catch (error) {
+      setStatus("error");
+      setStatusMessage(error instanceof Error ? error.message : "Association save failed");
+    } finally {
+      setIsSavingAssociation(false);
+    }
+  }
+
   return (
     <main className="editor-shell">
       <header className="editor-header">
@@ -1132,47 +1312,66 @@ function EditorPage() {
       </header>
 
       <section className="editor-surface">
-        <form className="editor-form" onSubmit={(event) => void submitEditor(event)}>
-          <div className="editor-context-grid">
-            <div className="query-field">
-              <label htmlFor="editor-model">Model</label>
-              <select
-                id="editor-model"
-                value={selectedModelAzName}
-                onChange={(event) => selectModel(event.target.value)}
-                disabled={status === "loading" || models.length === 0}
-              >
-                {models.length === 0 ? (
-                  <option value="">No models</option>
-                ) : models.map((model) => (
-                  <option key={model.azName} value={model.azName}>
-                    {model.visName} ({model.azName})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="query-field">
-              <label htmlFor="editor-root">Model instance</label>
-              <select
-                id="editor-root"
-                value={selectedRootId}
-                onChange={(event) => {
-                  setSelectedRootId(event.target.value);
-                  setLoadedInstanceId("");
-                  setCreateCopy(false);
-                  setFormValues(emptyEditorValues(selectedEntity));
-                }}
-                disabled={status === "loading" || roots.length === 0}
-              >
-                {roots.length === 0 ? (
-                  <option value="">No roots</option>
-                ) : roots.map((root) => (
-                  <option key={root.instanceRootId} value={root.instanceRootId}>
-                    {rootResponseDisplayName(root)}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div className="editor-context-grid">
+          <div className="query-field">
+            <label htmlFor="editor-model">Model</label>
+            <select
+              id="editor-model"
+              value={selectedModelAzName}
+              onChange={(event) => selectModel(event.target.value)}
+              disabled={status === "loading" || models.length === 0}
+            >
+              {models.length === 0 ? (
+                <option value="">No models</option>
+              ) : models.map((model) => (
+                <option key={model.azName} value={model.azName}>
+                  {model.visName} ({model.azName})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="query-field">
+            <label htmlFor="editor-root">Model instance</label>
+            <select
+              id="editor-root"
+              value={selectedRootId}
+              onChange={(event) => selectRoot(event.target.value)}
+              disabled={status === "loading" || roots.length === 0}
+            >
+              {roots.length === 0 ? (
+                <option value="">No roots</option>
+              ) : roots.map((root) => (
+                <option key={root.instanceRootId} value={root.instanceRootId}>
+                  {rootResponseDisplayName(root)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="editor-tabs" role="tablist" aria-label="Editor sections">
+          <button
+            type="button"
+            className={activeEditorTab === "entity" ? "editor-tab editor-tab-active" : "editor-tab"}
+            onClick={() => setActiveEditorTab("entity")}
+            role="tab"
+            aria-selected={activeEditorTab === "entity"}
+          >
+            Entity
+          </button>
+          <button
+            type="button"
+            className={activeEditorTab === "associations" ? "editor-tab editor-tab-active" : "editor-tab"}
+            onClick={() => setActiveEditorTab("associations")}
+            role="tab"
+            aria-selected={activeEditorTab === "associations"}
+          >
+            Associations
+          </button>
+        </div>
+
+        {activeEditorTab === "entity" ? (
+          <form className="editor-form" onSubmit={(event) => void submitEditor(event)}>
             <div className="query-field">
               <label htmlFor="editor-entity">Entity type</label>
               <select
@@ -1190,57 +1389,142 @@ function EditorPage() {
                 ))}
               </select>
             </div>
-          </div>
 
-          {isEditMode && (
-            <div className="query-criterion-toggle editor-copy-toggle">
-              <label htmlFor="editor-create-copy">
-                <input
-                  id="editor-create-copy"
-                  type="checkbox"
-                  checked={createCopy}
-                  onChange={(event) => setCreateCopy(event.target.checked)}
-                  disabled={status === "loading" || isSaving}
-                />
-                Create copy
-              </label>
-            </div>
-          )}
-
-          <div className="editor-fields">
-            {selectedEntity === null || selectedEntity.attributes.length === 0 ? (
-              <div className="tree-empty">No attributes</div>
-            ) : selectedEntity.attributes.map((attribute) => (
-              <div key={attribute.azName} className="query-field">
-                <label htmlFor={`editor-${attribute.azName}`}>{attribute.visName}</label>
-                {attribute.dataType === "DATA" ? (
-                  <textarea
-                    id={`editor-${attribute.azName}`}
-                    value={formValues[attribute.azName] ?? ""}
-                    onChange={(event) => setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }))}
-                    disabled={status === "loading" || isSaving}
-                  />
-                ) : (
+            {isEditMode && (
+              <div className="query-criterion-toggle editor-copy-toggle">
+                <label htmlFor="editor-create-copy">
                   <input
-                    id={`editor-${attribute.azName}`}
-                    value={formValues[attribute.azName] ?? ""}
-                    type={attribute.dataType === "NUMERIC" ? "number" : attribute.dataType === "URL" ? "url" : "text"}
-                    step={attribute.dataType === "NUMERIC" ? "any" : undefined}
-                    onChange={(event) => setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }))}
+                    id="editor-create-copy"
+                    type="checkbox"
+                    checked={createCopy}
+                    onChange={(event) => setCreateCopy(event.target.checked)}
                     disabled={status === "loading" || isSaving}
                   />
-                )}
+                  Create copy
+                </label>
               </div>
-            ))}
-          </div>
+            )}
 
-          <div className="editor-actions">
-            <span className={`model-status model-status-${status}`}>{statusMessage}</span>
-            <button type="submit" disabled={isSaving || status === "loading" || selectedEntity === null || !selectedRootId}>
-              {willCreate ? "Create" : "Save"}
-            </button>
-          </div>
-        </form>
+            <div className="editor-fields">
+              {selectedEntity === null || selectedEntity.attributes.length === 0 ? (
+                <div className="tree-empty">No attributes</div>
+              ) : selectedEntity.attributes.map((attribute) => (
+                <div key={attribute.azName} className="query-field">
+                  <label htmlFor={`editor-${attribute.azName}`}>{attribute.visName}</label>
+                  {attribute.dataType === "DATA" ? (
+                    <textarea
+                      id={`editor-${attribute.azName}`}
+                      value={formValues[attribute.azName] ?? ""}
+                      onChange={(event) => setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }))}
+                      disabled={status === "loading" || isSaving}
+                    />
+                  ) : (
+                    <input
+                      id={`editor-${attribute.azName}`}
+                      value={formValues[attribute.azName] ?? ""}
+                      type={attribute.dataType === "NUMERIC" ? "number" : attribute.dataType === "URL" ? "url" : "text"}
+                      step={attribute.dataType === "NUMERIC" ? "any" : undefined}
+                      onChange={(event) => setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }))}
+                      disabled={status === "loading" || isSaving}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="editor-actions">
+              <span className={`model-status model-status-${status}`}>{statusMessage}</span>
+              <button type="submit" disabled={isSaving || status === "loading" || selectedEntity === null || !selectedRootId}>
+                {willCreate ? "Create" : "Save"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form className="editor-form" onSubmit={(event) => void submitAssociation(event)}>
+            <div className="query-field">
+              <label htmlFor="editor-association">Association type</label>
+              <select
+                id="editor-association"
+                value={selectedAssociationAzName}
+                onChange={(event) => selectAssociation(event.target.value)}
+                disabled={status === "loading" || apiDescription === null || (apiDescription.associations?.length ?? 0) === 0}
+              >
+                {apiDescription === null || (apiDescription.associations?.length ?? 0) === 0 ? (
+                  <option value="">No association types</option>
+                ) : apiDescription.associations?.map((association) => (
+                  <option key={association.azName} value={association.azName}>
+                    {association.visName} ({association.azName}, {association.kind})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="editor-context-grid">
+              <div className="query-field">
+                <label htmlFor="editor-source-instance">
+                  {associationEndpointLabel(selectedAssociationSourceEntity, selectedAssociation?.sourceRoleName)}
+                </label>
+                <select
+                  id="editor-source-instance"
+                  value={selectedSourceInstanceId}
+                  onChange={(event) => setSelectedSourceInstanceId(event.target.value)}
+                  disabled={status === "loading" || isSavingAssociation || sourceInstances.length === 0}
+                >
+                  {sourceInstances.length === 0 ? (
+                    <option value="">No source instances</option>
+                  ) : sourceInstances.map((instance) => (
+                    <option key={instance.id} value={instance.id}>
+                      {selectedAssociationSourceEntity === null ? instance.id : entityInstanceLabel(selectedAssociationSourceEntity, instance)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="query-field">
+                <label htmlFor="editor-target-instance">
+                  {associationEndpointLabel(selectedAssociationTargetEntity, selectedAssociation?.targetRoleName)}
+                </label>
+                <select
+                  id="editor-target-instance"
+                  value={selectedTargetInstanceId}
+                  onChange={(event) => setSelectedTargetInstanceId(event.target.value)}
+                  disabled={status === "loading" || isSavingAssociation || targetInstances.length === 0}
+                >
+                  {targetInstances.length === 0 ? (
+                    <option value="">No target instances</option>
+                  ) : targetInstances.map((instance) => (
+                    <option key={instance.id} value={instance.id}>
+                      {selectedAssociationTargetEntity === null ? instance.id : entityInstanceLabel(selectedAssociationTargetEntity, instance)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {createdAssociationLink !== null && (
+              <div className="editor-link-summary">
+                <span>Created link</span>
+                <strong>{createdAssociationLink.id}</strong>
+              </div>
+            )}
+
+            <div className="editor-actions">
+              <span className={`model-status model-status-${status}`}>{statusMessage}</span>
+              <button
+                type="submit"
+                disabled={
+                  isSavingAssociation
+                  || status === "loading"
+                  || selectedAssociation === null
+                  || !selectedRootId
+                  || !selectedSourceInstanceId
+                  || !selectedTargetInstanceId
+                }
+              >
+                Create
+              </button>
+            </div>
+          </form>
+        )}
       </section>
     </main>
   );
