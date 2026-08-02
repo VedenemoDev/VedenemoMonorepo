@@ -1051,7 +1051,7 @@ function EditorPage() {
     return () => {
       cancelled = true;
     };
-  }, [apiBaseUrl, selectedModelAzName, selectedRootId, selectedEntityAzName, loadedInstanceId]);
+  }, [apiBaseUrl, selectedModelAzName, selectedRootId, selectedEntity, loadedInstanceId]);
 
   function selectModel(nextModelAzName: string) {
     setSelectedModelAzName(nextModelAzName);

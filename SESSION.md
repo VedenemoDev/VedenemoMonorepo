@@ -6729,3 +6729,29 @@ Current status and next steps:
   `git diff --check`. Vite still reports the existing large chunk warning for
   visualization assets; Maven still reports existing shade-plugin overlap
   warnings while building the web API JAR.
+## 2026-08-02 12:17 EEST
+
+Session goal: fix `/editor` prefill when opened from Query Console result edit.
+
+Files changed:
+
+- `SESSION.md`
+- `vedenemo-ux/src/App.tsx`
+
+Commands run:
+
+- `sed -n '990,1285p' vedenemo-ux/src/App.tsx`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check`
+- `git status --short --branch`
+
+Current status and next steps:
+
+- Fixed the editor edit-mode load effect so it retries after the selected
+  entity schema resolves from the model-instance API.
+- Query Console `Editor...` result links should now prefill values once
+  `/editor` loads the model schema and then reads the selected entity instance.
+- Verification passed: `npm run build` and `git diff --check`. Vite still
+  reports the existing large chunk warning for visualization assets.
