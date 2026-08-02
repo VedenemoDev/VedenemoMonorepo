@@ -198,6 +198,62 @@ final class ModelInstanceServiceTest {
     }
 
     @Test
+    void listsAndQueriesAllMatchingInstancesWithoutImplicitLimit() {
+        Fixture fixture = fixture();
+        String rootId = fixture.rootId();
+
+        for (int index = 0; index < 105; index++) {
+            fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Name", "Artist " + index));
+        }
+
+        List<EntityInstance> listed = fixture.service.listEntityInstances("Music", rootId, "Artist", Map.of());
+        List<EntityInstance> queried = fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(Map.of(), List.of(), List.of())
+        );
+
+        assertEquals(105, listed.size());
+        assertEquals(105, queried.size());
+        assertEquals("Artist 0", queried.getFirst().values().get("Name").value());
+        assertEquals("Artist 104", queried.getLast().values().get("Name").value());
+    }
+
+    @Test
+    void relationshipQueriesReturnAllMatchesWithoutImplicitLimit() {
+        Fixture fixture = fixture();
+        String rootId = fixture.rootId();
+        EntityInstance artist = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Name", "Catalog Artist"));
+
+        for (int index = 0; index < 105; index++) {
+            EntityInstance album = fixture.service.createEntityInstance("Music", rootId, "Album", Map.of("Title", "Album " + index));
+            fixture.service.createAssociationLink("Music", rootId, "Album_Artist", album.id().value(), artist.id().value());
+        }
+
+        List<EntityInstance> matches = fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Album",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(),
+                        List.of(new RelationshipPredicate(
+                                "Album_Artist",
+                                RelationshipDirection.OUTGOING,
+                                "Artist",
+                                Map.of(),
+                                List.of()
+                        ))
+                )
+        );
+
+        assertEquals(105, matches.size());
+        assertEquals("Album 0", matches.getFirst().values().get("Title").value());
+        assertEquals("Album 104", matches.getLast().values().get("Title").value());
+    }
+
+    @Test
     void rejectsComparisonOperatorsThatDoNotMatchAttributeType() {
         Fixture fixture = fixture();
         String rootId = fixture.rootId();

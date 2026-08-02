@@ -6608,3 +6608,49 @@ Current status and next steps:
 - Updated backlog completion notes.
 - Verification passed: `npm run build` and `git diff --check`. Vite still
   reports the existing large chunk warning for bundled visualization assets.
+## 2026-08-02 09:06 EEST
+
+Session goal: remove the implicit 100-result cap from model-instance list and
+query results.
+
+Files changed:
+
+- `SESSION.md`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `rg -n "100|limit|LIMIT|takeWhile|subList|stream\\(\\).*limit|\\.limit\\(" vedenemo-core/src/main/java vedenemo-web-api/src/main/java vedenemo-ux/src/App.tsx vedenemo-core/src/test vedenemo-web-api/src/test -S`
+- `sed -n '1,130p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,140p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceDataset.java`
+- `sed -n '140,230p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `git status --short --branch`
+- `sed -n '1,260p' vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `sed -n '1,280p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `sed -n '280,620p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `sed -n '430,455p' docs/architecture_doc.md`
+- `mvn -B clean verify`
+- `git diff -- vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Removed the hard-coded `DEFAULT_LIMIT = 100` from model-instance list and
+  `_query` result streams.
+- Added core regression tests proving more than 100 entity instances are
+  returned by list and `_query`.
+- Added core regression coverage for one-hop relationship queries with empty
+  related comparisons, matching Query Console wildcard behavior, returning more
+  than 100 linked results.
+- Verification passed: `mvn -B clean verify` and `git diff --check`. Maven
+  still reports existing shade-plugin overlap warnings while building the web
+  API JAR.

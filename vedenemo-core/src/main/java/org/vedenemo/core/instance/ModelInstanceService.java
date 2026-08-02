@@ -19,7 +19,6 @@ import java.util.Optional;
 
 public final class ModelInstanceService {
 
-    private static final int DEFAULT_LIMIT = 100;
     private static final int MAX_ROOT_VIS_NAME_LENGTH = 120;
 
     private final ModelRegistry modelRegistry;
@@ -79,7 +78,6 @@ public final class ModelInstanceService {
                 .listEntityInstances(entity.azName())
                 .stream()
                 .filter(instance -> matchesAll(instance, normalizedFilters))
-                .limit(DEFAULT_LIMIT)
                 .toList();
     }
 
@@ -110,7 +108,6 @@ public final class ModelInstanceService {
                 .stream()
                 .filter(instance -> matchesAll(instance, comparisons))
                 .filter(instance -> relationships.stream().allMatch(predicate -> matchesRelationship(dataset, instance, predicate)))
-                .limit(DEFAULT_LIMIT)
                 .toList();
     }
 
