@@ -6654,3 +6654,78 @@ Current status and next steps:
 - Verification passed: `mvn -B clean verify` and `git diff --check`. Maven
   still reports existing shade-plugin overlap warnings while building the web
   API JAR.
+## 2026-08-02 11:34 EEST
+
+Session goal: add dynamic entity data editor route with create, edit, and copy
+flows.
+
+Files changed:
+
+- `SESSION.md`
+- `docs/architecture_doc.md`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceDataset.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,240p' docs/architecture/module-map.md`
+- `sed -n '1,240p' docs/architecture/coding-rules.md`
+- `sed -n '1,240p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 160 SESSION.md`
+- `rg -n "enum DataType|DataType" vedenemo-model-api vedenemo-core vedenemo-web-api -S`
+- `rg -n "data/|InstanceData|EntityInstance|roots|_query|put\\(" vedenemo-web-api/src/main/java vedenemo-core/src/main/java -S`
+- `rg -n "Model instances|Rename|Query Console|query|instances|menu|Editor|route|path" vedenemo-ux/src -S`
+- `rg --files vedenemo-ux/src vedenemo-web-api/src/test vedenemo-core/src/test | sort`
+- `git status --short --branch`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,130p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceDataset.java`
+- `sed -n '1,560p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/instance/EntityInstance.java`
+- `sed -n '1,420p' vedenemo-ux/src/App.tsx`
+- `sed -n '420,900p' vedenemo-ux/src/App.tsx`
+- `sed -n '900,1325p' vedenemo-ux/src/App.tsx`
+- `sed -n '1325,1870p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,860p' vedenemo-ux/src/styles.css`
+- `sed -n '1870,1945p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,430p' vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `sed -n '1,460p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `sed -n '430,470p' docs/architecture_doc.md`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `npm run build` from `vedenemo-ux`
+- `mvn -B clean verify`
+- `rg -n "Frontend|UX|React|queryConsole|Model instances|/data/\\{modelAzName\\}/roots" docs/architecture_doc.md -S`
+- `sed -n '1,180p' docs/architecture_doc.md`
+- `sed -n '400,455p' docs/architecture_doc.md`
+- `sed -n '455,530p' docs/architecture_doc.md`
+- `sed -n '531,590p' docs/architecture_doc.md`
+- `sed -n '783,812p' docs/architecture_doc.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added backend overwrite support for runtime entity instances via
+  `PUT /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}`.
+- Added core and web API regression tests for in-place entity-instance update.
+- Added `/editor` to the UX with dynamic model/root/entity selection,
+  schema-derived fields for `TEXT`, `NUMERIC`, `URL`, and `DATA`, immediate
+  create/update persistence, backend validation messages, and edit-mode
+  `Create copy`.
+- Added `Editor...` actions to the model-instance root menu and query-result
+  row menu. Editor URLs use `modelAzName`, `instanceRootId`, `entityAzName`,
+  and `instanceId`; omitted `instanceId` means create mode.
+- Updated `docs/architecture_doc.md` for the concrete frontend route and API
+  endpoint.
+- Verification passed: `npm run build`, `mvn -B clean verify`, and
+  `git diff --check`. Vite still reports the existing large chunk warning for
+  visualization assets; Maven still reports existing shade-plugin overlap
+  warnings while building the web API JAR.

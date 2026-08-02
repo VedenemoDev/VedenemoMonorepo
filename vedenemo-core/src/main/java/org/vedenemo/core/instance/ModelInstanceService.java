@@ -96,6 +96,20 @@ public final class ModelInstanceService {
                 .orElseThrow(() -> new IllegalArgumentException("instance not found"));
     }
 
+    public EntityInstance updateEntityInstance(String modelAzName, String instanceRootId, String entityAzName, String instanceId, Map<String, Object> submittedValues) {
+        ModelRoot modelRoot = requireModel(modelAzName);
+        VEntity entity = requireEntity(modelRoot, entityAzName);
+        Map<String, InstanceValue> values = normalizeValues(entity, submittedValues);
+        EntityInstance instance = new EntityInstance(
+                new InstanceId(instanceId),
+                modelRoot.azName(),
+                modelRoot.version().toString(),
+                entity.azName(),
+                values
+        );
+        return requireDataset(modelRoot, instanceRootId).replaceEntityInstance(instance);
+    }
+
     public List<EntityInstance> queryEntityInstances(String modelAzName, String instanceRootId, String entityAzName, EntityInstanceQuery query) {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);

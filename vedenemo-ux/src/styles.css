@@ -588,14 +588,16 @@ body {
   background: #334155;
 }
 
-.query-console-shell {
+.query-console-shell,
+.editor-shell {
   box-sizing: border-box;
   min-height: 100vh;
   padding: 1rem;
   background: #f8fafc;
 }
 
-.query-console-header {
+.query-console-header,
+.editor-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -604,7 +606,8 @@ body {
   margin: 0 auto 1rem;
 }
 
-.query-console-header h1 {
+.query-console-header h1,
+.editor-header h1 {
   margin: 0;
   color: #111827;
   font-size: 1.5rem;
@@ -625,7 +628,8 @@ body {
   margin-right: 0.5rem;
 }
 
-.query-console-surface {
+.query-console-surface,
+.editor-surface {
   display: grid;
   gap: 0.85rem;
   box-sizing: border-box;
@@ -643,6 +647,33 @@ body {
   grid-template-columns: minmax(9rem, 1fr) minmax(9rem, 1fr) minmax(9rem, 1fr) 5rem minmax(10rem, 1fr) auto;
   gap: 0.5rem;
   align-items: end;
+}
+
+.editor-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.editor-context-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(9rem, 1fr));
+  gap: 0.5rem;
+}
+
+.editor-fields {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.editor-copy-toggle {
+  min-height: 0;
+}
+
+.editor-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .query-field {
@@ -682,7 +713,10 @@ body {
 }
 
 .query-form select,
-.query-form input {
+.query-form input,
+.editor-form select,
+.editor-form input,
+.editor-form textarea {
   min-width: 0;
   padding: 0.55rem 0.7rem;
   border: 1px solid #9ca3af;
@@ -692,17 +726,27 @@ body {
   font: inherit;
 }
 
-.query-form select {
+.editor-form textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.query-form select,
+.editor-form select {
   text-overflow: ellipsis;
 }
 
 .query-form select:disabled,
-.query-form input:disabled {
+.query-form input:disabled,
+.editor-form select:disabled,
+.editor-form input:disabled,
+.editor-form textarea:disabled {
   color: #6b7280;
   background: #f3f4f6;
 }
 
-.query-form button {
+.query-form button,
+.editor-actions button {
   min-width: 5rem;
   padding: 0.55rem 0.9rem;
   border: 1px solid #1f2937;
@@ -713,7 +757,8 @@ body {
   cursor: pointer;
 }
 
-.query-form button:disabled {
+.query-form button:disabled,
+.editor-actions button:disabled {
   cursor: progress;
   opacity: 0.7;
 }
@@ -775,17 +820,21 @@ body {
   .model-instances-toolbar,
   .console-header,
   .query-console-header,
+  .editor-header,
   .console-input-row {
     align-items: stretch;
     flex-direction: column;
   }
 
   .console-header,
-  .query-console-header {
+  .query-console-header,
+  .editor-header,
+  .editor-actions {
     display: grid;
   }
 
   .query-form,
+  .editor-context-grid,
   .console-input-row {
     grid-template-columns: 1fr;
   }
@@ -798,6 +847,7 @@ body {
   .model-instances-toolbar button,
   .secondary-link,
   .query-form button,
+  .editor-actions button,
   .console-input-row button {
     width: 100%;
   }

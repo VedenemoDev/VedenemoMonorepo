@@ -146,6 +146,27 @@ final class InstanceDataResourceTest {
     }
 
     @Test
+    void updatesEntityInstanceInPlace() throws Exception {
+        String rootId = createRoot(null);
+        String artistId = responseId(post(rootPath(rootId, "/Artist"), """
+                {"Name":"Miles Davis","Rating":99,"Website":"https://example.com"}
+                """));
+
+        HttpResponse<String> updated = put(rootPath(rootId, "/Artist/" + artistId), """
+                {"Name":"Miles Davis Quintet","Website":"https://example.org/miles"}
+                """);
+        HttpResponse<String> list = get(rootPath(rootId, "/Artist"));
+
+        assertEquals(200, updated.statusCode());
+        assertTrue(updated.body().contains("\"id\":\"" + artistId + "\""));
+        assertTrue(updated.body().contains("\"Name\":\"Miles Davis Quintet\""));
+        assertTrue(!updated.body().contains("\"Rating\""));
+        assertEquals(200, list.statusCode());
+        assertTrue(list.body().contains("\"Name\":\"Miles Davis Quintet\""));
+        assertTrue(!list.body().contains("Miles Davis\",\"Rating"));
+    }
+
+    @Test
     void createsLinksAndQueriesThroughRelationshipPredicate() throws Exception {
         String rootId = createRoot(null);
         String artistId = responseId(post(rootPath(rootId, "/Artist"), """

@@ -42,6 +42,31 @@ final class ModelInstanceServiceTest {
     }
 
     @Test
+    void updatesExistingInstanceWithSchemaValidatedValues() {
+        Fixture fixture = fixture();
+        String rootId = fixture.rootId();
+        EntityInstance instance = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of(
+                "Name", "Miles Davis",
+                "Rating", 99
+        ));
+
+        EntityInstance updated = fixture.service.updateEntityInstance("Music", rootId, "Artist", instance.id().value(), Map.of(
+                "Name", "Miles Davis Quintet",
+                "Website", "https://example.com/miles"
+        ));
+
+        assertEquals(instance.id(), updated.id());
+        assertEquals("Miles Davis Quintet", updated.values().get("Name").value());
+        assertEquals("https://example.com/miles", updated.values().get("Website").value());
+        assertEquals(null, updated.values().get("Rating"));
+        assertEquals(1, fixture.service.countEntityInstances("Music", rootId, "Artist"));
+        assertEquals("Miles Davis Quintet", fixture.service.readEntityInstance("Music", rootId, "Artist", instance.id().value())
+                .values()
+                .get("Name")
+                .value());
+    }
+
+    @Test
     void readsAndRenamesModelInstanceRootMetadata() {
         Fixture fixture = fixture();
         String rootId = fixture.rootId();

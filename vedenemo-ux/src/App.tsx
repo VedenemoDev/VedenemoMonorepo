@@ -166,6 +166,8 @@ type AssociationMatchContext = {
   matchedValueLabel?: string;
 };
 
+type EditorFormValues = Record<string, string>;
+
 const PLANTUML_TARGET_ID = "plantuml-diagram";
 const CONNECTED_MODEL_STORAGE_KEY = "vedenemo.connectedModelAzName";
 const CONSOLE_PANE_HEIGHT_STORAGE_KEY = "vedenemo.consolePaneHeight";
@@ -258,6 +260,15 @@ async function fetchModelInstanceRoot(apiBaseUrl: string, modelAzName: string, i
   return response.json() as Promise<ModelInstanceRootResponse>;
 }
 
+async function readErrorMessage(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as { error?: string };
+    return body.error ? `${body.error}` : `HTTP ${response.status}`;
+  } catch {
+    return `HTTP ${response.status}`;
+  }
+}
+
 async function renameModelInstanceRoot(apiBaseUrl: string, modelAzName: string, instanceRootId: string, visName: string): Promise<ModelInstanceRootResponse> {
   const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}`, {
     method: "PUT",
@@ -296,6 +307,53 @@ async function queryEntityInstances(
   }
 
   return response.json() as Promise<EntityInstanceResponse[]>;
+}
+
+async function createEntityInstance(
+  apiBaseUrl: string,
+  modelAzName: string,
+  instanceRootId: string,
+  entityAzName: string,
+  values: Record<string, unknown>,
+): Promise<EntityInstanceResponse> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}/${encodeURIComponent(entityAzName)}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(values),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+
+  return response.json() as Promise<EntityInstanceResponse>;
+}
+
+async function updateEntityInstance(
+  apiBaseUrl: string,
+  modelAzName: string,
+  instanceRootId: string,
+  entityAzName: string,
+  instanceId: string,
+  values: Record<string, unknown>,
+): Promise<EntityInstanceResponse> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}/${encodeURIComponent(entityAzName)}/${encodeURIComponent(instanceId)}`, {
+    method: "PUT",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(values),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+
+  return response.json() as Promise<EntityInstanceResponse>;
 }
 
 async function fetchAssociationLinks(
@@ -437,6 +495,54 @@ function parseCriterionValue(attribute: AttributeDescription, rawValue: string):
     return trimmedValue;
   }
   return Number(trimmedValue);
+}
+
+function editorUrl(modelAzName: string, instanceRootId: string, entityAzName?: string, instanceId?: string): string {
+  const params = new URLSearchParams({
+    modelAzName,
+    instanceRootId,
+  });
+  if (entityAzName) {
+    params.set("entityAzName", entityAzName);
+  }
+  if (instanceId) {
+    params.set("instanceId", instanceId);
+  }
+  return `/editor?${params.toString()}`;
+}
+
+function emptyEditorValues(entity: EntityDescription | null): EditorFormValues {
+  if (entity === null) {
+    return {};
+  }
+  return Object.fromEntries(entity.attributes.map((attribute) => [attribute.azName, ""]));
+}
+
+function formValuesFromInstance(entity: EntityDescription, instance: EntityInstanceResponse): EditorFormValues {
+  return Object.fromEntries(entity.attributes.map((attribute) => [
+    attribute.azName,
+    formatInstanceValue(instance.values[attribute.azName]),
+  ]));
+}
+
+function parseEditorFormValues(entity: EntityDescription, formValues: EditorFormValues): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+  for (const attribute of entity.attributes) {
+    const rawValue = formValues[attribute.azName] ?? "";
+    if (!rawValue.trim()) {
+      throw new Error(`${attribute.visName} is required`);
+    }
+    if (attribute.dataType === "NUMERIC") {
+      const numericValue = Number(rawValue);
+      if (!Number.isFinite(numericValue)) {
+        throw new Error(`${attribute.visName} must be a valid number`);
+      }
+      values[attribute.azName] = numericValue;
+    } else {
+      values[attribute.azName] = rawValue.trim();
+    }
+  }
+  return values;
 }
 
 function relatedInstanceIdForLink(resultId: string, link: AssociationLinkResponse, direction: RelationshipDirection): string | null {
@@ -796,6 +902,344 @@ function ConsolePage() {
   return <ConsolePanel connectedModelAzName={readConnectedModelAzName()} mode="page" />;
 }
 
+function EditorPage() {
+  const initialModelAzName = readQueryParam("modelAzName");
+  const initialRootId = readQueryParam("instanceRootId");
+  const initialEntityAzName = readQueryParam("entityAzName");
+  const initialInstanceId = readQueryParam("instanceId");
+  const [apiBaseUrl, setApiBaseUrl] = useState("");
+  const [models, setModels] = useState<ModelSummary[]>([]);
+  const [roots, setRoots] = useState<ModelInstanceRootResponse[]>([]);
+  const [apiDescription, setApiDescription] = useState<ApiDescriptionResponse | null>(null);
+  const [selectedModelAzName, setSelectedModelAzName] = useState(initialModelAzName);
+  const [selectedRootId, setSelectedRootId] = useState(initialRootId);
+  const [selectedEntityAzName, setSelectedEntityAzName] = useState(initialEntityAzName);
+  const [loadedInstanceId, setLoadedInstanceId] = useState(initialInstanceId);
+  const [createCopy, setCreateCopy] = useState(false);
+  const [formValues, setFormValues] = useState<EditorFormValues>({});
+  const [status, setStatus] = useState<ModelInstanceLoadState>("loading");
+  const [statusMessage, setStatusMessage] = useState("Loading editor...");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEditorConfig() {
+      try {
+        const config = await loadRuntimeConfig();
+        const baseUrl = normalizeBaseUrl(config.apiBaseUrl ?? "");
+        if (!baseUrl) {
+          throw new Error("Backend URL is not configured");
+        }
+        const nextModels = await fetchModels(baseUrl);
+        if (cancelled) {
+          return;
+        }
+        const nextModelAzName = selectedModelAzName || nextModels[0]?.azName || "";
+        setApiBaseUrl(baseUrl);
+        setModels(nextModels);
+        setSelectedModelAzName(nextModelAzName);
+        if (!nextModelAzName) {
+          setStatus("ok");
+          setStatusMessage("No models available");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setStatus("error");
+          setStatusMessage(error instanceof Error ? error.message : "Editor load failed");
+        }
+      }
+    }
+
+    void loadEditorConfig();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadModelContext() {
+      if (!apiBaseUrl || !selectedModelAzName) {
+        return;
+      }
+
+      setStatus("loading");
+      setStatusMessage("Loading model instance schema...");
+      try {
+        const [nextApiDescription, nextRoots] = await Promise.all([
+          fetchModelInstanceApi(apiBaseUrl, selectedModelAzName),
+          fetchModelInstanceRoots(apiBaseUrl, selectedModelAzName),
+        ]);
+        if (cancelled) {
+          return;
+        }
+        const nextRootId = nextRoots.some((root) => root.instanceRootId === selectedRootId)
+          ? selectedRootId
+          : nextRoots[0]?.instanceRootId ?? "";
+        const nextEntityAzName = nextApiDescription.entities.some((entity) => entity.azName === selectedEntityAzName)
+          ? selectedEntityAzName
+          : nextApiDescription.entities[0]?.azName ?? "";
+        setApiDescription(nextApiDescription);
+        setRoots(nextRoots);
+        setSelectedRootId(nextRootId);
+        setSelectedEntityAzName(nextEntityAzName);
+        if (nextEntityAzName !== selectedEntityAzName) {
+          setLoadedInstanceId("");
+          setCreateCopy(false);
+        }
+        const nextEntity = nextApiDescription.entities.find((entity) => entity.azName === nextEntityAzName) ?? null;
+        setFormValues(emptyEditorValues(nextEntity));
+        setStatus("ok");
+        if (nextRoots.length === 0) {
+          setStatusMessage("No model instance roots available");
+        } else if (nextApiDescription.entities.length === 0) {
+          setStatusMessage("No entity types available");
+        } else {
+          setStatusMessage("Ready");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setStatus("error");
+          setStatusMessage(error instanceof Error ? error.message : "Model instance schema load failed");
+        }
+      }
+    }
+
+    void loadModelContext();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBaseUrl, selectedModelAzName]);
+
+  const selectedEntity = apiDescription?.entities.find((entity) => entity.azName === selectedEntityAzName) ?? null;
+  const selectedRoot = roots.find((root) => root.instanceRootId === selectedRootId) ?? null;
+  const isEditMode = Boolean(loadedInstanceId);
+  const willCreate = !isEditMode || createCopy;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadInstanceForEdit() {
+      if (!apiBaseUrl || !selectedModelAzName || !selectedRootId || selectedEntity === null || !loadedInstanceId) {
+        return;
+      }
+
+      setStatus("loading");
+      setStatusMessage("Loading entity instance...");
+      try {
+        const instance = await fetchEntityInstance(apiBaseUrl, selectedModelAzName, selectedRootId, selectedEntity.azName, loadedInstanceId);
+        if (cancelled) {
+          return;
+        }
+        setFormValues(formValuesFromInstance(selectedEntity, instance));
+        setStatus("ok");
+        setStatusMessage("Ready");
+      } catch (error) {
+        if (!cancelled) {
+          setStatus("error");
+          setStatusMessage(error instanceof Error ? error.message : "Entity instance load failed");
+        }
+      }
+    }
+
+    void loadInstanceForEdit();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBaseUrl, selectedModelAzName, selectedRootId, selectedEntityAzName, loadedInstanceId]);
+
+  function selectModel(nextModelAzName: string) {
+    setSelectedModelAzName(nextModelAzName);
+    setSelectedRootId("");
+    setSelectedEntityAzName("");
+    setLoadedInstanceId("");
+    setCreateCopy(false);
+    window.history.replaceState(null, "", "/editor");
+  }
+
+  function selectEntity(nextEntityAzName: string) {
+    const nextEntity = apiDescription?.entities.find((entity) => entity.azName === nextEntityAzName) ?? null;
+    setSelectedEntityAzName(nextEntityAzName);
+    setLoadedInstanceId("");
+    setCreateCopy(false);
+    setFormValues(emptyEditorValues(nextEntity));
+    setStatusMessage(nextEntity === null ? "Select an entity type" : "Ready");
+  }
+
+  async function submitEditor(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!apiBaseUrl || !selectedModelAzName || !selectedRootId || selectedEntity === null) {
+      setStatus("error");
+      setStatusMessage("Select model, root, and entity type");
+      return;
+    }
+
+    let values: Record<string, unknown>;
+    try {
+      values = parseEditorFormValues(selectedEntity, formValues);
+    } catch (error) {
+      setStatus("error");
+      setStatusMessage(error instanceof Error ? error.message : "Invalid editor values");
+      return;
+    }
+
+    setIsSaving(true);
+    setStatus("loading");
+    setStatusMessage(willCreate ? "Creating entity instance..." : "Saving entity instance...");
+    try {
+      const saved = willCreate
+        ? await createEntityInstance(apiBaseUrl, selectedModelAzName, selectedRootId, selectedEntity.azName, values)
+        : await updateEntityInstance(apiBaseUrl, selectedModelAzName, selectedRootId, selectedEntity.azName, loadedInstanceId, values);
+      setLoadedInstanceId(saved.id);
+      setCreateCopy(false);
+      setFormValues(formValuesFromInstance(selectedEntity, saved));
+      window.history.replaceState(null, "", editorUrl(selectedModelAzName, selectedRootId, selectedEntity.azName, saved.id));
+      setStatus("ok");
+      setStatusMessage(willCreate ? `Created ${selectedEntity.visName}` : `Saved ${selectedEntity.visName}`);
+    } catch (error) {
+      setStatus("error");
+      setStatusMessage(error instanceof Error ? error.message : "Save failed");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <main className="editor-shell">
+      <header className="editor-header">
+        <div>
+          <h1>Entity data editor</h1>
+          <div className="query-console-targets">
+            <span>{apiDescription?.modelVisName ?? (selectedModelAzName || "No model")}</span>
+            <span>{selectedRoot === null ? (selectedRootId || "No root") : rootResponseDisplayName(selectedRoot)}</span>
+            <span>{selectedEntity?.visName ?? (selectedEntityAzName || "No entity")}</span>
+          </div>
+        </div>
+        <a className="secondary-link" href="/?tab=modelInstances">
+          Model instances
+        </a>
+      </header>
+
+      <section className="editor-surface">
+        <form className="editor-form" onSubmit={(event) => void submitEditor(event)}>
+          <div className="editor-context-grid">
+            <div className="query-field">
+              <label htmlFor="editor-model">Model</label>
+              <select
+                id="editor-model"
+                value={selectedModelAzName}
+                onChange={(event) => selectModel(event.target.value)}
+                disabled={status === "loading" || models.length === 0}
+              >
+                {models.length === 0 ? (
+                  <option value="">No models</option>
+                ) : models.map((model) => (
+                  <option key={model.azName} value={model.azName}>
+                    {model.visName} ({model.azName})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="query-field">
+              <label htmlFor="editor-root">Model instance</label>
+              <select
+                id="editor-root"
+                value={selectedRootId}
+                onChange={(event) => {
+                  setSelectedRootId(event.target.value);
+                  setLoadedInstanceId("");
+                  setCreateCopy(false);
+                  setFormValues(emptyEditorValues(selectedEntity));
+                }}
+                disabled={status === "loading" || roots.length === 0}
+              >
+                {roots.length === 0 ? (
+                  <option value="">No roots</option>
+                ) : roots.map((root) => (
+                  <option key={root.instanceRootId} value={root.instanceRootId}>
+                    {rootResponseDisplayName(root)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="query-field">
+              <label htmlFor="editor-entity">Entity type</label>
+              <select
+                id="editor-entity"
+                value={selectedEntityAzName}
+                onChange={(event) => selectEntity(event.target.value)}
+                disabled={status === "loading" || apiDescription === null || apiDescription.entities.length === 0}
+              >
+                {apiDescription === null || apiDescription.entities.length === 0 ? (
+                  <option value="">No entity types</option>
+                ) : apiDescription.entities.map((entity) => (
+                  <option key={entity.azName} value={entity.azName}>
+                    {entity.visName} ({entity.azName})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {isEditMode && (
+            <div className="query-criterion-toggle editor-copy-toggle">
+              <label htmlFor="editor-create-copy">
+                <input
+                  id="editor-create-copy"
+                  type="checkbox"
+                  checked={createCopy}
+                  onChange={(event) => setCreateCopy(event.target.checked)}
+                  disabled={status === "loading" || isSaving}
+                />
+                Create copy
+              </label>
+            </div>
+          )}
+
+          <div className="editor-fields">
+            {selectedEntity === null || selectedEntity.attributes.length === 0 ? (
+              <div className="tree-empty">No attributes</div>
+            ) : selectedEntity.attributes.map((attribute) => (
+              <div key={attribute.azName} className="query-field">
+                <label htmlFor={`editor-${attribute.azName}`}>{attribute.visName}</label>
+                {attribute.dataType === "DATA" ? (
+                  <textarea
+                    id={`editor-${attribute.azName}`}
+                    value={formValues[attribute.azName] ?? ""}
+                    onChange={(event) => setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }))}
+                    disabled={status === "loading" || isSaving}
+                  />
+                ) : (
+                  <input
+                    id={`editor-${attribute.azName}`}
+                    value={formValues[attribute.azName] ?? ""}
+                    type={attribute.dataType === "NUMERIC" ? "number" : attribute.dataType === "URL" ? "url" : "text"}
+                    step={attribute.dataType === "NUMERIC" ? "any" : undefined}
+                    onChange={(event) => setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }))}
+                    disabled={status === "loading" || isSaving}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="editor-actions">
+            <span className={`model-status model-status-${status}`}>{statusMessage}</span>
+            <button type="submit" disabled={isSaving || status === "loading" || selectedEntity === null || !selectedRootId}>
+              {willCreate ? "Create" : "Save"}
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+  );
+}
+
 function QueryConsolePage() {
   const modelAzName = readQueryParam("modelAzName");
   const instanceRootId = readQueryParam("instanceRootId");
@@ -815,6 +1259,7 @@ function QueryConsolePage() {
   const [relationshipCriterionValue, setRelationshipCriterionValue] = useState("");
   const [results, setResults] = useState<EntityInstanceResponse[]>([]);
   const [associationMatchContexts, setAssociationMatchContexts] = useState<Record<string, AssociationMatchContext[]>>({});
+  const [openResultMenuId, setOpenResultMenuId] = useState<string | null>(null);
   const [status, setStatus] = useState<ModelInstanceLoadState>("loading");
   const [statusMessage, setStatusMessage] = useState("Loading query console...");
   const [isQuerying, setIsQuerying] = useState(false);
@@ -897,6 +1342,7 @@ function QueryConsolePage() {
     setSelectedRelatedAttributeAzName(nextTraversal?.relatedEntity.attributes[0]?.azName ?? "");
     setSelectedRelationshipOperator("=");
     setRelationshipCriterionValue(nextTraversal === null ? "" : "*");
+    setOpenResultMenuId(null);
     setStatusMessage(nextEntity === null ? "Select an entity type" : "Ready");
   }
 
@@ -1006,6 +1452,7 @@ function QueryConsolePage() {
         );
       setResults(nextResults);
       setAssociationMatchContexts(nextMatchContexts);
+      setOpenResultMenuId(null);
       setStatus("ok");
       setStatusMessage(`${nextResults.length} result${nextResults.length === 1 ? "" : "s"}`);
     } catch (error) {
@@ -1256,7 +1703,37 @@ function QueryConsolePage() {
             results.map((result) => (
               <details key={result.id} className="tree-node query-result-node">
                 <summary>
-                  {selectedEntity?.visName ?? result.entityAzName}: {formatInstanceValue(result.values[selectedDisplayAttribute?.azName ?? ""])}
+                  <span>
+                    {selectedEntity?.visName ?? result.entityAzName}: {formatInstanceValue(result.values[selectedDisplayAttribute?.azName ?? ""])}
+                  </span>
+                  <span className="tree-node-actions">
+                    <button
+                      type="button"
+                      className="tree-menu-button"
+                      aria-haspopup="menu"
+                      aria-expanded={openResultMenuId === result.id}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        setOpenResultMenuId((current) => current === result.id ? null : result.id);
+                      }}
+                    >
+                      ...
+                    </button>
+                    {openResultMenuId === result.id && (
+                      <span className="tree-menu" role="menu">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            window.open(editorUrl(apiDescription?.modelAzName ?? modelAzName, instanceRootId, result.entityAzName, result.id), "_blank", "noopener,noreferrer");
+                          }}
+                        >
+                          Editor...
+                        </button>
+                      </span>
+                    )}
+                  </span>
                 </summary>
                 <ul className="tree-children query-result-values">
                   {Object.entries(result.values).map(([attributeAzName, value]) => {
@@ -1292,6 +1769,9 @@ function QueryConsolePage() {
 export function App() {
   if (window.location.pathname === "/console") {
     return <ConsolePage />;
+  }
+  if (window.location.pathname === "/editor") {
+    return <EditorPage />;
   }
   if (window.location.pathname === "/queryConsole") {
     return <QueryConsolePage />;
@@ -1545,6 +2025,11 @@ export function App() {
     window.open(`/queryConsole?${params.toString()}`, "_blank", "noopener,noreferrer");
   }
 
+  function openEditor(modelAzName: string, instanceRootId: string) {
+    setOpenRootMenuKey(null);
+    window.open(editorUrl(modelAzName, instanceRootId), "_blank", "noopener,noreferrer");
+  }
+
   async function submitRootRename(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!apiBaseUrl || renameDialog === null) {
@@ -1790,6 +2275,16 @@ export function App() {
                                         }}
                                       >
                                         Query console...
+                                      </button>
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={(event) => {
+                                          event.preventDefault();
+                                          openEditor(model.modelAzName, root.instanceRootId);
+                                        }}
+                                      >
+                                        Editor...
                                       </button>
                                     </span>
                                   )}

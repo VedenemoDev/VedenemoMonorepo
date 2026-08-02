@@ -222,6 +222,23 @@ public final class InstanceDataResource {
                 writeError(context, statusFor(exception), exception);
             }
         });
+        routes.put("/data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}", context -> {
+            try {
+                LinkedHashMap<String, Object> values = objectMapper.readValue(context.body(), ATTRIBUTE_MAP_TYPE);
+                EntityInstance instance = instanceService.updateEntityInstance(
+                        context.pathParam("modelAzName"),
+                        context.pathParam("instanceRootId"),
+                        context.pathParam("entityAzName"),
+                        context.pathParam("instanceId"),
+                        values
+                );
+                writeJson(context, 200, EntityInstanceResponse.from(instance));
+            } catch (JsonProcessingException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
     }
 
     private Map<String, Object> queryFilters(Context context) {
@@ -373,6 +390,7 @@ public final class InstanceDataResource {
             operations.put("create", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName());
             operations.put("list", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName());
             operations.put("read", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName() + "/{instanceId}");
+            operations.put("update", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName() + "/{instanceId}");
             operations.put("query", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName() + "/_query");
             operations.put("count", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName() + "/_count");
             Map<String, String> example = new LinkedHashMap<>();

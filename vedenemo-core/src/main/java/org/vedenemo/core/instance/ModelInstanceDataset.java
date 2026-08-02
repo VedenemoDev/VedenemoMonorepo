@@ -51,6 +51,15 @@ public final class ModelInstanceDataset {
         return instance;
     }
 
+    synchronized EntityInstance replaceEntityInstance(EntityInstance instance) {
+        Map<InstanceId, EntityInstance> instances = instancesByEntity.get(instance.entityAzName());
+        if (instances == null || !instances.containsKey(instance.id())) {
+            throw new IllegalArgumentException("instance not found");
+        }
+        instances.put(instance.id(), instance);
+        return instance;
+    }
+
     synchronized Optional<EntityInstance> findEntityInstance(String entityAzName, InstanceId id) {
         Map<InstanceId, EntityInstance> instances = instancesByEntity.get(entityAzName);
         if (instances == null) {

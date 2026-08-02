@@ -21,6 +21,7 @@ subgraph UX["Frontend"]
     UXPlantUml["PlantUmlModelAdapter<br/>model-to-PlantUML source"]
     UXPlantUmlRenderer["PlantUmlDiagramRendererAdapter<br/>lazy PlantUML SVG renderer"]
     UXInstanceTree["Model instances tab<br/>runtime entity count tree"]
+    UXEntityEditor["Entity data editor<br/>/editor create/edit form"]
     UXConsole["browser virtual CLI<br/>/console and embedded pane"]
 end
 
@@ -63,9 +64,11 @@ ViteUX -->|fetch model data| UXPlantUml
 ViteUX -->|connect/disconnect| UXModelEvents
 ViteUX -->|lazy render diagram| UXPlantUmlRenderer
 ViteUX -->|fetch runtime instance counts| UXInstanceTree
+ViteUX -->|create/update runtime entity data| UXEntityEditor
 ViteUX --> UXConsole
 UXPlantUml -->|GET model/entity/attribute APIs| WebApi
 UXInstanceTree -->|GET /models/list and /data APIs| WebApi
+UXEntityEditor -->|GET/POST/PUT /data APIs| WebApi
 UXModelEvents -->|WebSocket /models/events| WebApi
 UXConsole -->|HTTP console commands| WebApi
 Cli -->|HTTP model and session APIs| WebApi
@@ -440,6 +443,9 @@ and exposes:
   root
 - `GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}`,
   which reads one entity instance
+- `PUT /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}`,
+  which overwrites one existing entity instance after validating submitted
+  attribute values against the modeled entity
 - `POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query`,
   which supports exact attribute predicates and one-hop relationship predicates
   through association links
@@ -560,6 +566,16 @@ Current user-facing behavior:
   of the globally unique root id with the full root id exposed as a tooltip
 - lets the user rename the model-instance root from the root node menu; the
   updated alias is persisted in the process-local backend dataset metadata
+- opens `/editor` from the model-instance root node menu to create a new entity
+  instance for that model-instance root
+- exposes `/editor` as a dynamic schema-driven entity data form using URL
+  parameters `modelAzName`, `instanceRootId`, optional `entityAzName`, and
+  optional `instanceId`; omitted `instanceId` means create mode, while a
+  present `instanceId` loads that entity instance for edit
+- supports editor copy mode for loaded instances by submitting the current form
+  values through the create endpoint so the backend assigns a new instance id
+- exposes `/queryConsole` for a model-instance root and lets entity-shaped
+  query results open in `/editor` edit mode from the result node menu
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle
@@ -803,6 +819,35 @@ sequenceDiagram
         end
     end
     UX->>UX: render model -> instance roots -> entity count tree
+```
+
+### UX Entity Data Editing
+
+```mermaid
+sequenceDiagram
+    participant UX as vedenemo-ux /editor
+    participant Config as /config.json
+    participant API as vedenemo-web-api
+
+    UX->>Config: fetch runtime config
+    Config-->>UX: apiBaseUrl
+    UX->>API: GET /models/list
+    API-->>UX: model summaries
+    UX->>API: GET /data/{modelAzName}/_api
+    API-->>UX: entity and attribute descriptions
+    UX->>API: GET /data/{modelAzName}/roots
+    API-->>UX: model-instance roots
+    opt edit mode with instanceId
+        UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}
+        API-->>UX: existing entity values
+    end
+    alt create or copy mode
+        UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}
+        API-->>UX: created entity instance with backend id
+    else overwrite edit mode
+        UX->>API: PUT /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}
+        API-->>UX: updated entity instance
+    end
 ```
 
 ### Web Console Command Execution
