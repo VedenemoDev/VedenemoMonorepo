@@ -46,11 +46,14 @@ type EntityDescription = {
   azName: string;
   visName: string;
   attributes: AttributeDescription[];
+  operations: Record<string, string>;
+  createBodyExample: Record<string, string>;
 };
 
 type ApiDescriptionResponse = {
   modelAzName: string;
   modelVisName: string;
+  modelVersion?: string;
   entities: EntityDescription[];
   associations?: AssociationDescription[];
 };
@@ -67,8 +70,13 @@ type AssociationDescription = {
   kind: string;
   sourceEntityAzName: string;
   targetEntityAzName: string;
+  cardinality?: string | null;
   sourceRoleName?: string | null;
   targetRoleName?: string | null;
+  sourceCardinality?: string | null;
+  targetCardinality?: string | null;
+  linkOperations?: Record<string, string>;
+  createBodyExample?: Record<string, string>;
 };
 
 type CountResponse = {
@@ -206,6 +214,20 @@ async function fetchModels(apiBaseUrl: string): Promise<ModelSummary[]> {
 
 async function fetchModelInstanceApi(apiBaseUrl: string, modelAzName: string): Promise<ApiDescriptionResponse> {
   const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/_api`, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json() as Promise<ApiDescriptionResponse>;
+}
+
+async function fetchRootModelInstanceApi(apiBaseUrl: string, modelAzName: string, instanceRootId: string): Promise<ApiDescriptionResponse> {
+  const response = await fetch(`${apiBaseUrl}/data/${encodeURIComponent(modelAzName)}/roots/${encodeURIComponent(instanceRootId)}/_api`, {
     headers: {
       Accept: "application/json",
     },
@@ -534,6 +556,168 @@ function editorUrl(modelAzName: string, instanceRootId: string, entityAzName?: s
     params.set("instanceId", instanceId);
   }
   return `/editor?${params.toString()}`;
+}
+
+function modelInstanceApiUrl(modelAzName: string, instanceRootId: string): string {
+  const params = new URLSearchParams({
+    modelAzName,
+    instanceRootId,
+  });
+  return `/modelInstanceApi?${params.toString()}`;
+}
+
+function resolvedApiPath(pathTemplate: string, modelAzName: string, instanceRootId: string): string {
+  return pathTemplate
+    .split("{modelAzName}").join(encodeURIComponent(modelAzName))
+    .split("{instanceRootId}").join(encodeURIComponent(instanceRootId))
+    .split("{instanceId}").join("{instanceId}");
+}
+
+function methodForEntityOperation(operationName: string): string {
+  switch (operationName) {
+    case "create":
+    case "query":
+      return "POST";
+    case "update":
+      return "PUT";
+    default:
+      return "GET";
+  }
+}
+
+function methodForAssociationOperation(operationName: string): string {
+  return operationName === "create" ? "POST" : "GET";
+}
+
+function entityOperationPurpose(operationName: string, entity: EntityDescription): string {
+  switch (operationName) {
+    case "create":
+      return `Create one ${entity.visName} instance.`;
+    case "list":
+      return `List ${entity.visName} instances for the selected model instance.`;
+    case "read":
+      return `Read one ${entity.visName} instance by backend-assigned instance id.`;
+    case "update":
+      return `Overwrite one ${entity.visName} instance after value validation.`;
+    case "query":
+      return `Query ${entity.visName} instances with scalar and relationship criteria.`;
+    case "count":
+      return `Count ${entity.visName} instances in the selected model instance.`;
+    default:
+      return `Use the ${operationName} operation for ${entity.visName}.`;
+  }
+}
+
+function associationOperationPurpose(operationName: string, association: AssociationDescription): string {
+  switch (operationName) {
+    case "create":
+      return `Create one ${association.visName} source-to-target instance link.`;
+    case "list":
+      return `List ${association.visName} links in the selected model instance.`;
+    default:
+      return `Use the ${operationName} operation for ${association.visName}.`;
+  }
+}
+
+function exampleValueFor(attribute: AttributeDescription): unknown {
+  switch (attribute.dataType) {
+    case "NUMERIC":
+      return 123.45;
+    case "URL":
+      return "https://example.com";
+    case "DATA":
+      return "data";
+    default:
+      return "text";
+  }
+}
+
+function entityBodyExample(entity: EntityDescription): Record<string, unknown> {
+  if (Object.keys(entity.createBodyExample).length > 0) {
+    return Object.fromEntries(entity.attributes.map((attribute) => [
+      attribute.azName,
+      attribute.dataType === "NUMERIC"
+        ? Number(entity.createBodyExample[attribute.azName] ?? exampleValueFor(attribute))
+        : entity.createBodyExample[attribute.azName] ?? exampleValueFor(attribute),
+    ]));
+  }
+  return Object.fromEntries(entity.attributes.map((attribute) => [attribute.azName, exampleValueFor(attribute)]));
+}
+
+function entityQueryExample(entity: EntityDescription): Record<string, unknown> {
+  const attribute = entity.attributes[0] ?? null;
+  if (attribute === null) {
+    return {};
+  }
+  return {
+    where: {
+      comparisons: [
+        {
+          attributeAzName: attribute.azName,
+          operator: "=",
+          value: exampleValueFor(attribute),
+        },
+      ],
+    },
+  };
+}
+
+function entityResponseExample(operationName: string, entity: EntityDescription, apiDescription: ApiDescriptionResponse, instanceRootId: string): unknown {
+  const instance = {
+    id: "00000000-0000-0000-0000-000000000000",
+    modelAzName: apiDescription.modelAzName,
+    modelVersion: apiDescription.modelVersion ?? "0.0.0",
+    entityAzName: entity.azName,
+    values: entityBodyExample(entity),
+  };
+  switch (operationName) {
+    case "list":
+    case "query":
+      return [instance];
+    case "count":
+      return { count: 1 };
+    default:
+      return {
+        ...instance,
+        instanceRootId,
+      };
+  }
+}
+
+function entityRequestExample(operationName: string, entity: EntityDescription): unknown {
+  switch (operationName) {
+    case "create":
+    case "update":
+      return entityBodyExample(entity);
+    case "query":
+      return entityQueryExample(entity);
+    default:
+      return null;
+  }
+}
+
+function associationBodyExample(association: AssociationDescription): Record<string, unknown> {
+  return {
+    sourceInstanceId: association.createBodyExample?.sourceInstanceId ?? "00000000-0000-0000-0000-000000000000",
+    targetInstanceId: association.createBodyExample?.targetInstanceId ?? "11111111-1111-1111-1111-111111111111",
+  };
+}
+
+function associationResponseExample(operationName: string, association: AssociationDescription, apiDescription: ApiDescriptionResponse): unknown {
+  const link = {
+    id: "00000000-0000-0000-0000-000000000000",
+    modelAzName: apiDescription.modelAzName,
+    associationAzName: association.azName,
+    ...associationBodyExample(association),
+  };
+  return operationName === "list" ? [link] : link;
+}
+
+function formatJsonExample(value: unknown): string {
+  if (value === null) {
+    return "No request body";
+  }
+  return JSON.stringify(value, null, 2);
 }
 
 function emptyEditorValues(entity: EntityDescription | null): EditorFormValues {
@@ -1530,6 +1714,227 @@ function EditorPage() {
   );
 }
 
+function ModelInstanceApiPage() {
+  const modelAzName = readQueryParam("modelAzName");
+  const instanceRootId = readQueryParam("instanceRootId");
+  const [apiDescription, setApiDescription] = useState<ApiDescriptionResponse | null>(null);
+  const [root, setRoot] = useState<ModelInstanceRootResponse | null>(null);
+  const [status, setStatus] = useState<ModelInstanceLoadState>("loading");
+  const [statusMessage, setStatusMessage] = useState("Loading API docs...");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadApiDocs() {
+      if (!modelAzName || !instanceRootId) {
+        setStatus("error");
+        setStatusMessage("API docs URL is missing modelAzName or instanceRootId");
+        return;
+      }
+
+      try {
+        const config = await loadRuntimeConfig();
+        const baseUrl = normalizeBaseUrl(config.apiBaseUrl ?? "");
+        if (!baseUrl) {
+          throw new Error("Backend URL is not configured");
+        }
+        const [nextApiDescription, nextRoot] = await Promise.all([
+          fetchRootModelInstanceApi(baseUrl, modelAzName, instanceRootId),
+          fetchModelInstanceRoot(baseUrl, modelAzName, instanceRootId),
+        ]);
+        if (cancelled) {
+          return;
+        }
+        setApiDescription(nextApiDescription);
+        setRoot(nextRoot);
+        setStatus("ok");
+        setStatusMessage("Read-only API documentation");
+      } catch (error) {
+        if (!cancelled) {
+          setStatus("error");
+          setStatusMessage(error instanceof Error ? error.message : "API docs load failed");
+        }
+      }
+    }
+
+    void loadApiDocs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [modelAzName, instanceRootId]);
+
+  const rootName = root === null ? instanceRootId : rootResponseDisplayName(root);
+  const entityCount = apiDescription?.entities.length ?? 0;
+  const associationCount = apiDescription?.associations?.length ?? 0;
+
+  return (
+    <main className="api-docs-shell">
+      <header className="api-docs-header">
+        <div>
+          <h1>Model Instance API</h1>
+          <div className="query-console-targets">
+            <span>{apiDescription?.modelVisName ?? modelAzName}</span>
+            <span>{rootName}</span>
+          </div>
+        </div>
+        <a className="secondary-link" href="/?tab=modelInstances">
+          Model instances
+        </a>
+      </header>
+
+      <section className="api-docs-surface">
+        <div className="api-docs-summary">
+          <span className={`model-status model-status-${status}`}>{statusMessage}</span>
+          <dl>
+            <div>
+              <dt>Model azName</dt>
+              <dd>{apiDescription?.modelAzName ?? modelAzName}</dd>
+            </div>
+            <div>
+              <dt>Model version</dt>
+              <dd>{apiDescription?.modelVersion ?? root?.modelVersion ?? "Unknown"}</dd>
+            </div>
+            <div>
+              <dt>Instance root</dt>
+              <dd>{rootName || "Unknown"}</dd>
+            </div>
+            <div>
+              <dt>Documented shapes</dt>
+              <dd>{entityCount} entities, {associationCount} associations</dd>
+            </div>
+          </dl>
+        </div>
+
+        {apiDescription === null ? (
+          <div className="tree-empty">API metadata unavailable</div>
+        ) : (
+          <>
+            <section className="api-docs-section" aria-labelledby="api-docs-entities">
+              <h2 id="api-docs-entities">Entities</h2>
+              {apiDescription.entities.length === 0 ? (
+                <div className="tree-empty">No entity types</div>
+              ) : apiDescription.entities.map((entity) => (
+                <article key={entity.azName} className="api-docs-type">
+                  <header>
+                    <h3>{entity.visName}</h3>
+                    <span>{entity.azName}</span>
+                  </header>
+                  <div className="api-docs-fields">
+                    {entity.attributes.length === 0 ? (
+                      <span>No attributes</span>
+                    ) : entity.attributes.map((attribute) => (
+                      <span key={attribute.azName}>
+                        <strong>{attribute.visName}</strong>
+                        {attribute.azName} · {attribute.dataType}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="api-docs-operations">
+                    {Object.entries(entity.operations).map(([operationName, pathTemplate]) => (
+                      <ApiOperation
+                        key={`${entity.azName}-${operationName}`}
+                        method={methodForEntityOperation(operationName)}
+                        name={operationName}
+                        path={resolvedApiPath(pathTemplate, apiDescription.modelAzName, instanceRootId)}
+                        purpose={entityOperationPurpose(operationName, entity)}
+                        requestExample={entityRequestExample(operationName, entity)}
+                        responseExample={entityResponseExample(operationName, entity, apiDescription, instanceRootId)}
+                      />
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </section>
+
+            <section className="api-docs-section" aria-labelledby="api-docs-associations">
+              <h2 id="api-docs-associations">Associations</h2>
+              {(apiDescription.associations?.length ?? 0) === 0 ? (
+                <div className="tree-empty">No association types</div>
+              ) : apiDescription.associations?.map((association) => (
+                <article key={association.azName} className="api-docs-type">
+                  <header>
+                    <h3>{association.visName}</h3>
+                    <span>{association.azName} · {association.kind}</span>
+                  </header>
+                  <div className="api-docs-fields">
+                    <span>
+                      <strong>Source</strong>
+                      {association.sourceEntityAzName}{association.sourceRoleName ? ` · ${association.sourceRoleName}` : ""}
+                    </span>
+                    <span>
+                      <strong>Target</strong>
+                      {association.targetEntityAzName}{association.targetRoleName ? ` · ${association.targetRoleName}` : ""}
+                    </span>
+                    {association.cardinality && (
+                      <span>
+                        <strong>Cardinality</strong>
+                        {association.cardinality}
+                      </span>
+                    )}
+                  </div>
+                  <div className="api-docs-operations">
+                    {Object.entries(association.linkOperations ?? {}).map(([operationName, pathTemplate]) => (
+                      <ApiOperation
+                        key={`${association.azName}-${operationName}`}
+                        method={methodForAssociationOperation(operationName)}
+                        name={operationName}
+                        path={resolvedApiPath(pathTemplate, apiDescription.modelAzName, instanceRootId)}
+                        purpose={associationOperationPurpose(operationName, association)}
+                        requestExample={operationName === "create" ? associationBodyExample(association) : null}
+                        responseExample={associationResponseExample(operationName, association, apiDescription)}
+                      />
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </section>
+          </>
+        )}
+      </section>
+    </main>
+  );
+}
+
+function ApiOperation({
+  method,
+  name,
+  path,
+  purpose,
+  requestExample,
+  responseExample,
+}: {
+  method: string;
+  name: string;
+  path: string;
+  purpose: string;
+  requestExample: unknown;
+  responseExample: unknown;
+}) {
+  return (
+    <details className="api-operation">
+      <summary>
+        <span className={`api-method api-method-${method.toLocaleLowerCase()}`}>{method}</span>
+        <span>{path}</span>
+        <strong>{name}</strong>
+      </summary>
+      <div className="api-operation-body">
+        <p>{purpose}</p>
+        <div className="api-example-grid">
+          <div>
+            <h4>Request</h4>
+            <pre>{formatJsonExample(requestExample)}</pre>
+          </div>
+          <div>
+            <h4>Response</h4>
+            <pre>{formatJsonExample(responseExample)}</pre>
+          </div>
+        </div>
+      </div>
+    </details>
+  );
+}
+
 function QueryConsolePage() {
   const modelAzName = readQueryParam("modelAzName");
   const instanceRootId = readQueryParam("instanceRootId");
@@ -2066,6 +2471,9 @@ export function App() {
   if (window.location.pathname === "/queryConsole") {
     return <QueryConsolePage />;
   }
+  if (window.location.pathname === "/modelInstanceApi") {
+    return <ModelInstanceApiPage />;
+  }
 
   const eventAdapterRef = useRef(new ModelChangeEventAdapter());
   const plantUmlDiagramRendererRef = useRef<import("./adapters/PlantUmlDiagramRendererAdapter").PlantUmlDiagramRendererAdapter | null>(null);
@@ -2313,6 +2721,11 @@ export function App() {
       instanceRootId,
     });
     window.open(`/queryConsole?${params.toString()}`, "_blank", "noopener,noreferrer");
+  }
+
+  function openModelInstanceApi(modelAzName: string, instanceRootId: string) {
+    setOpenRootMenuKey(null);
+    window.open(modelInstanceApiUrl(modelAzName, instanceRootId), "_blank", "noopener,noreferrer");
   }
 
   function openEditor(modelAzName: string, instanceRootId: string) {
@@ -2565,6 +2978,16 @@ export function App() {
                                         }}
                                       >
                                         Query console...
+                                      </button>
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={(event) => {
+                                          event.preventDefault();
+                                          openModelInstanceApi(model.modelAzName, root.instanceRootId);
+                                        }}
+                                      >
+                                        API docs...
                                       </button>
                                       <button
                                         type="button"

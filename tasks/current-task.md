@@ -1,69 +1,54 @@
 # Current Task
 
-## Implement Dynamic Model Instance Data API With Multiple Roots
+## Add Model Instance API Docs UX Route
 
 Status: executed.
 
 ### Goal
 
-Add the first process-local model-instance capability so HTTP clients can create
-and query runtime data records whose fields are validated against a loaded
-Vedenemo model definition.
+Add a new UX route at `/modelInstanceApi` that shows Swagger-like HTTP API
+documentation for the currently selected model-instance root. The selected
+target is chosen from the `Model instances` tab in the main UX view through a
+root-node `API docs...` menu action.
 
 ### Scope
 
-- Add pure JDK instance-data types and validation/service behavior in
-  `vedenemo-core`.
-- Keep instance data process-local and in memory.
-- Bind instance datasets by model `azName` plus backend-assigned globally
-  unique `instanceRootId`, and record the model version visible when each root
-  is created.
-- Validate entity instance values against loaded `ModelRoot` entity attributes
-  and `DataType`.
-- Store association instance links separately from scalar attribute maps.
-- Validate association links against modeled association endpoints.
-- Add static `/data` HTTP routes in `vedenemo-web-api` that resolve dynamic
-  `modelAzName`, `entityAzName`, and `associationAzName` path parameters at
-  request time.
-- Keep JSON DTO parsing/serialization in `vedenemo-web-api`.
-- Keep the first slice HTTP-only; terminal and browser CLI commands remain
-  model-authoring and maintenance oriented.
-
-### Implemented API
-
-```text
-GET  /data/{modelAzName}/_api
-GET  /data/{modelAzName}/roots
-POST /data/{modelAzName}/roots
-GET  /data/{modelAzName}/roots/{instanceRootId}
-PUT  /data/{modelAzName}/roots/{instanceRootId}
-GET  /data/{modelAzName}/roots/{instanceRootId}/_api
-POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}
-GET  /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}
-GET  /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_count
-GET  /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}
-POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query
-POST /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}
-GET  /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}
-```
+- Add a new frontend route/page for `/modelInstanceApi`.
+- Add `API docs...` to the existing model-instance root action menu in the
+  `Model instances` tab.
+- Open the docs route in a new browser tab with `modelAzName` and
+  `instanceRootId` URL query parameters.
+- Load root-scoped API metadata from
+  `/data/{modelAzName}/roots/{instanceRootId}/_api`.
+- Load model-instance root metadata from
+  `/data/{modelAzName}/roots/{instanceRootId}`.
+- Render a Vedenemo-native Swagger-like read-only documentation view.
+- Document only root-scoped instance-data routes.
+- Include entity-specific operations and association-link operations derived
+  from the selected model metadata.
+- Show method, resolved path, purpose, request body example, and response
+  example for each documented operation.
+- Generate request and response examples from model metadata.
+- Keep interactive `try it` request execution controls out of scope.
 
 ### Completion Notes
 
-- Added `InstanceId`, `InstanceValue`, `EntityInstance`,
-  `AssociationInstanceLink`, `ModelInstanceDataset`, `ModelInstanceRegistry`,
-  `RelationshipDirection`, `RelationshipPredicate`, `EntityInstanceQuery`, and
-  `ModelInstanceService`.
-- Added `InstanceDataResource` and wired it into the Javalin web API runtime.
-- Implemented `TEXT`, `NUMERIC`, `URL`, and `DATA` validation for instance
-  values.
-- Implemented deterministic entity instance listing and exact-match filters.
-- Implemented entity-instance count reads for UX grouped instance summaries.
-- Implemented process-local model-instance root metadata with globally unique
-  root ids, optional visual aliases, backend create/list/read/rename endpoints,
-  and root-scoped instance-data routes.
-- Implemented multiple isolated model-instance roots per loaded model.
-- Implemented one-hop relationship `_query` predicates that match related
-  entity attributes through stored association links.
-- Added focused core and web API tests.
-- Updated `ConsoleResourceTest` construction for no-store assertions to avoid
-  ambient `VEDENEMO_SNAPSHOT_STORE` environment coupling.
+- Added frontend metadata types for entity operations, entity body examples,
+  association link operations, association body examples, and model version.
+- Added `/modelInstanceApi` route handling in `vedenemo-ux`.
+- Added a root-scoped API metadata fetcher for
+  `/data/{modelAzName}/roots/{instanceRootId}/_api`.
+- Added `API docs...` to the model-instance root action menu and opened it in a
+  new browser tab.
+- Added a read-only documentation page that identifies the selected model and
+  model-instance root.
+- Rendered entity sections with modeled attributes and documented create, list,
+  read, update, query, and count operations from backend-owned `_api` metadata.
+- Rendered association sections with source/target metadata and documented link
+  create/list operations from backend-owned `_api` metadata.
+- Added generated JSON request and response examples without adding an
+  OpenAPI-compatible backend document or Swagger UI dependency.
+- Updated `docs/architecture_doc.md` to reflect the concrete `/modelInstanceApi`
+  frontend route and metadata flow.
+- Marked the corresponding backlog item executed while keeping it in
+  `tasks/backlog.md` as history.

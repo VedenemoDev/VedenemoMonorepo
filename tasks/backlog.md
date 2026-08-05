@@ -45,7 +45,7 @@ Swagger-like documentation view exists.
 
 ## Add Model Instance API Docs UX Route
 
-Status: planned.
+Status: executed.
 
 ### Goal
 
@@ -129,6 +129,25 @@ contains `Rename...` and other model-instance actions should include a new
 7. Show modifying operations too. Lack of Vedenemo auth is acceptable for now
    because the code base is development-only and access restriction is handled
    outside Vedenemo.
+
+### Completion Notes
+
+- Added `/modelInstanceApi` as a frontend route that reads `modelAzName` and
+  `instanceRootId` from URL query parameters.
+- Added `API docs...` to the model-instance root action menu and opened it in a
+  new browser tab.
+- Loaded root-scoped API metadata from
+  `/data/{modelAzName}/roots/{instanceRootId}/_api` and root metadata from
+  `/data/{modelAzName}/roots/{instanceRootId}`.
+- Rendered read-only Vedenemo-native Swagger-like documentation for root-scoped
+  entity and association operations.
+- Included operation method, resolved root-scoped path, purpose, request body
+  example, and response example.
+- Generated entity request and response examples from model metadata and
+  association link examples from association metadata.
+- Kept interactive request execution out of scope; it remains tracked by the
+  separate `Add Interactive Try-It Controls To Model Instance API Docs` backlog
+  item.
 
 ## Add One-Hop Association Criteria To Query Console
 

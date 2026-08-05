@@ -6949,3 +6949,72 @@ Current status and next steps:
   `_api` metadata contains enough detail to generate useful examples and
   operation documentation before deciding whether any small backend metadata
   extension is needed.
+## 2026-08-05 23:31 EEST
+
+Session goal: implement `Add Model Instance API Docs UX Route` as the current
+task, verify it, and mark the backlog item executed.
+
+Files changed:
+
+- `SESSION.md`
+- `docs/architecture_doc.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 140 SESSION.md`
+- `find .. -name AGENTS.md -print`
+- `rg -n "queryConsole|editor|Rename|Model instances|instanceRoot|_api|window.open|Action|context|menu" vedenemo-ux/src/App.tsx`
+- `sed -n '1,260p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,260p' vedenemo-ux/src/styles.css`
+- `rg -n "_api|Api|operation|InstanceDataResource|describe|routes" vedenemo-web-api/src/main/java vedenemo-web-api/src/test/java`
+- `sed -n '250,560p' vedenemo-ux/src/App.tsx`
+- `sed -n '930,1820p' vedenemo-ux/src/App.tsx`
+- `sed -n '1820,2660p' vedenemo-ux/src/App.tsx`
+- `sed -n '260,760p' vedenemo-ux/src/styles.css`
+- `sed -n '760,1120p' vedenemo-ux/src/styles.css`
+- `sed -n '340,470p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '70,130p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `rg -n "vitest|testing-library|test\\(" vedenemo-ux -S`
+- `sed -n '1,220p' vedenemo-ux/package.json`
+- `sed -n '1,80p' tasks/backlog.md`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `rg -n "Frontend|UX|queryConsole|editor|Model instances|route|runtime data|instance" docs/architecture_doc.md`
+- `npm run build` from `vedenemo-ux` (first run failed on `String.replaceAll`
+  target support)
+- `npm run build` from `vedenemo-ux`
+- `mvn -B clean verify`
+- `sed -n '1,90p' docs/architecture_doc.md`
+- `sed -n '540,590p' docs/architecture_doc.md`
+- `sed -n '805,865p' docs/architecture_doc.md`
+- `npm run dev -- --host 127.0.0.1` from `vedenemo-ux`
+- `curl -fsS http://127.0.0.1:5173/modelInstanceApi?modelAzName=Music\\&instanceRootId=test-root`
+- `git diff --check`
+- `git status --short --branch`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented `/modelInstanceApi` as a read-only Vedenemo-native Swagger-like
+  frontend route using root-scoped `_api` metadata and model-instance root
+  metadata.
+- Added `API docs...` to the model-instance root action menu and opened it in a
+  new browser tab.
+- Generated entity and association operation documentation, including method,
+  resolved root-scoped path, purpose, and metadata-derived request/response
+  JSON examples.
+- Updated `tasks/current-task.md`, marked the backlog item executed while
+  keeping it in history, and updated `docs/architecture_doc.md`.
+- Verification passed: `npm run build`, `mvn -B clean verify`,
+  route smoke check through Vite, and `git diff --check`.
+- Vite dev server is running at `http://127.0.0.1:5173/`.
