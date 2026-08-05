@@ -6864,3 +6864,88 @@ Current status and next steps:
 - Updated `docs/architecture_doc.md` for the concrete frontend editor workflow.
 - Verification passed: `npm run build` and `git diff --check`. Vite still
   reports the existing large chunk warning for visualization assets.
+## 2026-08-05 23:14 EEST
+
+Session goal: add a planning backlog task for a model-instance API docs UX route.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,180p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+
+Current status and next steps:
+
+- Added `Add Model Instance API Docs UX Route` as the newest backlog item.
+- Scoped the task to a `/modelInstanceApi` UX route launched from the
+  `Model instances` root-node action menu via `API docs...`.
+- Included acceptance criteria and open questions covering navigation behavior,
+  Swagger/OpenAPI format, interactivity, included operations, examples, and
+  future modifying-operation safety.
+- Verification passed: `git diff --check`.
+## 2026-08-05 23:22 EEST
+
+Session goal: apply decisions to the model-instance API docs planning item and
+add a follow-up interactive controls backlog task.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,140p' tasks/backlog.md`
+- `tail -n 80 SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+
+Current status and next steps:
+
+- Converted the answered model-instance API docs questions into explicit
+  decisions.
+- Narrowed the first `/modelInstanceApi` task to a new-tab, read-only,
+  Vedenemo-native Swagger-like documentation view built from existing `_api`
+  metadata.
+- Clarified that the first task documents only root-scoped instance-data routes,
+  includes modifying operations, and generates examples from model metadata.
+- Added a separate newest-first backlog task for later interactive `try it`
+  controls.
+- Verification passed: `git diff --check`.
+## 2026-08-05 23:24 EEST
+
+Session goal: assess whether `Add Model Instance API Docs UX Route` is ready for
+implementation.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,150p' tasks/backlog.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Confirmed the task has enough decisions, scope, and acceptance criteria to
+  start implementation.
+- Noted one implementation-time check: verify that the existing root-scoped
+  `_api` metadata contains enough detail to generate useful examples and
+  operation documentation before deciding whether any small backend metadata
+  extension is needed.

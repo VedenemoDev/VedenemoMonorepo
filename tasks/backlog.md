@@ -1,5 +1,135 @@
 # Backlog
 
+## Add Interactive Try-It Controls To Model Instance API Docs
+
+Status: planned.
+
+### Goal
+
+Extend the `/modelInstanceApi` documentation page with interactive request
+execution controls so a developer can try documented root-scoped instance-data
+API operations directly from the UX.
+
+This is a follow-up improvement after the first read-only Vedenemo-native
+Swagger-like documentation view exists.
+
+### Initial Scope
+
+- Add `try it` controls to the existing `/modelInstanceApi` route.
+- Reuse the selected `modelAzName` and `instanceRootId` from the API docs route
+  query string.
+- Generate editable request inputs from the documented operation metadata and
+  selected model metadata.
+- Let users execute root-scoped query and modification operations against the
+  selected model-instance root.
+- Show request method, resolved URL, request body, status code, response body,
+  and any error message.
+- Present modifying operations as available development-mode operations. Do not
+  block this feature on authentication or authorization because the current code
+  base is development-only and access restriction is handled outside Vedenemo.
+- Keep operations limited to root-scoped instance-data routes unless a separate
+  task expands the API docs page scope.
+- Preserve read-only documentation usability for users who do not execute
+  requests.
+
+### Acceptance Criteria
+
+- A user can execute a documented root-scoped read/query operation from
+  `/modelInstanceApi` and inspect the response.
+- A user can execute a documented root-scoped modification operation from
+  `/modelInstanceApi` and inspect the response.
+- Request inputs are generated from selected model metadata instead of
+  hard-coded example names.
+- Failed requests display useful response details without breaking the page.
+- `npm run build` succeeds in `vedenemo-ux`.
+
+## Add Model Instance API Docs UX Route
+
+Status: planned.
+
+### Goal
+
+Add a new UX route at `/modelInstanceApi` that shows Swagger-like HTTP API
+documentation for the currently selected model-instance root. The route should
+document the available query and modification operations for that specific
+loaded model definition and model-instance root.
+
+The selected target is chosen from the `Model instances` tab in the main UX
+view. From a model-instance root node, the same pop-up menu that currently
+contains `Rename...` and other model-instance actions should include a new
+`API docs...` action. Selecting it opens a new browser tab at:
+
+```text
+/modelInstanceApi?modelAzName={modelAzName}&instanceRootId={instanceRootId}
+```
+
+### Initial Scope
+
+- Add a new frontend route/page for `/modelInstanceApi`.
+- Add `API docs...` to the existing model-instance root action menu in the
+  `Model instances` tab.
+- Pass the selected `modelAzName` and `instanceRootId` in the route query
+  string, following the existing model-instance tool route pattern.
+- Load the selected root-scoped API description from the existing
+  `/data/{modelAzName}/roots/{instanceRootId}/_api` endpoint.
+- Show the selected model name and model-instance root name or alias.
+- Present a Vedenemo-native Swagger-like read-only documentation view for
+  root-scoped instance-data HTTP operations that can query and modify the
+  selected model instance.
+- Include entity-specific operations derived from the selected model's current
+  entity definitions.
+- Include association-link operations derived from the selected model's current
+  association definitions when associations are available.
+- Show method, path, purpose, path parameters, request body shape, and response
+  shape at a practical UX documentation level.
+- Generate request and response examples from selected model metadata.
+- Keep the UX documentation generated from backend-owned API metadata and local
+  frontend presentation code; do not duplicate model rules in the frontend.
+- Consume the existing Vedenemo `_api` description format; do not add a backend
+  OpenAPI-compatible JSON document in this first task.
+- Limit the documented operations to root-scoped instance-data routes.
+- Present modifying operations in the read-only documentation. Do not hide them
+  because the current code base is development-only and access restriction is
+  handled outside Vedenemo.
+- Keep backend changes out of scope unless the current `_api` description lacks
+  metadata required for accurate documentation.
+- Do not add authentication, authorization, persistence, or a general global
+  OpenAPI document as part of this task.
+- Do not add interactive `try it` request execution controls in this first
+  task.
+
+### Acceptance Criteria
+
+- A user can right-click or otherwise open the action menu for a model-instance
+  root in the `Model instances` tab and choose `API docs...`.
+- The action opens `/modelInstanceApi` in a new browser tab for the selected
+  `modelAzName` and `instanceRootId`.
+- The page clearly identifies which model instance the documentation applies to.
+- The page documents the available root-scoped instance-data HTTP operations for
+  the selected model instance, including query and modification endpoints.
+- Entity and association sections reflect the selected model definition rather
+  than hard-coded example names.
+- Request and response examples are generated from selected model metadata.
+- The page is read-only and does not execute requests.
+- Existing model-instance actions such as `Rename...`, `Editor...`, and
+  `Query console...` continue to work.
+- `npm run build` succeeds in `vedenemo-ux`.
+
+### Decisions
+
+1. Open `API docs...` in a new browser tab.
+2. Build a Vedenemo-native Swagger-like documentation view from existing `_api`
+   metadata instead of embedding a Swagger UI/OpenAPI renderer.
+3. Consume the existing Vedenemo `_api` format only; do not add an
+   OpenAPI-compatible backend document in the first slice.
+4. Keep the first slice read-only. Track interactive `try it` controls as a
+   separate follow-up backlog item.
+5. Include only root-scoped instance-data routes.
+6. Generate request and response examples from selected model metadata.
+7. Show modifying operations too. Lack of Vedenemo auth is acceptable for now
+   because the code base is development-only and access restriction is handled
+   outside Vedenemo.
+
 ## Add One-Hop Association Criteria To Query Console
 
 Status: executed.
