@@ -177,6 +177,15 @@ type AssociationMatchContext = {
 
 type EditorFormValues = Record<string, string>;
 
+type TryItResult = {
+  method: string;
+  url: string;
+  requestBody: string;
+  statusCode?: number;
+  responseBody: string;
+  errorMessage?: string;
+};
+
 const PLANTUML_TARGET_ID = "plantuml-diagram";
 const CONNECTED_MODEL_STORAGE_KEY = "vedenemo.connectedModelAzName";
 const CONSOLE_PANE_HEIGHT_STORAGE_KEY = "vedenemo.consolePaneHeight";
@@ -718,6 +727,31 @@ function formatJsonExample(value: unknown): string {
     return "No request body";
   }
   return JSON.stringify(value, null, 2);
+}
+
+function formatEditableJson(value: unknown): string {
+  if (value === null) {
+    return "";
+  }
+  return JSON.stringify(value, null, 2);
+}
+
+function absoluteApiUrl(apiBaseUrl: string, path: string): string {
+  if (!apiBaseUrl) {
+    return path;
+  }
+  return `${apiBaseUrl}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function formatResponseBody(responseText: string): string {
+  if (!responseText) {
+    return "";
+  }
+  try {
+    return JSON.stringify(JSON.parse(responseText), null, 2);
+  } catch {
+    return responseText;
+  }
 }
 
 function emptyEditorValues(entity: EntityDescription | null): EditorFormValues {
@@ -1717,6 +1751,7 @@ function EditorPage() {
 function ModelInstanceApiPage() {
   const modelAzName = readQueryParam("modelAzName");
   const instanceRootId = readQueryParam("instanceRootId");
+  const [apiBaseUrl, setApiBaseUrl] = useState("");
   const [apiDescription, setApiDescription] = useState<ApiDescriptionResponse | null>(null);
   const [root, setRoot] = useState<ModelInstanceRootResponse | null>(null);
   const [status, setStatus] = useState<ModelInstanceLoadState>("loading");
@@ -1745,10 +1780,11 @@ function ModelInstanceApiPage() {
         if (cancelled) {
           return;
         }
+        setApiBaseUrl(baseUrl);
         setApiDescription(nextApiDescription);
         setRoot(nextRoot);
         setStatus("ok");
-        setStatusMessage("Read-only API documentation");
+        setStatusMessage("API documentation ready");
       } catch (error) {
         if (!cancelled) {
           setStatus("error");
@@ -1840,6 +1876,7 @@ function ModelInstanceApiPage() {
                         purpose={entityOperationPurpose(operationName, entity)}
                         requestExample={entityRequestExample(operationName, entity)}
                         responseExample={entityResponseExample(operationName, entity, apiDescription, instanceRootId)}
+                        apiBaseUrl={apiBaseUrl}
                       />
                     ))}
                   </div>
@@ -1883,6 +1920,7 @@ function ModelInstanceApiPage() {
                         purpose={associationOperationPurpose(operationName, association)}
                         requestExample={operationName === "create" ? associationBodyExample(association) : null}
                         responseExample={associationResponseExample(operationName, association, apiDescription)}
+                        apiBaseUrl={apiBaseUrl}
                       />
                     ))}
                   </div>
@@ -1903,6 +1941,7 @@ function ApiOperation({
   purpose,
   requestExample,
   responseExample,
+  apiBaseUrl,
 }: {
   method: string;
   name: string;
@@ -1910,7 +1949,80 @@ function ApiOperation({
   purpose: string;
   requestExample: unknown;
   responseExample: unknown;
+  apiBaseUrl: string;
 }) {
+  const needsInstanceId = path.includes("{instanceId}");
+  const [instanceId, setInstanceId] = useState("");
+  const [requestBody, setRequestBody] = useState(formatEditableJson(requestExample));
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [result, setResult] = useState<TryItResult | null>(null);
+
+  async function executeRequest() {
+    const trimmedInstanceId = instanceId.trim();
+    if (needsInstanceId && !trimmedInstanceId) {
+      setResult({
+        method,
+        url: absoluteApiUrl(apiBaseUrl, path),
+        requestBody: requestExample === null ? "" : requestBody,
+        responseBody: "",
+        errorMessage: "instanceId is required",
+      });
+      return;
+    }
+
+    const resolvedPath = path.split("{instanceId}").join(encodeURIComponent(trimmedInstanceId));
+    const url = absoluteApiUrl(apiBaseUrl, resolvedPath);
+    const headers: HeadersInit = {
+      Accept: "application/json",
+    };
+    const init: RequestInit = {
+      method,
+      headers,
+    };
+
+    if (requestExample !== null) {
+      try {
+        JSON.parse(requestBody);
+      } catch (error) {
+        setResult({
+          method,
+          url,
+          requestBody,
+          responseBody: "",
+          errorMessage: error instanceof Error ? error.message : "Request body is not valid JSON",
+        });
+        return;
+      }
+      headers["Content-Type"] = "application/json";
+      init.body = requestBody;
+    }
+
+    setIsExecuting(true);
+    setResult(null);
+    try {
+      const response = await fetch(url, init);
+      const responseText = await response.text();
+      setResult({
+        method,
+        url,
+        requestBody: requestExample === null ? "" : requestBody,
+        statusCode: response.status,
+        responseBody: formatResponseBody(responseText),
+        errorMessage: response.ok ? undefined : response.statusText || `HTTP ${response.status}`,
+      });
+    } catch (error) {
+      setResult({
+        method,
+        url,
+        requestBody: requestExample === null ? "" : requestBody,
+        responseBody: "",
+        errorMessage: error instanceof Error ? error.message : "Request failed",
+      });
+    } finally {
+      setIsExecuting(false);
+    }
+  }
+
   return (
     <details className="api-operation">
       <summary>
@@ -1929,6 +2041,64 @@ function ApiOperation({
             <h4>Response</h4>
             <pre>{formatJsonExample(responseExample)}</pre>
           </div>
+        </div>
+        <div className="api-try-it">
+          <div className="api-try-it-header">
+            <h4>Try it</h4>
+            <button type="button" onClick={() => void executeRequest()} disabled={isExecuting || !apiBaseUrl}>
+              {isExecuting ? "Running" : "Execute"}
+            </button>
+          </div>
+          <div className="api-try-it-fields">
+            <label>
+              <span>Method</span>
+              <input value={method} readOnly />
+            </label>
+            <label>
+              <span>URL</span>
+              <input value={absoluteApiUrl(apiBaseUrl, path.split("{instanceId}").join(needsInstanceId ? (instanceId.trim() || "{instanceId}") : ""))} readOnly />
+            </label>
+            {needsInstanceId && (
+              <label>
+                <span>instanceId</span>
+                <input value={instanceId} onChange={(event) => setInstanceId(event.target.value)} placeholder="00000000-0000-0000-0000-000000000000" />
+              </label>
+            )}
+          </div>
+          {requestExample !== null && (
+            <label className="api-try-it-body">
+              <span>Request body</span>
+              <textarea value={requestBody} onChange={(event) => setRequestBody(event.target.value)} spellCheck={false} />
+            </label>
+          )}
+          {result !== null && (
+            <div className="api-try-it-result">
+              <dl>
+                <div>
+                  <dt>Request</dt>
+                  <dd>{result.method} {result.url}</dd>
+                </div>
+                <div>
+                  <dt>Status</dt>
+                  <dd>{result.statusCode ?? "Not sent"}</dd>
+                </div>
+                {result.errorMessage && (
+                  <div>
+                    <dt>Error</dt>
+                    <dd>{result.errorMessage}</dd>
+                  </div>
+                )}
+              </dl>
+              <div>
+                <h5>Request body</h5>
+                <pre>{result.requestBody || "No request body"}</pre>
+              </div>
+              <div>
+                <h5>Response body</h5>
+                <pre>{result.responseBody || "No response body"}</pre>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </details>

@@ -7018,3 +7018,61 @@ Current status and next steps:
 - Verification passed: `npm run build`, `mvn -B clean verify`,
   route smoke check through Vite, and `git diff --check`.
 - Vite dev server is running at `http://127.0.0.1:5173/`.
+
+## 2026-08-06 21:15 EEST
+
+Session goal: implement the planned interactive try-it controls for the
+`/modelInstanceApi` documentation page.
+
+Files changed:
+
+- `SESSION.md`
+- `docs/architecture_doc.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `sed -n '1,260p' SESSION.md`
+- `sed -n '1,220p' tasks/backlog.md`
+- `tail -n 180 SESSION.md`
+- `git status --short`
+- `rg -n "modelInstanceApi|_api|Api docs|API docs|try" vedenemo-ux/src`
+- `rg -n "roots/.*/_api|Instance.*Api|api metadata|EntityOperation|Association" -S vedenemo-*`
+- `sed -n '1,360p' vedenemo-ux/src/App.tsx`
+- `sed -n '1680,1945p' vedenemo-ux/src/App.tsx`
+- `sed -n '1945,2225p' vedenemo-ux/src/App.tsx`
+- `sed -n '520,1120p' vedenemo-ux/src/styles.css`
+- `sed -n '1,560p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '70,140p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `rg -n "function (methodFor|entityRequestExample|entityResponseExample|associationBodyExample|associationResponseExample|resolvedApiPath|formatJsonExample|parseCriterionValue|queryOperatorsFor)" vedenemo-ux/src/App.tsx`
+- `npm run build` from `vedenemo-ux`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `rg -n "modelInstanceApi|API documentation|try|root-scoped|Frontend|UX" docs/architecture_doc.md`
+- `sed -n '1,90p' docs/architecture_doc.md`
+- `sed -n '580,598p' docs/architecture_doc.md`
+- `sed -n '838,854p' docs/architecture_doc.md`
+- `git diff --check`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx | sed -n '1,260p'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added interactive `Try it` panels to `/modelInstanceApi` entity and
+  association operations.
+- The page now builds editable JSON request bodies from metadata-derived
+  examples, collects `instanceId` where required, executes root-scoped data API
+  requests, and displays method, resolved URL, request body, status code,
+  response body, and errors inline.
+- Updated current task, backlog history, and living architecture documentation.
+- Verification passed: `npm run build` and `git diff --check`. Vite still
+  reports the existing large chunk warning for visualization assets.

@@ -22,7 +22,7 @@ subgraph UX["Frontend"]
     UXPlantUmlRenderer["PlantUmlDiagramRendererAdapter<br/>lazy PlantUML SVG renderer"]
     UXInstanceTree["Model instances tab<br/>runtime entity count tree"]
     UXEntityEditor["Data editor<br/>/editor entity and association tabs"]
-    UXApiDocs["Model instance API docs<br/>/modelInstanceApi read-only docs"]
+    UXApiDocs["Model instance API docs<br/>/modelInstanceApi docs and try-it controls"]
     UXConsole["browser virtual CLI<br/>/console and embedded pane"]
 end
 
@@ -66,12 +66,12 @@ ViteUX -->|connect/disconnect| UXModelEvents
 ViteUX -->|lazy render diagram| UXPlantUmlRenderer
 ViteUX -->|fetch runtime instance counts| UXInstanceTree
 ViteUX -->|create/update runtime entity data and links| UXEntityEditor
-ViteUX -->|render root-scoped API docs| UXApiDocs
+ViteUX -->|render and execute root-scoped API docs| UXApiDocs
 ViteUX --> UXConsole
 UXPlantUml -->|GET model/entity/attribute APIs| WebApi
 UXInstanceTree -->|GET /models/list and /data APIs| WebApi
 UXEntityEditor -->|GET/POST/PUT /data APIs| WebApi
-UXApiDocs -->|GET root-scoped /data API metadata| WebApi
+UXApiDocs -->|GET metadata and execute root-scoped /data APIs| WebApi
 UXModelEvents -->|WebSocket /models/events| WebApi
 UXConsole -->|HTTP console commands| WebApi
 Cli -->|HTTP model and session APIs| WebApi
@@ -586,10 +586,12 @@ Current user-facing behavior:
 - exposes `/queryConsole` for a model-instance root and lets entity-shaped
   query results open in `/editor` edit mode from the result node menu
 - exposes `/modelInstanceApi` from the model-instance root node menu as a
-  read-only Vedenemo-native Swagger-like documentation page; it uses
+  Vedenemo-native Swagger-like documentation page with interactive try-it
+  controls; it uses
   `modelAzName` and `instanceRootId` URL parameters, loads root-scoped `_api`
   metadata plus root metadata, and generates entity and association request and
-  response examples from model metadata
+  response examples from model metadata; try-it controls execute only the
+  documented root-scoped instance-data routes and show request/response details
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle
@@ -849,7 +851,9 @@ sequenceDiagram
     API-->>UX: root-scoped entity and association API metadata
     UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}
     API-->>UX: model-instance root metadata
-    UX->>UX: render read-only operation docs and generated examples
+    UX->>UX: render operation docs, generated examples, and editable try-it inputs
+    UX->>API: execute selected root-scoped entity or association operation
+    API-->>UX: status code and response body or error
 ```
 
 ### UX Runtime Data Editing

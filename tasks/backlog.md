@@ -2,7 +2,7 @@
 
 ## Add Interactive Try-It Controls To Model Instance API Docs
 
-Status: planned.
+Status: executed.
 
 ### Goal
 
@@ -42,6 +42,21 @@ Swagger-like documentation view exists.
   hard-coded example names.
 - Failed requests display useful response details without breaking the page.
 - `npm run build` succeeds in `vedenemo-ux`.
+
+### Completion Notes
+
+- Added interactive `Try it` panels to every documented entity and association
+  operation on `/modelInstanceApi`.
+- Reused the selected `modelAzName` and `instanceRootId` from the route query
+  string and the configured backend base URL from `/config.json`.
+- Generated editable JSON request bodies from existing metadata-derived request
+  examples for create, update, query, and association-link creation operations.
+- Added an `instanceId` input for operations whose documented path contains
+  `{instanceId}`.
+- Executed documented root-scoped operations directly from the page and showed
+  method, resolved URL, status code, response body, and error details inline.
+- Preserved the documentation-first page structure for users who only inspect
+  operations without executing them.
 
 ## Add Model Instance API Docs UX Route
 
