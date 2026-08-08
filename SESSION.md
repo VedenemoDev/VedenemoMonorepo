@@ -7209,3 +7209,55 @@ Current status and next steps:
 - Verification passed: `npm run build`, `mvn -B clean verify`, `npm audit`,
   `git diff --check`, and local smoke check loading `AlbumCollectionSimple`
   data then serving `/visualizeWizard` through Vite.
+
+## 2026-08-08 23:13 EEST
+
+Session goal: fix the Models-tab PlantUML rendering failure reported as
+`Cannot read properties of undefined (reading 'bGH')`.
+
+Files changed:
+
+- `SESSION.md`
+- `vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts`
+- `vedenemo-ux/src/vite-env.d.ts`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg -n "Diagram render failed|bGH|PlantUML|Models|model tab|diagram|render" vedenemo-ux/src -S`
+- `sed -n '1,140p' vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts`
+- `sed -n '1,180p' vedenemo-ux/src/vite-env.d.ts`
+- `sed -n '3568,3620p' vedenemo-ux/src/App.tsx`
+- `rg -n "@plantuml/core|function render|export.*render|bGH" vedenemo-ux/node_modules/@plantuml/core -S`
+- `sed -n '1,120p' vedenemo-ux/node_modules/@plantuml/core/README.md`
+- `sed -n '1,80p' vedenemo-ux/node_modules/@plantuml/core/package.json`
+- `sed -n '1,80p' vedenemo-ux/node_modules/@plantuml/core/index-basic.html`
+- `sed -n '1,70p' vedenemo-ux/node_modules/@plantuml/core/plantuml.js`
+- `rg -n "export\\{C as render|let C=|function C\\(|renderToString|Viz|bGH" vedenemo-ux/node_modules/@plantuml/core/plantuml.js -S`
+- `sed -n '1,220p' vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `rg -n "class |@startuml|skinparam|hide|association|--|\\*--|o--|--\\>" vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts vedenemo-ux/src/App.tsx -S`
+- `sed -n '16140,16205p' vedenemo-ux/node_modules/@plantuml/core/plantuml.js`
+- `rg -n "renderToString\\(" vedenemo-ux/src vedenemo-ux/node_modules/@plantuml/core/*.html vedenemo-ux/node_modules/@plantuml/core/GITHUB_INTEGRATION.md -S`
+- `npm run build` from `vedenemo-ux`
+- `rg --files | rg "(playwright|vitest|cypress|puppeteer|package.json)$"`
+- `rg -n "model.*script|/models/script|LoadLevykokoelma|PlantUML|renderToString|playwright|puppeteer" -S README.md docs tasks scripts vedenemo-*`
+- `git diff -- vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts vedenemo-ux/src/vite-env.d.ts`
+- `git diff --check -- vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts vedenemo-ux/src/vite-env.d.ts`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short`
+
+Current status and next steps:
+
+- Replaced direct DOM rendering with PlantUML `renderToString` callback
+  rendering, then parsed and inserted the completed SVG into the diagram target.
+- Serialized PlantUML render calls so rapid model refreshes cannot overlap the
+  TeaVM runtime state used by `@plantuml/core`.
+- Kept the existing renderer timeout behavior so failed asynchronous renders do
+  not leave the Models tab stuck in a loading state.
+- Verification passed: `npm run build` and targeted `git diff --check`.

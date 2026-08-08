@@ -3,6 +3,7 @@ import vizGlobalUrl from "@plantuml/core/viz-global.js?url";
 type PlantUmlModule = typeof import("@plantuml/core");
 
 let plantUmlModulePromise: Promise<PlantUmlModule> | null = null;
+let plantUmlRenderQueue: Promise<void> = Promise.resolve();
 
 function loadClassicScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -41,52 +42,50 @@ function loadPlantUmlModule(): Promise<PlantUmlModule> {
 
 export class PlantUmlDiagramRendererAdapter {
   async renderSvg(source: string, targetId: string): Promise<void> {
-    const { render } = await loadPlantUmlModule();
+    const previousRender = plantUmlRenderQueue;
+    let releaseRender: () => void = () => {};
+    plantUmlRenderQueue = new Promise((resolve) => {
+      releaseRender = resolve;
+    });
 
-    return new Promise((resolve, reject) => {
+    await previousRender.catch(() => undefined);
+
+    try {
+      const { renderToString } = await loadPlantUmlModule();
+
       const target = document.getElementById(targetId);
       if (target === null) {
-        reject(new Error("diagram target is unavailable"));
-        return;
+        throw new Error("diagram target is unavailable");
       }
 
       target.replaceChildren();
 
-      let timeoutId = 0;
+      const svg = await new Promise<string>((resolve, reject) => {
+        const timeoutId = window.setTimeout(() => {
+          reject(new Error("PlantUML renderer did not complete"));
+        }, 10000);
 
-      const observer = new MutationObserver(() => {
-        if (target.querySelector("svg") === null) {
-          return;
-        }
-        window.clearTimeout(timeoutId);
-        observer.disconnect();
-        resolve();
+        renderToString(
+          source.split(/\r?\n/),
+          (svg) => {
+            window.clearTimeout(timeoutId);
+            resolve(svg);
+          },
+          (message) => {
+            window.clearTimeout(timeoutId);
+            reject(new Error(message));
+          },
+        );
       });
 
-      observer.observe(target, {
-        childList: true,
-        subtree: true,
-      });
-
-      timeoutId = window.setTimeout(() => {
-        observer.disconnect();
-        reject(new Error("PlantUML renderer did not complete"));
-      }, 10000);
-
-      try {
-        render(source.split(/\r?\n/), targetId);
-      } catch (error) {
-        window.clearTimeout(timeoutId);
-        observer.disconnect();
-        reject(error instanceof Error ? error : new Error("PlantUML renderer failed"));
-        return;
+      const parsedSvg = new DOMParser().parseFromString(svg, "image/svg+xml").documentElement;
+      if (parsedSvg.tagName.toLocaleLowerCase() !== "svg") {
+        throw new Error("PlantUML renderer returned invalid SVG");
       }
 
-      if (target.querySelector("svg") !== null) {
-        window.clearTimeout(timeoutId);
-        observer.disconnect();
-        resolve();
-      }
-    });
+      target.replaceChildren(parsedSvg);
+    } finally {
+      releaseRender();
+    }
   }
 }
