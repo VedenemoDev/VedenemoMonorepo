@@ -4,9 +4,11 @@ import {
   type KeyboardEvent,
   type PointerEvent,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
+import * as d3 from "d3";
 import { ModelChangeEventAdapter } from "./adapters/ModelChangeEventAdapter";
 import { PlantUmlModelAdapter } from "./adapters/PlantUmlModelAdapter";
 
@@ -186,6 +188,48 @@ type TryItResult = {
   errorMessage?: string;
 };
 
+type VisualizationWizardStep = "chartType" | "binding" | "visualization";
+
+type ChartEligibility = {
+  selectable: boolean;
+  reason?: string;
+};
+
+type ChartTypeDefinition = {
+  id: string;
+  name: string;
+  summary: string;
+  evaluateEligibility: (apiDescription: ApiDescriptionResponse) => ChartEligibility;
+};
+
+type TidyTreeBindingLevel = {
+  entityAzName: string;
+  labelTemplate: string;
+  traversal?: {
+    associationAzName: string;
+    direction: RelationshipDirection;
+  };
+};
+
+type TidyTreeBinding = {
+  rootLabel: string;
+  levels: TidyTreeBindingLevel[];
+};
+
+type TidyTreeNode = {
+  id: string;
+  label: string;
+  detail?: string;
+  children: TidyTreeNode[];
+};
+
+type VisualizationDataState = {
+  status: ModelInstanceLoadState;
+  message: string;
+  tree: TidyTreeNode | null;
+  loadedAt?: string;
+};
+
 const PLANTUML_TARGET_ID = "plantuml-diagram";
 const CONNECTED_MODEL_STORAGE_KEY = "vedenemo.connectedModelAzName";
 const CONSOLE_PANE_HEIGHT_STORAGE_KEY = "vedenemo.consolePaneHeight";
@@ -194,6 +238,7 @@ const DIAGRAM_RENDERED_MESSAGE = "Diagram rendered";
 const DEFAULT_CONSOLE_PANE_HEIGHT = 360;
 const MIN_CONSOLE_PANE_HEIGHT = 256;
 const MAX_CONSOLE_PANE_VIEWPORT_RATIO = 0.75;
+const TIDY_TREE_CHART_ID = "tidy-tree";
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   const response = await fetch("/config.json", { cache: "no-store" });
@@ -451,6 +496,15 @@ async function fetchEntityInstance(
   return response.json() as Promise<EntityInstanceResponse>;
 }
 
+const CHART_TYPES: ChartTypeDefinition[] = [
+  {
+    id: TIDY_TREE_CHART_ID,
+    name: "Tidy tree",
+    summary: "Hierarchical node-link tree for acyclic entity paths.",
+    evaluateEligibility: evaluateTidyTreeEligibility,
+  },
+];
+
 function readConnectedModelAzName(): string {
   return new URLSearchParams(window.location.search).get("connectedModelAzName") ?? "";
 }
@@ -545,6 +599,220 @@ function traversalLabel(option: TraversalOption): string {
   return `${association.visName} (${association.azName}, ${association.kind}, ${directionLabel}${roleLabel})`;
 }
 
+function evaluateTidyTreeEligibility(apiDescription: ApiDescriptionResponse): ChartEligibility {
+  if (apiDescription.entities.length === 0) {
+    return {
+      selectable: false,
+      reason: "The selected model has no entities.",
+    };
+  }
+  const entityNames = new Set(apiDescription.entities.map((entity) => entity.azName.toLocaleLowerCase()));
+  const hasAcyclicAssociation = (apiDescription.associations ?? []).some((association) => (
+    entityNames.has(association.sourceEntityAzName.toLocaleLowerCase())
+    && entityNames.has(association.targetEntityAzName.toLocaleLowerCase())
+    && !sameAzName(association.sourceEntityAzName, association.targetEntityAzName)
+  ));
+  if (!hasAcyclicAssociation) {
+    return {
+      selectable: false,
+      reason: "Tidy tree needs at least one association between two different entities.",
+    };
+  }
+  return { selectable: true };
+}
+
+function defaultLabelTemplate(entity: EntityDescription | null): string {
+  return entity?.attributes[0]?.azName ? `{${entity.attributes[0].azName}}` : "{id}";
+}
+
+function templatePlaceholders(template: string): string[] {
+  return [...template.matchAll(/\{([^{}]+)\}/g)]
+    .map((match) => match[1].trim())
+    .filter((placeholder) => placeholder.length > 0);
+}
+
+function validateLabelTemplate(entity: EntityDescription, template: string): string | null {
+  if (!template.trim()) {
+    return "Label template is required.";
+  }
+  const attributeNames = new Set(entity.attributes.map((attribute) => attribute.azName.toLocaleLowerCase()));
+  for (const placeholder of templatePlaceholders(template)) {
+    if (placeholder === "id") {
+      continue;
+    }
+    if (!attributeNames.has(placeholder.toLocaleLowerCase())) {
+      return `${placeholder} is not an attribute of ${entity.visName}.`;
+    }
+  }
+  return null;
+}
+
+function renderLabelTemplate(entity: EntityDescription, instance: EntityInstanceResponse, template: string): string {
+  const rendered = template.replace(/\{([^{}]+)\}/g, (_match, rawPlaceholder: string) => {
+    const placeholder = rawPlaceholder.trim();
+    if (placeholder === "id") {
+      return instance.id;
+    }
+    const attribute = entity.attributes.find((candidate) => sameAzName(candidate.azName, placeholder));
+    if (attribute === undefined) {
+      return "";
+    }
+    return formatInstanceValue(instance.values[attribute.azName]);
+  }).trim();
+  return rendered || instance.id;
+}
+
+function selectedEntityNames(binding: TidyTreeBinding): Set<string> {
+  return new Set(binding.levels.map((level) => level.entityAzName.toLocaleLowerCase()).filter(Boolean));
+}
+
+function traversalOptionsForBindingLevel(
+  apiDescription: ApiDescriptionResponse | null,
+  binding: TidyTreeBinding,
+  levelIndex: number,
+): TraversalOption[] {
+  if (apiDescription === null || levelIndex <= 0) {
+    return [];
+  }
+  const previousLevel = binding.levels[levelIndex - 1];
+  const previousEntity = findEntity(apiDescription.entities, previousLevel.entityAzName);
+  const usedEntityNames = selectedEntityNames({
+    ...binding,
+    levels: binding.levels.slice(0, levelIndex),
+  });
+  return traversalOptionsFor(previousEntity, apiDescription)
+    .filter((option) => !usedEntityNames.has(option.relatedEntity.azName.toLocaleLowerCase()));
+}
+
+function bindingValidationMessage(apiDescription: ApiDescriptionResponse | null, binding: TidyTreeBinding): string | null {
+  if (apiDescription === null) {
+    return "Model metadata is not loaded.";
+  }
+  if (!binding.rootLabel.trim()) {
+    return "Chart root label is required.";
+  }
+  if (binding.levels.length === 0 || !binding.levels[0].entityAzName) {
+    return "Select at least one entity level.";
+  }
+  const seenEntities = new Set<string>();
+  for (const [index, level] of binding.levels.entries()) {
+    const entity = findEntity(apiDescription.entities, level.entityAzName);
+    if (entity === null) {
+      return `Level ${index + 1} entity is missing.`;
+    }
+    const entityKey = entity.azName.toLocaleLowerCase();
+    if (seenEntities.has(entityKey)) {
+      return `${entity.visName} is already used in this tree path.`;
+    }
+    seenEntities.add(entityKey);
+    const templateError = validateLabelTemplate(entity, level.labelTemplate);
+    if (templateError !== null) {
+      return `Level ${index + 1}: ${templateError}`;
+    }
+    if (index > 0 && level.traversal === undefined) {
+      return `Level ${index + 1} needs an association from the previous level.`;
+    }
+  }
+  return null;
+}
+
+function linkChildIdForParent(parentId: string, link: AssociationLinkResponse, direction: RelationshipDirection): string | null {
+  if (direction === "outgoing") {
+    return link.sourceInstanceId === parentId ? link.targetInstanceId : null;
+  }
+  return link.targetInstanceId === parentId ? link.sourceInstanceId : null;
+}
+
+function sortInstancesByLabel(entity: EntityDescription, instances: EntityInstanceResponse[], template: string): EntityInstanceResponse[] {
+  return [...instances].sort((left, right) => (
+    renderLabelTemplate(entity, left, template).localeCompare(renderLabelTemplate(entity, right, template))
+  ));
+}
+
+async function buildTidyTreeData(
+  apiBaseUrl: string,
+  modelAzName: string,
+  instanceRootId: string,
+  apiDescription: ApiDescriptionResponse,
+  binding: TidyTreeBinding,
+): Promise<TidyTreeNode> {
+  const validationError = bindingValidationMessage(apiDescription, binding);
+  if (validationError !== null) {
+    throw new Error(validationError);
+  }
+
+  const entityByAzName = new Map(apiDescription.entities.map((entity) => [entity.azName.toLocaleLowerCase(), entity]));
+  const instancesByEntity = new Map<string, EntityInstanceResponse[]>();
+  await Promise.all(binding.levels.map(async (level) => {
+    const entityKey = level.entityAzName.toLocaleLowerCase();
+    if (instancesByEntity.has(entityKey)) {
+      return;
+    }
+    const instances = await queryEntityInstances(apiBaseUrl, modelAzName, instanceRootId, level.entityAzName, {});
+    instancesByEntity.set(entityKey, instances);
+  }));
+
+  const linksByLevel = new Map<number, AssociationLinkResponse[]>();
+  await Promise.all(binding.levels.slice(1).map(async (level, index) => {
+    if (level.traversal === undefined) {
+      return;
+    }
+    const links = await fetchAssociationLinks(apiBaseUrl, modelAzName, instanceRootId, level.traversal.associationAzName);
+    linksByLevel.set(index + 1, links);
+  }));
+
+  function buildLevelNode(levelIndex: number, instance: EntityInstanceResponse): TidyTreeNode {
+    const level = binding.levels[levelIndex];
+    const entity = entityByAzName.get(level.entityAzName.toLocaleLowerCase());
+    if (entity === undefined) {
+      throw new Error(`Entity ${level.entityAzName} is unavailable.`);
+    }
+
+    const nextLevel = binding.levels[levelIndex + 1] ?? null;
+    let children: TidyTreeNode[] = [];
+    if (nextLevel !== null && nextLevel.traversal !== undefined) {
+      const nextEntity = entityByAzName.get(nextLevel.entityAzName.toLocaleLowerCase());
+      const nextInstances = instancesByEntity.get(nextLevel.entityAzName.toLocaleLowerCase()) ?? [];
+      const nextInstanceById = new Map(nextInstances.map((candidate) => [candidate.id, candidate]));
+      const links = linksByLevel.get(levelIndex + 1) ?? [];
+      const childIds = new Set<string>();
+      for (const link of links) {
+        const childId = linkChildIdForParent(instance.id, link, nextLevel.traversal.direction);
+        if (childId !== null) {
+          childIds.add(childId);
+        }
+      }
+      const childInstances = [...childIds]
+        .map((childId) => nextInstanceById.get(childId) ?? null)
+        .filter((candidate): candidate is EntityInstanceResponse => candidate !== null);
+      children = nextEntity === undefined
+        ? []
+        : sortInstancesByLabel(nextEntity, childInstances, nextLevel.labelTemplate)
+            .map((childInstance) => buildLevelNode(levelIndex + 1, childInstance));
+    }
+
+    return {
+      id: instance.id,
+      label: renderLabelTemplate(entity, instance, level.labelTemplate),
+      detail: entity.visName,
+      children,
+    };
+  }
+
+  const firstLevel = binding.levels[0];
+  const firstEntity = entityByAzName.get(firstLevel.entityAzName.toLocaleLowerCase());
+  const firstInstances = instancesByEntity.get(firstLevel.entityAzName.toLocaleLowerCase()) ?? [];
+  return {
+    id: "root",
+    label: binding.rootLabel.trim(),
+    detail: apiDescription.modelVisName,
+    children: firstEntity === undefined
+      ? []
+      : sortInstancesByLabel(firstEntity, firstInstances, firstLevel.labelTemplate)
+          .map((instance) => buildLevelNode(0, instance)),
+  };
+}
+
 function parseCriterionValue(attribute: AttributeDescription, rawValue: string): string | number {
   const trimmedValue = rawValue.trim();
   if (attribute.dataType !== "NUMERIC") {
@@ -573,6 +841,14 @@ function modelInstanceApiUrl(modelAzName: string, instanceRootId: string): strin
     instanceRootId,
   });
   return `/modelInstanceApi?${params.toString()}`;
+}
+
+function visualizeWizardUrl(modelAzName: string, instanceRootId: string): string {
+  const params = new URLSearchParams({
+    modelAzName,
+    instanceRootId,
+  });
+  return `/visualizeWizard?${params.toString()}`;
 }
 
 function resolvedApiPath(pathTemplate: string, modelAzName: string, instanceRootId: string): string {
@@ -2105,6 +2381,539 @@ function ApiOperation({
   );
 }
 
+function VisualizationWizardPage() {
+  const modelAzName = readQueryParam("modelAzName");
+  const instanceRootId = readQueryParam("instanceRootId");
+  const [apiBaseUrl, setApiBaseUrl] = useState("");
+  const [apiDescription, setApiDescription] = useState<ApiDescriptionResponse | null>(null);
+  const [root, setRoot] = useState<ModelInstanceRootResponse | null>(null);
+  const [status, setStatus] = useState<ModelInstanceLoadState>("loading");
+  const [statusMessage, setStatusMessage] = useState("Loading visualization wizard...");
+  const [step, setStep] = useState<VisualizationWizardStep>("chartType");
+  const [selectedChartTypeId, setSelectedChartTypeId] = useState(TIDY_TREE_CHART_ID);
+  const [binding, setBinding] = useState<TidyTreeBinding>({ rootLabel: "", levels: [] });
+  const [visualizationData, setVisualizationData] = useState<VisualizationDataState>({
+    status: "idle",
+    message: "Visualization data not loaded",
+    tree: null,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadWizard() {
+      if (!modelAzName || !instanceRootId) {
+        setStatus("error");
+        setStatusMessage("Visualization URL is missing modelAzName or instanceRootId");
+        return;
+      }
+
+      try {
+        const config = await loadRuntimeConfig();
+        const baseUrl = normalizeBaseUrl(config.apiBaseUrl ?? "");
+        if (!baseUrl) {
+          throw new Error("Backend URL is not configured");
+        }
+        const [nextApiDescription, nextRoot] = await Promise.all([
+          fetchRootModelInstanceApi(baseUrl, modelAzName, instanceRootId),
+          fetchModelInstanceRoot(baseUrl, modelAzName, instanceRootId),
+        ]);
+        if (cancelled) {
+          return;
+        }
+        const firstEntity = nextApiDescription.entities.find((entity) => traversalOptionsFor(entity, nextApiDescription).length > 0)
+          ?? nextApiDescription.entities[0]
+          ?? null;
+        const firstTraversal = traversalOptionsFor(firstEntity, nextApiDescription)[0] ?? null;
+        const defaultLevels: TidyTreeBindingLevel[] = firstEntity === null
+          ? []
+          : [
+              {
+                entityAzName: firstEntity.azName,
+                labelTemplate: defaultLabelTemplate(firstEntity),
+              },
+            ];
+        if (firstTraversal !== null) {
+          defaultLevels.push({
+            entityAzName: firstTraversal.relatedEntity.azName,
+            labelTemplate: defaultLabelTemplate(firstTraversal.relatedEntity),
+            traversal: {
+              associationAzName: firstTraversal.association.azName,
+              direction: firstTraversal.direction,
+            },
+          });
+        }
+        setApiBaseUrl(baseUrl);
+        setApiDescription(nextApiDescription);
+        setRoot(nextRoot);
+        setBinding({
+          rootLabel: rootResponseDisplayName(nextRoot),
+          levels: defaultLevels,
+        });
+        setStatus("ok");
+        setStatusMessage("Visualization wizard ready");
+      } catch (error) {
+        if (!cancelled) {
+          setStatus("error");
+          setStatusMessage(error instanceof Error ? error.message : "Visualization wizard load failed");
+        }
+      }
+    }
+
+    void loadWizard();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [modelAzName, instanceRootId]);
+
+  const rootName = root === null ? instanceRootId : rootResponseDisplayName(root);
+  const chartOptions = useMemo(() => CHART_TYPES.map((chartType) => ({
+    chartType,
+    eligibility: apiDescription === null
+      ? { selectable: false, reason: "Model metadata is not loaded." }
+      : chartType.evaluateEligibility(apiDescription),
+  })), [apiDescription]);
+  const selectedChartType = CHART_TYPES.find((chartType) => chartType.id === selectedChartTypeId) ?? CHART_TYPES[0];
+  const selectedChartEligibility = chartOptions.find((option) => option.chartType.id === selectedChartType.id)?.eligibility ?? { selectable: false, reason: "Chart type unavailable." };
+  const bindingMessage = bindingValidationMessage(apiDescription, binding);
+  const canContinueToBinding = status === "ok" && selectedChartEligibility.selectable;
+  const canRenderVisualization = canContinueToBinding && bindingMessage === null;
+
+  function updateBindingLevel(index: number, nextLevel: TidyTreeBindingLevel, truncateFollowingLevels = false) {
+    setBinding((current) => ({
+      ...current,
+      levels: current.levels
+        .map((level, levelIndex) => levelIndex === index ? nextLevel : level)
+        .slice(0, truncateFollowingLevels ? index + 1 : current.levels.length),
+    }));
+    setVisualizationData({
+      status: "idle",
+      message: "Visualization data not loaded",
+      tree: null,
+    });
+  }
+
+  function selectFirstLevelEntity(entityAzName: string) {
+    const entity = findEntity(apiDescription?.entities ?? [], entityAzName);
+    setBinding((current) => ({
+      ...current,
+      levels: entity === null ? [] : [{
+        entityAzName: entity.azName,
+        labelTemplate: defaultLabelTemplate(entity),
+      }],
+    }));
+    setVisualizationData({
+      status: "idle",
+      message: "Visualization data not loaded",
+      tree: null,
+    });
+  }
+
+  function addNextLevel() {
+    if (apiDescription === null || binding.levels.length === 0) {
+      return;
+    }
+    const nextLevelIndex = binding.levels.length;
+    const option = traversalOptionsForBindingLevel(apiDescription, binding, nextLevelIndex)[0] ?? null;
+    if (option === null) {
+      return;
+    }
+    setBinding((current) => ({
+      ...current,
+      levels: [
+        ...current.levels,
+        {
+          entityAzName: option.relatedEntity.azName,
+          labelTemplate: defaultLabelTemplate(option.relatedEntity),
+          traversal: {
+            associationAzName: option.association.azName,
+            direction: option.direction,
+          },
+        },
+      ],
+    }));
+    setVisualizationData({
+      status: "idle",
+      message: "Visualization data not loaded",
+      tree: null,
+    });
+  }
+
+  function removeLastLevel() {
+    setBinding((current) => ({
+      ...current,
+      levels: current.levels.slice(0, Math.max(1, current.levels.length - 1)),
+    }));
+    setVisualizationData({
+      status: "idle",
+      message: "Visualization data not loaded",
+      tree: null,
+    });
+  }
+
+  async function loadVisualizationData() {
+    if (!apiBaseUrl || apiDescription === null || !modelAzName || !instanceRootId) {
+      setVisualizationData({
+        status: "error",
+        message: "Visualization context is incomplete",
+        tree: null,
+      });
+      return;
+    }
+    const validationError = bindingValidationMessage(apiDescription, binding);
+    if (validationError !== null) {
+      setVisualizationData({
+        status: "error",
+        message: validationError,
+        tree: null,
+      });
+      return;
+    }
+
+    setVisualizationData({
+      status: "loading",
+      message: "Loading visualization data...",
+      tree: visualizationData.tree,
+    });
+    try {
+      const tree = await buildTidyTreeData(apiBaseUrl, apiDescription.modelAzName, instanceRootId, apiDescription, binding);
+      setVisualizationData({
+        status: "ok",
+        message: `${tree.children.length} top-level node${tree.children.length === 1 ? "" : "s"} rendered`,
+        tree,
+        loadedAt: new Date().toLocaleTimeString(),
+      });
+    } catch (error) {
+      setVisualizationData({
+        status: "error",
+        message: error instanceof Error ? error.message : "Visualization data load failed",
+        tree: null,
+      });
+    }
+  }
+
+  return (
+    <main className="visualize-shell">
+      <header className="visualize-header">
+        <div>
+          <h1>Visualize Model Instance</h1>
+          <div className="query-console-targets">
+            <span>{apiDescription?.modelVisName ?? modelAzName}</span>
+            <span>{rootName}</span>
+          </div>
+        </div>
+        <a className="secondary-link" href="/?tab=modelInstances">
+          Model instances
+        </a>
+      </header>
+
+      <section className="visualize-surface">
+        <div className="visualize-steps" aria-label="Visualization wizard steps">
+          {(["chartType", "binding", "visualization"] as VisualizationWizardStep[]).map((candidateStep, index) => (
+            <button
+              key={candidateStep}
+              type="button"
+              className={step === candidateStep ? "visualize-step visualize-step-active" : "visualize-step"}
+              onClick={() => {
+                if (candidateStep === "binding" && !canContinueToBinding) {
+                  return;
+                }
+                if (candidateStep === "visualization" && !canRenderVisualization) {
+                  return;
+                }
+                setStep(candidateStep);
+              }}
+              disabled={(candidateStep === "binding" && !canContinueToBinding) || (candidateStep === "visualization" && !canRenderVisualization)}
+            >
+              <span>{index + 1}</span>
+              {candidateStep === "chartType" ? "Chart type" : candidateStep === "binding" ? "Binding" : "Visualization"}
+            </button>
+          ))}
+        </div>
+
+        <span className={`model-status model-status-${status}`}>{statusMessage}</span>
+
+        {step === "chartType" && (
+          <section className="visualize-panel" aria-labelledby="visualize-chart-type">
+            <h2 id="visualize-chart-type">Chart Type Selection</h2>
+            <div className="chart-type-grid">
+              {chartOptions.map(({ chartType, eligibility }) => (
+                <button
+                  key={chartType.id}
+                  type="button"
+                  className={selectedChartTypeId === chartType.id ? "chart-type-option chart-type-option-active" : "chart-type-option"}
+                  onClick={() => {
+                    if (eligibility.selectable) {
+                      setSelectedChartTypeId(chartType.id);
+                    }
+                  }}
+                  disabled={!eligibility.selectable}
+                >
+                  <strong>{chartType.name}</strong>
+                  <span>{chartType.summary}</span>
+                  {!eligibility.selectable && <em>{eligibility.reason}</em>}
+                </button>
+              ))}
+            </div>
+            <div className="visualize-actions">
+              <button type="button" onClick={() => setStep("binding")} disabled={!canContinueToBinding}>
+                Continue
+              </button>
+            </div>
+          </section>
+        )}
+
+        {step === "binding" && (
+          <TidyTreeBindingPanel
+            apiDescription={apiDescription}
+            binding={binding}
+            validationMessage={bindingMessage}
+            onRootLabelChange={(rootLabel) => {
+              setBinding((current) => ({ ...current, rootLabel }));
+              setVisualizationData({ status: "idle", message: "Visualization data not loaded", tree: null });
+            }}
+            onFirstEntityChange={selectFirstLevelEntity}
+            onLevelChange={updateBindingLevel}
+            onAddLevel={addNextLevel}
+            onRemoveLastLevel={removeLastLevel}
+            onVisualize={() => {
+              setStep("visualization");
+              void loadVisualizationData();
+            }}
+          />
+        )}
+
+        {step === "visualization" && (
+          <section className="visualize-panel visualize-panel-fill" aria-labelledby="visualize-output">
+            <div className="visualization-header-row">
+              <div>
+                <h2 id="visualize-output">{selectedChartType.name}</h2>
+                <span className={`model-status model-status-${visualizationData.status}`}>{visualizationData.message}</span>
+                {visualizationData.loadedAt && <span className="visualization-loaded-at">Loaded {visualizationData.loadedAt}</span>}
+              </div>
+              <div className="visualize-actions">
+                <button type="button" onClick={() => setStep("binding")}>
+                  Binding
+                </button>
+                <button type="button" onClick={() => void loadVisualizationData()} disabled={!canRenderVisualization || visualizationData.status === "loading"}>
+                  Refresh
+                </button>
+              </div>
+            </div>
+            <div className="visualization-canvas" aria-label="Tidy tree visualization">
+              {visualizationData.tree === null ? (
+                <div className="tree-empty">{visualizationData.status === "loading" ? "Loading tree..." : "No visualization data"}</div>
+              ) : (
+                <TidyTreeRenderer tree={visualizationData.tree} />
+              )}
+            </div>
+          </section>
+        )}
+      </section>
+    </main>
+  );
+}
+
+function TidyTreeBindingPanel({
+  apiDescription,
+  binding,
+  validationMessage,
+  onRootLabelChange,
+  onFirstEntityChange,
+  onLevelChange,
+  onAddLevel,
+  onRemoveLastLevel,
+  onVisualize,
+}: {
+  apiDescription: ApiDescriptionResponse | null;
+  binding: TidyTreeBinding;
+  validationMessage: string | null;
+  onRootLabelChange: (value: string) => void;
+  onFirstEntityChange: (entityAzName: string) => void;
+  onLevelChange: (index: number, level: TidyTreeBindingLevel, truncateFollowingLevels?: boolean) => void;
+  onAddLevel: () => void;
+  onRemoveLastLevel: () => void;
+  onVisualize: () => void;
+}) {
+  const canAddLevel = apiDescription !== null && traversalOptionsForBindingLevel(apiDescription, binding, binding.levels.length).length > 0;
+
+  return (
+    <section className="visualize-panel" aria-labelledby="visualize-binding">
+      <h2 id="visualize-binding">Model Element Binding</h2>
+      <div className="binding-grid">
+        <label className="query-field">
+          <span>Chart root label</span>
+          <input value={binding.rootLabel} onChange={(event) => onRootLabelChange(event.target.value)} />
+        </label>
+      </div>
+
+      <div className="binding-levels">
+        {binding.levels.length === 0 ? (
+          <div className="tree-empty">No entity levels</div>
+        ) : binding.levels.map((level, index) => {
+          const entity = findEntity(apiDescription?.entities ?? [], level.entityAzName);
+          const traversalOptions = traversalOptionsForBindingLevel(apiDescription, binding, index);
+          const selectedTraversalValue = level.traversal === undefined
+            ? ""
+            : `${level.traversal.associationAzName}::${level.traversal.direction}::${level.entityAzName}`;
+          return (
+            <section key={`${index}-${level.entityAzName}`} className="binding-level">
+              <header>
+                <h3>Level {index + 1}</h3>
+                {entity && <span>{entity.visName}</span>}
+              </header>
+              {index === 0 ? (
+                <label className="query-field">
+                  <span>Entity</span>
+                  <select value={level.entityAzName} onChange={(event) => onFirstEntityChange(event.target.value)}>
+                    {apiDescription?.entities.map((candidate) => (
+                      <option key={candidate.azName} value={candidate.azName}>
+                        {candidate.visName} ({candidate.azName})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <label className="query-field query-field-wide">
+                  <span>Association</span>
+                  <select
+                    value={selectedTraversalValue}
+                    onChange={(event) => {
+                      const option = traversalOptions.find((candidate) => traversalOptionValue(candidate) === event.target.value) ?? null;
+                      if (option !== null) {
+                        onLevelChange(index, {
+                          entityAzName: option.relatedEntity.azName,
+                          labelTemplate: defaultLabelTemplate(option.relatedEntity),
+                          traversal: {
+                            associationAzName: option.association.azName,
+                            direction: option.direction,
+                          },
+                        }, true);
+                      }
+                    }}
+                  >
+                    {traversalOptions.length === 0 ? (
+                      <option value="">No acyclic associations</option>
+                    ) : traversalOptions.map((option) => (
+                      <option key={traversalOptionValue(option)} value={traversalOptionValue(option)}>
+                        {traversalLabel(option)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <label className="query-field">
+                <span>Label template</span>
+                <input
+                  value={level.labelTemplate}
+                  placeholder={entity === null ? "{id}" : defaultLabelTemplate(entity)}
+                  onChange={(event) => onLevelChange(index, { ...level, labelTemplate: event.target.value })}
+                />
+              </label>
+              {entity !== null && entity.attributes.length > 0 && (
+                <div className="binding-attributes">
+                  {entity.attributes.map((attribute) => (
+                    <code key={attribute.azName}>{`{${attribute.azName}}`}</code>
+                  ))}
+                  <code>{`{id}`}</code>
+                </div>
+              )}
+            </section>
+          );
+        })}
+      </div>
+
+      {validationMessage && <span className="dialog-error">{validationMessage}</span>}
+
+      <div className="visualize-actions">
+        <button type="button" onClick={onAddLevel} disabled={!canAddLevel}>
+          Add level
+        </button>
+        <button type="button" onClick={onRemoveLastLevel} disabled={binding.levels.length <= 1}>
+          Remove last level
+        </button>
+        <button type="button" onClick={onVisualize} disabled={validationMessage !== null}>
+          Visualize
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function TidyTreeRenderer({ tree }: { tree: TidyTreeNode }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    const svgElement = svgRef.current;
+    if (svgElement === null) {
+      return;
+    }
+
+    const root = d3.hierarchy<TidyTreeNode>(tree);
+    const nodeCount = root.descendants().length;
+    const width = Math.max(960, root.height * 260 + 320);
+    const height = Math.max(520, nodeCount * 34);
+    const treeLayout = d3.tree<TidyTreeNode>().nodeSize([34, 220]);
+    treeLayout(root);
+
+    const nodes = root.descendants();
+    const minX = Math.min(...nodes.map((node) => node.x ?? 0));
+    const maxX = Math.max(...nodes.map((node) => node.x ?? 0));
+    const actualHeight = Math.max(height, maxX - minX + 96);
+    const offsetX = 96 - minX;
+
+    const svg = d3.select(svgElement);
+    svg.selectAll("*").remove();
+    svg
+      .attr("viewBox", `0 0 ${width} ${actualHeight}`)
+      .attr("width", width)
+      .attr("height", actualHeight);
+
+    const group = svg.append("g")
+      .attr("transform", `translate(72,${offsetX})`);
+
+    group.append("g")
+      .attr("class", "tidy-tree-links")
+      .selectAll("path")
+      .data(root.links())
+      .join("path")
+      .attr("d", (link) => {
+        const sourceX = link.source.x ?? 0;
+        const sourceY = link.source.y ?? 0;
+        const targetX = link.target.x ?? 0;
+        const targetY = link.target.y ?? 0;
+        const midY = (sourceY + targetY) / 2;
+        return `M${sourceY},${sourceX}C${midY},${sourceX} ${midY},${targetX} ${targetY},${targetX}`;
+      });
+
+    const nodeGroup = group.append("g")
+      .attr("class", "tidy-tree-nodes")
+      .selectAll("g")
+      .data(nodes)
+      .join("g")
+      .attr("transform", (node) => `translate(${node.y ?? 0},${node.x ?? 0})`);
+
+    nodeGroup.append("circle")
+      .attr("r", 5.5);
+
+    nodeGroup.append("text")
+      .attr("x", (node) => node.children ? -12 : 12)
+      .attr("dy", "-0.15em")
+      .attr("text-anchor", (node) => node.children ? "end" : "start")
+      .text((node) => node.data.label);
+
+    nodeGroup.append("text")
+      .attr("class", "tidy-tree-detail")
+      .attr("x", (node) => node.children ? -12 : 12)
+      .attr("dy", "1.15em")
+      .attr("text-anchor", (node) => node.children ? "end" : "start")
+      .text((node) => node.data.detail ?? "");
+  }, [tree]);
+
+  return <svg ref={svgRef} className="tidy-tree-svg" role="img" aria-label="Tidy tree" />;
+}
+
 function QueryConsolePage() {
   const modelAzName = readQueryParam("modelAzName");
   const instanceRootId = readQueryParam("instanceRootId");
@@ -2644,6 +3453,9 @@ export function App() {
   if (window.location.pathname === "/modelInstanceApi") {
     return <ModelInstanceApiPage />;
   }
+  if (window.location.pathname === "/visualizeWizard") {
+    return <VisualizationWizardPage />;
+  }
 
   const eventAdapterRef = useRef(new ModelChangeEventAdapter());
   const plantUmlDiagramRendererRef = useRef<import("./adapters/PlantUmlDiagramRendererAdapter").PlantUmlDiagramRendererAdapter | null>(null);
@@ -2896,6 +3708,11 @@ export function App() {
   function openModelInstanceApi(modelAzName: string, instanceRootId: string) {
     setOpenRootMenuKey(null);
     window.open(modelInstanceApiUrl(modelAzName, instanceRootId), "_blank", "noopener,noreferrer");
+  }
+
+  function openVisualizeWizard(modelAzName: string, instanceRootId: string) {
+    setOpenRootMenuKey(null);
+    window.open(visualizeWizardUrl(modelAzName, instanceRootId), "_blank", "noopener,noreferrer");
   }
 
   function openEditor(modelAzName: string, instanceRootId: string) {
@@ -3158,6 +3975,16 @@ export function App() {
                                         }}
                                       >
                                         API docs...
+                                      </button>
+                                      <button
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={(event) => {
+                                          event.preventDefault();
+                                          openVisualizeWizard(model.modelAzName, root.instanceRootId);
+                                        }}
+                                      >
+                                        Visualize...
                                       </button>
                                       <button
                                         type="button"

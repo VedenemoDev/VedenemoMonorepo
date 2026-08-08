@@ -2,7 +2,7 @@
 
 ## Model instance data visualization proof-of-concept
 
-Status: planning
+Status: executed
 
 ### Goal
 
@@ -155,6 +155,28 @@ Example `AlbumCollectionSimple` binding:
 - The visualization page includes a refresh control that reloads and redraws the
   data.
 - `npm run build` succeeds in `vedenemo-ux`.
+
+### Completion Notes
+
+- Added `Visualize...` to model-instance root menus and opened
+  `/visualizeWizard?modelAzName={modelAzName}&instanceRootId={instanceRootId}`
+  in a new browser tab.
+- Added D3 as a frontend-only dependency in `vedenemo-ux`.
+- Implemented `/visualizeWizard` with chart type selection, model element
+  binding, and visualization phases.
+- Added a frontend chart-type registry with `Tidy tree` as the first chart
+  definition.
+- Implemented Tidy tree eligibility checks that show invalid chart types
+  disabled with an explanation.
+- Implemented runtime-only Tidy tree bindings with chart root labels, entity
+  levels, outgoing and incoming association traversal, cycle prevention, and
+  label templates such as `{Name}` and `{Name} ({year})`.
+- Built the Tidy tree from real root-scoped entity query results and association
+  links, with a refresh control that reloads data without losing the current
+  binding.
+- Verified the `AlbumCollectionSimple` proof path by loading
+  `.vedenemo/LevykokoelmaSimple.vdos`, loading CSV data, opening the wizard
+  route through Vite, and confirming the route can be served.
 
 
 ## Add Interactive Try-It Controls To Model Instance API Docs

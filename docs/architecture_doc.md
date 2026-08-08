@@ -23,6 +23,7 @@ subgraph UX["Frontend"]
     UXInstanceTree["Model instances tab<br/>runtime entity count tree"]
     UXEntityEditor["Data editor<br/>/editor entity and association tabs"]
     UXApiDocs["Model instance API docs<br/>/modelInstanceApi docs and try-it controls"]
+    UXVisualizer["Visualization wizard<br/>/visualizeWizard runtime D3 charts"]
     UXConsole["browser virtual CLI<br/>/console and embedded pane"]
 end
 
@@ -67,11 +68,13 @@ ViteUX -->|lazy render diagram| UXPlantUmlRenderer
 ViteUX -->|fetch runtime instance counts| UXInstanceTree
 ViteUX -->|create/update runtime entity data and links| UXEntityEditor
 ViteUX -->|render and execute root-scoped API docs| UXApiDocs
+ViteUX -->|bind and render runtime instance data| UXVisualizer
 ViteUX --> UXConsole
 UXPlantUml -->|GET model/entity/attribute APIs| WebApi
 UXInstanceTree -->|GET /models/list and /data APIs| WebApi
 UXEntityEditor -->|GET/POST/PUT /data APIs| WebApi
 UXApiDocs -->|GET metadata and execute root-scoped /data APIs| WebApi
+UXVisualizer -->|GET metadata, entity data, and association links| WebApi
 UXModelEvents -->|WebSocket /models/events| WebApi
 UXConsole -->|HTTP console commands| WebApi
 Cli -->|HTTP model and session APIs| WebApi
@@ -592,6 +595,16 @@ Current user-facing behavior:
   metadata plus root metadata, and generates entity and association request and
   response examples from model metadata; try-it controls execute only the
   documented root-scoped instance-data routes and show request/response details
+- exposes `/visualizeWizard` from the model-instance root node menu as a
+  runtime-only visualization wizard; it uses `modelAzName` and `instanceRootId`
+  URL parameters, loads root-scoped `_api` metadata plus root metadata, and lets
+  the user bind model entities, association traversal direction, and label
+  templates to chart-specific visual concepts
+- includes a frontend chart-type registry for visualization chart extensions;
+  the first registered chart is a D3-backed `Tidy tree` that validates chart
+  eligibility, prevents cyclic entity paths in the binding, supports outgoing
+  and incoming association traversal, fetches entity instances plus association
+  links, and renders a scrollable SVG tree with a refresh control
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle
@@ -631,6 +644,9 @@ Frontend adapter responsibilities:
 - `PlantUmlDiagramRendererAdapter` lazy-loads `@plantuml/core` and renders the
   generated PlantUML source to SVG in the browser. The heavy renderer chunk is
   loaded only when a diagram is rendered.
+- D3 is a frontend-only dependency used by `/visualizeWizard` for the Tidy tree
+  proof-of-concept renderer. No D3 dependency is introduced into backend or core
+  modules.
 
 ## Runtime Flows
 
@@ -854,6 +870,30 @@ sequenceDiagram
     UX->>UX: render operation docs, generated examples, and editable try-it inputs
     UX->>API: execute selected root-scoped entity or association operation
     API-->>UX: status code and response body or error
+```
+
+### UX Model Instance Visualization Wizard
+
+```mermaid
+sequenceDiagram
+    participant UX as vedenemo-ux /visualizeWizard
+    participant Config as /config.json
+    participant API as vedenemo-web-api
+    participant D3 as D3 Tidy tree renderer
+
+    UX->>Config: fetch runtime config
+    Config-->>UX: apiBaseUrl
+    UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/_api
+    API-->>UX: root-scoped entity and association API metadata
+    UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}
+    API-->>UX: model-instance root metadata
+    UX->>UX: select chart type and create runtime model-element binding
+    UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query
+    API-->>UX: entity instances for each selected binding level
+    UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}
+    API-->>UX: association links for each selected binding edge
+    UX->>UX: transform instances and links into chart tree data
+    UX->>D3: render scrollable SVG tree
 ```
 
 ### UX Runtime Data Editing

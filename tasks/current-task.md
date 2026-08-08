@@ -1,44 +1,68 @@
 # Current Task
 
-## Add Interactive Try-It Controls To Model Instance API Docs
+## Model instance data visualization proof-of-concept
 
 Status: executed.
 
 ### Goal
 
-Extend the `/modelInstanceApi` documentation page with interactive request
-execution controls so a developer can try documented root-scoped instance-data
-API operations directly from the UX.
+Implement the first runtime-only UX proof of concept for visualizing model
+instance data through user-selected bindings between Vedenemo model elements and
+chart-specific visual concepts.
+
+The proof path uses `AlbumCollectionSimple`, loaded from
+`.vedenemo/LevykokoelmaSimple.vdos`, and renders its model instance data as a
+D3 Tidy tree.
 
 ### Scope
 
-- Add `try it` controls to the existing `/modelInstanceApi` route.
-- Reuse the selected `modelAzName` and `instanceRootId` from the API docs route
-  query string.
-- Generate editable request inputs from the documented operation metadata and
-  selected model metadata.
-- Let users execute root-scoped query and modification operations against the
-  selected model-instance root.
-- Show request method, resolved URL, request body, status code, response body,
-  and any error message.
-- Present modifying operations as available development-mode operations.
-- Keep operations limited to root-scoped instance-data routes.
-- Preserve read-only documentation usability for users who do not execute
-  requests.
+- Add `Visualize...` to model-instance root actions in the `Model instances`
+  tab.
+- Open `/visualizeWizard?modelAzName={modelAzName}&instanceRootId={instanceRootId}`
+  in a new browser tab.
+- Implement a `/visualizeWizard` route with three phases:
+  - chart type selection;
+  - model element binding;
+  - visualization.
+- Add D3 as a frontend dependency only.
+- Add actual multi-chart extension points in `vedenemo-ux`, with `Tidy tree` as
+  the first implemented chart type.
+- Show invalid chart types disabled with an explanation.
+- Let the Tidy tree binding support outgoing and incoming association traversal.
+- Prevent cyclic entity paths in the binding.
+- Support label templates such as `{Name}` and `{Name} ({year})`.
+- Render real root-scoped model instance data and include a refresh control.
+- Keep visualization bindings runtime-only; do not persist templates or binding
+  state.
+
+### Acceptance Criteria
+
+- A user can open `Visualize...` from a model-instance root and reach
+  `/visualizeWizard` in a new browser tab with the selected route parameters.
+- The chart type selection page shows `Tidy tree`, disabled with a reason if it
+  is not eligible for the selected model.
+- The implementation has a clear chart-type extension point, not only
+  single-purpose route code.
+- The binding page supports chart root label, entity levels, association
+  direction, and label templates.
+- The visualization page renders a D3 Tidy tree from real model instance data.
+- The `AlbumCollectionSimple` proof case can render root `Mikan levykokoelma`,
+  artist nodes, and album nodes under each artist through
+  `Artistilla_on_albumeja`.
+- The visualization page can refresh data without losing the current runtime
+  binding.
+- `npm run build` succeeds in `vedenemo-ux`.
 
 ### Completion Notes
 
-- Added interactive `Try it` panels to entity and association operations on
-  `/modelInstanceApi`.
-- Loaded and retained the configured backend base URL so each operation can be
-  executed against the same root-scoped paths shown in the documentation.
-- Generated editable JSON request bodies from metadata-derived examples for
-  create, update, query, and association-link creation operations.
-- Added an `instanceId` input for read and update operations whose documented
-  path contains `{instanceId}`.
-- Displayed the executed method, resolved URL, status code, response body, and
-  error message inline without replacing the documentation examples.
-- Updated `docs/architecture_doc.md` to reflect the concrete interactive API
-  docs behavior.
-- Marked the corresponding backlog item executed while keeping it in
+- Added a `Visualize...` action to model-instance root menus.
+- Added `/visualizeWizard` as a three-step runtime-only UX route.
+- Added D3 as a frontend-only dependency and kept backend/core modules
+  unchanged.
+- Added a chart-type registry extension point with `Tidy tree` as the first
+  registered chart.
+- Implemented Tidy tree eligibility, binding validation, outgoing/incoming
+  traversal selection, cyclic entity-path prevention, label templates, data
+  refresh, and scrollable SVG rendering.
+- Updated `docs/architecture_doc.md` and kept the executed backlog item in
   `tasks/backlog.md` as history.

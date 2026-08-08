@@ -7151,3 +7151,61 @@ Current status and next steps:
   browser tab route, outgoing and incoming traversal, disabled chart explanations,
   label templates, refresh control, and actual multi-chart extension points.
 - Kept the task in planning status for later implementation.
+
+## 2026-08-08 22:43 EEST
+
+Session goal: execute the model instance data visualization proof-of-concept
+task, verify it, and mark the backlog item executed while keeping it as history.
+
+Files changed:
+
+- `SESSION.md`
+- `docs/architecture_doc.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/package-lock.json`
+- `vedenemo-ux/package.json`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `sed -n '1,190p' tasks/backlog.md`
+- `tail -n 140 SESSION.md`
+- `sed -n '1,220p' vedenemo-ux/package.json`
+- `sed -n '1,620p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `npm install d3 @types/d3` from `vedenemo-ux`
+- `npm run build` from `vedenemo-ux`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `rg -n "Frontend|UX|modelInstanceApi|queryConsole|editor|D3|visual|Model instances|runtime data|instance" docs/architecture_doc.md`
+- `mvn -B clean verify`
+- `bash -lc 'set -euo pipefail; VEDENEMO_WEB_HOST=127.0.0.1 VEDENEMO_WEB_PORT=18096 java -jar vedenemo-web-api/target/vedenemo-web-api-0.1.0-SNAPSHOT.jar >/tmp/vedenemo-visualize-backend.log 2>&1 & backend_pid=$!; cleanup() { kill $backend_pid >/dev/null 2>&1 || true; if [ -n "${vite_pid:-}" ]; then kill $vite_pid >/dev/null 2>&1 || true; fi; wait $backend_pid >/dev/null 2>&1 || true; if [ -n "${vite_pid:-}" ]; then wait $vite_pid >/dev/null 2>&1 || true; fi; }; trap cleanup EXIT; for i in $(seq 1 50); do if curl -fsS http://127.0.0.1:18096/models/ping >/dev/null 2>&1; then break; fi; sleep 0.2; done; VEDENEMO_API_BASE_URL=http://127.0.0.1:18096 scripts/LoadLevykokoelmaSimpleModelData.bash >/tmp/vedenemo-visualize-load.out; root_id=$(sed -n "s/^Model instance root id: //p" /tmp/vedenemo-visualize-load.out); test -n "$root_id"; curl -fsS "http://127.0.0.1:18096/data/AlbumCollectionSimple/roots/$root_id/_api" >/tmp/vedenemo-visualize-api.json; grep -q "Artistilla_on_albumeja" /tmp/vedenemo-visualize-api.json; curl -fsS "http://127.0.0.1:18096/data/AlbumCollectionSimple/roots/$root_id/_links/Artistilla_on_albumeja" >/tmp/vedenemo-visualize-links.json; grep -q "sourceInstanceId" /tmp/vedenemo-visualize-links.json; cd vedenemo-ux; npm run dev -- --host 127.0.0.1 >/tmp/vedenemo-visualize-vite.log 2>&1 & vite_pid=$!; for i in $(seq 1 50); do if curl -fsS "http://127.0.0.1:5173/visualizeWizard?modelAzName=AlbumCollectionSimple&instanceRootId=$root_id" >/tmp/vedenemo-visualize-route.html 2>/dev/null; then break; fi; sleep 0.2; done; grep -q "<div id=\"root\">" /tmp/vedenemo-visualize-route.html; cat /tmp/vedenemo-visualize-load.out; printf "Visualization route served for root: %s\n" "$root_id"'`
+- `npm audit` from `vedenemo-ux`
+- `npm audit fix` from `vedenemo-ux`
+- `npm install --save-dev vite@8.2.1` from `vedenemo-ux`
+- `npm install --save-dev @types/d3` from `vedenemo-ux`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented `/visualizeWizard` with chart type selection, runtime model
+  element binding, and D3 Tidy tree visualization.
+- Added a frontend chart-type registry extension point with `Tidy tree` as the
+  first registered chart.
+- Added `Visualize...` to model-instance root menus and kept visualization
+  bindings runtime-only.
+- Added D3 as a frontend dependency, moved `@types/d3` to dev dependencies, and
+  updated Vite to `8.2.1` after audit reported a high-severity dev-server
+  advisory in the previous pinned version.
+- Marked the backlog item executed with completion notes and updated current
+  concrete architecture documentation.
+- Verification passed: `npm run build`, `mvn -B clean verify`, `npm audit`,
+  `git diff --check`, and local smoke check loading `AlbumCollectionSimple`
+  data then serving `/visualizeWizard` through Vite.
