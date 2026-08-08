@@ -7,14 +7,53 @@ Status: planning
 ### Goal
 
 Planning and implementing for the first proof-of-concept implementation for model instance data visualization.
-In this proof-of-concept we are using AlbumCollectionSimple model, and it's model instance data, as it is 
-pretty straightforwad data set having just two entities and a single relation between them.
-
-For visualization we are using D3.js library, but the planned strenthg of Vedenemo in this is that
+In this proof-of-concept we are using AlbumCollectionSimple model loaded from LevykokoelmaSimple.vdos, and it's model instance data, as it is 
+pretty straightforwad data set having just two entities and a single relation between them. For visualization 
+we are using D3.js library, but the planned strength of Vedenemo for visualizations is that
 it offers generic UI for binding user selected model entity elements to a certain visual elements, 
 thus enabling template how the actual model instance data is bound to a selected graph type
-and then visualized.
+and then visualized. The first proof-of-concept implementation round goes at follows.
 
+1. We add new "Visualize..."-pop-up-menu to be selected for a model instance shown in tree view of 'Model instances'-tab.
+   'Visualize..."-menu routes to a new route/sub-path /visualizeWizard UX-page which is described in the following.
+
+2. Visualization wizard consists of N  phases / wizard pages: 'Chart type selection', 'Model element binding', and 'Visualization'
+   In this proof-of-concept we implement just a single simple visualization path, but code base should be already prepared 
+   to cope with several chart types and wizard paths, so there should be some kind of abstraction layer to support
+   different chart wizard flow types, and each implemented chart wizard type should have clear module/package 
+   separation at code base level, making them easier to maintain withouth changes in a one chart wizard type
+   breaking the other. So as a design principle we there is not important to very DRY, but concentrate more
+   on separation of concerns. 
+
+2.1. In the first 'Chart type selection'-page instance there is just one fixed selectable chart type 'Tidy tree' (https://observablehq.com/@d3/tree/2).
+     In later on there will of course more chart types available, and the selectable chart types are not fixed, but those are shown, in addition
+     of course to be those that has been implemented, but heuristically chart types that make some sense with the selected Vedenemo-model.
+     After selecting the chart type, user can proceed to next wizard page.
+
+2.2.  In the 'Model element binding' page user can bind model elements with the chart type supported concepts.
+      In this proof-of-concept the chart type is 'Tidy tree' that is simple tree like structure supporting one-to-many
+      cardinality one-way associations. So in this phase user can give to a chart root node name e.g. "My album collection",
+      then select model entity for sub nodes under the root node, and attribute name of the model entity used as a node label, 
+      then if there is any associations from the selected model entity to another model entity, those entities are offered as 
+      a list of possible model entity alternatives, for next level sub nodes,  and dynamically so on, until there is no more 
+      availabe associations, and IMPORTANT of course there cannot be any cyclic references. So, a user should not be able to select
+      such a model element that has been selected already at a previous level(s).
+
+      When at least a single node level after the chart root node is set, user can proceed to next wizard page. So, at minimum
+      there is single chart root node, and it's child nodes.
+
+      Simple example of binding for AlbumCollectionSimple is for example:
+      -chart root node name: Mikan levykokoelma
+      - 1st node level element: Artist
+      - 2nd node level element: Album 
+
+2.3. 'Visualization' page just visualizes the selected model instance data based on the model bindings and the selected chart type.
+      Layout should be such that it allows as much space as possible for actual visual data, but also  enabling scrolling in case all
+      the data is not possible to see without scrolling.
+
+      In this proof-of-concept when using model loaded from LevykokoelmaSimple.vdos, the result could be e.g. 3 level tidy tree where 
+      under the chart root node are all the artist names stored into instance data,
+      and under the each artist node are sub nodes of album names bound in the model instance data to the artist node. 
 
 
 ## Add Interactive Try-It Controls To Model Instance API Docs
