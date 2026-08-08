@@ -77,8 +77,8 @@ def query_album(album_name, album_comment, artist_name):
         "where": {"equals": {"Name": album_name, "Comment": album_comment}},
         "relationships": [
             {
-                "associationAzName": "Albumilla_on_esittajia",
-                "direction": "outgoing",
+                "associationAzName": "Artistilla_on_albumeja",
+                "direction": "incoming",
                 "entityAzName": "Artist",
                 "where": {"equals": {"Name": artist_name}},
             }
@@ -105,11 +105,11 @@ def require_expected_model_shape(api_description):
     require_attribute("Album", "Name")
     require_attribute("Album", "Comment")
     require_attribute("Album", "year")
-    association = associations.get("Albumilla_on_esittajia")
+    association = associations.get("Artistilla_on_albumeja")
     if not association:
-        raise SystemExit("Loaded model is missing association Albumilla_on_esittajia")
-    if association.get("sourceEntityAzName") != "Album" or association.get("targetEntityAzName") != "Artist":
-        raise SystemExit("Loaded model association Albumilla_on_esittajia has unexpected endpoints")
+        raise SystemExit("Loaded model is missing association Artistilla_on_albumeja")
+    if association.get("sourceEntityAzName") != "Artist" or association.get("targetEntityAzName") != "Album":
+        raise SystemExit("Loaded model association Artistilla_on_albumeja has unexpected endpoints")
 
 
 def ensure_model_loaded():
@@ -157,10 +157,10 @@ def ensure_album(album_name, album_comment, artist_name):
 
 
 def link_exists(album_id, artist_id):
-    status, body = request("GET", root_path("/_links/Albumilla_on_esittajia"))
-    links = json_body(status, body, "Listing Albumilla_on_esittajia links")
+    status, body = request("GET", root_path("/_links/Artistilla_on_albumeja"))
+    links = json_body(status, body, "Listing Artistilla_on_albumeja links")
     return any(
-        link.get("sourceInstanceId") == album_id and link.get("targetInstanceId") == artist_id
+        link.get("sourceInstanceId") == artist_id and link.get("targetInstanceId") == album_id
         for link in links
     )
 
@@ -170,10 +170,10 @@ def ensure_album_artist_link(album_id, artist_id):
         return False
     status, body = request(
         "POST",
-        root_path("/_links/Albumilla_on_esittajia"),
-        {"sourceInstanceId": album_id, "targetInstanceId": artist_id},
+        root_path("/_links/Artistilla_on_albumeja"),
+        {"sourceInstanceId": artist_id, "targetInstanceId": album_id},
     )
-    require_success(status, body, "Creating Albumilla_on_esittajia link")
+    require_success(status, body, "Creating Artistilla_on_albumeja link")
     return True
 
 

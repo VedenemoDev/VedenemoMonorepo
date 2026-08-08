@@ -7076,3 +7076,44 @@ Current status and next steps:
 - Updated current task, backlog history, and living architecture documentation.
 - Verification passed: `npm run build` and `git diff --check`. Vite still
   reports the existing large chunk warning for visualization assets.
+
+## 2026-08-08 13:54 EEST
+
+Session goal: validate `.vedenemo/LevykokoelmaSimple.vdos` after its association
+direction change and update the simple album collection data loader to match.
+
+Files changed:
+
+- `.vedenemo/LevykokoelmaSimple.vdos`
+- `SESSION.md`
+- `scripts/LoadLevykokoelmaSimpleModelData.bash`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,260p' .vedenemo/LevykokoelmaSimple.vdos`
+- `sed -n '1,260p' scripts/LoadLevykokoelmaSimpleModelData.bash`
+- `rg -n "association|LevykokoelmaSimple|AlbumCollectionSimple|owns|owned|source|target|link" .vedenemo scripts vedenemo-* -S`
+- `git status --short`
+- `bash -lc 'VEDENEMO_WEB_HOST=127.0.0.1 VEDENEMO_WEB_PORT=18092 java -jar vedenemo-web-api/target/vedenemo-web-api-0.1.0-SNAPSHOT.jar >/tmp/vedenemo-levykokoelma-load.log 2>&1 & pid=$!; for i in $(seq 1 50); do if curl -fsS http://127.0.0.1:18092/models/ping >/dev/null 2>&1; then break; fi; sleep 0.2; done; VEDENEMO_API_BASE_URL=http://127.0.0.1:18092 scripts/LoadLevykokoelmaSimpleModelData.bash >/tmp/vedenemo-levykokoelma-load.out; status=$?; kill $pid >/dev/null 2>&1 || true; wait $pid >/dev/null 2>&1 || true; cat /tmp/vedenemo-levykokoelma-load.out; exit $status'`
+- `rg -n "Albumilla_on_esittajia|Artistilla_on_albumeja|direction|sourceInstanceId|targetInstanceId" scripts/LoadLevykokoelmaSimpleModelData.bash .vedenemo/LevykokoelmaSimple.vdos`
+- `git diff -- scripts/LoadLevykokoelmaSimpleModelData.bash .vedenemo/LevykokoelmaSimple.vdos`
+- `git diff --check -- scripts/LoadLevykokoelmaSimpleModelData.bash .vedenemo/LevykokoelmaSimple.vdos`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- `.vedenemo/LevykokoelmaSimple.vdos` imported successfully in a fresh local web
+  API process.
+- Updated the loader to use `Artistilla_on_albumeja`, query albums through the
+  incoming artist relationship, and create links with artist instances as
+  sources and album instances as targets.
+- Verification passed: loader smoke run processed 460 CSV rows and created 460
+  `Artistilla_on_albumeja` links; `git diff --check` passed for the touched
+  model/script files.
