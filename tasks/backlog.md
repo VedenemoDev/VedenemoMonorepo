@@ -1,5 +1,22 @@
 # Backlog
 
+## Model instance data visualization proof-of-concept
+
+Status: planning
+
+### Goal
+
+Planning and implementing for the first proof-of-concept implementation for model instance data visualization.
+In this proof-of-concept we are using AlbumCollectionSimple model, and it's model instance data, as it is 
+pretty straightforwad data set having just two entities and a single relation between them.
+
+For visualization we are using D3.js library, but the planned strenthg of Vedenemo in this is that
+it offers generic UI for binding user selected model entity elements to a certain visual elements, 
+thus enabling template how the actual model instance data is bound to a selected graph type
+and then visualized.
+
+
+
 ## Add Interactive Try-It Controls To Model Instance API Docs
 
 Status: executed.
