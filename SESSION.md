@@ -7308,3 +7308,37 @@ Current status and next steps:
 - Kept relation association endpoint role/cardinality labels before the edge
   endpoints and simplified edge labels to plain PlantUML label text.
 - Verification passed: `npm run build` and targeted `git diff --check`.
+
+## 2026-08-08 23:43 EEST
+
+Session goal: make Models-tab diagram rendering recover from the persistent
+`@plantuml/core` internal `bGH` error that still affected Album and Family Tree
+models.
+
+Files changed:
+
+- `SESSION.md`
+- `vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts`
+
+Commands run:
+
+- `git status --short --branch`
+- `rg -n "Dkw=|renderToString|Viz\\.instance|document\\.getElementById|innerHTML|bGH" vedenemo-ux/node_modules/@plantuml/core/plantuml.js -S`
+- `rg -n "PlantUmlDiagramRendererAdapter|plantuml|viz-global|@plantuml/core" vedenemo-ux/src vedenemo-ux/vite.config.* vedenemo-ux/package.json -S`
+- `sed -n '1,120p' vedenemo-ux/src/main.tsx`
+- `node --input-type=module -e "const vizUrl = new URL('./node_modules/@plantuml/core/viz-global.js', import.meta.url).href; globalThis.location = { href: vizUrl }; globalThis.window = globalThis; globalThis.document = { baseURI: vizUrl, currentScript: { tagName: 'SCRIPT', src: vizUrl }, getElementById: () => null }; await import('./node_modules/@plantuml/core/viz-global.js'); const { renderToString } = await import('./node_modules/@plantuml/core/plantuml.js'); const source='@startuml\\nhide circle\\nhide empty members\\ntitle Family Tree\\nclass FamilyUnit as \\\"FamilyUnit\\\" {\\n}\\nclass Person as \\\"Person\\\" {\\n}\\nFamilyUnit \\\"family 1\\\" -- \\\"spouse 0..2\\\" Person : spouses\\n@enduml'; await new Promise((resolve, reject) => renderToString(source.split(/\\r?\\n/), svg => { console.log(svg.slice(0, 80)); resolve(); }, msg => reject(new Error(msg))));"` from `vedenemo-ux`
+- `sed -n '1,160p' vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts`
+- `npm run build` from `vedenemo-ux`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check -- vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts`
+
+Current status and next steps:
+
+- Kept the existing lazy `@plantuml/core` path as the first renderer attempted.
+- Added a fallback SVG renderer inside `PlantUmlDiagramRendererAdapter` for the
+  Vedenemo-generated class-diagram subset when the PlantUML package fails.
+- The fallback parses title, classes, attributes, and association endpoint
+  labels from the generated PlantUML source, then lays out class boxes and
+  association lines directly as SVG.
+- Verification passed: `npm run build` and targeted `git diff --check`.
