@@ -813,19 +813,40 @@ body {
   font-weight: 800;
 }
 
-.binding-attributes {
+.binding-template-hints {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
 }
 
-.binding-attributes code {
+.binding-template-hints button {
+  cursor: pointer;
+  padding: 0;
+  border: 0;
+  border-radius: 0.25rem;
+  background: transparent;
+}
+
+.binding-template-hints button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.binding-template-hints code {
+  display: block;
   padding: 0.2rem 0.4rem;
   border: 1px solid #cbd5e1;
   border-radius: 0.25rem;
   color: #334155;
   background: #f8fafc;
   font-size: 0.8rem;
+}
+
+.binding-template-hints button:hover code,
+.binding-template-hints button:focus-visible code {
+  border-color: #2563eb;
+  color: #1d4ed8;
+  background: #eff6ff;
 }
 
 .visualize-actions {

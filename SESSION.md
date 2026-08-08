@@ -7441,3 +7441,44 @@ Current status and next steps:
 - Linked the new page from `README.md` and updated README scope/layout wording
   to mention runtime model-instance visualizations.
 - Verification passed: targeted `git diff --check`.
+
+## 2026-08-09 00:31 EEST
+
+Session goal: make visualization binding label-template hints insertable from
+the UI, with mobile-friendly behavior.
+
+Files changed:
+
+- `SESSION.md`
+- `docs/visualizations.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `rg -n "TidyTreeBindingPanel|labelTemplate|binding-attributes|binding-template" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css docs/visualizations.md`
+- `sed -n '1880,2070p' vedenemo-ux/src/App.tsx`
+- `sed -n '340,430p' vedenemo-ux/src/styles.css`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css docs/visualizations.md`
+- `cd vedenemo-ux && npm run build`
+- `git diff --check -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css docs/visualizations.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+
+Current status and next steps:
+
+- Replaced static label-template hint chips with compact buttons.
+- Single-clicking a hint inserts its template token at the label input's last
+  remembered cursor or selection position, then restores focus and caret
+  placement after the inserted token.
+- Used single-click instead of double-click so the workflow also works on
+  mobile/touch devices.
+- Updated visualization documentation to describe clickable hint insertion.
+- Verification passed: frontend `npm run build` and targeted `git diff --check`.

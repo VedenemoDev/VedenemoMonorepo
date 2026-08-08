@@ -2737,6 +2737,40 @@ function TidyTreeBindingPanel({
   onVisualize: () => void;
 }) {
   const canAddLevel = apiDescription !== null && traversalOptionsForBindingLevel(apiDescription, binding, binding.levels.length).length > 0;
+  const labelInputRefs = useRef(new Map<number, HTMLInputElement>());
+  const labelCursorRanges = useRef(new Map<number, { start: number; end: number }>());
+
+  function rememberLabelCursor(index: number, input: HTMLInputElement) {
+    labelCursorRanges.current.set(index, {
+      start: input.selectionStart ?? input.value.length,
+      end: input.selectionEnd ?? input.value.length,
+    });
+  }
+
+  function insertLabelTemplateHint(index: number, level: TidyTreeBindingLevel, hint: string) {
+    const input = labelInputRefs.current.get(index);
+    const currentTemplate = level.labelTemplate;
+    const cursorRange = input === undefined
+      ? labelCursorRanges.current.get(index) ?? { start: currentTemplate.length, end: currentTemplate.length }
+      : {
+          start: input.selectionStart ?? labelCursorRanges.current.get(index)?.start ?? currentTemplate.length,
+          end: input.selectionEnd ?? labelCursorRanges.current.get(index)?.end ?? currentTemplate.length,
+        };
+    const nextTemplate = `${currentTemplate.slice(0, cursorRange.start)}${hint}${currentTemplate.slice(cursorRange.end)}`;
+    const nextCursor = cursorRange.start + hint.length;
+
+    onLevelChange(index, { ...level, labelTemplate: nextTemplate });
+    labelCursorRanges.current.set(index, { start: nextCursor, end: nextCursor });
+
+    window.requestAnimationFrame(() => {
+      const nextInput = labelInputRefs.current.get(index);
+      if (nextInput === undefined) {
+        return;
+      }
+      nextInput.focus();
+      nextInput.setSelectionRange(nextCursor, nextCursor);
+    });
+  }
 
   return (
     <section className="visualize-panel" aria-labelledby="visualize-binding">
@@ -2806,17 +2840,38 @@ function TidyTreeBindingPanel({
               <label className="query-field">
                 <span>Label template</span>
                 <input
+                  ref={(input) => {
+                    if (input === null) {
+                      labelInputRefs.current.delete(index);
+                    } else {
+                      labelInputRefs.current.set(index, input);
+                    }
+                  }}
                   value={level.labelTemplate}
                   placeholder={entity === null ? "{id}" : defaultLabelTemplate(entity)}
-                  onChange={(event) => onLevelChange(index, { ...level, labelTemplate: event.target.value })}
+                  onChange={(event) => {
+                    rememberLabelCursor(index, event.target);
+                    onLevelChange(index, { ...level, labelTemplate: event.target.value });
+                  }}
+                  onClick={(event) => rememberLabelCursor(index, event.currentTarget)}
+                  onFocus={(event) => rememberLabelCursor(index, event.currentTarget)}
+                  onKeyUp={(event) => rememberLabelCursor(index, event.currentTarget)}
+                  onSelect={(event) => rememberLabelCursor(index, event.currentTarget)}
                 />
               </label>
               {entity !== null && entity.attributes.length > 0 && (
-                <div className="binding-attributes">
-                  {entity.attributes.map((attribute) => (
-                    <code key={attribute.azName}>{`{${attribute.azName}}`}</code>
+                <div className="binding-template-hints" aria-label={`Level ${index + 1} label template hints`}>
+                  {[...entity.attributes.map((attribute) => `{${attribute.azName}}`), "{id}"].map((hint) => (
+                    <button
+                      key={hint}
+                      type="button"
+                      onPointerDown={(event: PointerEvent<HTMLButtonElement>) => event.preventDefault()}
+                      onClick={() => insertLabelTemplateHint(index, level, hint)}
+                      title={`Insert ${hint}`}
+                    >
+                      <code>{hint}</code>
+                    </button>
                   ))}
-                  <code>{`{id}`}</code>
                 </div>
               )}
             </section>

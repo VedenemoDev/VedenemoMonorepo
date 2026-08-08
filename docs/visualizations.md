@@ -92,6 +92,11 @@ Label templates use attribute placeholders:
 Placeholders must refer to modeled attributes on the selected entity, except
 for `{id}`, which uses the backend-assigned instance id.
 
+The binding form shows template hint buttons for the selected entity. Click a
+hint, such as `{Name}` or `{id}`, to insert it into the label template at the
+last cursor position in the input. The inserted text can then be combined with
+typed punctuation or other hint values.
+
 The binding prevents cyclic entity paths. An entity can appear only once in the
 selected tree path.
 
