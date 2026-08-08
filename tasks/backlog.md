@@ -6,54 +6,155 @@ Status: planning
 
 ### Goal
 
-Planning and implementing for the first proof-of-concept implementation for model instance data visualization.
-In this proof-of-concept we are using AlbumCollectionSimple model loaded from LevykokoelmaSimple.vdos, and it's model instance data, as it is 
-pretty straightforwad data set having just two entities and a single relation between them. For visualization 
-we are using D3.js library, but the planned strength of Vedenemo for visualizations is that
-it offers generic UI for binding user selected model entity elements to a certain visual elements, 
-thus enabling template how the actual model instance data is bound to a selected graph type
-and then visualized. The first proof-of-concept implementation round goes at follows.
+Plan and implement the first runtime-only proof-of-concept for visualizing model
+instance data from the UX.
 
-1. We add new "Visualize..."-pop-up-menu to be selected for a model instance shown in tree view of 'Model instances'-tab.
-   'Visualize..."-menu routes to a new route/sub-path /visualizeWizard UX-page which is described in the following.
+The proof of concept uses `AlbumCollectionSimple`, loaded from
+`.vedenemo/LevykokoelmaSimple.vdos`, and its model instance data. This model is
+intentionally small: `Artist`, `Album`, and one directed association,
+`Artistilla_on_albumeja`, from `Artist` to `Album`.
 
-2. Visualization wizard consists of N  phases / wizard pages: 'Chart type selection', 'Model element binding', and 'Visualization'
-   In this proof-of-concept we implement just a single simple visualization path, but code base should be already prepared 
-   to cope with several chart types and wizard paths, so there should be some kind of abstraction layer to support
-   different chart wizard flow types, and each implemented chart wizard type should have clear module/package 
-   separation at code base level, making them easier to maintain withouth changes in a one chart wizard type
-   breaking the other. So as a design principle we there is not important to very DRY, but concentrate more
-   on separation of concerns. 
+The first visualization uses D3.js and demonstrates the intended Vedenemo
+strength: a generic UX where a user can bind selected Vedenemo model elements to
+chart-specific visual concepts, then render actual model instance data through
+that binding. The binding is not persisted in this task; it exists only for the
+current wizard runtime.
 
-2.1. In the first 'Chart type selection'-page instance there is just one fixed selectable chart type 'Tidy tree' (https://observablehq.com/@d3/tree/2).
-     In later on there will of course more chart types available, and the selectable chart types are not fixed, but those are shown, in addition
-     of course to be those that has been implemented, but heuristically chart types that make some sense with the selected Vedenemo-model.
-     After selecting the chart type, user can proceed to next wizard page.
+### Initial Scope
 
-2.2.  In the 'Model element binding' page user can bind model elements with the chart type supported concepts.
-      In this proof-of-concept the chart type is 'Tidy tree' that is simple tree like structure supporting one-to-many
-      cardinality one-way associations. So in this phase user can give to a chart root node name e.g. "My album collection",
-      then select model entity for sub nodes under the root node, and attribute name of the model entity used as a node label, 
-      then if there is any associations from the selected model entity to another model entity, those entities are offered as 
-      a list of possible model entity alternatives, for next level sub nodes,  and dynamically so on, until there is no more 
-      availabe associations, and IMPORTANT of course there cannot be any cyclic references. So, a user should not be able to select
-      such a model element that has been selected already at a previous level(s).
+- Add a new `Visualize...` action to model-instance roots in the `Model
+  instances` tab action menu.
+- Open the visualization flow in a new browser tab at:
 
-      When at least a single node level after the chart root node is set, user can proceed to next wizard page. So, at minimum
-      there is single chart root node, and it's child nodes.
+```text
+/visualizeWizard?modelAzName={modelAzName}&instanceRootId={instanceRootId}
+```
 
-      Simple example of binding for AlbumCollectionSimple is for example:
-      -chart root node name: Mikan levykokoelma
-      - 1st node level element: Artist
-      - 2nd node level element: Album 
+- Load the selected root-scoped model-instance API metadata and instance data
+  from the existing HTTP API.
+- Keep the implementation in `vedenemo-ux` unless the existing API lacks data or
+  metadata that is required for the proof of concept.
+- Add D3.js as a frontend dependency only. Do not add D3 or any visualization
+  dependency to backend or core modules.
+- Do not persist visualization templates, bindings, chart selections, layout
+  state, or generated chart data in this first task.
 
-2.3. 'Visualization' page just visualizes the selected model instance data based on the model bindings and the selected chart type.
-      Layout should be such that it allows as much space as possible for actual visual data, but also  enabling scrolling in case all
-      the data is not possible to see without scrolling.
+### Wizard Flow
 
-      In this proof-of-concept when using model loaded from LevykokoelmaSimple.vdos, the result could be e.g. 3 level tidy tree where 
-      under the chart root node are all the artist names stored into instance data,
-      and under the each artist node are sub nodes of album names bound in the model instance data to the artist node. 
+The new `/visualizeWizard` page has three phases:
+
+1. Chart type selection
+2. Model element binding
+3. Visualization
+
+The first implemented chart type is `Tidy tree`, based on the D3 tree layout
+concept demonstrated at <https://observablehq.com/@d3/tree/2>.
+
+The UX should be structured around actual multi-chart extension points from the
+start. Implement a small chart-type registry or equivalent explicit extension
+point so additional chart types can define their own:
+
+- chart type metadata;
+- eligibility checks for a selected Vedenemo model;
+- wizard binding requirements;
+- validation rules;
+- model-instance data loading or transformation needs;
+- renderer component.
+
+Prefer chart-specific code separation over aggressive reuse. It is acceptable
+for different chart types to have separate modules and some duplication if that
+keeps one chart implementation from accidentally breaking another.
+
+### Chart Type Selection
+
+- Show the implemented chart types for the selected model-instance root.
+- For this task, `Tidy tree` is the only implemented chart type.
+- If a chart type is not valid for the selected model, show it disabled instead
+  of hiding it.
+- Disabled chart types must include a clear explanation of why they cannot be
+  selected.
+- For `Tidy tree`, require at least one usable acyclic entity path that can be
+  traversed through associations.
+
+### Model Element Binding
+
+For `Tidy tree`, let the user define a tree binding:
+
+- chart root node label, for example `Mikan levykokoelma`;
+- first model entity level below the chart root;
+- label template for each entity level, using attribute placeholders such as
+  `{Name}` or `{Name} ({year})`;
+- next entity levels reached through selected associations.
+
+Traversal must support both outgoing and incoming associations. The user is
+responsible for choosing a direction that makes sense for the selected data, but
+the wizard must still prevent invalid tree definitions.
+
+The binding rules are:
+
+- The user can proceed to visualization after defining at least one model entity
+  level below the chart root.
+- The wizard must prevent cyclic entity paths. An entity already selected in an
+  earlier level cannot be selected again in a later level.
+- The next-level entity choices should be derived dynamically from associations
+  available from the current entity in either direction.
+- Each selected level must have a label template.
+- Label templates must resolve from attributes available on that level's entity.
+- Missing or empty attribute values should render predictably, for example as an
+  empty string or a visible fallback marker.
+
+Example `AlbumCollectionSimple` binding:
+
+- chart root node label: `Mikan levykokoelma`;
+- first entity level: `Artist`;
+- first entity label template: `{Name}`;
+- second entity level: `Album`, reached through outgoing
+  `Artistilla_on_albumeja`;
+- second entity label template: `{Name} ({year})` or `{Name}`.
+
+### Visualization
+
+- Render the selected model instance data using the selected chart type and
+  binding.
+- For the `AlbumCollectionSimple` proof case, render a three-level Tidy tree:
+  root node, artist nodes, and album nodes under each artist.
+- Use as much page space as practical for the visualization.
+- Allow scrolling or panning when the rendered tree does not fit in the
+  viewport.
+- Include a refresh control that reloads the model instance data and redraws the
+  visualization using the current runtime binding.
+- Display useful empty, loading, and error states.
+
+### Out Of Scope
+
+- Saving or loading visualization templates.
+- Persisting visualization bindings.
+- Backend persistence.
+- Authentication or authorization.
+- New model semantics in `vedenemo-core`.
+- A general-purpose chart designer beyond the Tidy tree proof path and the
+  initial chart-type extension structure.
+
+### Acceptance Criteria
+
+- A user can open `Visualize...` from a model-instance root in the `Model
+  instances` tab, and the flow opens in a new browser tab at `/visualizeWizard`
+  with `modelAzName` and `instanceRootId` query parameters.
+- The chart type selection page shows `Tidy tree`; if the selected model is not
+  eligible, it is disabled with an explanation.
+- The wizard provides real multi-chart extension points even though only `Tidy
+  tree` is implemented initially.
+- The model element binding page allows a runtime binding with a chart root
+  label, entity levels, association direction, and label templates.
+- The binding page supports both outgoing and incoming association traversal and
+  prevents cyclic entity paths.
+- The visualization page renders a D3 Tidy tree from real model instance data.
+- The `AlbumCollectionSimple` proof case can render root node
+  `Mikan levykokoelma`, artist nodes below it, and album nodes below each artist
+  through `Artistilla_on_albumeja`.
+- The visualization page includes a refresh control that reloads and redraws the
+  data.
+- `npm run build` succeeds in `vedenemo-ux`.
 
 
 ## Add Interactive Try-It Controls To Model Instance API Docs

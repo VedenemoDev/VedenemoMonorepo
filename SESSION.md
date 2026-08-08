@@ -7117,3 +7117,37 @@ Current status and next steps:
 - Verification passed: loader smoke run processed 460 CSV rows and created 460
   `Artistilla_on_albumeja` links; `git diff --check` passed for the touched
   model/script files.
+
+## 2026-08-08 22:15 EEST
+
+Session goal: read, analyze, and refine the new backlog planning task for the
+model instance data visualization proof-of-concept before implementation.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,180p' tasks/backlog.md`
+- `tail -n 100 SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '1,120p' tasks/backlog.md`
+- `git status --short --branch`
+- `git diff -- tasks/backlog.md`
+- `git diff --check -- tasks/backlog.md SESSION.md`
+
+Current status and next steps:
+
+- Reviewed the new visualization proof-of-concept backlog entry.
+- Refined `tasks/backlog.md` after planning answers: runtime-only bindings, new
+  browser tab route, outgoing and incoming traversal, disabled chart explanations,
+  label templates, refresh control, and actual multi-chart extension points.
+- Kept the task in planning status for later implementation.
