@@ -7261,3 +7261,50 @@ Current status and next steps:
 - Kept the existing renderer timeout behavior so failed asynchronous renders do
   not leave the Models tab stuck in a loading state.
 - Verification passed: `npm run build` and targeted `git diff --check`.
+
+## 2026-08-08 23:37 EEST
+
+Session goal: follow up on the still-failing Models-tab PlantUML diagram render
+and fix generated association syntax that can trigger the renderer's internal
+`bGH` error.
+
+Files changed:
+
+- `SESSION.md`
+- `vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 90 SESSION.md`
+- `git status --short --branch`
+- `rg -n "sourceRoleName|targetRoleName|sourceCardinality|targetCardinality|cardinality|associationLine|RELATION" vedenemo-web-api vedenemo-core vedenemo-model-api .vedenemo -S`
+- `node --version`
+- `rg -n "const C=|let C=|function C\\(|const D=|let D=|function D\\(" vedenemo-ux/node_modules/@plantuml/core/plantuml.js -S`
+- `node --input-type=module -e "globalThis.location = { href: new URL('./node_modules/@plantuml/core/viz-global.js', import.meta.url).href }; await import('./node_modules/@plantuml/core/viz-global.js'); const { renderToString } = await import('./node_modules/@plantuml/core/plantuml.js'); const source='@startuml\\nclass Artist\\nclass Album\\nArtist o-- Album : \\\"on\\\" 1..*\\n@enduml'; await new Promise((resolve, reject) => renderToString(source.split(/\\r?\\n/), svg => { console.log(svg.slice(0, 80)); resolve(); }, msg => reject(new Error(msg))));"` from `vedenemo-ux`
+- `node --input-type=module -e "globalThis.location = { href: new URL('./node_modules/@plantuml/core/viz-global.js', import.meta.url).href }; globalThis.window = globalThis; await import('./node_modules/@plantuml/core/viz-global.js'); const { renderToString } = await import('./node_modules/@plantuml/core/plantuml.js'); const source='@startuml\\nclass Artist\\nclass Album\\nArtist o-- Album : \\\"on\\\" 1..*\\n@enduml'; await new Promise((resolve, reject) => renderToString(source.split(/\\r?\\n/), svg => { console.log(svg.slice(0, 80)); resolve(); }, msg => reject(new Error(msg))));"` from `vedenemo-ux`
+- `which chromium-browser`
+- `which chromium`
+- `which google-chrome`
+- `which firefox`
+- `rg --files vedenemo-ux/node_modules | rg 'jsdom|happy-dom|playwright|puppeteer'`
+- `sed -n '1,160p' vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `rg -n "PlantUmlModelAdapter|associationLine|Artistilla_on_albumeja|FamilyUnit_Spouses|o--|\\*--" vedenemo-ux/src vedenemo-ux -S`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts vedenemo-ux/src/vite-env.d.ts`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check -- vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+
+Current status and next steps:
+
+- Moved non-relation association cardinality into the target endpoint label,
+  generating PlantUML such as `Artist o-- "1..*" Album : on` instead of
+  appending cardinality after the edge label.
+- Kept relation association endpoint role/cardinality labels before the edge
+  endpoints and simplified edge labels to plain PlantUML label text.
+- Verification passed: `npm run build` and targeted `git diff --check`.
