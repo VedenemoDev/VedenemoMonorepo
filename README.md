@@ -30,8 +30,9 @@ development, command-flow testing, and shaping the core model/API boundaries.
 - In-memory storage adapter.
 - Optional Google Cloud Storage snapshot adapter for browser console `.vdos`
   save/load.
-- Separate Vite/TypeScript UX with model selection, PlantUML SVG rendering, and
-  a full-page browser console at `/console`.
+- Separate Vite/TypeScript UX with model selection, PlantUML SVG rendering,
+  runtime model-instance visualizations, and a full-page browser console at
+  `/console`.
 - GitHub Actions workflows for backend and frontend.
 
 Not currently implemented:
@@ -56,7 +57,7 @@ vedenemo-command-console Shared CLI-like command session behavior.
 vedenemo-web-api         Javalin HTTP backend executable jar.
 vedenemo-cli             HTTP-backed interactive CLI.
 vedenemo-ux              Separate React + Vite frontend.
-docs/                    Architecture, roadmap, and CLI reference docs.
+docs/                    Architecture, roadmap, CLI, and visualization docs.
 tasks/                   Current task and historical backlog.
 ```
 
@@ -343,6 +344,12 @@ entity groups such as `Album (460)`. Root nodes show the backend-stored visual
 alias when available, otherwise a short form of the globally unique root id
 with the full id as a tooltip. Use the root node's menu `Rename...` action to
 update the backend-stored root alias.
+Use the root node's menu `Visualize...` action to open the runtime
+visualization wizard in a new browser tab. The first implemented visualization
+is a D3-backed `Tidy tree` that binds model entities, association traversal
+direction, and label templates to a scrollable SVG tree. See
+[docs/visualizations.md](docs/visualizations.md) for the full visualization
+workflow and current limits.
 The console output scrolls to the latest line as commands run. The full-page
 browser console remains available directly at `/console`. The browser console
 supports the same authoring commands as `VedenemoCli`, including `add`,

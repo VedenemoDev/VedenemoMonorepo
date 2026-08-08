@@ -7398,3 +7398,46 @@ Current status and next steps:
 - Verification passed: `npm run build` and targeted `git diff --check`.
 - `npm audit --audit-level=high` reports the known Vite dev-server advisory for
   `8.0.13`; the audit fix is the `8.2.1` upgrade being backed out here.
+
+## 2026-08-09 00:03 EEST
+
+Session goal: document the working model-instance visualization proof of
+concept and link the new documentation page from `README.md`.
+
+Files changed:
+
+- `README.md`
+- `SESSION.md`
+- `docs/visualizations.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,220p' README.md`
+- `sed -n '220,460p' README.md`
+- `rg --files docs | sort`
+- `rg -n "visual|Visualization|Model instances|PlantUML|Tidy tree|D3|docs/" README.md docs tasks -S`
+- `git status --short --branch`
+- `sed -n '520,660p' docs/architecture_doc.md`
+- `sed -n '875,905p' docs/architecture_doc.md`
+- `rg -n "visualizeWizard|Visualize|Tidy tree|chart type|labelTemplate|binding|Refresh data|incoming|outgoing|disabled" vedenemo-ux/src/App.tsx -S`
+- `git diff -- README.md docs/visualizations.md`
+- `git diff --check -- README.md docs/visualizations.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '1,260p' docs/visualizations.md`
+- `wc -l docs/visualizations.md README.md`
+
+Current status and next steps:
+
+- Added `docs/visualizations.md` with the runtime visualization scope,
+  prerequisites, wizard flow, Tidy tree binding behavior, proof example, and
+  current limits.
+- Linked the new page from `README.md` and updated README scope/layout wording
+  to mention runtime model-instance visualizations.
+- Verification passed: targeted `git diff --check`.
