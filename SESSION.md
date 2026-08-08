@@ -7342,3 +7342,59 @@ Current status and next steps:
   labels from the generated PlantUML source, then lays out class boxes and
   association lines directly as SVG.
 - Verification passed: `npm run build` and targeted `git diff --check`.
+
+## 2026-08-08 23:49 EEST
+
+Session goal: address the remaining empty Models-tab diagram after confirming
+rendering worked before the visualization task implementation.
+
+Files changed:
+
+- `SESSION.md`
+- `vedenemo-ux/package-lock.json`
+- `vedenemo-ux/package.json`
+- `vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts`
+- `vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `vedenemo-ux/src/vite-env.d.ts`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '150,210p' vedenemo-ux/src/styles.css`
+- `sed -n '1,380p' vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts`
+- `git log --oneline --decorate -n 12 -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts vedenemo-ux/package.json vedenemo-ux/package-lock.json`
+- `git show --stat --oneline HEAD~3..HEAD`
+- `git show --stat --oneline be9d15e`
+- `git show be9d15e -- vedenemo-ux/package.json vedenemo-ux/package-lock.json`
+- `git show be9d15e^:vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts`
+- `git show be9d15e^:vedenemo-ux/package.json`
+- `npm install --save-dev vite@8.0.13` from `vedenemo-ux`
+- `git checkout be9d15e^ -- vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts vedenemo-ux/src/vite-env.d.ts` (blocked before changing files)
+- `git status --short --branch`
+- `sed -n '1,120p' vedenemo-ux/src/vite-env.d.ts`
+- `sed -n '1,140p' vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts`
+- `sed -n '1,220p' vedenemo-ux/package.json`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/package.json vedenemo-ux/package-lock.json`
+- `npm audit --audit-level=high` from `vedenemo-ux`
+- `git diff --check -- vedenemo-ux/package.json vedenemo-ux/package-lock.json vedenemo-ux/src/adapters/PlantUmlDiagramRendererAdapter.ts vedenemo-ux/src/adapters/PlantUmlModelAdapter.ts vedenemo-ux/src/vite-env.d.ts`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Restored the pre-visualization PlantUML renderer adapter behavior, removing
+  the `renderToString`/fallback-renderer experiments.
+- Restored the pre-visualization PlantUML model source formatting.
+- Re-pinned frontend Vite to exact `8.0.13`; the visualization task had upgraded
+  it to `^8.2.1`, which also changed the Rolldown bundling layer and is the
+  likely PlantUML side-effect regression.
+- Verification passed: `npm run build` and targeted `git diff --check`.
+- `npm audit --audit-level=high` reports the known Vite dev-server advisory for
+  `8.0.13`; the audit fix is the `8.2.1` upgrade being backed out here.

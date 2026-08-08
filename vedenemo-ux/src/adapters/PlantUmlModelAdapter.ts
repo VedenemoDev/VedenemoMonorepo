@@ -96,20 +96,13 @@ function associationOperator(kind: AssociationSummary["kind"]): string {
 
 function associationLine(association: AssociationSummary): string {
   if (association.kind === "RELATION") {
-    const sourceLabel = relationEndLabel(association.sourceRoleName, association.sourceCardinality, " ");
-    const targetLabel = relationEndLabel(association.targetRoleName, association.targetCardinality, "");
+    const sourceLabel = association.sourceRoleName === null ? "" : `"${plantUmlText(association.sourceRoleName)} ${plantUmlText(association.sourceCardinality ?? "")}" `;
+    const targetLabel = association.targetRoleName === null ? "" : ` "${plantUmlText(association.targetRoleName)} ${plantUmlText(association.targetCardinality ?? "")}"`;
     return `${identifier(association.sourceEntityAzName)} ${sourceLabel}${associationOperator(association.kind)}${targetLabel} ${identifier(
       association.targetEntityAzName,
-    )} : ${plantUmlText(association.visName)}`;
+    )} : "${plantUmlText(association.visName)}"`;
   }
-  return `${identifier(association.sourceEntityAzName)} ${associationOperator(association.kind)} "${plantUmlText(association.cardinality)}" ${identifier(
+  return `${identifier(association.sourceEntityAzName)} ${associationOperator(association.kind)} ${identifier(
     association.targetEntityAzName,
-  )} : ${plantUmlText(association.visName)}`;
-}
-
-function relationEndLabel(roleName: string | null, cardinality: string | null, suffix: string): string {
-  if (roleName === null) {
-    return "";
-  }
-  return `"${plantUmlText(`${roleName} ${cardinality ?? ""}`.trim())}"${suffix}`;
+  )} : "${plantUmlText(association.visName)}" ${plantUmlText(association.cardinality)}`;
 }
