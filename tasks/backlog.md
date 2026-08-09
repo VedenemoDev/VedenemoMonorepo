@@ -2,7 +2,7 @@
 
 ## Tidy tree root node selection by entity instance query
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -101,6 +101,21 @@ and shows a footer label with the current number of matched instances.
   Tidy tree level and includes only descendants reachable through the existing
   Tidy tree level/association binding.
 - `cd vedenemo-ux && npm run build` succeeds.
+
+### Completion Notes
+
+- Extended the runtime-only Tidy tree binding with manual-root and
+  entity-instance-root modes.
+- Added root entity selection, root label template, multiple ANDed scalar
+  comparisons, query-console-style relationship criteria, and automatic root
+  match count resolution.
+- Kept the implementation frontend-first by reusing the existing entity `_query`
+  API for root selection.
+- Updated the Tidy tree renderer data build so selected-root mode renders the
+  resolved entity instance as the chart root and only traverses descendants from
+  that node.
+- Updated `docs/architecture_doc.md` to reflect the current visualization flow.
+- Verified with `cd vedenemo-ux && npm run build`.
 
 ## Model instance data visualization proof-of-concept
 

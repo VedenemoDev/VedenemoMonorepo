@@ -7742,3 +7742,57 @@ Current status and next steps:
   template, resolves automatically, and shows the live match count in a footer
   label.
 - Implementation remains intentionally not started.
+
+## 2026-08-10 00:22 EEST
+
+Session goal: implement Tidy tree chart root selection by entity instance query.
+
+Files changed:
+
+- `SESSION.md`
+- `docs/architecture_doc.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+
+Commands run:
+
+- `sed -n '120,190p' vedenemo-ux/src/App.tsx`
+- `sed -n '545,820p' vedenemo-ux/src/App.tsx`
+- `sed -n '2440,2735p' vedenemo-ux/src/App.tsx`
+- `sed -n '2735,2920p' vedenemo-ux/src/App.tsx`
+- `sed -n '180,260p' vedenemo-ux/src/App.tsx`
+- `sed -n '2360,2475p' vedenemo-ux/src/App.tsx`
+- `sed -n '3440,3495p' vedenemo-ux/src/App.tsx`
+- `rg -n "binding-grid|binding-level|visualize-actions|query-form|query-field" vedenemo-ux/src/styles.css`
+- `sed -n '740,880p' vedenemo-ux/src/styles.css`
+- `sed -n '1340,1425p' vedenemo-ux/src/styles.css`
+- `rg -n "QueryRequest|QueryRelationship|comparisons|relationships" vedenemo-web-api/src/main/java vedenemo-core/src/main/java vedenemo-model-api/src/main/java`
+- `sed -n '288,345p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '110,130p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `npm run build` in `vedenemo-ux`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `rg -n "visualiz|Tidy|query console|model instance" docs/architecture_doc.md`
+- `git status --short --branch`
+- `sed -n '590,612p' docs/architecture_doc.md`
+- `sed -n '872,900p' docs/architecture_doc.md`
+- `git diff --check -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css docs/architecture_doc.md tasks/backlog.md tasks/current-task.md SESSION.md`
+- `rg -n "bindingValidationMessage|rootSelection|rootLabel" vedenemo-ux/src/App.tsx`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented runtime-only selected-root mode for the Tidy tree visualization
+  wizard.
+- Manual root mode preserves the previous synthetic chart root label behavior.
+- Entity-instance root mode uses the selected first entity level as the chart
+  root, supports a separate root label template, one or more scalar comparison
+  rows, optional relationship criteria, automatic match resolution, and match
+  count feedback.
+- Visualization remains blocked until selected-root mode resolves exactly one
+  root instance; rendering starts at that instance and traverses descendants
+  through the existing binding.
+- Verification passed: `cd vedenemo-ux && npm run build` and targeted
+  `git diff --check`.

@@ -211,8 +211,31 @@ type TidyTreeBindingLevel = {
   };
 };
 
+type TidyTreeRootMode = "manual" | "entity";
+
+type TidyTreeRootDirectCriterion = {
+  attributeAzName: string;
+  operator: QueryOperator;
+  value: string;
+};
+
+type TidyTreeRootRelationshipCriterion = {
+  traversalValue: string;
+  relatedAttributeAzName: string;
+  operator: QueryOperator;
+  value: string;
+};
+
+type TidyTreeRootSelection = {
+  mode: TidyTreeRootMode;
+  labelTemplate: string;
+  directCriteria: TidyTreeRootDirectCriterion[];
+  relationshipCriteria: TidyTreeRootRelationshipCriterion[];
+};
+
 type TidyTreeBinding = {
   rootLabel: string;
+  rootSelection: TidyTreeRootSelection;
   levels: TidyTreeBindingLevel[];
 };
 
@@ -228,6 +251,13 @@ type VisualizationDataState = {
   message: string;
   tree: TidyTreeNode | null;
   loadedAt?: string;
+};
+
+type RootMatchState = {
+  status: ModelInstanceLoadState;
+  message: string;
+  count?: number;
+  instance?: EntityInstanceResponse;
 };
 
 const PLANTUML_TARGET_ID = "plantuml-diagram";
@@ -625,6 +655,38 @@ function defaultLabelTemplate(entity: EntityDescription | null): string {
   return entity?.attributes[0]?.azName ? `{${entity.attributes[0].azName}}` : "{id}";
 }
 
+function defaultRootDirectCriterion(entity: EntityDescription | null): TidyTreeRootDirectCriterion {
+  const attribute = entity?.attributes[0] ?? null;
+  return {
+    attributeAzName: attribute?.azName ?? "",
+    operator: "=",
+    value: "",
+  };
+}
+
+function defaultRootRelationshipCriterion(
+  entity: EntityDescription | null,
+  apiDescription: ApiDescriptionResponse | null,
+): TidyTreeRootRelationshipCriterion {
+  const traversal = traversalOptionsFor(entity, apiDescription)[0] ?? null;
+  const relatedAttribute = traversal?.relatedEntity.attributes[0] ?? null;
+  return {
+    traversalValue: traversal === null ? "" : traversalOptionValue(traversal),
+    relatedAttributeAzName: relatedAttribute?.azName ?? "",
+    operator: "=",
+    value: "",
+  };
+}
+
+function defaultRootSelection(entity: EntityDescription | null, apiDescription: ApiDescriptionResponse | null, mode: TidyTreeRootMode = "manual"): TidyTreeRootSelection {
+  return {
+    mode,
+    labelTemplate: defaultLabelTemplate(entity),
+    directCriteria: [defaultRootDirectCriterion(entity)],
+    relationshipCriteria: [],
+  };
+}
+
 function templatePlaceholders(template: string): string[] {
   return [...template.matchAll(/\{([^{}]+)\}/g)]
     .map((match) => match[1].trim())
@@ -684,15 +746,189 @@ function traversalOptionsForBindingLevel(
     .filter((option) => !usedEntityNames.has(option.relatedEntity.azName.toLocaleLowerCase()));
 }
 
-function bindingValidationMessage(apiDescription: ApiDescriptionResponse | null, binding: TidyTreeBinding): string | null {
+function selectedRootEntity(apiDescription: ApiDescriptionResponse | null, binding: TidyTreeBinding): EntityDescription | null {
+  return findEntity(apiDescription?.entities ?? [], binding.levels[0]?.entityAzName ?? "");
+}
+
+function selectedRootRelationshipTraversal(
+  apiDescription: ApiDescriptionResponse | null,
+  rootEntity: EntityDescription | null,
+  criterion: TidyTreeRootRelationshipCriterion,
+): TraversalOption | null {
+  return traversalOptionsFor(rootEntity, apiDescription)
+    .find((option) => traversalOptionValue(option) === criterion.traversalValue) ?? null;
+}
+
+function validateRootDirectCriterion(
+  entity: EntityDescription,
+  criterion: TidyTreeRootDirectCriterion,
+  index: number,
+): string | null {
+  const attribute = entity.attributes.find((candidate) => candidate.azName === criterion.attributeAzName) ?? null;
+  if (attribute === null) {
+    return `Root comparison ${index + 1}: select an attribute.`;
+  }
+  if (!queryOperatorsFor(attribute).includes(criterion.operator)) {
+    return `Root comparison ${index + 1}: ${criterion.operator} is not valid for ${attribute.visName}.`;
+  }
+  if (!criterion.value.trim()) {
+    return `Root comparison ${index + 1}: value is required.`;
+  }
+  if (attribute.dataType === "NUMERIC" && !Number.isFinite(parseCriterionValue(attribute, criterion.value))) {
+    return `Root comparison ${index + 1}: numeric value must be valid.`;
+  }
+  return null;
+}
+
+function validateRootRelationshipCriterion(
+  apiDescription: ApiDescriptionResponse,
+  rootEntity: EntityDescription,
+  criterion: TidyTreeRootRelationshipCriterion,
+  index: number,
+): string | null {
+  const traversal = selectedRootRelationshipTraversal(apiDescription, rootEntity, criterion);
+  if (traversal === null) {
+    return `Root relationship ${index + 1}: select an association.`;
+  }
+  const attribute = traversal.relatedEntity.attributes.find((candidate) => candidate.azName === criterion.relatedAttributeAzName) ?? null;
+  if (attribute === null) {
+    return `Root relationship ${index + 1}: select a related attribute.`;
+  }
+  if (!queryOperatorsFor(attribute).includes(criterion.operator)) {
+    return `Root relationship ${index + 1}: ${criterion.operator} is not valid for ${attribute.visName}.`;
+  }
+  if (!criterion.value.trim()) {
+    return `Root relationship ${index + 1}: value is required.`;
+  }
+  if (attribute.dataType === "NUMERIC" && !Number.isFinite(parseCriterionValue(attribute, criterion.value))) {
+    return `Root relationship ${index + 1}: numeric value must be valid.`;
+  }
+  return null;
+}
+
+function rootSelectionValidationMessage(apiDescription: ApiDescriptionResponse | null, binding: TidyTreeBinding): string | null {
+  if (apiDescription === null || binding.rootSelection.mode !== "entity") {
+    return null;
+  }
+  const rootEntity = selectedRootEntity(apiDescription, binding);
+  if (rootEntity === null) {
+    return "Select a root entity type.";
+  }
+  const labelTemplateError = validateLabelTemplate(rootEntity, binding.rootSelection.labelTemplate);
+  if (labelTemplateError !== null) {
+    return `Root label: ${labelTemplateError}`;
+  }
+  if (binding.rootSelection.directCriteria.length === 0) {
+    return "Add at least one root comparison.";
+  }
+  for (const [index, criterion] of binding.rootSelection.directCriteria.entries()) {
+    const criterionError = validateRootDirectCriterion(rootEntity, criterion, index);
+    if (criterionError !== null) {
+      return criterionError;
+    }
+  }
+  for (const [index, criterion] of binding.rootSelection.relationshipCriteria.entries()) {
+    const criterionError = validateRootRelationshipCriterion(apiDescription, rootEntity, criterion, index);
+    if (criterionError !== null) {
+      return criterionError;
+    }
+  }
+  return null;
+}
+
+function rootSelectionQueryRequest(apiDescription: ApiDescriptionResponse, binding: TidyTreeBinding): QueryRequest {
+  const rootEntity = selectedRootEntity(apiDescription, binding);
+  if (rootEntity === null) {
+    throw new Error("Select a root entity type.");
+  }
+  const comparisons = binding.rootSelection.directCriteria.map((criterion) => {
+    const attribute = rootEntity.attributes.find((candidate) => candidate.azName === criterion.attributeAzName);
+    if (attribute === undefined) {
+      throw new Error(`Attribute ${criterion.attributeAzName} is unavailable.`);
+    }
+    return {
+      attributeAzName: attribute.azName,
+      operator: criterion.operator,
+      value: parseCriterionValue(attribute, criterion.value),
+    };
+  });
+  const relationships = binding.rootSelection.relationshipCriteria.map((criterion) => {
+    const traversal = selectedRootRelationshipTraversal(apiDescription, rootEntity, criterion);
+    if (traversal === null) {
+      throw new Error("Root relationship association is unavailable.");
+    }
+    const attribute = traversal.relatedEntity.attributes.find((candidate) => candidate.azName === criterion.relatedAttributeAzName);
+    if (attribute === undefined) {
+      throw new Error(`Related attribute ${criterion.relatedAttributeAzName} is unavailable.`);
+    }
+    return {
+      associationAzName: traversal.association.azName,
+      direction: traversal.direction,
+      entityAzName: traversal.relatedEntity.azName,
+      where: {
+        comparisons: [{
+          attributeAzName: attribute.azName,
+          operator: criterion.operator,
+          value: parseCriterionValue(attribute, criterion.value),
+        }],
+      },
+    };
+  });
+  return {
+    where: { comparisons },
+    relationships: relationships.length === 0 ? undefined : relationships,
+  };
+}
+
+async function resolveTidyTreeRootInstances(
+  apiBaseUrl: string,
+  modelAzName: string,
+  instanceRootId: string,
+  apiDescription: ApiDescriptionResponse,
+  binding: TidyTreeBinding,
+): Promise<EntityInstanceResponse[]> {
+  const rootEntity = selectedRootEntity(apiDescription, binding);
+  if (rootEntity === null) {
+    throw new Error("Select a root entity type.");
+  }
+  return queryEntityInstances(
+    apiBaseUrl,
+    modelAzName,
+    instanceRootId,
+    rootEntity.azName,
+    rootSelectionQueryRequest(apiDescription, binding),
+  );
+}
+
+function bindingValidationMessage(apiDescription: ApiDescriptionResponse | null, binding: TidyTreeBinding, rootMatchState?: RootMatchState): string | null {
   if (apiDescription === null) {
     return "Model metadata is not loaded.";
   }
-  if (!binding.rootLabel.trim()) {
+  if (binding.rootSelection.mode === "manual" && !binding.rootLabel.trim()) {
     return "Chart root label is required.";
   }
   if (binding.levels.length === 0 || !binding.levels[0].entityAzName) {
     return "Select at least one entity level.";
+  }
+  const rootSelectionError = rootSelectionValidationMessage(apiDescription, binding);
+  if (rootSelectionError !== null) {
+    return rootSelectionError;
+  }
+  if (binding.rootSelection.mode === "entity") {
+    if (rootMatchState === undefined) {
+      return null;
+    }
+    if (rootMatchState.status === "loading") {
+      return "Resolving root instance.";
+    }
+    if (rootMatchState.status === "error") {
+      return rootMatchState.message;
+    }
+    if (rootMatchState.count !== 1) {
+      return rootMatchState.count === undefined
+        ? "Resolve root instance before visualizing."
+        : `Root selection must match exactly one instance; currently matched ${rootMatchState.count}.`;
+    }
   }
   const seenEntities = new Set<string>();
   for (const [index, level] of binding.levels.entries()) {
@@ -742,10 +978,20 @@ async function buildTidyTreeData(
   }
 
   const entityByAzName = new Map(apiDescription.entities.map((entity) => [entity.azName.toLocaleLowerCase(), entity]));
+  const selectedRootInstances = binding.rootSelection.mode === "entity"
+    ? await resolveTidyTreeRootInstances(apiBaseUrl, modelAzName, instanceRootId, apiDescription, binding)
+    : [];
+  if (binding.rootSelection.mode === "entity" && selectedRootInstances.length !== 1) {
+    throw new Error(`Root selection must match exactly one instance; currently matched ${selectedRootInstances.length}.`);
+  }
   const instancesByEntity = new Map<string, EntityInstanceResponse[]>();
   await Promise.all(binding.levels.map(async (level) => {
     const entityKey = level.entityAzName.toLocaleLowerCase();
     if (instancesByEntity.has(entityKey)) {
+      return;
+    }
+    if (binding.rootSelection.mode === "entity" && level.entityAzName === binding.levels[0]?.entityAzName) {
+      instancesByEntity.set(entityKey, selectedRootInstances);
       return;
     }
     const instances = await queryEntityInstances(apiBaseUrl, modelAzName, instanceRootId, level.entityAzName, {});
@@ -761,7 +1007,7 @@ async function buildTidyTreeData(
     linksByLevel.set(index + 1, links);
   }));
 
-  function buildLevelNode(levelIndex: number, instance: EntityInstanceResponse): TidyTreeNode {
+  function buildLevelNode(levelIndex: number, instance: EntityInstanceResponse, labelTemplateOverride?: string): TidyTreeNode {
     const level = binding.levels[levelIndex];
     const entity = entityByAzName.get(level.entityAzName.toLocaleLowerCase());
     if (entity === undefined) {
@@ -793,7 +1039,7 @@ async function buildTidyTreeData(
 
     return {
       id: instance.id,
-      label: renderLabelTemplate(entity, instance, level.labelTemplate),
+      label: renderLabelTemplate(entity, instance, labelTemplateOverride ?? level.labelTemplate),
       detail: entity.visName,
       children,
     };
@@ -802,6 +1048,12 @@ async function buildTidyTreeData(
   const firstLevel = binding.levels[0];
   const firstEntity = entityByAzName.get(firstLevel.entityAzName.toLocaleLowerCase());
   const firstInstances = instancesByEntity.get(firstLevel.entityAzName.toLocaleLowerCase()) ?? [];
+  if (binding.rootSelection.mode === "entity") {
+    if (firstEntity === undefined || firstInstances[0] === undefined) {
+      throw new Error("Resolved root instance is unavailable.");
+    }
+    return buildLevelNode(0, firstInstances[0], binding.rootSelection.labelTemplate);
+  }
   return {
     id: "root",
     label: binding.rootLabel.trim(),
@@ -2391,7 +2643,15 @@ function VisualizationWizardPage() {
   const [statusMessage, setStatusMessage] = useState("Loading visualization wizard...");
   const [step, setStep] = useState<VisualizationWizardStep>("chartType");
   const [selectedChartTypeId, setSelectedChartTypeId] = useState(TIDY_TREE_CHART_ID);
-  const [binding, setBinding] = useState<TidyTreeBinding>({ rootLabel: "", levels: [] });
+  const [binding, setBinding] = useState<TidyTreeBinding>({
+    rootLabel: "",
+    rootSelection: defaultRootSelection(null, null),
+    levels: [],
+  });
+  const [rootMatchState, setRootMatchState] = useState<RootMatchState>({
+    status: "idle",
+    message: "Manual chart root",
+  });
   const [visualizationData, setVisualizationData] = useState<VisualizationDataState>({
     status: "idle",
     message: "Visualization data not loaded",
@@ -2448,6 +2708,7 @@ function VisualizationWizardPage() {
         setRoot(nextRoot);
         setBinding({
           rootLabel: rootResponseDisplayName(nextRoot),
+          rootSelection: defaultRootSelection(firstEntity, nextApiDescription),
           levels: defaultLevels,
         });
         setStatus("ok");
@@ -2467,6 +2728,65 @@ function VisualizationWizardPage() {
     };
   }, [modelAzName, instanceRootId]);
 
+  useEffect(() => {
+    if (binding.rootSelection.mode !== "entity") {
+      setRootMatchState({
+        status: "idle",
+        message: "Manual chart root",
+      });
+      return;
+    }
+    if (!apiBaseUrl || apiDescription === null || !modelAzName || !instanceRootId) {
+      setRootMatchState({
+        status: "idle",
+        message: "Root matching unavailable",
+      });
+      return;
+    }
+    const validationError = rootSelectionValidationMessage(apiDescription, binding);
+    if (validationError !== null) {
+      setRootMatchState({
+        status: "idle",
+        message: validationError,
+      });
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      setRootMatchState({
+        status: "loading",
+        message: "Resolving root match...",
+      });
+      resolveTidyTreeRootInstances(apiBaseUrl, modelAzName, instanceRootId, apiDescription, binding)
+        .then((instances) => {
+          if (cancelled) {
+            return;
+          }
+          setRootMatchState({
+            status: "ok",
+            message: `${instances.length} root match${instances.length === 1 ? "" : "es"}`,
+            count: instances.length,
+            instance: instances.length === 1 ? instances[0] : undefined,
+          });
+        })
+        .catch((error) => {
+          if (cancelled) {
+            return;
+          }
+          setRootMatchState({
+            status: "error",
+            message: error instanceof Error ? error.message : "Root match failed",
+          });
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [apiBaseUrl, apiDescription, binding, instanceRootId, modelAzName]);
+
   const rootName = root === null ? instanceRootId : rootResponseDisplayName(root);
   const chartOptions = useMemo(() => CHART_TYPES.map((chartType) => ({
     chartType,
@@ -2476,9 +2796,25 @@ function VisualizationWizardPage() {
   })), [apiDescription]);
   const selectedChartType = CHART_TYPES.find((chartType) => chartType.id === selectedChartTypeId) ?? CHART_TYPES[0];
   const selectedChartEligibility = chartOptions.find((option) => option.chartType.id === selectedChartType.id)?.eligibility ?? { selectable: false, reason: "Chart type unavailable." };
-  const bindingMessage = bindingValidationMessage(apiDescription, binding);
+  const bindingMessage = bindingValidationMessage(apiDescription, binding, rootMatchState);
   const canContinueToBinding = status === "ok" && selectedChartEligibility.selectable;
   const canRenderVisualization = canContinueToBinding && bindingMessage === null;
+
+  function clearVisualizationData() {
+    setVisualizationData({
+      status: "idle",
+      message: "Visualization data not loaded",
+      tree: null,
+    });
+  }
+
+  function updateRootSelection(nextRootSelection: TidyTreeRootSelection) {
+    setBinding((current) => ({
+      ...current,
+      rootSelection: nextRootSelection,
+    }));
+    clearVisualizationData();
+  }
 
   function updateBindingLevel(index: number, nextLevel: TidyTreeBindingLevel, truncateFollowingLevels = false) {
     setBinding((current) => ({
@@ -2487,27 +2823,20 @@ function VisualizationWizardPage() {
         .map((level, levelIndex) => levelIndex === index ? nextLevel : level)
         .slice(0, truncateFollowingLevels ? index + 1 : current.levels.length),
     }));
-    setVisualizationData({
-      status: "idle",
-      message: "Visualization data not loaded",
-      tree: null,
-    });
+    clearVisualizationData();
   }
 
   function selectFirstLevelEntity(entityAzName: string) {
     const entity = findEntity(apiDescription?.entities ?? [], entityAzName);
     setBinding((current) => ({
       ...current,
+      rootSelection: defaultRootSelection(entity, apiDescription, current.rootSelection.mode),
       levels: entity === null ? [] : [{
         entityAzName: entity.azName,
         labelTemplate: defaultLabelTemplate(entity),
       }],
     }));
-    setVisualizationData({
-      status: "idle",
-      message: "Visualization data not loaded",
-      tree: null,
-    });
+    clearVisualizationData();
   }
 
   function addNextLevel() {
@@ -2533,11 +2862,7 @@ function VisualizationWizardPage() {
         },
       ],
     }));
-    setVisualizationData({
-      status: "idle",
-      message: "Visualization data not loaded",
-      tree: null,
-    });
+    clearVisualizationData();
   }
 
   function removeLastLevel() {
@@ -2545,11 +2870,7 @@ function VisualizationWizardPage() {
       ...current,
       levels: current.levels.slice(0, Math.max(1, current.levels.length - 1)),
     }));
-    setVisualizationData({
-      status: "idle",
-      message: "Visualization data not loaded",
-      tree: null,
-    });
+    clearVisualizationData();
   }
 
   async function loadVisualizationData() {
@@ -2669,10 +2990,12 @@ function VisualizationWizardPage() {
             apiDescription={apiDescription}
             binding={binding}
             validationMessage={bindingMessage}
+            rootMatchState={rootMatchState}
             onRootLabelChange={(rootLabel) => {
               setBinding((current) => ({ ...current, rootLabel }));
-              setVisualizationData({ status: "idle", message: "Visualization data not loaded", tree: null });
+              clearVisualizationData();
             }}
+            onRootSelectionChange={updateRootSelection}
             onFirstEntityChange={selectFirstLevelEntity}
             onLevelChange={updateBindingLevel}
             onAddLevel={addNextLevel}
@@ -2719,7 +3042,9 @@ function TidyTreeBindingPanel({
   apiDescription,
   binding,
   validationMessage,
+  rootMatchState,
   onRootLabelChange,
+  onRootSelectionChange,
   onFirstEntityChange,
   onLevelChange,
   onAddLevel,
@@ -2729,7 +3054,9 @@ function TidyTreeBindingPanel({
   apiDescription: ApiDescriptionResponse | null;
   binding: TidyTreeBinding;
   validationMessage: string | null;
+  rootMatchState: RootMatchState;
   onRootLabelChange: (value: string) => void;
+  onRootSelectionChange: (value: TidyTreeRootSelection) => void;
   onFirstEntityChange: (entityAzName: string) => void;
   onLevelChange: (index: number, level: TidyTreeBindingLevel, truncateFollowingLevels?: boolean) => void;
   onAddLevel: () => void;
@@ -2737,6 +3064,8 @@ function TidyTreeBindingPanel({
   onVisualize: () => void;
 }) {
   const canAddLevel = apiDescription !== null && traversalOptionsForBindingLevel(apiDescription, binding, binding.levels.length).length > 0;
+  const rootEntity = selectedRootEntity(apiDescription, binding);
+  const rootRelationshipOptions = traversalOptionsFor(rootEntity, apiDescription);
   const labelInputRefs = useRef(new Map<number, HTMLInputElement>());
   const labelCursorRanges = useRef(new Map<number, { start: number; end: number }>());
 
@@ -2772,15 +3101,312 @@ function TidyTreeBindingPanel({
     });
   }
 
+  function setRootMode(mode: TidyTreeRootMode) {
+    onRootSelectionChange({
+      ...binding.rootSelection,
+      mode,
+    });
+  }
+
+  function setRootLabelTemplate(labelTemplate: string) {
+    onRootSelectionChange({
+      ...binding.rootSelection,
+      labelTemplate,
+    });
+  }
+
+  function updateRootDirectCriterion(index: number, criterion: TidyTreeRootDirectCriterion) {
+    onRootSelectionChange({
+      ...binding.rootSelection,
+      directCriteria: binding.rootSelection.directCriteria.map((candidate, candidateIndex) => (
+        candidateIndex === index ? criterion : candidate
+      )),
+    });
+  }
+
+  function updateRootRelationshipCriterion(index: number, criterion: TidyTreeRootRelationshipCriterion) {
+    onRootSelectionChange({
+      ...binding.rootSelection,
+      relationshipCriteria: binding.rootSelection.relationshipCriteria.map((candidate, candidateIndex) => (
+        candidateIndex === index ? criterion : candidate
+      )),
+    });
+  }
+
   return (
     <section className="visualize-panel" aria-labelledby="visualize-binding">
       <h2 id="visualize-binding">Model Element Binding</h2>
-      <div className="binding-grid">
-        <label className="query-field">
-          <span>Chart root label</span>
-          <input value={binding.rootLabel} onChange={(event) => onRootLabelChange(event.target.value)} />
+      <fieldset className="binding-root-mode">
+        <legend>Chart root</legend>
+        <label>
+          <input
+            type="radio"
+            name="tidy-tree-root-mode"
+            checked={binding.rootSelection.mode === "manual"}
+            onChange={() => setRootMode("manual")}
+          />
+          Write root node title
         </label>
-      </div>
+        <label>
+          <input
+            type="radio"
+            name="tidy-tree-root-mode"
+            checked={binding.rootSelection.mode === "entity"}
+            onChange={() => setRootMode("entity")}
+          />
+          Select model entity data instance node
+        </label>
+      </fieldset>
+
+      {binding.rootSelection.mode === "manual" ? (
+        <div className="binding-grid">
+          <label className="query-field">
+            <span>Chart root label</span>
+            <input value={binding.rootLabel} onChange={(event) => onRootLabelChange(event.target.value)} />
+          </label>
+        </div>
+      ) : (
+        <section className="binding-root-selection" aria-labelledby="tidy-tree-root-selection">
+          <h3 id="tidy-tree-root-selection">Root Node Selection</h3>
+          <div className="binding-grid binding-grid-two">
+            <label className="query-field">
+              <span>Entity node type</span>
+              <select
+                value={binding.levels[0]?.entityAzName ?? ""}
+                onChange={(event) => onFirstEntityChange(event.target.value)}
+                disabled={apiDescription === null || apiDescription.entities.length === 0}
+              >
+                {apiDescription === null || apiDescription.entities.length === 0 ? (
+                  <option value="">No entity types</option>
+                ) : apiDescription.entities.map((entity) => (
+                  <option key={entity.azName} value={entity.azName}>
+                    {entity.visName} ({entity.azName})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="query-field">
+              <span>Root label template</span>
+              <input
+                value={binding.rootSelection.labelTemplate}
+                placeholder={rootEntity === null ? "{id}" : defaultLabelTemplate(rootEntity)}
+                onChange={(event) => setRootLabelTemplate(event.target.value)}
+              />
+            </label>
+          </div>
+
+          {rootEntity !== null && rootEntity.attributes.length > 0 && (
+            <div className="binding-template-hints" aria-label="Root label template hints">
+              {[...rootEntity.attributes.map((attribute) => `{${attribute.azName}}`), "{id}"].map((hint) => (
+                <button
+                  key={hint}
+                  type="button"
+                  onClick={() => setRootLabelTemplate(`${binding.rootSelection.labelTemplate}${hint}`)}
+                  title={`Append ${hint}`}
+                >
+                  <code>{hint}</code>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="binding-criteria">
+            <header>
+              <h4>Comparisons</h4>
+              <button
+                type="button"
+                onClick={() => onRootSelectionChange({
+                  ...binding.rootSelection,
+                  directCriteria: [
+                    ...binding.rootSelection.directCriteria,
+                    defaultRootDirectCriterion(rootEntity),
+                  ],
+                })}
+                disabled={rootEntity === null || rootEntity.attributes.length === 0}
+              >
+                Add comparison
+              </button>
+            </header>
+            {binding.rootSelection.directCriteria.map((criterion, index) => {
+              const attribute = rootEntity?.attributes.find((candidate) => candidate.azName === criterion.attributeAzName) ?? rootEntity?.attributes[0] ?? null;
+              const operators = queryOperatorsFor(attribute);
+              return (
+                <div key={`root-direct-${index}`} className="binding-criterion-row">
+                  <label className="query-field">
+                    <span>Attribute</span>
+                    <select
+                      value={attribute?.azName ?? ""}
+                      onChange={(event) => {
+                        const nextAttribute = rootEntity?.attributes.find((candidate) => candidate.azName === event.target.value) ?? null;
+                        updateRootDirectCriterion(index, {
+                          ...criterion,
+                          attributeAzName: event.target.value,
+                          operator: queryOperatorsFor(nextAttribute)[0],
+                        });
+                      }}
+                      disabled={rootEntity === null || rootEntity.attributes.length === 0}
+                    >
+                      {rootEntity === null || rootEntity.attributes.length === 0 ? (
+                        <option value="">No attributes</option>
+                      ) : rootEntity.attributes.map((candidate) => (
+                        <option key={candidate.azName} value={candidate.azName}>
+                          {candidate.visName} ({candidate.azName})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="query-field query-field-operator">
+                    <span>Operator</span>
+                    <select
+                      value={operators.includes(criterion.operator) ? criterion.operator : operators[0]}
+                      onChange={(event) => updateRootDirectCriterion(index, { ...criterion, operator: event.target.value as QueryOperator })}
+                      disabled={attribute === null}
+                    >
+                      {operators.map((operator) => (
+                        <option key={operator} value={operator}>{operator}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="query-field">
+                    <span>Value</span>
+                    <input
+                      value={criterion.value}
+                      type={attribute?.dataType === "NUMERIC" ? "number" : "text"}
+                      onChange={(event) => updateRootDirectCriterion(index, { ...criterion, value: event.target.value })}
+                      disabled={attribute === null}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="binding-remove-button"
+                    onClick={() => onRootSelectionChange({
+                      ...binding.rootSelection,
+                      directCriteria: binding.rootSelection.directCriteria.filter((_candidate, candidateIndex) => candidateIndex !== index),
+                    })}
+                    disabled={binding.rootSelection.directCriteria.length <= 1}
+                  >
+                    Remove
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="binding-criteria">
+            <header>
+              <h4>Relationship Criteria</h4>
+              <button
+                type="button"
+                onClick={() => onRootSelectionChange({
+                  ...binding.rootSelection,
+                  relationshipCriteria: [
+                    ...binding.rootSelection.relationshipCriteria,
+                    defaultRootRelationshipCriterion(rootEntity, apiDescription),
+                  ],
+                })}
+                disabled={rootRelationshipOptions.length === 0}
+              >
+                Add relationship
+              </button>
+            </header>
+            {binding.rootSelection.relationshipCriteria.length === 0 ? (
+              <div className="tree-empty">No relationship criteria</div>
+            ) : binding.rootSelection.relationshipCriteria.map((criterion, index) => {
+              const traversal = selectedRootRelationshipTraversal(apiDescription, rootEntity, criterion) ?? rootRelationshipOptions[0] ?? null;
+              const relatedAttribute = traversal?.relatedEntity.attributes.find((candidate) => candidate.azName === criterion.relatedAttributeAzName)
+                ?? traversal?.relatedEntity.attributes[0]
+                ?? null;
+              const operators = queryOperatorsFor(relatedAttribute);
+              return (
+                <div key={`root-relationship-${index}`} className="binding-criterion-row binding-criterion-row-wide">
+                  <label className="query-field query-field-wide">
+                    <span>Association</span>
+                    <select
+                      value={traversal === null ? "" : traversalOptionValue(traversal)}
+                      onChange={(event) => {
+                        const nextTraversal = rootRelationshipOptions.find((option) => traversalOptionValue(option) === event.target.value) ?? null;
+                        updateRootRelationshipCriterion(index, {
+                          ...criterion,
+                          traversalValue: event.target.value,
+                          relatedAttributeAzName: nextTraversal?.relatedEntity.attributes[0]?.azName ?? "",
+                          operator: "=",
+                        });
+                      }}
+                      disabled={rootRelationshipOptions.length === 0}
+                    >
+                      {rootRelationshipOptions.length === 0 ? (
+                        <option value="">No traversable associations</option>
+                      ) : rootRelationshipOptions.map((option) => (
+                        <option key={traversalOptionValue(option)} value={traversalOptionValue(option)}>
+                          {traversalLabel(option)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="query-field">
+                    <span>Related attribute</span>
+                    <select
+                      value={relatedAttribute?.azName ?? ""}
+                      onChange={(event) => {
+                        const nextAttribute = traversal?.relatedEntity.attributes.find((candidate) => candidate.azName === event.target.value) ?? null;
+                        updateRootRelationshipCriterion(index, {
+                          ...criterion,
+                          relatedAttributeAzName: event.target.value,
+                          operator: queryOperatorsFor(nextAttribute)[0],
+                        });
+                      }}
+                      disabled={traversal === null || traversal.relatedEntity.attributes.length === 0}
+                    >
+                      {traversal === null || traversal.relatedEntity.attributes.length === 0 ? (
+                        <option value="">No related attributes</option>
+                      ) : traversal.relatedEntity.attributes.map((candidate) => (
+                        <option key={candidate.azName} value={candidate.azName}>
+                          {candidate.visName} ({candidate.azName})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="query-field query-field-operator">
+                    <span>Operator</span>
+                    <select
+                      value={operators.includes(criterion.operator) ? criterion.operator : operators[0]}
+                      onChange={(event) => updateRootRelationshipCriterion(index, { ...criterion, operator: event.target.value as QueryOperator })}
+                      disabled={relatedAttribute === null}
+                    >
+                      {operators.map((operator) => (
+                        <option key={operator} value={operator}>{operator}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="query-field">
+                    <span>Value</span>
+                    <input
+                      value={criterion.value}
+                      type={relatedAttribute?.dataType === "NUMERIC" ? "number" : "text"}
+                      onChange={(event) => updateRootRelationshipCriterion(index, { ...criterion, value: event.target.value })}
+                      disabled={relatedAttribute === null}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="binding-remove-button"
+                    onClick={() => onRootSelectionChange({
+                      ...binding.rootSelection,
+                      relationshipCriteria: binding.rootSelection.relationshipCriteria.filter((_candidate, candidateIndex) => candidateIndex !== index),
+                    })}
+                  >
+                    Remove
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <footer className={`binding-root-match binding-root-match-${rootMatchState.status}`}>
+            {rootMatchState.count === undefined ? rootMatchState.message : `Matched root instances: ${rootMatchState.count}`}
+          </footer>
+        </section>
+      )}
 
       <div className="binding-levels">
         {binding.levels.length === 0 ? (
@@ -2797,7 +3423,11 @@ function TidyTreeBindingPanel({
                 <h3>Level {index + 1}</h3>
                 {entity && <span>{entity.visName}</span>}
               </header>
-              {index === 0 ? (
+              {index === 0 && binding.rootSelection.mode === "entity" ? (
+                <div className="binding-level-root-note">
+                  Root entity selected above
+                </div>
+              ) : index === 0 ? (
                 <label className="query-field">
                   <span>Entity</span>
                   <select value={level.entityAzName} onChange={(event) => onFirstEntityChange(event.target.value)}>
@@ -2837,29 +3467,31 @@ function TidyTreeBindingPanel({
                   </select>
                 </label>
               )}
-              <label className="query-field">
-                <span>Label template</span>
-                <input
-                  ref={(input) => {
-                    if (input === null) {
-                      labelInputRefs.current.delete(index);
-                    } else {
-                      labelInputRefs.current.set(index, input);
-                    }
-                  }}
-                  value={level.labelTemplate}
-                  placeholder={entity === null ? "{id}" : defaultLabelTemplate(entity)}
-                  onChange={(event) => {
-                    rememberLabelCursor(index, event.target);
-                    onLevelChange(index, { ...level, labelTemplate: event.target.value });
-                  }}
-                  onClick={(event) => rememberLabelCursor(index, event.currentTarget)}
-                  onFocus={(event) => rememberLabelCursor(index, event.currentTarget)}
-                  onKeyUp={(event) => rememberLabelCursor(index, event.currentTarget)}
-                  onSelect={(event) => rememberLabelCursor(index, event.currentTarget)}
-                />
-              </label>
-              {entity !== null && entity.attributes.length > 0 && (
+              {index === 0 && binding.rootSelection.mode === "entity" ? null : (
+                <label className="query-field">
+                  <span>Label template</span>
+                  <input
+                    ref={(input) => {
+                      if (input === null) {
+                        labelInputRefs.current.delete(index);
+                      } else {
+                        labelInputRefs.current.set(index, input);
+                      }
+                    }}
+                    value={level.labelTemplate}
+                    placeholder={entity === null ? "{id}" : defaultLabelTemplate(entity)}
+                    onChange={(event) => {
+                      rememberLabelCursor(index, event.target);
+                      onLevelChange(index, { ...level, labelTemplate: event.target.value });
+                    }}
+                    onClick={(event) => rememberLabelCursor(index, event.currentTarget)}
+                    onFocus={(event) => rememberLabelCursor(index, event.currentTarget)}
+                    onKeyUp={(event) => rememberLabelCursor(index, event.currentTarget)}
+                    onSelect={(event) => rememberLabelCursor(index, event.currentTarget)}
+                  />
+                </label>
+              )}
+              {entity !== null && entity.attributes.length > 0 && !(index === 0 && binding.rootSelection.mode === "entity") && (
                 <div className="binding-template-hints" aria-label={`Level ${index + 1} label template hints`}>
                   {[...entity.attributes.map((attribute) => `{${attribute.azName}}`), "{id}"].map((hint) => (
                     <button

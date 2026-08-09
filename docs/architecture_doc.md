@@ -603,8 +603,10 @@ Current user-facing behavior:
 - includes a frontend chart-type registry for visualization chart extensions;
   the first registered chart is a D3-backed `Tidy tree` that validates chart
   eligibility, prevents cyclic entity paths in the binding, supports outgoing
-  and incoming association traversal, fetches entity instances plus association
-  links, and renders a scrollable SVG tree with a refresh control
+  and incoming association traversal, supports either a synthetic chart root or
+  a single entity-instance root selected with query-style scalar and
+  relationship criteria, fetches entity instances plus association links, and
+  renders a scrollable SVG tree with a refresh control
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle
@@ -888,6 +890,10 @@ sequenceDiagram
     UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}
     API-->>UX: model-instance root metadata
     UX->>UX: select chart type and create runtime model-element binding
+    opt selected entity-instance chart root
+        UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query
+        API-->>UX: root-selection match count and selected root when unique
+    end
     UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query
     API-->>UX: entity instances for each selected binding level
     UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}
