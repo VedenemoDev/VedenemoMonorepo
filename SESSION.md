@@ -7615,3 +7615,52 @@ Current status and next steps:
   traversal.
 - Verification passed: targeted `git diff --check` and local API import smoke
   returned HTTP `201` with `commandCount=17`.
+
+## 2026-08-09 14:32 EEST
+
+Session goal: add British and Swedish royal-family data loaders for the clean
+`FamilyUnitTreeComposite` model.
+
+Files changed:
+
+- `SESSION.md`
+- `scripts/LoadBritishRoyalFamilyUnitTreeCompositeModelData.bash`
+- `scripts/LoadSwedishRoyalFamilyUnitTreeCompositeModelData.bash`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,120p' .vedenemo/FamilyUnitTreeComposite.vdos`
+- `sed -n '1,230p' scripts/LoadFamilyTreeModelData.bash`
+- `sed -n '1,250p' scripts/LoadSwedishRoyalFamilyTreeModelData.bash`
+- `rg --files scripts .vedenemo | sort`
+- `chmod +x scripts/LoadBritishRoyalFamilyUnitTreeCompositeModelData.bash scripts/LoadSwedishRoyalFamilyUnitTreeCompositeModelData.bash`
+- `bash -n scripts/LoadBritishRoyalFamilyUnitTreeCompositeModelData.bash`
+- `bash -n scripts/LoadSwedishRoyalFamilyUnitTreeCompositeModelData.bash`
+- `git diff --check -- scripts/LoadBritishRoyalFamilyUnitTreeCompositeModelData.bash scripts/LoadSwedishRoyalFamilyUnitTreeCompositeModelData.bash`
+- local web API smoke loading and rerunning both composite loaders on port
+  `18106`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Added loaders that ensure `FamilyUnitTreeComposite` is loaded from
+  `.vedenemo/FamilyUnitTreeComposite.vdos` when missing.
+- Each loader validates the expected `Person`, `FamilyUnit`,
+  `FamilyUnit_Partners`, `FamilyUnit_Children`, and
+  `FamilyUnit_ChildFamilyUnits` API shape before loading data.
+- The British loader creates 20 people, 6 family units, and 30 association
+  links on a fresh root.
+- The Swedish loader creates 23 people, 5 family units, and 31 association
+  links on a fresh root.
+- Verification passed: shell syntax checks, targeted `git diff --check`, local
+  API load smoke for both roots, and rerun idempotence with zero new records or
+  links on second runs.
