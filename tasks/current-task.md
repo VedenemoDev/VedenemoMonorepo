@@ -28,6 +28,8 @@ to one selected model entity data instance.
   instance.
 - Render selected-root mode from the resolved entity instance as the first Tidy
   tree level, showing only descendants reachable through the existing binding.
+- Allow explicit self-association recursion in finite Tidy tree bindings while
+  still blocking non-recursive entity-type cycles.
 
 ### Acceptance Criteria
 
@@ -60,5 +62,8 @@ to one selected model entity data instance.
   changes.
 - Updated Tidy tree data building so selected-root mode renders the resolved
   entity instance directly as the chart root.
+- Fixed recursive tree binding so self-associations such as
+  `FamilyUnit_ChildFamilyUnits` can be added as additional finite levels, and
+  rendering skips instance ids already present on the current path.
 - Updated `docs/architecture_doc.md` to reflect the current visualization flow.
 - Verified with `cd vedenemo-ux && npm run build`.

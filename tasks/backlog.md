@@ -58,8 +58,10 @@ and shows a footer label with the current number of matched instances.
   filters, or chart bindings in this task.
 - Keep backend/core unchanged unless frontend-only use of the existing query API
   cannot reliably identify the single root node.
-- Preserve existing Tidy tree traversal direction, acyclic path validation, label
-  template validation, data refresh behavior, and chart-type extension point.
+- Preserve existing Tidy tree traversal direction, label template validation,
+  data refresh behavior, and chart-type extension point. Continue blocking
+  non-recursive cyclic entity paths, but allow explicit self-association
+  recursion for finite recursive tree bindings.
 
 ### Validation Rules
 
@@ -114,6 +116,9 @@ and shows a footer label with the current number of matched instances.
 - Updated the Tidy tree renderer data build so selected-root mode renders the
   resolved entity instance as the chart root and only traverses descendants from
   that node.
+- Fixed recursive tree binding so self-associations such as
+  `FamilyUnit_ChildFamilyUnits` can be added as additional finite levels, and
+  rendering skips instance ids already present on the current path.
 - Updated `docs/architecture_doc.md` to reflect the current visualization flow.
 - Verified with `cd vedenemo-ux && npm run build`.
 

@@ -640,12 +640,11 @@ function evaluateTidyTreeEligibility(apiDescription: ApiDescriptionResponse): Ch
   const hasAcyclicAssociation = (apiDescription.associations ?? []).some((association) => (
     entityNames.has(association.sourceEntityAzName.toLocaleLowerCase())
     && entityNames.has(association.targetEntityAzName.toLocaleLowerCase())
-    && !sameAzName(association.sourceEntityAzName, association.targetEntityAzName)
   ));
   if (!hasAcyclicAssociation) {
     return {
       selectable: false,
-      reason: "Tidy tree needs at least one association between two different entities.",
+      reason: "Tidy tree needs at least one association between entities.",
     };
   }
   return { selectable: true };
@@ -728,6 +727,10 @@ function selectedEntityNames(binding: TidyTreeBinding): Set<string> {
   return new Set(binding.levels.map((level) => level.entityAzName.toLocaleLowerCase()).filter(Boolean));
 }
 
+function isSelfAssociationTraversal(option: TraversalOption): boolean {
+  return sameAzName(option.association.sourceEntityAzName, option.association.targetEntityAzName);
+}
+
 function traversalOptionsForBindingLevel(
   apiDescription: ApiDescriptionResponse | null,
   binding: TidyTreeBinding,
@@ -743,7 +746,7 @@ function traversalOptionsForBindingLevel(
     levels: binding.levels.slice(0, levelIndex),
   });
   return traversalOptionsFor(previousEntity, apiDescription)
-    .filter((option) => !usedEntityNames.has(option.relatedEntity.azName.toLocaleLowerCase()));
+    .filter((option) => isSelfAssociationTraversal(option) || !usedEntityNames.has(option.relatedEntity.azName.toLocaleLowerCase()));
 }
 
 function selectedRootEntity(apiDescription: ApiDescriptionResponse | null, binding: TidyTreeBinding): EntityDescription | null {
@@ -938,7 +941,17 @@ function bindingValidationMessage(apiDescription: ApiDescriptionResponse | null,
     }
     const entityKey = entity.azName.toLocaleLowerCase();
     if (seenEntities.has(entityKey)) {
-      return `${entity.visName} is already used in this tree path.`;
+      const association = (apiDescription.associations ?? []).find((candidate) => (
+        level.traversal !== undefined
+        && candidate.azName === level.traversal.associationAzName
+      ));
+      const isAllowedRecursiveStep = index > 0
+        && association !== undefined
+        && sameAzName(association.sourceEntityAzName, association.targetEntityAzName)
+        && sameAzName(binding.levels[index - 1]?.entityAzName ?? "", entity.azName);
+      if (!isAllowedRecursiveStep) {
+        return `${entity.visName} is already used in this tree path.`;
+      }
     }
     seenEntities.add(entityKey);
     const templateError = validateLabelTemplate(entity, level.labelTemplate);
@@ -984,18 +997,14 @@ async function buildTidyTreeData(
   if (binding.rootSelection.mode === "entity" && selectedRootInstances.length !== 1) {
     throw new Error(`Root selection must match exactly one instance; currently matched ${selectedRootInstances.length}.`);
   }
-  const instancesByEntity = new Map<string, EntityInstanceResponse[]>();
-  await Promise.all(binding.levels.map(async (level) => {
-    const entityKey = level.entityAzName.toLocaleLowerCase();
-    if (instancesByEntity.has(entityKey)) {
-      return;
-    }
-    if (binding.rootSelection.mode === "entity" && level.entityAzName === binding.levels[0]?.entityAzName) {
-      instancesByEntity.set(entityKey, selectedRootInstances);
+  const instancesByLevel = new Map<number, EntityInstanceResponse[]>();
+  await Promise.all(binding.levels.map(async (level, levelIndex) => {
+    if (binding.rootSelection.mode === "entity" && levelIndex === 0) {
+      instancesByLevel.set(levelIndex, selectedRootInstances);
       return;
     }
     const instances = await queryEntityInstances(apiBaseUrl, modelAzName, instanceRootId, level.entityAzName, {});
-    instancesByEntity.set(entityKey, instances);
+    instancesByLevel.set(levelIndex, instances);
   }));
 
   const linksByLevel = new Map<number, AssociationLinkResponse[]>();
@@ -1007,24 +1016,26 @@ async function buildTidyTreeData(
     linksByLevel.set(index + 1, links);
   }));
 
-  function buildLevelNode(levelIndex: number, instance: EntityInstanceResponse, labelTemplateOverride?: string): TidyTreeNode {
+  function buildLevelNode(levelIndex: number, instance: EntityInstanceResponse, visitedPath = new Set<string>(), labelTemplateOverride?: string): TidyTreeNode {
     const level = binding.levels[levelIndex];
     const entity = entityByAzName.get(level.entityAzName.toLocaleLowerCase());
     if (entity === undefined) {
       throw new Error(`Entity ${level.entityAzName} is unavailable.`);
     }
+    const nextVisitedPath = new Set(visitedPath);
+    nextVisitedPath.add(instance.id);
 
     const nextLevel = binding.levels[levelIndex + 1] ?? null;
     let children: TidyTreeNode[] = [];
     if (nextLevel !== null && nextLevel.traversal !== undefined) {
       const nextEntity = entityByAzName.get(nextLevel.entityAzName.toLocaleLowerCase());
-      const nextInstances = instancesByEntity.get(nextLevel.entityAzName.toLocaleLowerCase()) ?? [];
+      const nextInstances = instancesByLevel.get(levelIndex + 1) ?? [];
       const nextInstanceById = new Map(nextInstances.map((candidate) => [candidate.id, candidate]));
       const links = linksByLevel.get(levelIndex + 1) ?? [];
       const childIds = new Set<string>();
       for (const link of links) {
         const childId = linkChildIdForParent(instance.id, link, nextLevel.traversal.direction);
-        if (childId !== null) {
+        if (childId !== null && !nextVisitedPath.has(childId)) {
           childIds.add(childId);
         }
       }
@@ -1034,7 +1045,7 @@ async function buildTidyTreeData(
       children = nextEntity === undefined
         ? []
         : sortInstancesByLabel(nextEntity, childInstances, nextLevel.labelTemplate)
-            .map((childInstance) => buildLevelNode(levelIndex + 1, childInstance));
+            .map((childInstance) => buildLevelNode(levelIndex + 1, childInstance, nextVisitedPath));
     }
 
     return {
@@ -1047,12 +1058,12 @@ async function buildTidyTreeData(
 
   const firstLevel = binding.levels[0];
   const firstEntity = entityByAzName.get(firstLevel.entityAzName.toLocaleLowerCase());
-  const firstInstances = instancesByEntity.get(firstLevel.entityAzName.toLocaleLowerCase()) ?? [];
+  const firstInstances = instancesByLevel.get(0) ?? [];
   if (binding.rootSelection.mode === "entity") {
     if (firstEntity === undefined || firstInstances[0] === undefined) {
       throw new Error("Resolved root instance is unavailable.");
     }
-    return buildLevelNode(0, firstInstances[0], binding.rootSelection.labelTemplate);
+    return buildLevelNode(0, firstInstances[0], new Set<string>(), binding.rootSelection.labelTemplate);
   }
   return {
     id: "root",

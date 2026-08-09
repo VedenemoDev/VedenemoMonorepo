@@ -7796,3 +7796,48 @@ Current status and next steps:
   through the existing binding.
 - Verification passed: `cd vedenemo-ux && npm run build` and targeted
   `git diff --check`.
+
+## 2026-08-10 00:37 EEST
+
+Session goal: fix Tidy tree binding level growth for recursive
+self-association models after selected-root implementation.
+
+Files changed:
+
+- `SESSION.md`
+- `docs/architecture_doc.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `git status --short --branch`
+- `sed -n '560,740p' vedenemo-ux/src/App.tsx`
+- `sed -n '900,1070p' vedenemo-ux/src/App.tsx`
+- `rg -n "FamilyUnit|ChildFamilyUnits|Children|Partners|association" .vedenemo/FamilyUnitTreeComposite.vdos`
+- `sed -n '3400,3525p' vedenemo-ux/src/App.tsx`
+- `sed -n '700,770p' vedenemo-ux/src/App.tsx`
+- `npm run build` in `vedenemo-ux`
+- `rg -n "cyclic|recursive|self|Tidy tree" tasks/current-task.md tasks/backlog.md docs/architecture_doc.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Allowed explicit self-association recursion in Tidy tree binding options and
+  validation so recursive models like `FamilyUnit_ChildFamilyUnits` can add
+  additional finite levels.
+- Changed selected-root data loading to cache entity instances by binding level,
+  not only by entity type, so a selected root `FamilyUnit` does not hide later
+  child `FamilyUnit` instances.
+- Added render-path visited-instance protection to avoid following data cycles
+  back to an instance already on the current path.
+- Verification passed: `cd vedenemo-ux && npm run build`.

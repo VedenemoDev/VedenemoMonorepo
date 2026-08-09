@@ -602,11 +602,13 @@ Current user-facing behavior:
   templates to chart-specific visual concepts
 - includes a frontend chart-type registry for visualization chart extensions;
   the first registered chart is a D3-backed `Tidy tree` that validates chart
-  eligibility, prevents cyclic entity paths in the binding, supports outgoing
-  and incoming association traversal, supports either a synthetic chart root or
-  a single entity-instance root selected with query-style scalar and
-  relationship criteria, fetches entity instances plus association links, and
-  renders a scrollable SVG tree with a refresh control
+  eligibility, blocks non-recursive cyclic entity paths while allowing explicit
+  self-association recursion, supports outgoing and incoming association
+  traversal, supports either a synthetic chart root or a single entity-instance
+  root selected with query-style scalar and relationship criteria, fetches
+  entity instances plus association links, skips already visited instance ids on
+  the current render path, and renders a scrollable SVG tree with a refresh
+  control
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle
