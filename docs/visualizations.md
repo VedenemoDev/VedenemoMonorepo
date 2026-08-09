@@ -38,6 +38,12 @@ The current proof path uses the `AlbumCollectionSimple` model loaded from
 `.vedenemo/LevykokoelmaSimple.vdos`, with sample data loaded by
 `scripts/LoadLevykokoelmaSimpleModelData.bash`.
 
+The repository also includes `FamilyTreeTidy`, a Tidy tree-oriented family
+projection model in `.vedenemo/FamilyTreeTidy.vdos`. Its sample loaders are:
+
+- `scripts/LoadBritishRoyalFamilyTreeTidyModelData.bash`
+- `scripts/LoadSwedishRoyalFamilyTreeTidyModelData.bash`
+
 ## Opening The Wizard
 
 In the UX main page:
@@ -128,6 +134,35 @@ For the `AlbumCollectionSimple` proof case:
 
 The resulting tree renders the model-instance root as the top node, artist
 nodes under it, and album nodes under each artist.
+
+For the `FamilyTreeTidy` proof cases, the model keeps canonical `Person` and
+`FamilyUnit` instances and adds depth-specific display-node entities for the
+tree projection. This allows one person to appear in multiple rendered places,
+such as spouse and child references, while each display node still references
+one canonical `Person`.
+
+Use one of the loaded roots:
+
+- `British Royal Family Tree Tidy`
+- `Swedish Royal Family Tree Tidy`
+
+Then bind the Tidy tree through the outgoing display-node path:
+
+```text
+FamilyUnitNode0
+PersonNode1
+FamilyUnitNode2
+PersonNode3
+FamilyUnitNode4
+PersonNode5
+FamilyUnitNode6
+PersonNode7
+```
+
+Useful label templates are `{Label}` for family-unit nodes and `{Label}
+[{Role}]` for person nodes. The depth-specific node entities avoid repeated
+entity types in the binding path, which keeps the current cyclic-path guard
+intact while still rendering a one-direction family tree projection.
 
 ## Current Limits
 

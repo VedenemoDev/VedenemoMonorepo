@@ -7482,3 +7482,65 @@ Current status and next steps:
   mobile/touch devices.
 - Updated visualization documentation to describe clickable hint insertion.
 - Verification passed: frontend `npm run build` and targeted `git diff --check`.
+
+## 2026-08-09 13:08 EEST
+
+Session goal: add a Tidy tree-oriented family model variant and sample loaders
+for British and Swedish royal family trees.
+
+Files changed:
+
+- `.vedenemo/FamilyTreeTidy.vdos`
+- `SESSION.md`
+- `docs/visualizations.md`
+- `scripts/LoadBritishRoyalFamilyTreeTidyModelData.bash`
+- `scripts/LoadSwedishRoyalFamilyTreeTidyModelData.bash`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg --files .vedenemo scripts | sort`
+- `sed -n '1,260p' .vedenemo/FamilyTree.vdos`
+- `sed -n '1,260p' scripts/LoadFamilyTreeModelData.bash`
+- `sed -n '1,320p' scripts/LoadSwedishRoyalFamilyTreeModelData.bash`
+- `sed -n '1,220p' scripts/LoadLevykokoelmaSimpleModelData.bash`
+- `sed -n '260,620p' scripts/LoadFamilyTreeModelData.bash`
+- `sed -n '320,760p' scripts/LoadSwedishRoyalFamilyTreeModelData.bash`
+- `rg -n "create-association|add-link|_links|roots|_api|query" -S vedenemo-web-api vedenemo-core vedenemo-cli scripts | head -n 200`
+- `ls -l scripts .vedenemo vedenemo-web-api/target | sed -n '1,160p'`
+- `git status --short --branch`
+- `rg -n "FamilyTreeTidy|FamilyUnitNode|PersonNode" . scripts docs tasks vedenemo-ux -S`
+- `bash -n scripts/LoadBritishRoyalFamilyTreeTidyModelData.bash`
+- `bash -n scripts/LoadSwedishRoyalFamilyTreeTidyModelData.bash`
+- `git diff --check -- .vedenemo/FamilyTreeTidy.vdos scripts/LoadBritishRoyalFamilyTreeTidyModelData.bash scripts/LoadSwedishRoyalFamilyTreeTidyModelData.bash`
+- `chmod +x scripts/LoadBritishRoyalFamilyTreeTidyModelData.bash scripts/LoadSwedishRoyalFamilyTreeTidyModelData.bash`
+- local web API smoke loading both new Tidy family datasets on port `18101`
+- `sed -n '1,120p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `rg -n "dataType=.*(NUMBER|INTEGER|TEXT|URL|BOOLEAN|DATE)" .vedenemo docs vedenemo-core/src/test -S`
+- local web API idempotence smoke rerunning both new loaders on port `18103`
+- `git diff --check -- .vedenemo/FamilyTreeTidy.vdos scripts/LoadBritishRoyalFamilyTreeTidyModelData.bash scripts/LoadSwedishRoyalFamilyTreeTidyModelData.bash docs/visualizations.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `wc -l .vedenemo/FamilyTreeTidy.vdos scripts/LoadBritishRoyalFamilyTreeTidyModelData.bash scripts/LoadSwedishRoyalFamilyTreeTidyModelData.bash docs/visualizations.md`
+- `git diff -- docs/visualizations.md`
+
+Current status and next steps:
+
+- Added `FamilyTreeTidy`, a projection-oriented model that keeps canonical
+  `Person` and `FamilyUnit` instances while using depth-specific display-node
+  entities for Tidy tree traversal.
+- Added British and Swedish royal family loaders that create canonical persons,
+  canonical family units, duplicated visual display nodes, and reference links
+  back to the canonical instances.
+- The display-node path avoids repeated entity types, so it works with the
+  current Tidy tree cyclic-path guard.
+- Updated visualization docs with the new loaders and the recommended binding
+  path.
+- Verification passed: shell syntax checks, targeted `git diff --check`, local
+  API load smoke for both datasets, and loader idempotence smoke with zero
+  records created on second runs.

@@ -1,0 +1,163 @@
+vedenemo-script 1
+
+model azName=FamilyTreeTidy visName="Family Tree Tidy" version=1.0.0
+
+commands
+create-entity model=FamilyTreeTidy entity=Person visName="Person" activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=Person attribute=GivenNames visName="Given names" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=Person attribute=FamilyName visName="Family name" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=Person attribute=BirthDate visName="Birth date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=Person attribute=DeathDate visName="Death date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=Person attribute=DisplayName visName="Display name" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=Person attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyTreeTidy entity=FamilyUnit visName="Family unit" activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnit attribute=Label visName="Label" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnit attribute=StartDate visName="Start date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnit attribute=EndDate visName="End date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnit attribute=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnit attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyTreeTidy entity=FamilyUnitNode0 visName="Root family unit node" activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode0 attribute=Label visName="Label" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode0 attribute=StartDate visName="Start date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode0 attribute=EndDate visName="End date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode0 attribute=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode0 attribute=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode0 attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyTreeTidy entity=PersonNode1 visName="Person node level 1" activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode1 attribute=Label visName="Label" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode1 attribute=Role visName="Role" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode1 attribute=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode1 attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyTreeTidy entity=FamilyUnitNode2 visName="Family unit node level 2" activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode2 attribute=Label visName="Label" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode2 attribute=StartDate visName="Start date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode2 attribute=EndDate visName="End date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode2 attribute=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode2 attribute=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode2 attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyTreeTidy entity=PersonNode3 visName="Person node level 3" activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode3 attribute=Label visName="Label" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode3 attribute=Role visName="Role" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode3 attribute=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode3 attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyTreeTidy entity=FamilyUnitNode4 visName="Family unit node level 4" activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode4 attribute=Label visName="Label" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode4 attribute=StartDate visName="Start date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode4 attribute=EndDate visName="End date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode4 attribute=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode4 attribute=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode4 attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyTreeTidy entity=PersonNode5 visName="Person node level 5" activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode5 attribute=Label visName="Label" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode5 attribute=Role visName="Role" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode5 attribute=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode5 attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyTreeTidy entity=FamilyUnitNode6 visName="Family unit node level 6" activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode6 attribute=Label visName="Label" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode6 attribute=StartDate visName="Start date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode6 attribute=EndDate visName="End date" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode6 attribute=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode6 attribute=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=FamilyUnitNode6 attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyTreeTidy entity=PersonNode7 visName="Person node level 7" activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode7 attribute=Label visName="Label" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode7 attribute=Role visName="Role" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode7 attribute=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0
+create-attribute model=FamilyTreeTidy entity=PersonNode7 attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=RELATION association=FamilyUnit_Spouses visName="spouses" source=FamilyUnit sourceRole="family" sourceCardinality=1 target=Person targetRole="spouse" targetCardinality=0..2 cardinality=0..2 activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=RELATION association=FamilyUnit_Children visName="children" source=FamilyUnit sourceRole="family" sourceCardinality=1 target=Person targetRole="child" targetCardinality=0..* cardinality=0..* activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=REFERENCE association=FamilyUnitNode0_FamilyUnit visName="canonical family unit" source=FamilyUnitNode0 target=FamilyUnit cardinality=1 activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=REFERENCE association=FamilyUnitNode2_FamilyUnit visName="canonical family unit" source=FamilyUnitNode2 target=FamilyUnit cardinality=1 activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=REFERENCE association=FamilyUnitNode4_FamilyUnit visName="canonical family unit" source=FamilyUnitNode4 target=FamilyUnit cardinality=1 activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=REFERENCE association=FamilyUnitNode6_FamilyUnit visName="canonical family unit" source=FamilyUnitNode6 target=FamilyUnit cardinality=1 activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=REFERENCE association=PersonNode1_Person visName="canonical person" source=PersonNode1 target=Person cardinality=1 activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=REFERENCE association=PersonNode3_Person visName="canonical person" source=PersonNode3 target=Person cardinality=1 activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=REFERENCE association=PersonNode5_Person visName="canonical person" source=PersonNode5 target=Person cardinality=1 activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=REFERENCE association=PersonNode7_Person visName="canonical person" source=PersonNode7 target=Person cardinality=1 activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=OWNERSHIP association=FamilyUnitNode0_PersonNode1 visName="display people" source=FamilyUnitNode0 target=PersonNode1 cardinality=0..* activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=OWNERSHIP association=PersonNode1_FamilyUnitNode2 visName="later family units" source=PersonNode1 target=FamilyUnitNode2 cardinality=0..* activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=OWNERSHIP association=FamilyUnitNode2_PersonNode3 visName="display people" source=FamilyUnitNode2 target=PersonNode3 cardinality=0..* activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=OWNERSHIP association=PersonNode3_FamilyUnitNode4 visName="later family units" source=PersonNode3 target=FamilyUnitNode4 cardinality=0..* activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=OWNERSHIP association=FamilyUnitNode4_PersonNode5 visName="display people" source=FamilyUnitNode4 target=PersonNode5 cardinality=0..* activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=OWNERSHIP association=PersonNode5_FamilyUnitNode6 visName="later family units" source=PersonNode5 target=FamilyUnitNode6 cardinality=0..* activeSince=1.0.0
+create-association model=FamilyTreeTidy kind=OWNERSHIP association=FamilyUnitNode6_PersonNode7 visName="display people" source=FamilyUnitNode6 target=PersonNode7 cardinality=0..* activeSince=1.0.0
+
+snapshot
+entity azName=Person visName="Person" activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=GivenNames visName="Given names" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=FamilyName visName="Family name" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=BirthDate visName="Birth date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=DeathDate visName="Death date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=DisplayName visName="Display name" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=FamilyUnit visName="Family unit" activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=Label visName="Label" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=StartDate visName="Start date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=EndDate visName="End date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=FamilyUnitNode0 visName="Root family unit node" activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode0 azName=Label visName="Label" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode0 azName=StartDate visName="Start date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode0 azName=EndDate visName="End date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode0 azName=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode0 azName=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode0 azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=PersonNode1 visName="Person node level 1" activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode1 azName=Label visName="Label" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode1 azName=Role visName="Role" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode1 azName=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode1 azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=FamilyUnitNode2 visName="Family unit node level 2" activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode2 azName=Label visName="Label" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode2 azName=StartDate visName="Start date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode2 azName=EndDate visName="End date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode2 azName=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode2 azName=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode2 azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=PersonNode3 visName="Person node level 3" activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode3 azName=Label visName="Label" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode3 azName=Role visName="Role" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode3 azName=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode3 azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=FamilyUnitNode4 visName="Family unit node level 4" activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode4 azName=Label visName="Label" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode4 azName=StartDate visName="Start date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode4 azName=EndDate visName="End date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode4 azName=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode4 azName=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode4 azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=PersonNode5 visName="Person node level 5" activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode5 azName=Label visName="Label" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode5 azName=Role visName="Role" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode5 azName=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode5 azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=FamilyUnitNode6 visName="Family unit node level 6" activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode6 azName=Label visName="Label" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode6 azName=StartDate visName="Start date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode6 azName=EndDate visName="End date" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode6 azName=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode6 azName=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnitNode6 azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=PersonNode7 visName="Person node level 7" activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode7 azName=Label visName="Label" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode7 azName=Role visName="Role" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode7 azName=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0 deprecatedSince=null
+attribute entity=PersonNode7 azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnit_Spouses visName="spouses" kind=RELATION source=FamilyUnit sourceRole="family" sourceCardinality=1 target=Person targetRole="spouse" targetCardinality=0..2 cardinality=0..2 activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnit_Children visName="children" kind=RELATION source=FamilyUnit sourceRole="family" sourceCardinality=1 target=Person targetRole="child" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnitNode0_FamilyUnit visName="canonical family unit" kind=REFERENCE source=FamilyUnitNode0 target=FamilyUnit cardinality=1 activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnitNode2_FamilyUnit visName="canonical family unit" kind=REFERENCE source=FamilyUnitNode2 target=FamilyUnit cardinality=1 activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnitNode4_FamilyUnit visName="canonical family unit" kind=REFERENCE source=FamilyUnitNode4 target=FamilyUnit cardinality=1 activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnitNode6_FamilyUnit visName="canonical family unit" kind=REFERENCE source=FamilyUnitNode6 target=FamilyUnit cardinality=1 activeSince=1.0.0 deprecatedSince=null
+association azName=PersonNode1_Person visName="canonical person" kind=REFERENCE source=PersonNode1 target=Person cardinality=1 activeSince=1.0.0 deprecatedSince=null
+association azName=PersonNode3_Person visName="canonical person" kind=REFERENCE source=PersonNode3 target=Person cardinality=1 activeSince=1.0.0 deprecatedSince=null
+association azName=PersonNode5_Person visName="canonical person" kind=REFERENCE source=PersonNode5 target=Person cardinality=1 activeSince=1.0.0 deprecatedSince=null
+association azName=PersonNode7_Person visName="canonical person" kind=REFERENCE source=PersonNode7 target=Person cardinality=1 activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnitNode0_PersonNode1 visName="display people" kind=OWNERSHIP source=FamilyUnitNode0 target=PersonNode1 cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=PersonNode1_FamilyUnitNode2 visName="later family units" kind=OWNERSHIP source=PersonNode1 target=FamilyUnitNode2 cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnitNode2_PersonNode3 visName="display people" kind=OWNERSHIP source=FamilyUnitNode2 target=PersonNode3 cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=PersonNode3_FamilyUnitNode4 visName="later family units" kind=OWNERSHIP source=PersonNode3 target=FamilyUnitNode4 cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnitNode4_PersonNode5 visName="display people" kind=OWNERSHIP source=FamilyUnitNode4 target=PersonNode5 cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=PersonNode5_FamilyUnitNode6 visName="later family units" kind=OWNERSHIP source=PersonNode5 target=FamilyUnitNode6 cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnitNode6_PersonNode7 visName="display people" kind=OWNERSHIP source=FamilyUnitNode6 target=PersonNode7 cardinality=0..* activeSince=1.0.0 deprecatedSince=null
