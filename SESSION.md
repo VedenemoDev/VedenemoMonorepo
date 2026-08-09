@@ -7544,3 +7544,42 @@ Current status and next steps:
 - Verification passed: shell syntax checks, targeted `git diff --check`, local
   API load smoke for both datasets, and loader idempotence smoke with zero
   records created on second runs.
+
+## 2026-08-09 13:37 EEST
+
+Session goal: create a reviewable composite-style family-unit model that keeps
+the model generic instead of reflecting visualization depth.
+
+Files changed:
+
+- `.vedenemo/FamilyUnitTreeComposite.vdos`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `git status --short --branch`
+- `git diff --check -- .vedenemo/FamilyUnitTreeComposite.vdos`
+- `sed -n '1,180p' .vedenemo/FamilyUnitTreeComposite.vdos`
+- local web API import smoke for `.vedenemo/FamilyUnitTreeComposite.vdos` on
+  port `18104`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added only `.vedenemo/FamilyUnitTreeComposite.vdos`; no data loading scripts
+  were added.
+- The model centers on canonical `FamilyUnit` and `Person` entities.
+- `FamilyUnit` owns ordered `FamilyUnitChild` entries; each child entry can
+  reference either a canonical `Person` leaf or another canonical `FamilyUnit`
+  subtree through `FamilyUnitChild_FamilyUnit`.
+- This keeps recursive/composite structure in the model without encoding
+  visualization depth or duplicating node entity types per level.
+- Verification passed: targeted `git diff --check` and local API import smoke
+  returned HTTP `201` with `commandCount=24`.
