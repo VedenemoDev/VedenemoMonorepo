@@ -1,5 +1,107 @@
 # Backlog
 
+## Tidy tree root node selection by entity instance query
+
+Status: planned
+
+### Goal
+
+Extend the `Visualize Model Instance` flow for the `Tidy tree` chart so the
+chart root can either remain a manually named synthetic chart root or be bound
+to one selected model entity data instance.
+
+When the user selects an entity instance as the chart root, the rendered tree
+must start from that single matching data node and show only the selected
+subtree below it according to the existing Tidy tree level and association
+binding. The selected entity instance is also the first Tidy tree level; the
+existing synthetic chart root is not rendered above it in this mode.
+
+### User Flow
+
+In the `Model Element Binding` step for `Tidy tree`, add a radio-button choice:
+
+- write chart root label;
+- select model entity data instance node.
+
+For manual root label mode, keep the current `Chart root label` text field
+behavior.
+
+For entity instance root mode, provide query-style controls:
+
+- entity node type dropdown;
+- root node label template for the selected entity instance;
+- one or more comparison rows;
+- each comparison row has an attribute dropdown, operator dropdown, and value
+  field;
+- operators follow existing query-console semantics:
+  - `=` for all supported attribute types;
+  - `contains` for textual fields;
+  - `<` and `>` for numeric fields.
+- relationship criteria equivalent to the query console, including association
+  selection, traversal direction, related entity attribute, operator, and value.
+
+The user can add and remove comparison rows. All comparison rows are combined
+with logical `AND`; relationship criteria are also combined with the direct
+comparisons as part of the same root-selection filter. The binding cannot
+proceed to visualization unless the current criteria resolve to exactly one
+entity instance. The UI checks the match count automatically as criteria change
+and shows a footer label with the current number of matched instances.
+
+### Implementation Notes
+
+- Prefer reusing or extracting the query-console comparison model/helpers in
+  `vedenemo-ux` instead of creating divergent comparison behavior.
+- Use the existing entity `_query` HTTP endpoint if it continues to cover the
+  need; it already accepts comparison arrays and relationship criteria while
+  keeping DTO/JSON handling in `vedenemo-web-api`.
+- Keep visualization binding state runtime-only. Do not persist root selection,
+  filters, or chart bindings in this task.
+- Keep backend/core unchanged unless frontend-only use of the existing query API
+  cannot reliably identify the single root node.
+- Preserve existing Tidy tree traversal direction, acyclic path validation, label
+  template validation, data refresh behavior, and chart-type extension point.
+
+### Validation Rules
+
+- Manual mode requires a non-empty chart root label, matching current behavior.
+- Entity-instance root mode requires:
+  - an entity type;
+  - a root node label template valid for the selected root entity type;
+  - at least one comparison row;
+  - each comparison row to have an attribute, an operator valid for that
+    attribute type, and a valid value;
+  - each enabled relationship criterion to have a valid association traversal,
+    related attribute, operator, and value;
+  - numeric comparison values to parse as finite numbers;
+  - the current comparison set to match exactly one instance.
+- If zero instances match, show a clear blocking message.
+- If more than one instance matches, show a clear blocking message and require
+  additional conditions.
+- If exactly one instance matches, allow visualization and use that instance as
+  the chart root.
+
+### Acceptance Criteria
+
+- The Tidy tree binding step exposes a radio-button choice between manual chart
+  root label and selected model entity data instance root.
+- Manual mode behaves as it does today.
+- Entity-instance root mode lets the user build multiple ANDed comparison rows
+  using entity, attribute, operator, and value controls.
+- Entity-instance root mode also supports relationship criteria equivalent to
+  the query console.
+- Entity-instance root mode includes a separate label template for the resolved
+  root node.
+- Operator choices are constrained by the selected attribute data type in the
+  same way as the query console.
+- The UI automatically resolves and displays a footer label showing whether the
+  current conditions match zero, one, or multiple instances.
+- Visualization is disabled until entity-instance root mode resolves to exactly
+  one instance.
+- The rendered Tidy tree starts at the selected entity instance as the first
+  Tidy tree level and includes only descendants reachable through the existing
+  Tidy tree level/association binding.
+- `cd vedenemo-ux && npm run build` succeeds.
+
 ## Model instance data visualization proof-of-concept
 
 Status: executed

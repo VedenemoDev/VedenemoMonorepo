@@ -7664,3 +7664,81 @@ Current status and next steps:
 - Verification passed: shell syntax checks, targeted `git diff --check`, local
   API load smoke for both roots, and rerun idempotence with zero new records or
   links on second runs.
+
+## 2026-08-10 00:00 EEST
+
+Session goal: plan a new backlog item for selecting a Tidy tree chart root from
+one model entity data instance resolved by query-style comparison conditions.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `sed -n '1,120p' tasks/backlog.md`
+- `rg -n "Visualize|visualizeWizard|Tidy tree|chart root|root label|query console|contains|equals|comparison|operator" vedenemo-ux/src`
+- `rg --files vedenemo-ux/src | sort`
+- `git status --short --branch`
+- `sed -n '1,220p' vedenemo-ux/src/App.tsx`
+- `sed -n '470,740p' vedenemo-ux/src/App.tsx`
+- `sed -n '900,1185p' vedenemo-ux/src/App.tsx`
+- `sed -n '2550,2910p' vedenemo-ux/src/App.tsx`
+- `sed -n '720,900p' vedenemo-ux/src/App.tsx`
+- `sed -n '1185,1275p' vedenemo-ux/src/App.tsx`
+- `sed -n '2990,3435p' vedenemo-ux/src/App.tsx`
+- `rg -n "fetchEntityInstances|fetchAssociationLinks|query" vedenemo-ux/src/App.tsx vedenemo-web-api/src -g '*.java'`
+- `sed -n '340,390p' vedenemo-ux/src/App.tsx`
+- `sed -n '130,175p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '208,285p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added the newest backlog item, `Tidy tree root node selection by entity
+  instance query`, with scope, validation rules, implementation notes, and
+  acceptance criteria.
+- Implementation is intentionally not started.
+- Next step is to settle open product questions about root-mode semantics,
+  comparison-row defaults, and how selected-root traversal should align with the
+  existing entity level binding.
+
+## 2026-08-10 00:13 EEST
+
+Session goal: incorporate user answers into the planned Tidy tree root node
+selection backlog item.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '1,115p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Updated the planned backlog item to specify that entity-instance root mode
+  uses the selected entity instance as the first Tidy tree level.
+- Root selection now explicitly requires at least one direct comparison row,
+  supports query-console-style relationship criteria, uses a separate root label
+  template, resolves automatically, and shows the live match count in a footer
+  label.
+- Implementation remains intentionally not started.
