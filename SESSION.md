@@ -7583,3 +7583,35 @@ Current status and next steps:
   visualization depth or duplicating node entity types per level.
 - Verification passed: targeted `git diff --check` and local API import smoke
   returned HTTP `201` with `commandCount=24`.
+
+## 2026-08-09 14:22 EEST
+
+Session goal: simplify `FamilyUnitTreeComposite` to the cleanest association
+driven recursive model, without child-slot or visualization helper entities.
+
+Files changed:
+
+- `.vedenemo/FamilyUnitTreeComposite.vdos`
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `sed -n '1,180p' .vedenemo/FamilyUnitTreeComposite.vdos`
+- `tail -n 80 SESSION.md`
+- `git diff --check -- .vedenemo/FamilyUnitTreeComposite.vdos`
+- `sed -n '1,140p' .vedenemo/FamilyUnitTreeComposite.vdos`
+- local web API import smoke for `.vedenemo/FamilyUnitTreeComposite.vdos` on
+  port `18105`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Replaced the `FamilyUnitChild` edge-entity model with a direct association
+  model containing only `Person` and `FamilyUnit` entities.
+- Traversal now uses `FamilyUnit_Children` for child persons and recursive
+  `FamilyUnit_ChildFamilyUnits` for child family units.
+- `FamilyUnit_Partners` keeps partner participation separate from descendant
+  traversal.
+- Verification passed: targeted `git diff --check` and local API import smoke
+  returned HTTP `201` with `commandCount=17`.

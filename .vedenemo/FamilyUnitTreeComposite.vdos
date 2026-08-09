@@ -17,16 +17,9 @@ create-attribute model=FamilyUnitTreeComposite entity=FamilyUnit attribute=EndDa
 create-attribute model=FamilyUnitTreeComposite entity=FamilyUnit attribute=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0
 create-attribute model=FamilyUnitTreeComposite entity=FamilyUnit attribute=Status visName="Status" dataType=TEXT activeSince=1.0.0
 create-attribute model=FamilyUnitTreeComposite entity=FamilyUnit attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
-create-entity model=FamilyUnitTreeComposite entity=FamilyUnitChild visName="Family unit child" activeSince=1.0.0
-create-attribute model=FamilyUnitTreeComposite entity=FamilyUnitChild attribute=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0
-create-attribute model=FamilyUnitTreeComposite entity=FamilyUnitChild attribute=ChildKind visName="Child kind" dataType=TEXT activeSince=1.0.0
-create-attribute model=FamilyUnitTreeComposite entity=FamilyUnitChild attribute=Role visName="Role" dataType=TEXT activeSince=1.0.0
-create-attribute model=FamilyUnitTreeComposite entity=FamilyUnitChild attribute=LabelOverride visName="Label override" dataType=TEXT activeSince=1.0.0
-create-attribute model=FamilyUnitTreeComposite entity=FamilyUnitChild attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
 create-association model=FamilyUnitTreeComposite kind=RELATION association=FamilyUnit_Partners visName="partners" source=FamilyUnit sourceRole="familyUnit" sourceCardinality=1 target=Person targetRole="partner" targetCardinality=0..* cardinality=0..* activeSince=1.0.0
-create-association model=FamilyUnitTreeComposite kind=OWNERSHIP association=FamilyUnit_Children visName="children" source=FamilyUnit target=FamilyUnitChild cardinality=0..* activeSince=1.0.0
-create-association model=FamilyUnitTreeComposite kind=REFERENCE association=FamilyUnitChild_Person visName="person child" source=FamilyUnitChild target=Person cardinality=0..1 activeSince=1.0.0
-create-association model=FamilyUnitTreeComposite kind=REFERENCE association=FamilyUnitChild_FamilyUnit visName="family unit child" source=FamilyUnitChild target=FamilyUnit cardinality=0..1 activeSince=1.0.0
+create-association model=FamilyUnitTreeComposite kind=RELATION association=FamilyUnit_Children visName="children" source=FamilyUnit sourceRole="parentFamilyUnit" sourceCardinality=1 target=Person targetRole="child" targetCardinality=0..* cardinality=0..* activeSince=1.0.0
+create-association model=FamilyUnitTreeComposite kind=RELATION association=FamilyUnit_ChildFamilyUnits visName="child family units" source=FamilyUnit sourceRole="parentFamilyUnit" sourceCardinality=0..* target=FamilyUnit targetRole="childFamilyUnit" targetCardinality=0..* cardinality=0..* activeSince=1.0.0
 
 snapshot
 entity azName=Person visName="Person" activeSince=1.0.0 deprecatedSince=null
@@ -43,13 +36,6 @@ attribute entity=FamilyUnit azName=EndDate visName="End date" dataType=TEXT acti
 attribute entity=FamilyUnit azName=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
 attribute entity=FamilyUnit azName=Status visName="Status" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
 attribute entity=FamilyUnit azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
-entity azName=FamilyUnitChild visName="Family unit child" activeSince=1.0.0 deprecatedSince=null
-attribute entity=FamilyUnitChild azName=SortOrder visName="Sort order" dataType=NUMERIC activeSince=1.0.0 deprecatedSince=null
-attribute entity=FamilyUnitChild azName=ChildKind visName="Child kind" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
-attribute entity=FamilyUnitChild azName=Role visName="Role" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
-attribute entity=FamilyUnitChild azName=LabelOverride visName="Label override" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
-attribute entity=FamilyUnitChild azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
 association azName=FamilyUnit_Partners visName="partners" kind=RELATION source=FamilyUnit sourceRole="familyUnit" sourceCardinality=1 target=Person targetRole="partner" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null
-association azName=FamilyUnit_Children visName="children" kind=OWNERSHIP source=FamilyUnit target=FamilyUnitChild cardinality=0..* activeSince=1.0.0 deprecatedSince=null
-association azName=FamilyUnitChild_Person visName="person child" kind=REFERENCE source=FamilyUnitChild target=Person cardinality=0..1 activeSince=1.0.0 deprecatedSince=null
-association azName=FamilyUnitChild_FamilyUnit visName="family unit child" kind=REFERENCE source=FamilyUnitChild target=FamilyUnit cardinality=0..1 activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnit_Children visName="children" kind=RELATION source=FamilyUnit sourceRole="parentFamilyUnit" sourceCardinality=1 target=Person targetRole="child" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnit_ChildFamilyUnits visName="child family units" kind=RELATION source=FamilyUnit sourceRole="parentFamilyUnit" sourceCardinality=0..* target=FamilyUnit targetRole="childFamilyUnit" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null
