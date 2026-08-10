@@ -1,5 +1,107 @@
 # Backlog
 
+## Tidy tree manual root Level 1 filtering
+
+Status: executed
+
+### Goal
+
+Extend `Tidy tree` manual-root mode so the first entity level below the
+synthetic chart root can be filtered with query-style scalar and relationship
+criteria before the tree is rendered.
+
+This lets users create charts such as a synthetic root named `List of my 90's
+albums`, then bind Level 1 to `Album` and filter Level 1 to albums whose release
+year is greater than 1989 and less than 2000.
+
+### User Flow
+
+When `Write root node title` is selected:
+
+- keep the existing `Chart root label` input;
+- keep the existing Level 1 entity selection and label template controls;
+- add an explicit Level 1 filter toggle inside the Level 1 card;
+- when the filter toggle is enabled, show the Level 1 filtering controls inside
+  the Level 1 card;
+- support multiple scalar comparison rows with attribute, operator, and value;
+- support relationship criteria equivalent to the query console, but require an
+  attribute comparison for each enabled relationship criterion;
+- combine all enabled Level 1 criteria with logical `AND`;
+- show automatic match-count feedback for Level 1 so the user can see how many
+  first-level nodes will be rendered.
+
+The filter affects only the first entity level under the synthetic root. Deeper
+levels continue to be populated from the descendants reachable through the
+configured association binding. Filtering deeper levels is intentionally out of
+scope for this task.
+
+### Implementation Notes
+
+- Prefer generalizing the existing selected-root comparison and relationship
+  criterion model/helpers rather than copying root-specific code.
+- Reuse the existing entity `_query` endpoint for Level 1 filtering; it already
+  supports scalar comparison arrays and relationship criteria.
+- Keep the implementation in `vedenemo-ux` unless the existing query API proves
+  insufficient.
+- Keep visualization bindings runtime-only; do not persist Level 1 filters.
+- Preserve manual-root behavior when no Level 1 filter is enabled.
+- Preserve selected entity-instance root behavior from the previous task.
+- Keep filtering scoped to Level 1 only; do not add filtering controls to deeper
+  levels in this task.
+
+### Validation Rules
+
+- Manual-root mode still requires a non-empty synthetic chart root label.
+- Level 1 filtering is optional and controlled by an explicit toggle inside the
+  Level 1 card.
+- If Level 1 filtering is enabled:
+  - at least one scalar comparison row or relationship criterion is required;
+  - each scalar comparison row must have a valid Level 1 attribute, operator,
+    and value;
+  - each relationship criterion must have a valid Level 1 association traversal,
+    related attribute, operator, and value;
+  - relationship-exists-only criteria are not part of this task;
+  - numeric values must parse as finite numbers;
+  - zero matches disable visualization and show a clear message that the start
+    condition did not match any Level 1 nodes.
+- Unlike selected-root mode, Level 1 filtering may match zero, one, or many
+  instances; visualization is allowed for one or many valid matches.
+
+### Acceptance Criteria
+
+- In `Write root node title` mode, Level 1 exposes an explicit filter toggle in
+  the Level 1 card.
+- A user can add multiple ANDed scalar comparisons for Level 1.
+- A user can add relationship criteria for Level 1 equivalent to the query
+  console, with an attribute comparison required for each relationship
+  criterion.
+- Operators are constrained by attribute data type in the same way as the query
+  console.
+- The UI automatically shows how many Level 1 instances match the current
+  filter.
+- If the enabled filter matches zero Level 1 instances, visualization is
+  disabled and the UI explains that the start condition matched no results.
+- Visualization renders only matching Level 1 instances under the synthetic
+  root, then renders deeper descendants according to the existing binding.
+- Deeper levels do not expose filtering controls in this task.
+- If no Level 1 filter is enabled, manual-root mode behaves as it does today.
+- Selected entity-instance root mode remains unchanged.
+- `cd vedenemo-ux && npm run build` succeeds.
+
+### Completion Notes
+
+- Added runtime-only Level 1 filter state for manual-root Tidy tree bindings.
+- Added an explicit `Filter Level 1 nodes` toggle inside the Level 1 binding
+  card.
+- Added scalar comparison rows and relationship criteria for Level 1, reusing
+  the existing `_query` API semantics.
+- Added automatic Level 1 match-count feedback and blocked visualization when
+  an enabled Level 1 filter matches zero instances.
+- Kept filtering scoped to Level 1 only; deeper levels still render through the
+  existing descendant association traversal.
+- Preserved selected entity-instance root behavior.
+- Verified with `cd vedenemo-ux && npm run build`.
+
 ## Tidy tree root node selection by entity instance query
 
 Status: executed

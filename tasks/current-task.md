@@ -1,69 +1,60 @@
 # Current Task
 
-## Tidy tree root node selection by entity instance query
+## Tidy tree manual root Level 1 filtering
 
 Status: executed.
 
 ### Goal
 
-Extend the `Visualize Model Instance` flow for the `Tidy tree` chart so the
-chart root can either remain a manually named synthetic chart root or be bound
-to one selected model entity data instance.
+Extend `Tidy tree` manual-root mode so the first entity level below the
+synthetic chart root can be filtered with query-style scalar and relationship
+criteria before the tree is rendered.
 
 ### Scope
 
-- Add a radio-button choice between writing a root node title and selecting a
-  model entity data instance node.
-- Keep manual root label mode compatible with the previous Tidy tree binding.
-- Let selected-root mode choose the first Tidy tree entity level as the root
-  entity node type.
-- Let selected-root mode define a separate root label template.
-- Let selected-root mode define one or more direct scalar comparison rows.
-- Let selected-root mode add relationship criteria equivalent to the query
-  console.
-- AND all direct and relationship criteria through the existing entity `_query`
-  endpoint.
-- Resolve selected-root matches automatically and show the current match count.
-- Disable visualization until selected-root mode matches exactly one entity
-  instance.
-- Render selected-root mode from the resolved entity instance as the first Tidy
-  tree level, showing only descendants reachable through the existing binding.
-- Allow explicit self-association recursion in finite Tidy tree bindings while
-  still blocking non-recursive entity-type cycles.
+- Keep manual-root mode selected by `Write root node title`.
+- Keep the existing synthetic `Chart root label` input.
+- Keep the existing Level 1 entity selection and label template controls.
+- Add an explicit `Filter Level 1 nodes` toggle inside the Level 1 card.
+- When the Level 1 filter is enabled, allow multiple scalar comparison rows.
+- When the Level 1 filter is enabled, allow relationship criteria with required
+  related-attribute comparisons.
+- Combine all enabled Level 1 criteria with logical `AND`.
+- Resolve Level 1 match counts automatically.
+- Disable visualization when an enabled Level 1 filter matches zero instances.
+- Keep filtering scoped to Level 1 only.
+- Preserve selected entity-instance root behavior.
 
 ### Acceptance Criteria
 
-- The Tidy tree binding step exposes a radio-button choice between manual chart
-  root label and selected model entity data instance root.
-- Manual mode behaves as it did before this task.
-- Entity-instance root mode lets the user build multiple ANDed scalar
-  comparison rows using entity, attribute, operator, and value controls.
-- Entity-instance root mode supports relationship criteria equivalent to the
-  query console.
-- Entity-instance root mode includes a separate label template for the resolved
-  root node.
-- Operator choices are constrained by the selected attribute data type in the
-  same way as the query console.
-- The UI automatically resolves and displays a footer label showing whether the
-  current conditions match zero, one, or multiple instances.
-- Visualization is disabled until entity-instance root mode resolves to exactly
-  one instance.
-- The rendered Tidy tree starts at the selected entity instance as the first
-  Tidy tree level and includes only descendants reachable through the existing
-  Tidy tree level/association binding.
+- In `Write root node title` mode, Level 1 exposes an explicit filter toggle in
+  the Level 1 card.
+- A user can add multiple ANDed scalar comparisons for Level 1.
+- A user can add relationship criteria for Level 1 equivalent to the query
+  console, with an attribute comparison required for each relationship
+  criterion.
+- Operators are constrained by attribute data type in the same way as the query
+  console.
+- The UI automatically shows how many Level 1 instances match the current
+  filter.
+- If the enabled filter matches zero Level 1 instances, visualization is
+  disabled and the UI explains that the start condition matched no results.
+- Visualization renders only matching Level 1 instances under the synthetic
+  root, then renders deeper descendants according to the existing binding.
+- Deeper levels do not expose filtering controls in this task.
+- If no Level 1 filter is enabled, manual-root mode behaves as it did before
+  this task.
+- Selected entity-instance root mode remains unchanged.
 - `npm run build` succeeds in `vedenemo-ux`.
 
 ### Completion Notes
 
-- Added selected-root binding state to the Tidy tree runtime binding.
-- Added selected-root UI controls for root entity, root label template, scalar
-  comparisons, relationship criteria, and automatic match count feedback.
-- Reused the existing `_query` API for root resolution without backend or core
-  changes.
-- Updated Tidy tree data building so selected-root mode renders the resolved
-  entity instance directly as the chart root.
-- Fixed recursive tree binding so self-associations such as
-  `FamilyUnit_ChildFamilyUnits` can be added as additional finite levels, and
-  rendering skips instance ids already present on the current path.
-- Updated `docs/architecture_doc.md` to reflect the current visualization flow.
+- Added runtime-only Level 1 filter state to Tidy tree binding levels.
+- Added an explicit Level 1 filter toggle and query-style scalar/relationship
+  criteria controls inside the Level 1 card.
+- Reused the existing entity `_query` endpoint for match counting and render
+  data.
+- Added automatic match-count feedback for Level 1 filters.
+- Blocked visualization when an enabled Level 1 filter matches zero instances.
+- Kept deeper-level traversal semantics unchanged.
 - Verified with `cd vedenemo-ux && npm run build`.

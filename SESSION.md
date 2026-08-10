@@ -7841,3 +7841,136 @@ Current status and next steps:
 - Added render-path visited-instance protection to avoid following data cycles
   back to an instance already on the current path.
 - Verification passed: `cd vedenemo-ux && npm run build`.
+
+## 2026-08-10 22:08 EEST
+
+Session goal: plan manual-root Tidy tree Level 1 filtering with query-style
+criteria.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '1,140p' tasks/backlog.md`
+- `rg -n "RootSelection|rootSelection|directCriteria|relationshipCriteria|buildTidyTreeData|queryEntityInstances" vedenemo-ux/src/App.tsx`
+- `sed -n '220,260p' vedenemo-ux/src/App.tsx`
+- `sed -n '820,930p' vedenemo-ux/src/App.tsx`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added the newest backlog item, `Tidy tree manual root Level 1 filtering`.
+- Planned the feature as frontend-first reuse of the existing entity `_query`
+  endpoint and a likely generalization of the selected-root criteria helpers.
+- Implementation is intentionally not started.
+- Next step is to settle open questions about filter enablement, zero-result UX,
+  and whether relationship existence without a value should be supported.
+
+## 2026-08-10 22:18 EEST
+
+Session goal: incorporate user answers into the manual-root Level 1 filtering
+backlog item.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 70 SESSION.md`
+- `sed -n '1,90p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Updated the planned backlog item so Level 1 filtering uses an explicit toggle
+  inside the Level 1 card.
+- Zero Level 1 matches now explicitly block visualization and require a clear
+  start-condition message.
+- Relationship criteria in this task require an attribute comparison; existence
+  only remains out of scope.
+- Remaining scope question: whether this task should stop at Level 1 or also
+  plan filtering for deeper levels.
+
+## 2026-08-10 22:31 EEST
+
+Session goal: record final scope decision for manual-root Level 1 filtering.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Updated the planned backlog item to explicitly keep filtering scoped to Level
+  1 only.
+- Deeper-level filtering is intentionally out of scope for this task.
+- Implementation remains intentionally not started.
+
+## 2026-08-10 22:36 EEST
+
+Session goal: implement manual-root Tidy tree Level 1 filtering.
+
+Files changed:
+
+- `SESSION.md`
+- `docs/architecture_doc.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+
+Commands run:
+
+- `sed -n '210,260p' vedenemo-ux/src/App.tsx`
+- `sed -n '630,930p' vedenemo-ux/src/App.tsx`
+- `sed -n '960,1085p' vedenemo-ux/src/App.tsx`
+- `sed -n '2635,3525p' vedenemo-ux/src/App.tsx`
+- `npm run build` in `vedenemo-ux`
+- `sed -n '590,615p' docs/architecture_doc.md`
+- `sed -n '1,120p' tasks/current-task.md`
+- `sed -n '1,105p' tasks/backlog.md`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css docs/architecture_doc.md tasks/backlog.md tasks/current-task.md SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,120p' vedenemo-ux/package.json`
+
+Current status and next steps:
+
+- Added runtime-only Level 1 filter state for manual-root Tidy tree bindings.
+- Added an explicit `Filter Level 1 nodes` toggle inside the Level 1 card.
+- Added scalar comparison rows and relationship criteria for Level 1 filters,
+  using the existing `_query` API semantics.
+- Added automatic Level 1 match-count feedback and blocked visualization when an
+  enabled Level 1 filter matches zero instances.
+- Kept filtering scoped to Level 1 only and preserved selected entity-instance
+  root behavior.
+- Marked the backlog item executed and updated `tasks/current-task.md` plus
+  `docs/architecture_doc.md`.
+- Verification passed: `cd vedenemo-ux && npm run build`.
+- No frontend test script exists in `vedenemo-ux/package.json`; no separate
+  frontend test command was available.

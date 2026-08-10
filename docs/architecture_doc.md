@@ -605,10 +605,11 @@ Current user-facing behavior:
   eligibility, blocks non-recursive cyclic entity paths while allowing explicit
   self-association recursion, supports outgoing and incoming association
   traversal, supports either a synthetic chart root or a single entity-instance
-  root selected with query-style scalar and relationship criteria, fetches
-  entity instances plus association links, skips already visited instance ids on
-  the current render path, and renders a scrollable SVG tree with a refresh
-  control
+  root selected with query-style scalar and relationship criteria, supports
+  optional query-style filtering for the first entity level under a synthetic
+  root, fetches entity instances plus association links, skips already visited
+  instance ids on the current render path, and renders a scrollable SVG tree
+  with a refresh control
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle

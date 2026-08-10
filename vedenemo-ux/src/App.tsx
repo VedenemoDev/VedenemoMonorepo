@@ -205,6 +205,7 @@ type ChartTypeDefinition = {
 type TidyTreeBindingLevel = {
   entityAzName: string;
   labelTemplate: string;
+  filter?: TidyTreeLevelFilter;
   traversal?: {
     associationAzName: string;
     direction: RelationshipDirection;
@@ -224,6 +225,12 @@ type TidyTreeRootRelationshipCriterion = {
   relatedAttributeAzName: string;
   operator: QueryOperator;
   value: string;
+};
+
+type TidyTreeLevelFilter = {
+  enabled: boolean;
+  directCriteria: TidyTreeRootDirectCriterion[];
+  relationshipCriteria: TidyTreeRootRelationshipCriterion[];
 };
 
 type TidyTreeRootSelection = {
@@ -686,6 +693,14 @@ function defaultRootSelection(entity: EntityDescription | null, apiDescription: 
   };
 }
 
+function defaultLevelFilter(entity: EntityDescription | null): TidyTreeLevelFilter {
+  return {
+    enabled: false,
+    directCriteria: [defaultRootDirectCriterion(entity)],
+    relationshipCriteria: [],
+  };
+}
+
 function templatePlaceholders(template: string): string[] {
   return [...template.matchAll(/\{([^{}]+)\}/g)]
     .map((match) => match[1].trim())
@@ -753,99 +768,72 @@ function selectedRootEntity(apiDescription: ApiDescriptionResponse | null, bindi
   return findEntity(apiDescription?.entities ?? [], binding.levels[0]?.entityAzName ?? "");
 }
 
-function selectedRootRelationshipTraversal(
+function selectedRelationshipTraversal(
   apiDescription: ApiDescriptionResponse | null,
-  rootEntity: EntityDescription | null,
+  entity: EntityDescription | null,
   criterion: TidyTreeRootRelationshipCriterion,
 ): TraversalOption | null {
-  return traversalOptionsFor(rootEntity, apiDescription)
+  return traversalOptionsFor(entity, apiDescription)
     .find((option) => traversalOptionValue(option) === criterion.traversalValue) ?? null;
 }
 
-function validateRootDirectCriterion(
+function validateDirectCriterion(
   entity: EntityDescription,
   criterion: TidyTreeRootDirectCriterion,
   index: number,
+  contextLabel: string,
 ): string | null {
   const attribute = entity.attributes.find((candidate) => candidate.azName === criterion.attributeAzName) ?? null;
   if (attribute === null) {
-    return `Root comparison ${index + 1}: select an attribute.`;
+    return `${contextLabel} comparison ${index + 1}: select an attribute.`;
   }
   if (!queryOperatorsFor(attribute).includes(criterion.operator)) {
-    return `Root comparison ${index + 1}: ${criterion.operator} is not valid for ${attribute.visName}.`;
+    return `${contextLabel} comparison ${index + 1}: ${criterion.operator} is not valid for ${attribute.visName}.`;
   }
   if (!criterion.value.trim()) {
-    return `Root comparison ${index + 1}: value is required.`;
+    return `${contextLabel} comparison ${index + 1}: value is required.`;
   }
   if (attribute.dataType === "NUMERIC" && !Number.isFinite(parseCriterionValue(attribute, criterion.value))) {
-    return `Root comparison ${index + 1}: numeric value must be valid.`;
+    return `${contextLabel} comparison ${index + 1}: numeric value must be valid.`;
   }
   return null;
 }
 
-function validateRootRelationshipCriterion(
+function validateRelationshipCriterion(
   apiDescription: ApiDescriptionResponse,
-  rootEntity: EntityDescription,
+  entity: EntityDescription,
   criterion: TidyTreeRootRelationshipCriterion,
   index: number,
+  contextLabel: string,
 ): string | null {
-  const traversal = selectedRootRelationshipTraversal(apiDescription, rootEntity, criterion);
+  const traversal = selectedRelationshipTraversal(apiDescription, entity, criterion);
   if (traversal === null) {
-    return `Root relationship ${index + 1}: select an association.`;
+    return `${contextLabel} relationship ${index + 1}: select an association.`;
   }
   const attribute = traversal.relatedEntity.attributes.find((candidate) => candidate.azName === criterion.relatedAttributeAzName) ?? null;
   if (attribute === null) {
-    return `Root relationship ${index + 1}: select a related attribute.`;
+    return `${contextLabel} relationship ${index + 1}: select a related attribute.`;
   }
   if (!queryOperatorsFor(attribute).includes(criterion.operator)) {
-    return `Root relationship ${index + 1}: ${criterion.operator} is not valid for ${attribute.visName}.`;
+    return `${contextLabel} relationship ${index + 1}: ${criterion.operator} is not valid for ${attribute.visName}.`;
   }
   if (!criterion.value.trim()) {
-    return `Root relationship ${index + 1}: value is required.`;
+    return `${contextLabel} relationship ${index + 1}: value is required.`;
   }
   if (attribute.dataType === "NUMERIC" && !Number.isFinite(parseCriterionValue(attribute, criterion.value))) {
-    return `Root relationship ${index + 1}: numeric value must be valid.`;
+    return `${contextLabel} relationship ${index + 1}: numeric value must be valid.`;
   }
   return null;
 }
 
-function rootSelectionValidationMessage(apiDescription: ApiDescriptionResponse | null, binding: TidyTreeBinding): string | null {
-  if (apiDescription === null || binding.rootSelection.mode !== "entity") {
-    return null;
-  }
-  const rootEntity = selectedRootEntity(apiDescription, binding);
-  if (rootEntity === null) {
-    return "Select a root entity type.";
-  }
-  const labelTemplateError = validateLabelTemplate(rootEntity, binding.rootSelection.labelTemplate);
-  if (labelTemplateError !== null) {
-    return `Root label: ${labelTemplateError}`;
-  }
-  if (binding.rootSelection.directCriteria.length === 0) {
-    return "Add at least one root comparison.";
-  }
-  for (const [index, criterion] of binding.rootSelection.directCriteria.entries()) {
-    const criterionError = validateRootDirectCriterion(rootEntity, criterion, index);
-    if (criterionError !== null) {
-      return criterionError;
-    }
-  }
-  for (const [index, criterion] of binding.rootSelection.relationshipCriteria.entries()) {
-    const criterionError = validateRootRelationshipCriterion(apiDescription, rootEntity, criterion, index);
-    if (criterionError !== null) {
-      return criterionError;
-    }
-  }
-  return null;
-}
-
-function rootSelectionQueryRequest(apiDescription: ApiDescriptionResponse, binding: TidyTreeBinding): QueryRequest {
-  const rootEntity = selectedRootEntity(apiDescription, binding);
-  if (rootEntity === null) {
-    throw new Error("Select a root entity type.");
-  }
-  const comparisons = binding.rootSelection.directCriteria.map((criterion) => {
-    const attribute = rootEntity.attributes.find((candidate) => candidate.azName === criterion.attributeAzName);
+function criteriaQueryRequest(
+  apiDescription: ApiDescriptionResponse,
+  entity: EntityDescription,
+  directCriteria: TidyTreeRootDirectCriterion[],
+  relationshipCriteria: TidyTreeRootRelationshipCriterion[],
+): QueryRequest {
+  const comparisons = directCriteria.map((criterion) => {
+    const attribute = entity.attributes.find((candidate) => candidate.azName === criterion.attributeAzName);
     if (attribute === undefined) {
       throw new Error(`Attribute ${criterion.attributeAzName} is unavailable.`);
     }
@@ -855,10 +843,10 @@ function rootSelectionQueryRequest(apiDescription: ApiDescriptionResponse, bindi
       value: parseCriterionValue(attribute, criterion.value),
     };
   });
-  const relationships = binding.rootSelection.relationshipCriteria.map((criterion) => {
-    const traversal = selectedRootRelationshipTraversal(apiDescription, rootEntity, criterion);
+  const relationships = relationshipCriteria.map((criterion) => {
+    const traversal = selectedRelationshipTraversal(apiDescription, entity, criterion);
     if (traversal === null) {
-      throw new Error("Root relationship association is unavailable.");
+      throw new Error("Relationship association is unavailable.");
     }
     const attribute = traversal.relatedEntity.attributes.find((candidate) => candidate.azName === criterion.relatedAttributeAzName);
     if (attribute === undefined) {
@@ -878,9 +866,78 @@ function rootSelectionQueryRequest(apiDescription: ApiDescriptionResponse, bindi
     };
   });
   return {
-    where: { comparisons },
+    where: comparisons.length === 0 ? undefined : { comparisons },
     relationships: relationships.length === 0 ? undefined : relationships,
   };
+}
+
+function rootSelectionValidationMessage(apiDescription: ApiDescriptionResponse | null, binding: TidyTreeBinding): string | null {
+  if (apiDescription === null || binding.rootSelection.mode !== "entity") {
+    return null;
+  }
+  const rootEntity = selectedRootEntity(apiDescription, binding);
+  if (rootEntity === null) {
+    return "Select a root entity type.";
+  }
+  const labelTemplateError = validateLabelTemplate(rootEntity, binding.rootSelection.labelTemplate);
+  if (labelTemplateError !== null) {
+    return `Root label: ${labelTemplateError}`;
+  }
+  if (binding.rootSelection.directCriteria.length === 0) {
+    return "Add at least one root comparison.";
+  }
+  for (const [index, criterion] of binding.rootSelection.directCriteria.entries()) {
+    const criterionError = validateDirectCriterion(rootEntity, criterion, index, "Root");
+    if (criterionError !== null) {
+      return criterionError;
+    }
+  }
+  for (const [index, criterion] of binding.rootSelection.relationshipCriteria.entries()) {
+    const criterionError = validateRelationshipCriterion(apiDescription, rootEntity, criterion, index, "Root");
+    if (criterionError !== null) {
+      return criterionError;
+    }
+  }
+  return null;
+}
+
+function levelOneFilterValidationMessage(apiDescription: ApiDescriptionResponse | null, binding: TidyTreeBinding): string | null {
+  if (apiDescription === null || binding.rootSelection.mode !== "manual") {
+    return null;
+  }
+  const level = binding.levels[0] ?? null;
+  const filter = level?.filter ?? null;
+  if (level === null || filter === null || !filter.enabled) {
+    return null;
+  }
+  const entity = findEntity(apiDescription.entities, level.entityAzName);
+  if (entity === null) {
+    return "Level 1 filter needs a valid entity.";
+  }
+  if (filter.directCriteria.length === 0 && filter.relationshipCriteria.length === 0) {
+    return "Level 1 filter needs at least one comparison or relationship criterion.";
+  }
+  for (const [index, criterion] of filter.directCriteria.entries()) {
+    const criterionError = validateDirectCriterion(entity, criterion, index, "Level 1");
+    if (criterionError !== null) {
+      return criterionError;
+    }
+  }
+  for (const [index, criterion] of filter.relationshipCriteria.entries()) {
+    const criterionError = validateRelationshipCriterion(apiDescription, entity, criterion, index, "Level 1");
+    if (criterionError !== null) {
+      return criterionError;
+    }
+  }
+  return null;
+}
+
+function rootSelectionQueryRequest(apiDescription: ApiDescriptionResponse, binding: TidyTreeBinding): QueryRequest {
+  const rootEntity = selectedRootEntity(apiDescription, binding);
+  if (rootEntity === null) {
+    throw new Error("Select a root entity type.");
+  }
+  return criteriaQueryRequest(apiDescription, rootEntity, binding.rootSelection.directCriteria, binding.rootSelection.relationshipCriteria);
 }
 
 async function resolveTidyTreeRootInstances(
@@ -903,7 +960,34 @@ async function resolveTidyTreeRootInstances(
   );
 }
 
-function bindingValidationMessage(apiDescription: ApiDescriptionResponse | null, binding: TidyTreeBinding, rootMatchState?: RootMatchState): string | null {
+async function resolveTidyTreeLevelOneFilterInstances(
+  apiBaseUrl: string,
+  modelAzName: string,
+  instanceRootId: string,
+  apiDescription: ApiDescriptionResponse,
+  binding: TidyTreeBinding,
+): Promise<EntityInstanceResponse[]> {
+  const level = binding.levels[0] ?? null;
+  const filter = level?.filter ?? null;
+  const entity = level === null ? null : findEntity(apiDescription.entities, level.entityAzName);
+  if (level === null || filter === null || !filter.enabled || entity === null) {
+    throw new Error("Level 1 filter is unavailable.");
+  }
+  return queryEntityInstances(
+    apiBaseUrl,
+    modelAzName,
+    instanceRootId,
+    entity.azName,
+    criteriaQueryRequest(apiDescription, entity, filter.directCriteria, filter.relationshipCriteria),
+  );
+}
+
+function bindingValidationMessage(
+  apiDescription: ApiDescriptionResponse | null,
+  binding: TidyTreeBinding,
+  rootMatchState?: RootMatchState,
+  levelOneFilterMatchState?: RootMatchState,
+): string | null {
   if (apiDescription === null) {
     return "Model metadata is not loaded.";
   }
@@ -916,6 +1000,25 @@ function bindingValidationMessage(apiDescription: ApiDescriptionResponse | null,
   const rootSelectionError = rootSelectionValidationMessage(apiDescription, binding);
   if (rootSelectionError !== null) {
     return rootSelectionError;
+  }
+  const levelOneFilterError = levelOneFilterValidationMessage(apiDescription, binding);
+  if (levelOneFilterError !== null) {
+    return levelOneFilterError;
+  }
+  const levelOneFilter = binding.levels[0]?.filter ?? null;
+  if (binding.rootSelection.mode === "manual" && levelOneFilter?.enabled && levelOneFilterMatchState !== undefined) {
+    if (levelOneFilterMatchState.status === "loading") {
+      return "Resolving Level 1 filter.";
+    }
+    if (levelOneFilterMatchState.status === "error") {
+      return levelOneFilterMatchState.message;
+    }
+    if (levelOneFilterMatchState.count === 0) {
+      return "Level 1 start condition did not match any results.";
+    }
+    if (levelOneFilterMatchState.count === undefined) {
+      return "Resolve Level 1 filter before visualizing.";
+    }
   }
   if (binding.rootSelection.mode === "entity") {
     if (rootMatchState === undefined) {
@@ -1001,6 +1104,21 @@ async function buildTidyTreeData(
   await Promise.all(binding.levels.map(async (level, levelIndex) => {
     if (binding.rootSelection.mode === "entity" && levelIndex === 0) {
       instancesByLevel.set(levelIndex, selectedRootInstances);
+      return;
+    }
+    if (binding.rootSelection.mode === "manual" && levelIndex === 0 && level.filter?.enabled) {
+      const entity = findEntity(apiDescription.entities, level.entityAzName);
+      if (entity === null) {
+        throw new Error("Level 1 filter entity is unavailable.");
+      }
+      const instances = await queryEntityInstances(
+        apiBaseUrl,
+        modelAzName,
+        instanceRootId,
+        level.entityAzName,
+        criteriaQueryRequest(apiDescription, entity, level.filter.directCriteria, level.filter.relationshipCriteria),
+      );
+      instancesByLevel.set(levelIndex, instances);
       return;
     }
     const instances = await queryEntityInstances(apiBaseUrl, modelAzName, instanceRootId, level.entityAzName, {});
@@ -2663,6 +2781,10 @@ function VisualizationWizardPage() {
     status: "idle",
     message: "Manual chart root",
   });
+  const [levelOneFilterMatchState, setLevelOneFilterMatchState] = useState<RootMatchState>({
+    status: "idle",
+    message: "Level 1 filter disabled",
+  });
   const [visualizationData, setVisualizationData] = useState<VisualizationDataState>({
     status: "idle",
     message: "Visualization data not loaded",
@@ -2702,6 +2824,7 @@ function VisualizationWizardPage() {
               {
                 entityAzName: firstEntity.azName,
                 labelTemplate: defaultLabelTemplate(firstEntity),
+                filter: defaultLevelFilter(firstEntity),
               },
             ];
         if (firstTraversal !== null) {
@@ -2798,6 +2921,65 @@ function VisualizationWizardPage() {
     };
   }, [apiBaseUrl, apiDescription, binding, instanceRootId, modelAzName]);
 
+  useEffect(() => {
+    const levelOneFilter = binding.levels[0]?.filter ?? null;
+    if (binding.rootSelection.mode !== "manual" || levelOneFilter === null || !levelOneFilter.enabled) {
+      setLevelOneFilterMatchState({
+        status: "idle",
+        message: "Level 1 filter disabled",
+      });
+      return;
+    }
+    if (!apiBaseUrl || apiDescription === null || !modelAzName || !instanceRootId) {
+      setLevelOneFilterMatchState({
+        status: "idle",
+        message: "Level 1 filter unavailable",
+      });
+      return;
+    }
+    const validationError = levelOneFilterValidationMessage(apiDescription, binding);
+    if (validationError !== null) {
+      setLevelOneFilterMatchState({
+        status: "idle",
+        message: validationError,
+      });
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      setLevelOneFilterMatchState({
+        status: "loading",
+        message: "Resolving Level 1 filter...",
+      });
+      resolveTidyTreeLevelOneFilterInstances(apiBaseUrl, modelAzName, instanceRootId, apiDescription, binding)
+        .then((instances) => {
+          if (cancelled) {
+            return;
+          }
+          setLevelOneFilterMatchState({
+            status: "ok",
+            message: `${instances.length} Level 1 match${instances.length === 1 ? "" : "es"}`,
+            count: instances.length,
+          });
+        })
+        .catch((error) => {
+          if (cancelled) {
+            return;
+          }
+          setLevelOneFilterMatchState({
+            status: "error",
+            message: error instanceof Error ? error.message : "Level 1 filter failed",
+          });
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [apiBaseUrl, apiDescription, binding, instanceRootId, modelAzName]);
+
   const rootName = root === null ? instanceRootId : rootResponseDisplayName(root);
   const chartOptions = useMemo(() => CHART_TYPES.map((chartType) => ({
     chartType,
@@ -2807,7 +2989,7 @@ function VisualizationWizardPage() {
   })), [apiDescription]);
   const selectedChartType = CHART_TYPES.find((chartType) => chartType.id === selectedChartTypeId) ?? CHART_TYPES[0];
   const selectedChartEligibility = chartOptions.find((option) => option.chartType.id === selectedChartType.id)?.eligibility ?? { selectable: false, reason: "Chart type unavailable." };
-  const bindingMessage = bindingValidationMessage(apiDescription, binding, rootMatchState);
+  const bindingMessage = bindingValidationMessage(apiDescription, binding, rootMatchState, levelOneFilterMatchState);
   const canContinueToBinding = status === "ok" && selectedChartEligibility.selectable;
   const canRenderVisualization = canContinueToBinding && bindingMessage === null;
 
@@ -2845,6 +3027,7 @@ function VisualizationWizardPage() {
       levels: entity === null ? [] : [{
         entityAzName: entity.azName,
         labelTemplate: defaultLabelTemplate(entity),
+        filter: defaultLevelFilter(entity),
       }],
     }));
     clearVisualizationData();
@@ -3002,6 +3185,7 @@ function VisualizationWizardPage() {
             binding={binding}
             validationMessage={bindingMessage}
             rootMatchState={rootMatchState}
+            levelOneFilterMatchState={levelOneFilterMatchState}
             onRootLabelChange={(rootLabel) => {
               setBinding((current) => ({ ...current, rootLabel }));
               clearVisualizationData();
@@ -3054,6 +3238,7 @@ function TidyTreeBindingPanel({
   binding,
   validationMessage,
   rootMatchState,
+  levelOneFilterMatchState,
   onRootLabelChange,
   onRootSelectionChange,
   onFirstEntityChange,
@@ -3066,6 +3251,7 @@ function TidyTreeBindingPanel({
   binding: TidyTreeBinding;
   validationMessage: string | null;
   rootMatchState: RootMatchState;
+  levelOneFilterMatchState: RootMatchState;
   onRootLabelChange: (value: string) => void;
   onRootSelectionChange: (value: TidyTreeRootSelection) => void;
   onFirstEntityChange: (entityAzName: string) => void;
@@ -3077,6 +3263,8 @@ function TidyTreeBindingPanel({
   const canAddLevel = apiDescription !== null && traversalOptionsForBindingLevel(apiDescription, binding, binding.levels.length).length > 0;
   const rootEntity = selectedRootEntity(apiDescription, binding);
   const rootRelationshipOptions = traversalOptionsFor(rootEntity, apiDescription);
+  const levelOneEntity = findEntity(apiDescription?.entities ?? [], binding.levels[0]?.entityAzName ?? "");
+  const levelOneRelationshipOptions = traversalOptionsFor(levelOneEntity, apiDescription);
   const labelInputRefs = useRef(new Map<number, HTMLInputElement>());
   const labelCursorRanges = useRef(new Map<number, { start: number; end: number }>());
 
@@ -3139,6 +3327,37 @@ function TidyTreeBindingPanel({
     onRootSelectionChange({
       ...binding.rootSelection,
       relationshipCriteria: binding.rootSelection.relationshipCriteria.map((candidate, candidateIndex) => (
+        candidateIndex === index ? criterion : candidate
+      )),
+    });
+  }
+
+  function updateLevelOneFilter(filter: TidyTreeLevelFilter) {
+    const level = binding.levels[0] ?? null;
+    if (level === null) {
+      return;
+    }
+    onLevelChange(0, {
+      ...level,
+      filter,
+    }, false);
+  }
+
+  function updateLevelOneDirectCriterion(index: number, criterion: TidyTreeRootDirectCriterion) {
+    const filter = binding.levels[0]?.filter ?? defaultLevelFilter(levelOneEntity);
+    updateLevelOneFilter({
+      ...filter,
+      directCriteria: filter.directCriteria.map((candidate, candidateIndex) => (
+        candidateIndex === index ? criterion : candidate
+      )),
+    });
+  }
+
+  function updateLevelOneRelationshipCriterion(index: number, criterion: TidyTreeRootRelationshipCriterion) {
+    const filter = binding.levels[0]?.filter ?? defaultLevelFilter(levelOneEntity);
+    updateLevelOneFilter({
+      ...filter,
+      relationshipCriteria: filter.relationshipCriteria.map((candidate, candidateIndex) => (
         candidateIndex === index ? criterion : candidate
       )),
     });
@@ -3323,7 +3542,7 @@ function TidyTreeBindingPanel({
             {binding.rootSelection.relationshipCriteria.length === 0 ? (
               <div className="tree-empty">No relationship criteria</div>
             ) : binding.rootSelection.relationshipCriteria.map((criterion, index) => {
-              const traversal = selectedRootRelationshipTraversal(apiDescription, rootEntity, criterion) ?? rootRelationshipOptions[0] ?? null;
+              const traversal = selectedRelationshipTraversal(apiDescription, rootEntity, criterion) ?? rootRelationshipOptions[0] ?? null;
               const relatedAttribute = traversal?.relatedEntity.attributes.find((candidate) => candidate.azName === criterion.relatedAttributeAzName)
                 ?? traversal?.relatedEntity.attributes[0]
                 ?? null;
@@ -3516,6 +3735,239 @@ function TidyTreeBindingPanel({
                     </button>
                   ))}
                 </div>
+              )}
+              {index === 0 && binding.rootSelection.mode === "manual" && entity !== null && (
+                <section className="binding-criteria binding-level-filter" aria-label="Level 1 filter">
+                  <label className="query-criterion-toggle">
+                    <input
+                      type="checkbox"
+                      checked={level.filter?.enabled ?? false}
+                      onChange={(event) => {
+                        const filter = level.filter ?? defaultLevelFilter(entity);
+                        updateLevelOneFilter({
+                          ...filter,
+                          enabled: event.target.checked,
+                        });
+                      }}
+                    />
+                    Filter Level 1 nodes
+                  </label>
+                  {level.filter?.enabled && (
+                    <>
+                      <div className="binding-criteria">
+                        <header>
+                          <h4>Level 1 Comparisons</h4>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const filter = level.filter ?? defaultLevelFilter(entity);
+                              updateLevelOneFilter({
+                                ...filter,
+                                directCriteria: [
+                                  ...filter.directCriteria,
+                                  defaultRootDirectCriterion(entity),
+                                ],
+                              });
+                            }}
+                            disabled={entity.attributes.length === 0}
+                          >
+                            Add comparison
+                          </button>
+                        </header>
+                        {(level.filter?.directCriteria ?? []).length === 0 ? (
+                          <div className="tree-empty">No scalar comparisons</div>
+                        ) : (level.filter?.directCriteria ?? []).map((criterion, criterionIndex) => {
+                          const attribute = entity.attributes.find((candidate) => candidate.azName === criterion.attributeAzName) ?? entity.attributes[0] ?? null;
+                          const operators = queryOperatorsFor(attribute);
+                          return (
+                            <div key={`level-one-direct-${criterionIndex}`} className="binding-criterion-row">
+                              <label className="query-field">
+                                <span>Attribute</span>
+                                <select
+                                  value={attribute?.azName ?? ""}
+                                  onChange={(event) => {
+                                    const nextAttribute = entity.attributes.find((candidate) => candidate.azName === event.target.value) ?? null;
+                                    updateLevelOneDirectCriterion(criterionIndex, {
+                                      ...criterion,
+                                      attributeAzName: event.target.value,
+                                      operator: queryOperatorsFor(nextAttribute)[0],
+                                    });
+                                  }}
+                                  disabled={entity.attributes.length === 0}
+                                >
+                                  {entity.attributes.length === 0 ? (
+                                    <option value="">No attributes</option>
+                                  ) : entity.attributes.map((candidate) => (
+                                    <option key={candidate.azName} value={candidate.azName}>
+                                      {candidate.visName} ({candidate.azName})
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="query-field query-field-operator">
+                                <span>Operator</span>
+                                <select
+                                  value={operators.includes(criterion.operator) ? criterion.operator : operators[0]}
+                                  onChange={(event) => updateLevelOneDirectCriterion(criterionIndex, { ...criterion, operator: event.target.value as QueryOperator })}
+                                  disabled={attribute === null}
+                                >
+                                  {operators.map((operator) => (
+                                    <option key={operator} value={operator}>{operator}</option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="query-field">
+                                <span>Value</span>
+                                <input
+                                  value={criterion.value}
+                                  type={attribute?.dataType === "NUMERIC" ? "number" : "text"}
+                                  onChange={(event) => updateLevelOneDirectCriterion(criterionIndex, { ...criterion, value: event.target.value })}
+                                  disabled={attribute === null}
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                className="binding-remove-button"
+                                onClick={() => {
+                                  const filter = level.filter ?? defaultLevelFilter(entity);
+                                  updateLevelOneFilter({
+                                    ...filter,
+                                    directCriteria: filter.directCriteria.filter((_candidate, candidateIndex) => candidateIndex !== criterionIndex),
+                                  });
+                                }}
+                                disabled={(level.filter?.directCriteria.length ?? 0) <= 1 && (level.filter?.relationshipCriteria.length ?? 0) === 0}
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="binding-criteria">
+                        <header>
+                          <h4>Level 1 Relationship Criteria</h4>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const filter = level.filter ?? defaultLevelFilter(entity);
+                              updateLevelOneFilter({
+                                ...filter,
+                                relationshipCriteria: [
+                                  ...filter.relationshipCriteria,
+                                  defaultRootRelationshipCriterion(entity, apiDescription),
+                                ],
+                              });
+                            }}
+                            disabled={levelOneRelationshipOptions.length === 0}
+                          >
+                            Add relationship
+                          </button>
+                        </header>
+                        {(level.filter?.relationshipCriteria ?? []).length === 0 ? (
+                          <div className="tree-empty">No relationship criteria</div>
+                        ) : (level.filter?.relationshipCriteria ?? []).map((criterion, criterionIndex) => {
+                          const traversal = selectedRelationshipTraversal(apiDescription, entity, criterion) ?? levelOneRelationshipOptions[0] ?? null;
+                          const relatedAttribute = traversal?.relatedEntity.attributes.find((candidate) => candidate.azName === criterion.relatedAttributeAzName)
+                            ?? traversal?.relatedEntity.attributes[0]
+                            ?? null;
+                          const operators = queryOperatorsFor(relatedAttribute);
+                          return (
+                            <div key={`level-one-relationship-${criterionIndex}`} className="binding-criterion-row binding-criterion-row-wide">
+                              <label className="query-field query-field-wide">
+                                <span>Association</span>
+                                <select
+                                  value={traversal === null ? "" : traversalOptionValue(traversal)}
+                                  onChange={(event) => {
+                                    const nextTraversal = levelOneRelationshipOptions.find((option) => traversalOptionValue(option) === event.target.value) ?? null;
+                                    updateLevelOneRelationshipCriterion(criterionIndex, {
+                                      ...criterion,
+                                      traversalValue: event.target.value,
+                                      relatedAttributeAzName: nextTraversal?.relatedEntity.attributes[0]?.azName ?? "",
+                                      operator: "=",
+                                    });
+                                  }}
+                                  disabled={levelOneRelationshipOptions.length === 0}
+                                >
+                                  {levelOneRelationshipOptions.length === 0 ? (
+                                    <option value="">No traversable associations</option>
+                                  ) : levelOneRelationshipOptions.map((option) => (
+                                    <option key={traversalOptionValue(option)} value={traversalOptionValue(option)}>
+                                      {traversalLabel(option)}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="query-field">
+                                <span>Related attribute</span>
+                                <select
+                                  value={relatedAttribute?.azName ?? ""}
+                                  onChange={(event) => {
+                                    const nextAttribute = traversal?.relatedEntity.attributes.find((candidate) => candidate.azName === event.target.value) ?? null;
+                                    updateLevelOneRelationshipCriterion(criterionIndex, {
+                                      ...criterion,
+                                      relatedAttributeAzName: event.target.value,
+                                      operator: queryOperatorsFor(nextAttribute)[0],
+                                    });
+                                  }}
+                                  disabled={traversal === null || traversal.relatedEntity.attributes.length === 0}
+                                >
+                                  {traversal === null || traversal.relatedEntity.attributes.length === 0 ? (
+                                    <option value="">No related attributes</option>
+                                  ) : traversal.relatedEntity.attributes.map((candidate) => (
+                                    <option key={candidate.azName} value={candidate.azName}>
+                                      {candidate.visName} ({candidate.azName})
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="query-field query-field-operator">
+                                <span>Operator</span>
+                                <select
+                                  value={operators.includes(criterion.operator) ? criterion.operator : operators[0]}
+                                  onChange={(event) => updateLevelOneRelationshipCriterion(criterionIndex, { ...criterion, operator: event.target.value as QueryOperator })}
+                                  disabled={relatedAttribute === null}
+                                >
+                                  {operators.map((operator) => (
+                                    <option key={operator} value={operator}>{operator}</option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="query-field">
+                                <span>Value</span>
+                                <input
+                                  value={criterion.value}
+                                  type={relatedAttribute?.dataType === "NUMERIC" ? "number" : "text"}
+                                  onChange={(event) => updateLevelOneRelationshipCriterion(criterionIndex, { ...criterion, value: event.target.value })}
+                                  disabled={relatedAttribute === null}
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                className="binding-remove-button"
+                                onClick={() => {
+                                  const filter = level.filter ?? defaultLevelFilter(entity);
+                                  updateLevelOneFilter({
+                                    ...filter,
+                                    relationshipCriteria: filter.relationshipCriteria.filter((_candidate, candidateIndex) => candidateIndex !== criterionIndex),
+                                  });
+                                }}
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <footer className={`binding-root-match binding-root-match-${levelOneFilterMatchState.status}`}>
+                        {levelOneFilterMatchState.count === undefined
+                          ? levelOneFilterMatchState.message
+                          : `Matched Level 1 instances: ${levelOneFilterMatchState.count}`}
+                      </footer>
+                    </>
+                  )}
+                </section>
               )}
             </section>
           );
