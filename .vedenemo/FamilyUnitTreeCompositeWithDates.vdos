@@ -1,0 +1,41 @@
+vedenemo-script 1
+
+model azName=FamilyUnitTreeCompositeWithDates visName="Family Unit Tree Composite With Dates" version=1.0.0
+
+commands
+create-entity model=FamilyUnitTreeCompositeWithDates entity=Person visName="Person" activeSince=1.0.0
+create-attribute model=FamilyUnitTreeCompositeWithDates entity=Person attribute=GivenNames visName="Given names" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyUnitTreeCompositeWithDates entity=Person attribute=FamilyName visName="Family name" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyUnitTreeCompositeWithDates entity=Person attribute=BirthDate visName="Birth date" dataType=DATE activeSince=1.0.0
+create-attribute model=FamilyUnitTreeCompositeWithDates entity=Person attribute=DeathDate visName="Death date" dataType=DATE activeSince=1.0.0
+create-attribute model=FamilyUnitTreeCompositeWithDates entity=Person attribute=DisplayName visName="Display name" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyUnitTreeCompositeWithDates entity=Person attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-entity model=FamilyUnitTreeCompositeWithDates entity=FamilyUnit visName="Family unit" activeSince=1.0.0
+create-attribute model=FamilyUnitTreeCompositeWithDates entity=FamilyUnit attribute=Label visName="Label" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyUnitTreeCompositeWithDates entity=FamilyUnit attribute=StartDate visName="Start date" dataType=DATE activeSince=1.0.0
+create-attribute model=FamilyUnitTreeCompositeWithDates entity=FamilyUnit attribute=EndDate visName="End date" dataType=DATE activeSince=1.0.0
+create-attribute model=FamilyUnitTreeCompositeWithDates entity=FamilyUnit attribute=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyUnitTreeCompositeWithDates entity=FamilyUnit attribute=Status visName="Status" dataType=TEXT activeSince=1.0.0
+create-attribute model=FamilyUnitTreeCompositeWithDates entity=FamilyUnit attribute=Notes visName="Notes" dataType=TEXT activeSince=1.0.0
+create-association model=FamilyUnitTreeCompositeWithDates kind=RELATION association=FamilyUnit_Partners visName="partners" source=FamilyUnit sourceRole="familyUnit" sourceCardinality=1 target=Person targetRole="partner" targetCardinality=0..* cardinality=0..* activeSince=1.0.0
+create-association model=FamilyUnitTreeCompositeWithDates kind=RELATION association=FamilyUnit_Children visName="children" source=FamilyUnit sourceRole="parentFamilyUnit" sourceCardinality=1 target=Person targetRole="child" targetCardinality=0..* cardinality=0..* activeSince=1.0.0
+create-association model=FamilyUnitTreeCompositeWithDates kind=RELATION association=FamilyUnit_ChildFamilyUnits visName="child family units" source=FamilyUnit sourceRole="parentFamilyUnit" sourceCardinality=0..* target=FamilyUnit targetRole="childFamilyUnit" targetCardinality=0..* cardinality=0..* activeSince=1.0.0
+
+snapshot
+entity azName=Person visName="Person" activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=GivenNames visName="Given names" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=FamilyName visName="Family name" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=BirthDate visName="Birth date" dataType=DATE activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=DeathDate visName="Death date" dataType=DATE activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=DisplayName visName="Display name" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=Person azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=FamilyUnit visName="Family unit" activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=Label visName="Label" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=StartDate visName="Start date" dataType=DATE activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=EndDate visName="End date" dataType=DATE activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=RelationType visName="Relation type" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=Status visName="Status" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+attribute entity=FamilyUnit azName=Notes visName="Notes" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnit_Partners visName="partners" kind=RELATION source=FamilyUnit sourceRole="familyUnit" sourceCardinality=1 target=Person targetRole="partner" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnit_Children visName="children" kind=RELATION source=FamilyUnit sourceRole="parentFamilyUnit" sourceCardinality=1 target=Person targetRole="child" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null
+association azName=FamilyUnit_ChildFamilyUnits visName="child family units" kind=RELATION source=FamilyUnit sourceRole="parentFamilyUnit" sourceCardinality=0..* target=FamilyUnit targetRole="childFamilyUnit" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null

@@ -8107,3 +8107,60 @@ Current status and next steps:
 - Marked the backlog item executed while keeping it as history.
 - Verification passed: `mvn -B clean verify`.
 - Verification passed: `cd vedenemo-ux && npm run build`.
+
+## 2026-08-12 20:09 EEST
+
+Session goal: create a DATE-based family-unit composite model and royal-family
+data loaders.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `.vedenemo/FamilyUnitTreeCompositeWithDates.vdos`
+- `scripts/LoadBritishRoyalFamilyUnitTreeCompositeWithDatesModelData.bash`
+- `scripts/LoadSwedishRoyalFamilyUnitTreeCompositeWithDatesModelData.bash`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg --files | rg 'FamilyUnitTreeComposite|Family|Royal|Load.*Family|\\.vdos$|scripts/'`
+- `rg --files -uu .vedenemo | sort`
+- `sed -n '1,260p' .vedenemo/FamilyUnitTreeComposite.vdos`
+- `sed -n '1,240p' scripts/LoadBritishRoyalFamilyUnitTreeCompositeModelData.bash`
+- `sed -n '1,240p' scripts/LoadSwedishRoyalFamilyUnitTreeCompositeModelData.bash`
+- `cp scripts/LoadBritishRoyalFamilyUnitTreeCompositeModelData.bash scripts/LoadBritishRoyalFamilyUnitTreeCompositeWithDatesModelData.bash`
+- `cp scripts/LoadSwedishRoyalFamilyUnitTreeCompositeModelData.bash scripts/LoadSwedishRoyalFamilyUnitTreeCompositeWithDatesModelData.bash`
+- `ls -l scripts/Load*FamilyUnitTreeComposite*Dates* .vedenemo/FamilyUnitTreeCompositeWithDates.vdos`
+- Local backend smoke test for both new loaders on port `18110` (first attempt
+  failed under sandbox networking; rerun with approval passed)
+- Local backend direct `.vdos` import smoke test on port `18111` (passed)
+- `git status --short --branch`
+- `git diff --stat`
+- `git diff --check`
+- `git diff -- tasks/current-task.md tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `FamilyUnitTreeCompositeWithDates` as a new `.vdos` model preserving
+  the original family-unit composite structure.
+- Changed date-meaning attributes to `DATE`: `Person.BirthDate`,
+  `Person.DeathDate`, `FamilyUnit.StartDate`, and `FamilyUnit.EndDate`.
+- Added British and Swedish loaders for the new model.
+- New loaders target distinct model instance root names and omit blank optional
+  date values before creating records.
+- Verification passed: direct `.vdos` import returned HTTP `201` with
+  `{"modelAzName":"FamilyUnitTreeCompositeWithDates","commandCount":17}`.
+- Verification passed: British loader created 20 people, 6 family units, and 30
+  association links against a local backend.
+- Verification passed: Swedish loader created 23 people, 5 family units, and 31
+  association links against a local backend.
+- `git diff --check` passed.

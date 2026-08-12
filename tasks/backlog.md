@@ -1,5 +1,54 @@
 # Backlog
 
+## Family unit composite DATE model and loaders
+
+Status: executed
+
+### Goal
+
+Create a new `.vdos` model based on `FamilyUnitTreeComposite.vdos` that uses
+the new `DATE` data type for modeled date fields, and add data loading scripts
+for the British and Swedish royal-family datasets.
+
+### Implementation Notes
+
+- Keep the original `FamilyUnitTreeComposite.vdos` and its existing loaders
+  unchanged.
+- Use a distinct model identity so both the text-date model and the DATE model
+  can coexist in one backend process.
+- Preserve the same entities, attributes, associations, and royal-family data
+  relationships.
+- Change only date-meaning attributes to `DATE`:
+  - `Person.BirthDate`;
+  - `Person.DeathDate`;
+  - `FamilyUnit.StartDate`;
+  - `FamilyUnit.EndDate`.
+- Because `DATE` rejects blank strings, loaders should omit optional blank
+  `DeathDate` and `EndDate` values from create payloads.
+
+### Acceptance Criteria
+
+- The new `.vdos` script imports successfully.
+- The British royal-family loader can create a model instance root and data
+  under the new model.
+- The Swedish royal-family loader can create a model instance root and data
+  under the new model.
+- Existing `FamilyUnitTreeComposite.vdos` and existing loaders remain available
+  unchanged.
+
+### Completion Notes
+
+- Added `.vedenemo/FamilyUnitTreeCompositeWithDates.vdos`.
+- The new model keeps the original `Person`, `FamilyUnit`, and relation
+  structure from `FamilyUnitTreeComposite.vdos`.
+- Changed `BirthDate`, `DeathDate`, `StartDate`, and `EndDate` to `DATE`.
+- Added British and Swedish royal-family loaders for the new model.
+- The new loaders omit blank optional date values before POSTing instance data,
+  because `DATE` does not accept blank strings.
+- Verified direct `.vdos` import returns HTTP `201`.
+- Verified both loaders create separate model instance roots and load all people,
+  family units, and association links against a local backend.
+
 ## ISO date and time data types
 
 Status: executed
