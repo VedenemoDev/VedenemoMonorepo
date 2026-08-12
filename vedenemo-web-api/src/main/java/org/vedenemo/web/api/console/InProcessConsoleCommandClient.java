@@ -126,6 +126,9 @@ final class InProcessConsoleCommandClient implements CommandClient {
             case "numeric", "number" -> DataType.NUMERIC;
             case "url" -> DataType.URL;
             case "data" -> DataType.DATA;
+            case "date" -> DataType.DATE;
+            case "time" -> DataType.TIME;
+            case "datetime" -> DataType.DATETIME;
             default -> throw new IllegalArgumentException("unsupported dataType: " + value);
         };
     }

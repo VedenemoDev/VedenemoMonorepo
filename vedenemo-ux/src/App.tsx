@@ -579,11 +579,137 @@ function formatInstanceValue(value: unknown): string {
   return JSON.stringify(value);
 }
 
+function formatAttributeValue(attribute: AttributeDescription | null | undefined, value: unknown): string {
+  const formattedValue = formatInstanceValue(value);
+  if (attribute === null || attribute === undefined || typeof value !== "string") {
+    return formattedValue;
+  }
+  if (attribute.dataType === "DATE") {
+    const parsed = parseIsoDate(value);
+    return parsed === null
+      ? formattedValue
+      : new Intl.DateTimeFormat(undefined, { year: "numeric", month: "numeric", day: "numeric" }).format(parsed);
+  }
+  if (attribute.dataType === "TIME") {
+    const parsed = parseIsoTime(value);
+    return parsed === null
+      ? formattedValue
+      : new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" }).format(parsed);
+  }
+  if (attribute.dataType === "DATETIME") {
+    const parsed = parseIsoDateTime(value);
+    return parsed === null
+      ? formattedValue
+      : new Intl.DateTimeFormat(undefined, {
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        second: value.length > 16 ? "2-digit" : undefined,
+      }).format(parsed);
+  }
+  return formattedValue;
+}
+
+function parseIsoDate(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (match === null) {
+    return null;
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const parsed = new Date(year, month - 1, day);
+  return parsed.getFullYear() === year && parsed.getMonth() === month - 1 && parsed.getDate() === day ? parsed : null;
+}
+
+function parseIsoTime(value: string): Date | null {
+  const match = /^(\d{2}):(\d{2}):(\d{2})$/.exec(value);
+  if (match === null) {
+    return null;
+  }
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const second = Number(match[3]);
+  if (hour > 23 || minute > 59 || second > 59) {
+    return null;
+  }
+  return new Date(1970, 0, 1, hour, minute, second);
+}
+
+function parseIsoDateTime(value: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value);
+  if (match === null) {
+    return null;
+  }
+  const date = parseIsoDate(`${match[1]}-${match[2]}-${match[3]}`);
+  if (date === null) {
+    return null;
+  }
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = match[6] === undefined ? 0 : Number(match[6]);
+  if (hour > 23 || minute > 59 || second > 59) {
+    return null;
+  }
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute, second);
+}
+
+function isOrderedDataType(dataType: string): boolean {
+  return dataType === "NUMERIC" || dataType === "DATE" || dataType === "TIME" || dataType === "DATETIME";
+}
+
+function criterionValueError(attribute: AttributeDescription, rawValue: string): string | null {
+  if (attribute.dataType === "NUMERIC" && !Number.isFinite(parseCriterionValue(attribute, rawValue))) {
+    return "numeric value must be valid";
+  }
+  if (attribute.dataType === "DATE" && parseIsoDate(rawValue.trim()) === null) {
+    return "date value must use YYYY-MM-DD";
+  }
+  if (attribute.dataType === "TIME" && parseIsoTime(rawValue.trim()) === null) {
+    return "time value must use HH:mm:ss";
+  }
+  if (attribute.dataType === "DATETIME" && parseIsoDateTime(rawValue.trim()) === null) {
+    return "datetime value must use local ISO minute or second precision";
+  }
+  return null;
+}
+
+function inputTypeFor(attribute: AttributeDescription | null | undefined): string {
+  if (attribute?.dataType === "NUMERIC") {
+    return "number";
+  }
+  if (attribute?.dataType === "URL") {
+    return "url";
+  }
+  if (attribute?.dataType === "DATE") {
+    return "date";
+  }
+  if (attribute?.dataType === "TIME") {
+    return "time";
+  }
+  if (attribute?.dataType === "DATETIME") {
+    return "datetime-local";
+  }
+  return "text";
+}
+
+function inputStepFor(attribute: AttributeDescription | null | undefined): string | undefined {
+  if (attribute?.dataType === "NUMERIC") {
+    return "any";
+  }
+  if (attribute?.dataType === "TIME" || attribute?.dataType === "DATETIME") {
+    return "1";
+  }
+  return undefined;
+}
+
 function queryOperatorsFor(attribute: AttributeDescription | null): QueryOperator[] {
   if (attribute === null) {
     return ["="];
   }
-  if (attribute.dataType === "NUMERIC") {
+  if (isOrderedDataType(attribute.dataType)) {
     return ["=", "<", ">"];
   }
   return ["=", "contains"];
@@ -733,7 +859,7 @@ function renderLabelTemplate(entity: EntityDescription, instance: EntityInstance
     if (attribute === undefined) {
       return "";
     }
-    return formatInstanceValue(instance.values[attribute.azName]);
+    return formatAttributeValue(attribute, instance.values[attribute.azName]);
   }).trim();
   return rendered || instance.id;
 }
@@ -793,8 +919,9 @@ function validateDirectCriterion(
   if (!criterion.value.trim()) {
     return `${contextLabel} comparison ${index + 1}: value is required.`;
   }
-  if (attribute.dataType === "NUMERIC" && !Number.isFinite(parseCriterionValue(attribute, criterion.value))) {
-    return `${contextLabel} comparison ${index + 1}: numeric value must be valid.`;
+  const valueError = criterionValueError(attribute, criterion.value);
+  if (valueError !== null) {
+    return `${contextLabel} comparison ${index + 1}: ${valueError}.`;
   }
   return null;
 }
@@ -820,8 +947,9 @@ function validateRelationshipCriterion(
   if (!criterion.value.trim()) {
     return `${contextLabel} relationship ${index + 1}: value is required.`;
   }
-  if (attribute.dataType === "NUMERIC" && !Number.isFinite(parseCriterionValue(attribute, criterion.value))) {
-    return `${contextLabel} relationship ${index + 1}: numeric value must be valid.`;
+  const valueError = criterionValueError(attribute, criterion.value);
+  if (valueError !== null) {
+    return `${contextLabel} relationship ${index + 1}: ${valueError}.`;
   }
   return null;
 }
@@ -1293,6 +1421,12 @@ function exampleValueFor(attribute: AttributeDescription): unknown {
       return "https://example.com";
     case "DATA":
       return "data";
+    case "DATE":
+      return "2026-08-12";
+    case "TIME":
+      return "18:30:00";
+    case "DATETIME":
+      return "2026-08-12T18:30";
     default:
       return "text";
   }
@@ -1440,6 +1574,10 @@ function parseEditorFormValues(entity: EntityDescription, formValues: EditorForm
       }
       values[attribute.azName] = numericValue;
     } else {
+      const valueError = criterionValueError(attribute, trimmedValue);
+      if (valueError !== null) {
+        throw new Error(`${attribute.visName} ${valueError}`);
+      }
       values[attribute.azName] = trimmedValue;
     }
   }
@@ -1464,7 +1602,11 @@ function relatedInstanceIdForLink(resultId: string, link: AssociationLinkRespons
   return link.targetInstanceId === resultId ? link.sourceInstanceId : null;
 }
 
-function matchesQueryComparison(value: unknown, comparison: QueryComparisonRequest): boolean {
+function matchesQueryComparison(
+  value: unknown,
+  comparison: QueryComparisonRequest,
+  attribute: AttributeDescription | null | undefined,
+): boolean {
   if (value === null || value === undefined) {
     return false;
   }
@@ -1474,12 +1616,57 @@ function matchesQueryComparison(value: unknown, comparison: QueryComparisonReque
       && value.toLowerCase().includes(comparison.value.toLowerCase());
   }
   if (comparison.operator === "<") {
-    return typeof value === "number" && typeof comparison.value === "number" && value < comparison.value;
+    if (attribute?.dataType === "NUMERIC") {
+      return typeof value === "number" && typeof comparison.value === "number" && value < comparison.value;
+    }
+    if (isOrderedDataType(attribute?.dataType ?? "")) {
+      const compared = compareTemporalValues(attribute, value, comparison.value);
+      return compared !== null && compared < 0;
+    }
+    return typeof value === "string" && typeof comparison.value === "string" && value < comparison.value;
   }
   if (comparison.operator === ">") {
-    return typeof value === "number" && typeof comparison.value === "number" && value > comparison.value;
+    if (attribute?.dataType === "NUMERIC") {
+      return typeof value === "number" && typeof comparison.value === "number" && value > comparison.value;
+    }
+    if (isOrderedDataType(attribute?.dataType ?? "")) {
+      const compared = compareTemporalValues(attribute, value, comparison.value);
+      return compared !== null && compared > 0;
+    }
+    return typeof value === "string" && typeof comparison.value === "string" && value > comparison.value;
+  }
+  if (attribute?.dataType === "DATETIME" && typeof value === "string" && typeof comparison.value === "string") {
+    const actual = parseIsoDateTime(value);
+    const expected = parseIsoDateTime(comparison.value);
+    return actual !== null && expected !== null && actual.getTime() === expected.getTime();
   }
   return formatInstanceValue(value) === formatInstanceValue(comparison.value);
+}
+
+function compareTemporalValues(
+  attribute: AttributeDescription | null | undefined,
+  left: unknown,
+  right: unknown,
+): number | null {
+  if (typeof left !== "string" || typeof right !== "string") {
+    return null;
+  }
+  if (attribute?.dataType === "DATE") {
+    const parsedLeft = parseIsoDate(left);
+    const parsedRight = parseIsoDate(right);
+    return parsedLeft === null || parsedRight === null ? null : parsedLeft.getTime() - parsedRight.getTime();
+  }
+  if (attribute?.dataType === "TIME") {
+    const parsedLeft = parseIsoTime(left);
+    const parsedRight = parseIsoTime(right);
+    return parsedLeft === null || parsedRight === null ? null : parsedLeft.getTime() - parsedRight.getTime();
+  }
+  if (attribute?.dataType === "DATETIME") {
+    const parsedLeft = parseIsoDateTime(left);
+    const parsedRight = parseIsoDateTime(right);
+    return parsedLeft === null || parsedRight === null ? null : parsedLeft.getTime() - parsedRight.getTime();
+  }
+  return null;
 }
 
 function defaultEntityDisplayAttribute(entity: EntityDescription): AttributeDescription | null {
@@ -1488,7 +1675,7 @@ function defaultEntityDisplayAttribute(entity: EntityDescription): AttributeDesc
 
 function entityInstanceLabel(entity: EntityDescription, instance: EntityInstanceResponse): string {
   const displayAttribute = defaultEntityDisplayAttribute(entity);
-  const displayValue = displayAttribute === null ? "" : formatInstanceValue(instance.values[displayAttribute.azName]);
+  const displayValue = displayAttribute === null ? "" : formatAttributeValue(displayAttribute, instance.values[displayAttribute.azName]);
   return displayValue ? `${entity.visName}: ${displayValue}` : `${entity.visName}: ${instance.id}`;
 }
 
@@ -1498,7 +1685,7 @@ function relationshipCriterionLabel(relationship: QueryRelationshipRequest, rela
     return `${relatedEntity.visName} exists`;
   }
   const attribute = relatedEntity.attributes.find((candidate) => candidate.azName === comparison.attributeAzName);
-  return `${attribute?.visName ?? comparison.attributeAzName} ${comparison.operator} ${formatInstanceValue(comparison.value)}`;
+  return `${attribute?.visName ?? comparison.attributeAzName} ${comparison.operator} ${formatAttributeValue(attribute, comparison.value)}`;
 }
 
 async function buildAssociationMatchContexts(
@@ -1540,15 +1727,21 @@ async function buildAssociationMatchContexts(
     const contexts = [...relatedIds]
       .map((relatedId) => relatedInstancesById.get(relatedId) ?? null)
       .filter((instance): instance is EntityInstanceResponse => instance !== null)
-      .filter((instance) => relationship.where.comparisons.every((comparison) => matchesQueryComparison(instance.values[comparison.attributeAzName], comparison)))
+      .filter((instance) => relationship.where.comparisons.every((comparison) => {
+        const attribute = traversal.relatedEntity.attributes.find((candidate) => candidate.azName === comparison.attributeAzName);
+        return matchesQueryComparison(instance.values[comparison.attributeAzName], comparison, attribute);
+      }))
       .map((instance) => {
         const comparison = relationship.where.comparisons[0] ?? null;
+        const attribute = comparison === null
+          ? null
+          : traversal.relatedEntity.attributes.find((candidate) => candidate.azName === comparison.attributeAzName);
         return {
           associationLabel: traversalLabel(traversal),
           criterionLabel: relationshipCriterionLabel(relationship, traversal.relatedEntity),
           relatedEntityLabel: entityInstanceLabel(traversal.relatedEntity, instance),
           relatedInstanceId: instance.id,
-          matchedValueLabel: comparison === null ? undefined : formatInstanceValue(instance.values[comparison.attributeAzName]),
+          matchedValueLabel: comparison === null ? undefined : formatAttributeValue(attribute, instance.values[comparison.attributeAzName]),
         };
       });
     if (contexts.length > 0) {
@@ -2297,8 +2490,8 @@ function EditorPage() {
                     <input
                       id={`editor-${attribute.azName}`}
                       value={formValues[attribute.azName] ?? ""}
-                      type={attribute.dataType === "NUMERIC" ? "number" : attribute.dataType === "URL" ? "url" : "text"}
-                      step={attribute.dataType === "NUMERIC" ? "any" : undefined}
+                      type={inputTypeFor(attribute)}
+                      step={inputStepFor(attribute)}
                       onChange={(event) => setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }))}
                       disabled={status === "loading" || isSaving}
                     />
@@ -3501,7 +3694,8 @@ function TidyTreeBindingPanel({
                     <span>Value</span>
                     <input
                       value={criterion.value}
-                      type={attribute?.dataType === "NUMERIC" ? "number" : "text"}
+                      type={inputTypeFor(attribute)}
+                      step={inputStepFor(attribute)}
                       onChange={(event) => updateRootDirectCriterion(index, { ...criterion, value: event.target.value })}
                       disabled={attribute === null}
                     />
@@ -3612,7 +3806,8 @@ function TidyTreeBindingPanel({
                     <span>Value</span>
                     <input
                       value={criterion.value}
-                      type={relatedAttribute?.dataType === "NUMERIC" ? "number" : "text"}
+                      type={inputTypeFor(relatedAttribute)}
+                      step={inputStepFor(relatedAttribute)}
                       onChange={(event) => updateRootRelationshipCriterion(index, { ...criterion, value: event.target.value })}
                       disabled={relatedAttribute === null}
                     />
@@ -3820,7 +4015,8 @@ function TidyTreeBindingPanel({
                                 <span>Value</span>
                                 <input
                                   value={criterion.value}
-                                  type={attribute?.dataType === "NUMERIC" ? "number" : "text"}
+                                  type={inputTypeFor(attribute)}
+                                  step={inputStepFor(attribute)}
                                   onChange={(event) => updateLevelOneDirectCriterion(criterionIndex, { ...criterion, value: event.target.value })}
                                   disabled={attribute === null}
                                 />
@@ -3937,7 +4133,8 @@ function TidyTreeBindingPanel({
                                 <span>Value</span>
                                 <input
                                   value={criterion.value}
-                                  type={relatedAttribute?.dataType === "NUMERIC" ? "number" : "text"}
+                                  type={inputTypeFor(relatedAttribute)}
+                                  step={inputStepFor(relatedAttribute)}
                                   onChange={(event) => updateLevelOneRelationshipCriterion(criterionIndex, { ...criterion, value: event.target.value })}
                                   disabled={relatedAttribute === null}
                                 />
@@ -4196,9 +4393,10 @@ function QueryConsolePage() {
         return;
       }
       const queryValue = parseCriterionValue(selectedAttribute, criterionValue);
-      if (selectedAttribute.dataType === "NUMERIC" && !Number.isFinite(queryValue)) {
+      const valueError = criterionValueError(selectedAttribute, criterionValue);
+      if (valueError !== null) {
         setStatus("error");
-        setStatusMessage("Direct numeric criterion must be a valid number");
+        setStatusMessage(`Direct criterion ${valueError}`);
         return;
       }
       comparisons.push({
@@ -4229,9 +4427,10 @@ function QueryConsolePage() {
           return;
         }
         const relatedQueryValue = parseCriterionValue(selectedRelatedAttribute, relationshipCriterionValue);
-        if (selectedRelatedAttribute.dataType === "NUMERIC" && !Number.isFinite(relatedQueryValue)) {
+        const valueError = criterionValueError(selectedRelatedAttribute, relationshipCriterionValue);
+        if (valueError !== null) {
           setStatus("error");
-          setStatusMessage("Association numeric criterion must be a valid number");
+          setStatusMessage(`Association criterion ${valueError}`);
           return;
         }
         relatedComparisons.push({
@@ -4405,7 +4604,8 @@ function QueryConsolePage() {
             <input
               id="query-value"
               value={criterionValue}
-              type={selectedAttribute?.dataType === "NUMERIC" ? "number" : "text"}
+              type={inputTypeFor(selectedAttribute)}
+              step={inputStepFor(selectedAttribute)}
               onChange={(event) => setCriterionValue(event.target.value)}
               disabled={status === "loading" || !useDirectCriterion || selectedAttribute === null}
             />
@@ -4505,7 +4705,8 @@ function QueryConsolePage() {
             <input
               id="query-related-value"
               value={relationshipCriterionValue}
-              type="text"
+              type={relationshipCriterionValue.trim() === "*" ? "text" : inputTypeFor(selectedRelatedAttribute)}
+              step={inputStepFor(selectedRelatedAttribute)}
               inputMode={selectedRelatedAttribute?.dataType === "NUMERIC" ? "decimal" : undefined}
               placeholder="*"
               onChange={(event) => setRelationshipCriterionValue(event.target.value)}
@@ -4528,7 +4729,7 @@ function QueryConsolePage() {
               <details key={result.id} className="tree-node query-result-node">
                 <summary>
                   <span>
-                    {selectedEntity?.visName ?? result.entityAzName}: {formatInstanceValue(result.values[selectedDisplayAttribute?.azName ?? ""])}
+                    {selectedEntity?.visName ?? result.entityAzName}: {formatAttributeValue(selectedDisplayAttribute, result.values[selectedDisplayAttribute?.azName ?? ""])}
                   </span>
                   <span className="tree-node-actions">
                     <button
@@ -4565,7 +4766,7 @@ function QueryConsolePage() {
                     return (
                       <li key={`${result.id}-${attributeAzName}`}>
                         <span>{attribute?.visName ?? attributeAzName}</span>
-                        <span>{formatInstanceValue(value)}</span>
+                        <span>{formatAttributeValue(attribute, value)}</span>
                       </li>
                     );
                   })}

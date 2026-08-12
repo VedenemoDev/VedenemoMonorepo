@@ -10,6 +10,10 @@ import org.vedenemo.core.registry.ModelRegistry;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,6 +24,9 @@ import java.util.Optional;
 public final class ModelInstanceService {
 
     private static final int MAX_ROOT_VIS_NAME_LENGTH = 120;
+    private static final String DATE_PATTERN = "\\d{4}-\\d{2}-\\d{2}";
+    private static final String TIME_PATTERN = "\\d{2}:\\d{2}:\\d{2}";
+    private static final String DATETIME_PATTERN = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?";
 
     private final ModelRegistry modelRegistry;
     private final ModelInstanceRegistry instanceRegistry;
@@ -219,6 +226,9 @@ public final class ModelInstanceService {
             case DATA -> stringValue(attribute, submittedValue);
             case URL -> urlValue(attribute, submittedValue);
             case NUMERIC -> numericValue(attribute, submittedValue);
+            case DATE -> dateValue(attribute, submittedValue);
+            case TIME -> timeValue(attribute, submittedValue);
+            case DATETIME -> dateTimeValue(attribute, submittedValue);
         };
     }
 
@@ -260,6 +270,52 @@ public final class ModelInstanceService {
             throw new IllegalArgumentException(attribute.azName() + " must be numeric", exception);
         }
         throw new IllegalArgumentException(attribute.azName() + " must be numeric");
+    }
+
+    private static InstanceValue dateValue(VAttribute attribute, Object submittedValue) {
+        String value = requireString(attribute, submittedValue, "ISO date");
+        if (!value.matches(DATE_PATTERN)) {
+            throw new IllegalArgumentException(attribute.azName() + " must be an ISO date in YYYY-MM-DD format");
+        }
+        try {
+            LocalDate.parse(value);
+            return new InstanceValue(DataType.DATE, value);
+        } catch (DateTimeParseException exception) {
+            throw new IllegalArgumentException(attribute.azName() + " must be an ISO date in YYYY-MM-DD format", exception);
+        }
+    }
+
+    private static InstanceValue timeValue(VAttribute attribute, Object submittedValue) {
+        String value = requireString(attribute, submittedValue, "ISO time");
+        if (!value.matches(TIME_PATTERN)) {
+            throw new IllegalArgumentException(attribute.azName() + " must be an ISO time in HH:mm:ss format");
+        }
+        try {
+            LocalTime.parse(value);
+            return new InstanceValue(DataType.TIME, value);
+        } catch (DateTimeParseException exception) {
+            throw new IllegalArgumentException(attribute.azName() + " must be an ISO time in HH:mm:ss format", exception);
+        }
+    }
+
+    private static InstanceValue dateTimeValue(VAttribute attribute, Object submittedValue) {
+        String value = requireString(attribute, submittedValue, "ISO local datetime");
+        if (!value.matches(DATETIME_PATTERN)) {
+            throw new IllegalArgumentException(attribute.azName() + " must be an ISO local datetime with minute or second precision");
+        }
+        try {
+            LocalDateTime.parse(value);
+            return new InstanceValue(DataType.DATETIME, value);
+        } catch (DateTimeParseException exception) {
+            throw new IllegalArgumentException(attribute.azName() + " must be an ISO local datetime with minute or second precision", exception);
+        }
+    }
+
+    private static String requireString(VAttribute attribute, Object submittedValue, String valueType) {
+        if (!(submittedValue instanceof String value)) {
+            throw new IllegalArgumentException(attribute.azName() + " must be an " + valueType + " string");
+        }
+        return value;
     }
 
     private static boolean matchesAll(EntityInstance instance, Map<String, InstanceValue> expectedValues) {
@@ -323,8 +379,8 @@ public final class ModelInstanceService {
             case EQUALS -> {
             }
             case LESS_THAN, GREATER_THAN -> {
-                if (attribute.type() != DataType.NUMERIC) {
-                    throw new IllegalArgumentException(operatorMessage(operator) + " requires NUMERIC attribute: " + attribute.azName());
+                if (!isOrdered(attribute.type())) {
+                    throw new IllegalArgumentException(operatorMessage(operator) + " requires ordered attribute: " + attribute.azName());
                 }
             }
             case CONTAINS -> {
@@ -348,6 +404,10 @@ public final class ModelInstanceService {
         return type == DataType.TEXT || type == DataType.URL || type == DataType.DATA;
     }
 
+    private static boolean isOrdered(DataType type) {
+        return type == DataType.NUMERIC || type == DataType.DATE || type == DataType.TIME || type == DataType.DATETIME;
+    }
+
     private static boolean matchesAll(EntityInstance instance, List<NormalizedScalarComparison> comparisons) {
         for (NormalizedScalarComparison comparison : comparisons) {
             InstanceValue actual = instance.values().get(comparison.attributeAzName());
@@ -361,10 +421,23 @@ public final class ModelInstanceService {
     private static boolean matchesComparison(InstanceValue actual, NormalizedScalarComparison comparison) {
         return switch (comparison.operator()) {
             case EQUALS -> actual.matches(comparison.value());
-            case LESS_THAN -> ((BigDecimal) actual.value()).compareTo((BigDecimal) comparison.value().value()) < 0;
-            case GREATER_THAN -> ((BigDecimal) actual.value()).compareTo((BigDecimal) comparison.value().value()) > 0;
+            case LESS_THAN -> compareOrdered(actual, comparison.value()) < 0;
+            case GREATER_THAN -> compareOrdered(actual, comparison.value()) > 0;
             case CONTAINS -> ((String) actual.value()).toLowerCase(java.util.Locale.ROOT)
                     .contains(((String) comparison.value().value()).toLowerCase(java.util.Locale.ROOT));
+        };
+    }
+
+    private static int compareOrdered(InstanceValue actual, InstanceValue expected) {
+        if (actual.type() != expected.type()) {
+            throw new IllegalArgumentException("comparison values must have the same type");
+        }
+        return switch (actual.type()) {
+            case NUMERIC -> ((BigDecimal) actual.value()).compareTo((BigDecimal) expected.value());
+            case DATE -> LocalDate.parse((String) actual.value()).compareTo(LocalDate.parse((String) expected.value()));
+            case TIME -> LocalTime.parse((String) actual.value()).compareTo(LocalTime.parse((String) expected.value()));
+            case DATETIME -> LocalDateTime.parse((String) actual.value()).compareTo(LocalDateTime.parse((String) expected.value()));
+            case TEXT, URL, DATA -> throw new IllegalArgumentException("comparison requires ordered values");
         };
     }
 

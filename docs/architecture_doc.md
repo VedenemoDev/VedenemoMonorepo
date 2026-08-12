@@ -134,8 +134,8 @@ Shared model API module. It currently contains:
   version metadata
 - `Cardinality`, a pure value object for association multiplicity text such as
   `1`, `0..1`, `0..*`, `1..*`, and bounded ranges
-- `DataType`, the initial enum of supported attribute data types:
-  `TEXT`, `NUMERIC`, `URL`, and `DATA`
+- `DataType`, the enum of supported attribute data types: `TEXT`, `NUMERIC`,
+  `URL`, `DATA`, `DATE`, `TIME`, and `DATETIME`
 - `VAttribute`, a model attribute with `azName`, `visName`, `DataType`, and
   lifecycle version metadata
 - `VEntity`, a model entity with `azName`, `visName`, lifecycle version
@@ -255,7 +255,10 @@ operations against the currently loaded `ModelRoot` in `ModelRegistry`.
 Instances are generic records, not generated Java classes. Attribute values are
 stored in ordered maps keyed by modeled attribute `azName`; values are
 normalized as pure JDK values according to `DataType`. `NUMERIC` values are
-stored as `BigDecimal`, and `URL` values must be strict absolute URLs.
+stored as `BigDecimal`, `URL` values must be strict absolute URLs, and
+`DATE`, `TIME`, and `DATETIME` values are validated as ISO local strings while
+remaining string values in API responses and instance records. Entity queries
+support ordered comparisons for `NUMERIC`, `DATE`, `TIME`, and `DATETIME`.
 
 `ModelInstanceRegistry` stores process-local runtime datasets grouped by model
 `azName` and addressed by backend-assigned globally unique `instanceRootId`

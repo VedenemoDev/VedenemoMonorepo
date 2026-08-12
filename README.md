@@ -13,7 +13,7 @@ development, command-flow testing, and shaping the core model/API boundaries.
 - Pure JDK-only core rule for model and command logic.
 - Shared model API with `ModelRoot`, `VEntity`, `VAttribute`, model-level
   associations, cardinality, bidirectional relation ends, lifecycle version
-  metadata, and initial `DataType` values.
+  metadata, and supported `DataType` values.
 - Core command execution for creating entities, attributes, directed
   ownership/reference associations, and bidirectional relations.
 - Process-local runtime instance data validated against loaded model
@@ -196,6 +196,10 @@ instance fields are JSON object properties keyed by modeled attribute `azName`
 and validated against the selected entity's `DataType`. Association links are
 created through dedicated `_links` endpoints using source and target instance
 ids.
+
+Supported scalar data types include `TEXT`, `NUMERIC`, `URL`, `DATA`, `DATE`,
+`TIME`, and `DATETIME`. Date and time values are stored and queried as ISO
+strings; the UX formats them with the browser locale for display.
 
 Each loaded model can have multiple process-local model-instance roots. Create
 one with `POST /data/{modelAzName}/roots`; the backend returns a globally

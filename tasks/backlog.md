@@ -1,5 +1,76 @@
 # Backlog
 
+## ISO date and time data types
+
+Status: executed
+
+### Goal
+
+Extend `DataType` with `DATE`, `TIME`, and `DATETIME` while preserving ISO
+string storage/API/query values and browser-locale UX display.
+
+### User Flow
+
+When authoring model attributes through HTTP, CLI, command-console, or `.vdos`,
+the user can choose:
+
+- `DATE` for ISO local dates such as `2026-08-12`;
+- `TIME` for ISO local times to second precision such as `18:30:00`;
+- `DATETIME` for locale-neutral ISO local datetimes such as
+  `2026-08-12T18:30` or `2026-08-12T18:30:00`.
+
+When entering model instance data in the UX, date and time values use
+date/time-aware controls where practical. Stored and API values remain ISO
+strings. Displayed values are formatted with the browser locale.
+
+### Implementation Notes
+
+- Keep `vedenemo-model-api` and `vedenemo-core` pure JDK.
+- Store values for the new data types as strings in APIs and instance records.
+- Use JDK date/time parsing for validation and comparison.
+- Keep `DATETIME` timezone-free and locale-neutral.
+- Support `=`, `<`, and `>` for the new data types in entity `_query`.
+- Do not change or deprecate existing data types.
+- Existing `.vdos` files should continue to import unchanged unless they
+  explicitly use a new data type with an invalid value.
+
+### Validation Rules
+
+- `DATE` accepts only ISO local date values in `YYYY-MM-DD`.
+- `TIME` accepts only ISO local time values to second precision.
+- `DATETIME` accepts ISO local datetime values with minute or second precision.
+- Query operators for `DATE`, `TIME`, and `DATETIME` are `=`, `<`, and `>`.
+- `contains` remains limited to string-like text/data/url values.
+
+### Acceptance Criteria
+
+- Attribute creation accepts `DATE`, `TIME`, and `DATETIME` through HTTP, CLI,
+  command-console, and `.vdos` import paths.
+- Instance create/update rejects invalid values for the new data types.
+- Entity `_query` supports `=`, `<`, and `>` for the new data types.
+- Existing data types and existing `.vdos` files continue to work unchanged.
+- UX data entry uses date/time-aware controls where practical.
+- UX display formats date/time values using the browser locale while API values
+  remain ISO strings.
+- `mvn clean verify` succeeds from the repository root.
+- `cd vedenemo-ux && npm run build` succeeds.
+
+### Completion Notes
+
+- Added `DATE`, `TIME`, and `DATETIME` to `DataType`.
+- Added pure JDK validation for ISO local date, time, and datetime values in
+  runtime instance data.
+- Kept new date/time values string-backed in API responses and instance
+  records.
+- Added `=`, `<`, and `>` query support for the new data types.
+- Accepted the new data types through HTTP session commands, command-console,
+  CLI normalization, and `.vdos` enum parsing.
+- Updated UX input controls, query/filter operator handling, client-side
+  validation, API examples, and browser-locale display formatting.
+- Updated implementation and user documentation.
+- Verified with `mvn -B clean verify`.
+- Verified with `cd vedenemo-ux && npm run build`.
+
 ## Tidy tree manual root Level 1 filtering
 
 Status: executed

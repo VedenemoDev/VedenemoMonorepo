@@ -467,6 +467,19 @@ final class VedenemoCliAppTest {
     }
 
     @Test
+    void attrAddNormalizesIsoDateAndTimeDataTypes() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+
+        run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nUpdated At\n\ndatetime\nexit\n");
+
+        assertEquals("DATETIME", commandClient.createdAttributeDataType);
+    }
+
+    @Test
     void attrAddReportsDuplicateFailureAndKeepsContext() {
         TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
         TestModelClient modelClient = new TestModelClient();

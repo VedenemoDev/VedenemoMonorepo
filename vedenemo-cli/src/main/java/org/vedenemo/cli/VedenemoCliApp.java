@@ -881,6 +881,9 @@ public final class VedenemoCliApp {
             case "numeric", "number" -> "NUMERIC";
             case "url" -> "URL";
             case "data" -> "DATA";
+            case "date" -> "DATE";
+            case "time" -> "TIME";
+            case "datetime" -> "DATETIME";
             default -> value.trim();
         };
     }

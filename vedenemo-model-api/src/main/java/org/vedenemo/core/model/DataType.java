@@ -4,5 +4,8 @@ public enum DataType {
     TEXT,
     NUMERIC,
     URL,
-    DATA
+    DATA,
+    DATE,
+    TIME,
+    DATETIME
 }

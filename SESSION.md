@@ -7974,3 +7974,136 @@ Current status and next steps:
 - Verification passed: `cd vedenemo-ux && npm run build`.
 - No frontend test script exists in `vedenemo-ux/package.json`; no separate
   frontend test command was available.
+
+## 2026-08-12 18:18 EEST
+
+Session goal: plan extension of `DataType` with `DATE`, `TIME`, and
+`DATETIME`.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg -n "enum DataType|DataType|STRING|NUMBER|BOOLEAN|DATE|DATETIME|TIME" -S .`
+- `sed -n '1,90p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `sed -n '1,430p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,120p' vedenemo-core/src/main/java/org/vedenemo/core/instance/InstanceValue.java`
+- `rg -n "DataType|operator|NUMERIC|TEXT|URL|DATA|date|time|locale|toLocale|input type=|datetime" vedenemo-ux/src -S`
+- `sed -n '560,620p' vedenemo-ux/src/App.tsx`
+- `sed -n '780,870p' vedenemo-ux/src/App.tsx`
+- `sed -n '1280,1320p' vedenemo-ux/src/App.tsx`
+- `sed -n '4180,4520p' vedenemo-ux/src/App.tsx`
+- `sed -n '1170,1210p' vedenemo-ux/src/App.tsx`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Planning only; implementation intentionally not started.
+- Identified impact areas: model API enum, core instance validation and query
+  comparisons, web/console data type parsing, CLI normalization, `.vdos`
+  import/export compatibility, UX value entry/display/query controls, examples,
+  tests, and living implementation documentation if implemented.
+- Open decisions remain around exact ISO profiles, comparison ordering,
+  `DATETIME` timezone requirements, and UX display/input behavior.
+
+## 2026-08-12 18:27 EEST
+
+Session goal: record user decisions for planned `DATE`, `TIME`, and
+`DATETIME` data types.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- User selected full scalar operators for all three new data types: `=`, `<`,
+  `>`.
+- `DATE` will use ISO local date strings in `YYYY-MM-DD`.
+- `TIME` will use ISO local time strings to second precision.
+- `DATETIME` will allow locale-neutral local datetime values rather than
+  timezone/offset-aware instants.
+- UX display should use browser locale formatting.
+- Existing `.vdos` files should remain unaffected because no existing data type
+  changes or deprecations are planned; validation applies only to attributes
+  declared with the new data types.
+- Remaining precision question: whether `DATETIME` should require seconds, like
+  `TIME`, or allow minute-only local datetime strings from native browser input.
+
+## 2026-08-12 18:43 EEST
+
+Session goal: execute the `DATE`, `TIME`, and `DATETIME` `DataType` plan as the
+current task.
+
+Files changed:
+
+- `README.md`
+- `SESSION.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/InstanceValue.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleCommandClient.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/SessionResourceTest.java`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,180p' tasks/backlog.md`
+- `tail -n 100 SESSION.md`
+- `rg` searches for `DataType`, parsing, operators, date/time UI handling, and
+  formatting paths
+- Multiple `nl -ba` and `sed -n` reads of affected Java, TypeScript, and docs
+  files
+- `mvn -B clean verify` (failed once because the new test expected HTTP `201`
+  for an endpoint that returns `200`)
+- `mvn -B clean verify` (passed after correcting the test expectation)
+- `npm run build` in `vedenemo-ux` (passed)
+- `git status --short --branch`
+- `git diff --stat`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `DATE`, `TIME`, and `DATETIME` to the pure model API enum.
+- Added core validation for ISO local date, time, and datetime strings while
+  keeping values string-backed in API responses and instance records.
+- `DATE` accepts `YYYY-MM-DD`; `TIME` accepts `HH:mm:ss`; `DATETIME` accepts
+  minute or second precision local datetime strings.
+- Added `=`, `<`, and `>` query support for the new types.
+- Updated HTTP, CLI, command-console, API examples, UX controls, UX validation,
+  and browser-locale display formatting.
+- Marked the backlog item executed while keeping it as history.
+- Verification passed: `mvn -B clean verify`.
+- Verification passed: `cd vedenemo-ux && npm run build`.

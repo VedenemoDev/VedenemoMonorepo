@@ -296,6 +296,65 @@ final class InstanceDataResourceTest {
     }
 
     @Test
+    void createsAndQueriesIsoDateAndTimeEntityValues() throws Exception {
+        String rootId = createRoot(null);
+        String earlyId = responseId(post(rootPath(rootId, "/Artist"), """
+                {
+                  "Name":"Early Artist",
+                  "BirthDate":"1959-08-17",
+                  "SetTime":"18:30:00",
+                  "LastPlayedAt":"2026-08-12T18:30"
+                }
+                """));
+        String laterId = responseId(post(rootPath(rootId, "/Artist"), """
+                {
+                  "Name":"Later Artist",
+                  "BirthDate":"1965-01-01",
+                  "SetTime":"20:15:00",
+                  "LastPlayedAt":"2026-08-12T18:30:30"
+                }
+                """));
+
+        HttpResponse<String> dateQuery = post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "comparisons": [
+                      {"attributeAzName": "BirthDate", "operator": "<", "value": "1960-01-01"}
+                    ]
+                  }
+                }
+                """);
+        HttpResponse<String> timeQuery = post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "comparisons": [
+                      {"attributeAzName": "SetTime", "operator": ">", "value": "19:00:00"}
+                    ]
+                  }
+                }
+                """);
+        HttpResponse<String> dateTimeQuery = post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "comparisons": [
+                      {"attributeAzName": "LastPlayedAt", "operator": ">", "value": "2026-08-12T18:30"}
+                    ]
+                  }
+                }
+                """);
+
+        assertEquals(200, dateQuery.statusCode());
+        assertTrue(dateQuery.body().contains("\"id\":\"" + earlyId + "\""));
+        assertTrue(!dateQuery.body().contains("\"id\":\"" + laterId + "\""));
+        assertEquals(200, timeQuery.statusCode());
+        assertTrue(timeQuery.body().contains("\"id\":\"" + laterId + "\""));
+        assertTrue(!timeQuery.body().contains("\"id\":\"" + earlyId + "\""));
+        assertEquals(200, dateTimeQuery.statusCode());
+        assertTrue(dateTimeQuery.body().contains("\"id\":\"" + laterId + "\""));
+        assertTrue(!dateTimeQuery.body().contains("\"id\":\"" + earlyId + "\""));
+    }
+
+    @Test
     void keepsEntityInstancesIsolatedByRoot() throws Exception {
         String firstRootId = createRoot("First archive");
         String secondRootId = createRoot("Second archive");
@@ -341,6 +400,15 @@ final class InstanceDataResourceTest {
                 """).statusCode());
         assertEquals(400, post(rootPath(rootId, "/Artist"), """
                 {"Website":"/relative"}
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist"), """
+                {"BirthDate":"1959-8-17"}
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist"), """
+                {"SetTime":"18:30"}
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist"), """
+                {"LastPlayedAt":"2026-08-12T18:30:00Z"}
                 """).statusCode());
         assertEquals(400, post(rootPath(rootId, "/Artist/_query"), """
                 {
@@ -391,6 +459,9 @@ final class InstanceDataResourceTest {
         artist.addAttribute(new VAttribute("Name", "Name", DataType.TEXT, modelRoot.version()));
         artist.addAttribute(new VAttribute("Rating", "Rating", DataType.NUMERIC, modelRoot.version()));
         artist.addAttribute(new VAttribute("Website", "Website", DataType.URL, modelRoot.version()));
+        artist.addAttribute(new VAttribute("BirthDate", "Birth Date", DataType.DATE, modelRoot.version()));
+        artist.addAttribute(new VAttribute("SetTime", "Set Time", DataType.TIME, modelRoot.version()));
+        artist.addAttribute(new VAttribute("LastPlayedAt", "Last Played At", DataType.DATETIME, modelRoot.version()));
         VEntity album = modelRoot.addEntity(new VEntity("Album", "Album", modelRoot.version()));
         album.addAttribute(new VAttribute("Title", "Title", DataType.TEXT, modelRoot.version()));
         modelRoot.addAssociation(new OwnershipAssociation(

@@ -138,6 +138,12 @@ final class ModelInstanceServiceTest {
                 () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Rating", "not numeric")));
         assertThrows(IllegalArgumentException.class,
                 () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Website", "/relative")));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("BirthDate", "1959-8-17")));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("SetTime", "18:30")));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("LastPlayedAt", "2026-08-12T18:30:00Z")));
     }
 
     @Test
@@ -233,6 +239,60 @@ final class ModelInstanceServiceTest {
         assertEquals("Wayne Shorter", urlContains.getFirst().values().get("Name").value());
         assertEquals(List.of(miles.id(), coltrane.id()), greaterThan.stream().map(EntityInstance::id).toList());
         assertEquals(List.of(bill.id(), shorter.id()), lessThan.stream().map(EntityInstance::id).toList());
+    }
+
+    @Test
+    void createsAndQueriesIsoDateAndTimeValues() {
+        Fixture fixture = fixture();
+        String rootId = fixture.rootId();
+        EntityInstance early = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of(
+                "Name", "Early Artist",
+                "BirthDate", "1959-08-17",
+                "SetTime", "18:30:00",
+                "LastPlayedAt", "2026-08-12T18:30"
+        ));
+        EntityInstance later = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of(
+                "Name", "Later Artist",
+                "BirthDate", "1965-01-01",
+                "SetTime", "20:15:00",
+                "LastPlayedAt", "2026-08-12T18:30:30"
+        ));
+
+        List<EntityInstance> dateMatches = fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(new ScalarComparison("BirthDate", ScalarComparisonOperator.LESS_THAN, "1960-01-01")),
+                        List.of()
+                )
+        );
+        List<EntityInstance> timeMatches = fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(new ScalarComparison("SetTime", ScalarComparisonOperator.GREATER_THAN, "19:00:00")),
+                        List.of()
+                )
+        );
+        List<EntityInstance> dateTimeMatches = fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(new ScalarComparison("LastPlayedAt", ScalarComparisonOperator.GREATER_THAN, "2026-08-12T18:30")),
+                        List.of()
+                )
+        );
+
+        assertEquals("2026-08-12T18:30", early.values().get("LastPlayedAt").value());
+        assertEquals(List.of(early.id()), dateMatches.stream().map(EntityInstance::id).toList());
+        assertEquals(List.of(later.id()), timeMatches.stream().map(EntityInstance::id).toList());
+        assertEquals(List.of(later.id()), dateTimeMatches.stream().map(EntityInstance::id).toList());
     }
 
     @Test
@@ -347,6 +407,9 @@ final class ModelInstanceServiceTest {
         artist.addAttribute(new VAttribute("Name", "Name", DataType.TEXT, modelRoot.version()));
         artist.addAttribute(new VAttribute("Rating", "Rating", DataType.NUMERIC, modelRoot.version()));
         artist.addAttribute(new VAttribute("Website", "Website", DataType.URL, modelRoot.version()));
+        artist.addAttribute(new VAttribute("BirthDate", "Birth Date", DataType.DATE, modelRoot.version()));
+        artist.addAttribute(new VAttribute("SetTime", "Set Time", DataType.TIME, modelRoot.version()));
+        artist.addAttribute(new VAttribute("LastPlayedAt", "Last Played At", DataType.DATETIME, modelRoot.version()));
         VEntity album = modelRoot.addEntity(new VEntity("Album", "Album", modelRoot.version()));
         album.addAttribute(new VAttribute("Title", "Title", DataType.TEXT, modelRoot.version()));
         modelRoot.addAssociation(new OwnershipAssociation(

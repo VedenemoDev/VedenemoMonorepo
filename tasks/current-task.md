@@ -1,60 +1,55 @@
 # Current Task
 
-## Tidy tree manual root Level 1 filtering
+## ISO date and time data types
 
 Status: executed.
 
 ### Goal
 
-Extend `Tidy tree` manual-root mode so the first entity level below the
-synthetic chart root can be filtered with query-style scalar and relationship
-criteria before the tree is rendered.
+Extend `DataType` with `DATE`, `TIME`, and `DATETIME` while preserving ISO
+string storage/API/query values and browser-locale UX display.
 
 ### Scope
 
-- Keep manual-root mode selected by `Write root node title`.
-- Keep the existing synthetic `Chart root label` input.
-- Keep the existing Level 1 entity selection and label template controls.
-- Add an explicit `Filter Level 1 nodes` toggle inside the Level 1 card.
-- When the Level 1 filter is enabled, allow multiple scalar comparison rows.
-- When the Level 1 filter is enabled, allow relationship criteria with required
-  related-attribute comparisons.
-- Combine all enabled Level 1 criteria with logical `AND`.
-- Resolve Level 1 match counts automatically.
-- Disable visualization when an enabled Level 1 filter matches zero instances.
-- Keep filtering scoped to Level 1 only.
-- Preserve selected entity-instance root behavior.
+- Add `DATE`, `TIME`, and `DATETIME` to the pure JDK model API enum.
+- Store and expose instance values for the new types as ISO strings.
+- Validate submitted values for attributes declared with the new types:
+  - `DATE`: ISO local date, `YYYY-MM-DD`;
+  - `TIME`: ISO local time to second precision, `HH:mm:ss`;
+  - `DATETIME`: ISO local datetime with minute or second precision.
+- Support `=`, `<`, and `>` query comparisons for the new types, equivalent to
+  `NUMERIC` operator availability.
+- Keep `DATETIME` locale-neutral and timezone-free.
+- Keep existing `.vdos` files unaffected unless they explicitly use one of the
+  new data types with invalid values.
+- Update CLI, command-console, web API, UX, examples, tests, and living
+  implementation documentation as needed.
 
 ### Acceptance Criteria
 
-- In `Write root node title` mode, Level 1 exposes an explicit filter toggle in
-  the Level 1 card.
-- A user can add multiple ANDed scalar comparisons for Level 1.
-- A user can add relationship criteria for Level 1 equivalent to the query
-  console, with an attribute comparison required for each relationship
-  criterion.
-- Operators are constrained by attribute data type in the same way as the query
-  console.
-- The UI automatically shows how many Level 1 instances match the current
-  filter.
-- If the enabled filter matches zero Level 1 instances, visualization is
-  disabled and the UI explains that the start condition matched no results.
-- Visualization renders only matching Level 1 instances under the synthetic
-  root, then renders deeper descendants according to the existing binding.
-- Deeper levels do not expose filtering controls in this task.
-- If no Level 1 filter is enabled, manual-root mode behaves as it did before
-  this task.
-- Selected entity-instance root mode remains unchanged.
-- `npm run build` succeeds in `vedenemo-ux`.
+- Attribute creation accepts `DATE`, `TIME`, and `DATETIME` through HTTP, CLI,
+  command-console, and `.vdos` import paths.
+- Instance create/update rejects invalid values for the new data types.
+- Entity `_query` supports `=`, `<`, and `>` for the new data types.
+- Existing data types and existing `.vdos` files continue to work unchanged.
+- UX data entry uses date/time-aware controls where practical.
+- UX display formats date/time values using the browser locale while API values
+  remain ISO strings.
+- `mvn clean verify` succeeds from the repository root.
+- `cd vedenemo-ux && npm run build` succeeds.
 
 ### Completion Notes
 
-- Added runtime-only Level 1 filter state to Tidy tree binding levels.
-- Added an explicit Level 1 filter toggle and query-style scalar/relationship
-  criteria controls inside the Level 1 card.
-- Reused the existing entity `_query` endpoint for match counting and render
-  data.
-- Added automatic match-count feedback for Level 1 filters.
-- Blocked visualization when an enabled Level 1 filter matches zero instances.
-- Kept deeper-level traversal semantics unchanged.
+- Added `DATE`, `TIME`, and `DATETIME` to `DataType`.
+- Added pure JDK validation for ISO local date, time, and datetime values in
+  runtime instance data.
+- Kept new date/time values string-backed in API responses and instance
+  records.
+- Added `=`, `<`, and `>` query support for the new data types.
+- Accepted the new data types through HTTP session commands, command-console,
+  CLI normalization, and `.vdos` enum parsing.
+- Updated UX input controls, query/filter operator handling, client-side
+  validation, API examples, and browser-locale display formatting.
+- Updated implementation and user documentation.
+- Verified with `mvn -B clean verify`.
 - Verified with `cd vedenemo-ux && npm run build`.

@@ -334,6 +334,30 @@ final class SessionResourceTest {
     }
 
     @Test
+    void createAttributeCommandAcceptsIsoDateAndTimeDataTypes() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addEntity(new org.vedenemo.core.model.VEntity("Customer", "Customer", modelRoot.version()));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        assertEquals(200, post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Customer","attributeAzName":"BirthDate","attributeVisName":"Birth Date","dataType":"DATE"}
+                """).statusCode());
+        assertEquals(200, post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Customer","attributeAzName":"StartTime","attributeVisName":"Start Time","dataType":"time"}
+                """).statusCode());
+        assertEquals(200, post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Customer","attributeAzName":"UpdatedAt","attributeVisName":"Updated At","dataType":"datetime"}
+                """).statusCode());
+
+        assertEquals(org.vedenemo.core.model.DataType.DATE, modelRoot.entities().getFirst().attributes().get(0).type());
+        assertEquals(org.vedenemo.core.model.DataType.TIME, modelRoot.entities().getFirst().attributes().get(1).type());
+        assertEquals(org.vedenemo.core.model.DataType.DATETIME, modelRoot.entities().getFirst().attributes().get(2).type());
+    }
+
+    @Test
     void undoCommandRemovesPreviouslyCreatedAttribute() throws Exception {
         ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
         modelRoot.addEntity(new org.vedenemo.core.model.VEntity("Customer", "Customer", modelRoot.version()));

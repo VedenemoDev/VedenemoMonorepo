@@ -410,6 +410,9 @@ public final class InstanceDataResource {
                 case NUMERIC -> "123.45";
                 case URL -> "https://example.com";
                 case DATA -> "data";
+                case DATE -> "2026-08-12";
+                case TIME -> "18:30:00";
+                case DATETIME -> "2026-08-12T18:30";
             };
         }
     }
