@@ -8164,3 +8164,53 @@ Current status and next steps:
 - Verification passed: Swedish loader created 23 people, 5 family units, and 31
   association links against a local backend.
 - `git diff --check` passed.
+
+## 2026-08-14 11:29 EEST
+
+Session goal: change the GitHub project license from MIT to Apache 2.0.
+
+Files changed:
+
+- `SESSION.md`
+- `LICENSE`
+- `pom.xml`
+- `vedenemo-ux/package.json`
+- `vedenemo-ux/package-lock.json`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `rg -n "MIT|Apache|license|License" -S .`
+- `rg --files -g 'LICENSE*' -g 'NOTICE*' -g 'pom.xml' -g 'package.json'`
+- `sed -n '1,220p' LICENSE`
+- `sed -n '1,120p' vedenemo-ux/package.json`
+- `sed -n '1,80p' vedenemo-ux/package-lock.json`
+- `sed -n '1,160p' pom.xml`
+- `git status --short`
+- `rg -n "MIT License|Permission is hereby granted|Apache-2.0|Apache License, Version 2.0" LICENSE pom.xml vedenemo-ux/package.json vedenemo-ux/package-lock.json`
+- `git diff --check`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git branch --show-current`
+- `git diff -- LICENSE pom.xml vedenemo-ux/package.json vedenemo-ux/package-lock.json SESSION.md`
+- `git status --short`
+- `git add LICENSE pom.xml vedenemo-ux/package.json vedenemo-ux/package-lock.json SESSION.md`
+- `git commit -m "Change project license to Apache 2.0" -m "..."`
+- `git push`
+
+Current status and next steps:
+
+- Replaced the root MIT license text with Apache License 2.0 text.
+- Added Apache 2.0 license metadata to the Maven parent POM.
+- Added Apache 2.0 license metadata to the frontend package and lockfile root
+  package entry.
+- No architecture documentation update was needed because this did not change
+  modules, boundaries, runtime flows, APIs, CLI behavior, or persistence.
+- Verification passed: `git diff --check`.
+- Changes committed and pushed to the current branch.
