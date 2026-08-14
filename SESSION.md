@@ -8214,3 +8214,51 @@ Current status and next steps:
   modules, boundaries, runtime flows, APIs, CLI behavior, or persistence.
 - Verification passed: `git diff --check`.
 - Changes committed and pushed to the current branch.
+
+## 2026-08-14 22:20 EEST
+
+Session goal: add the general-purpose software disclaimer to the README and
+make preserving it a future agent rule.
+
+Files changed:
+
+- `SESSION.md`
+- `README.md`
+- `AGENTS.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `rg --files | rg '(^|/)(README|AGENTS)\.(md|MD)$'`
+- `sed -n '1,220p' README.md`
+- `sed -n '1,260p' AGENTS.md`
+- `git status --short`
+- `rg -n "License|Warranty|warranty|purpose|suitability|Apache" README.md AGENTS.md`
+- `tail -n 80 README.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `rg -n "Vedenemo is general-purpose software|README disclaimer preservation|No representation or warranty|Apache License 2.0" README.md AGENTS.md`
+- `git diff -- README.md AGENTS.md`
+- `git diff --check`
+- `git status --short`
+- `git diff -- README.md AGENTS.md SESSION.md`
+- `git status --short --branch`
+- `git branch --show-current`
+- `git add README.md AGENTS.md SESSION.md`
+- `git commit -m "Add README general-purpose software disclaimer" -m "..."`
+- `git push`
+
+Current status and next steps:
+
+- Added the requested general-purpose software disclaimer to `README.md`.
+- Added an `AGENTS.md` rule requiring the README disclaimer to be preserved in
+  future README modifications.
+- No architecture documentation update was needed because this was a repository
+  documentation policy change only.
+- Verification passed: `git diff --check`.
+- Changes committed and pushed to the current branch.

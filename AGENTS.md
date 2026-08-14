@@ -135,6 +135,16 @@ Architectural documents include:
 - `docs/architecture/*`
 - `decisions/*`
 
+## README disclaimer preservation
+
+`README.md` must always include the general-purpose software disclaimer stating
+that Vedenemo is general-purpose software, that no representation or warranty
+is made regarding suitability for any particular application or purpose, that
+users are solely responsible for evaluating whether Vedenemo is appropriate for
+their intended use, and that the Apache License 2.0 contains the applicable
+warranty disclaimer and limitation of liability. Preserve this disclaimer in all
+future README modifications.
+
 ## Backlog ordering
 
 Backlog items in `tasks/backlog.md` are listed from newest to oldest.

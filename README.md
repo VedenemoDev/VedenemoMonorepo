@@ -7,6 +7,14 @@ frontend skeleton.
 The backend is currently process-local and in-memory. It is useful for
 development, command-flow testing, and shaping the core model/API boundaries.
 
+## General-Purpose Software
+
+Vedenemo is general-purpose software. No representation or warranty is made
+regarding its suitability for any particular application or purpose. Users are
+solely responsible for evaluating whether Vedenemo is appropriate for their
+intended use. See the Apache License 2.0 for the applicable warranty disclaimer
+and limitation of liability.
+
 ## Current Scope
 
 - Java 21 + Maven multi-module backend.
