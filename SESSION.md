@@ -8310,3 +8310,89 @@ Current status and next steps:
   non-commit/non-push rule.
 - Verification passed: `git check-ignore -v` reports both local planning files
   ignored by `.git/info/exclude`.
+
+## 2026-08-18 23:10 EEST
+
+Session goal: analyze the `QA1` discussion sections in the local-only planning
+files and add Codex CLI LLM commentary grounded in the current codebase.
+
+Files changed:
+
+- `SESSION.md`
+- `local-planning/conceptual-planning.md` (local-only, ignored)
+- `local-planning/use-case-scenarios.md` (local-only, ignored)
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,260p' local-planning/conceptual-planning.md`
+- `sed -n '1,320p' local-planning/use-case-scenarios.md`
+- `git status --short --ignored local-planning AGENTS.md SESSION.md`
+- `sed -n '261,620p' local-planning/conceptual-planning.md`
+- `sed -n '321,760p' local-planning/use-case-scenarios.md`
+- `rg -n "^#{1,4} |QA1: Codex" local-planning/conceptual-planning.md local-planning/use-case-scenarios.md`
+- `sed -n '620,900p' local-planning/conceptual-planning.md`
+- `sed -n '760,1080p' local-planning/use-case-scenarios.md`
+- `wc -l local-planning/conceptual-planning.md local-planning/use-case-scenarios.md`
+- `sed -n '1,260p' docs/visualizations.md`
+- `sed -n '1,260p' docs/architecture_doc.md`
+- `rg -n "Lens|lens|projection|aggregate|_query|visual|D3|PlantUML|association|instance" vedenemo-ux/src vedenemo-web-api/src/main/java vedenemo-core/src/main/java vedenemo-model-api/src/main/java docs README.md -S`
+- `rg -n "class .*Query|record .*Query|Instance|Association|DataType|ModelInstance|ModelRegistry" vedenemo-core/src/main/java vedenemo-web-api/src/main/java vedenemo-model-api/src/main/java -S`
+- `sed -n '828,940p' local-planning/conceptual-planning.md`
+- `sed -n '1006,1120p' local-planning/use-case-scenarios.md`
+- `git status --short --ignored local-planning AGENTS.md SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `### QA1: Codex CLI LLM commentary on the discussion above` content to
+  `local-planning/conceptual-planning.md`.
+- Added the same titled commentary section content to
+  `local-planning/use-case-scenarios.md`.
+- The commentary distinguishes current implementation capabilities from future
+  concepts such as reviewed AI change proposals, MCP adapter integration,
+  Lens/Projection artifacts, ingestion diagnostics, provenance, and
+  interoperability exports.
+- Verification passed: the local planning directory remains ignored by Git.
+
+## 2026-08-18 23:55 EEST
+
+Session goal: update the conceptual planning commentary to capture the
+SNAPSHOT/RELEASE model-version lifecycle idea as the native review mechanism
+for exploratory model work.
+
+Files changed:
+
+- `SESSION.md`
+- `local-planning/conceptual-planning.md` (local-only, ignored)
+
+Commands run:
+
+- `sed -n '1,80p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,80p' docs/architecture/module-map.md`
+- `sed -n '1,80p' docs/architecture/coding-rules.md`
+- `sed -n '1,80p' docs/architecture/testing-strategy.md`
+- `sed -n '1,120p' docs/roadmap/current-milestone.md`
+- `sed -n '1,120p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `tail -n 90 local-planning/conceptual-planning.md`
+- `git status --short --ignored local-planning SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Replaced the previous closing sentence about reviewable artifacts with a
+  more precise note that Vedenemo can use normal temporary model identities or
+  `SNAPSHOT` model versions for exploratory review.
+- Added a conceptual lifecycle from `0.1.0-SNAPSHOT` to `0.1.0-RELEASE` and
+  later `0.2.0-SNAPSHOT` revision work.
+- Captured possible relaxed `SNAPSHOT` rules and stricter `RELEASE`
+  expectations as open design questions.
+- Verification passed: `git diff --check` passed and `git check-ignore -v`
+  confirms the local planning files remain ignored by `.git/info/exclude`.
