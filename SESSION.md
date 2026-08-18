@@ -8262,3 +8262,51 @@ Current status and next steps:
   documentation policy change only.
 - Verification passed: `git diff --check`.
 - Changes committed and pushed to the current branch.
+
+## 2026-08-18 22:28 EEST
+
+Session goal: create local-only conceptual planning and proof-of-concept use
+case scenario Markdown files, exclude them from Git, and link them from
+`AGENTS.md`.
+
+Files changed:
+
+- `SESSION.md`
+- `AGENTS.md`
+- `.git/info/exclude`
+- `local-planning/conceptual-planning.md` (local-only, ignored)
+- `local-planning/use-case-scenarios.md` (local-only, ignored)
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '1,260p' AGENTS.md`
+- `sed -n '1,220p' .git/info/exclude`
+- `git status --short --branch`
+- `rg --files | rg 'planning|concept|scenario|use-case|use_case|proof'`
+- `mkdir -p local-planning`
+- `git check-ignore -v local-planning/conceptual-planning.md local-planning/use-case-scenarios.md`
+- `git status --short --ignored local-planning AGENTS.md SESSION.md`
+- `sed -n '132,170p' AGENTS.md`
+- `sed -n '1,40p' local-planning/conceptual-planning.md`
+- `sed -n '1,40p' local-planning/use-case-scenarios.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Created `local-planning/conceptual-planning.md` for local conceptual
+  planning notes.
+- Created `local-planning/use-case-scenarios.md` for local proof-of-concept use
+  case scenarios.
+- Added `local-planning/` to `.git/info/exclude`, so these local planning files
+  are ignored and must not be committed or pushed.
+- Added an `AGENTS.md` rule linking those local files and enforcing the
+  non-commit/non-push rule.
+- Verification passed: `git check-ignore -v` reports both local planning files
+  ignored by `.git/info/exclude`.

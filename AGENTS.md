@@ -145,6 +145,18 @@ their intended use, and that the Apache License 2.0 contains the applicable
 warranty disclaimer and limitation of liability. Preserve this disclaimer in all
 future README modifications.
 
+## Local-only planning files
+
+The local planning files are:
+
+- `local-planning/conceptual-planning.md`
+- `local-planning/use-case-scenarios.md`
+
+These files are local workspace notes only. They must remain listed in
+`.git/info/exclude`, must not be added to Git, and must never be committed or
+pushed to any remote. When prompts refer to conceptual planning or proof-of-
+concept use case scenarios, use these files as the linked local Markdown files.
+
 ## Backlog ordering
 
 Backlog items in `tasks/backlog.md` are listed from newest to oldest.
