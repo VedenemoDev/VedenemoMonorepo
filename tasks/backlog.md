@@ -226,6 +226,12 @@ These route names are planning templates, not implemented endpoints yet. They
 use root-scoped `/data` routes because `.vdmp` files preserve data for one
 model-instance root under one loaded model.
 
+Normal terminal CLI `dumps` does not need a backend listing route. It should
+list local `.vdmp` files from `.vedenemo` in the same way terminal `snapshots`
+lists local `.vdos` files. Backend dump-listing routes are needed for browser
+virtual CLI because browser dump files are stored behind the backend-managed
+cloud store.
+
 Runtime dump content routes:
 
 ```text

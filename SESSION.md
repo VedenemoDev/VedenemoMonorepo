@@ -8678,3 +8678,37 @@ Current status and next steps:
   and optional cloud delete.
 - No open planning questions remain in the backlog item.
 - Verification passed: `git diff --check` reported no whitespace errors.
+
+## 2026-08-20 23:33 EEST
+
+Session goal: clarify why the planned `.vdmp` API templates include a browser
+cloud dump listing route but no backend listing route for terminal CLI local
+dump files.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,80p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,80p' docs/architecture/module-map.md`
+- `sed -n '1,80p' docs/architecture/coding-rules.md`
+- `sed -n '1,80p' docs/architecture/testing-strategy.md`
+- `sed -n '1,120p' docs/roadmap/current-milestone.md`
+- `sed -n '1,100p' tasks/current-task.md`
+- `tail -n 50 SESSION.md`
+- `sed -n '220,275p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added a clarification to `### Planned API Route Templates`.
+- Terminal CLI `dumps` is planned to list local `.vedenemo/*.vdmp` files and
+  does not need a backend listing route.
+- Backend `GET /data/{modelAzName}/dumps` is for browser virtual CLI cloud dump
+  listing because browser dumps are stored behind backend-managed cloud storage.
+- Verification passed: `git diff --check` reported no whitespace errors.
