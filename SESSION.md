@@ -8523,3 +8523,45 @@ Current status and next steps:
   import flow.
 - No implementation was started.
 - Verification passed: `git diff --check` reported no whitespace errors.
+
+## 2026-08-20 22:51 EEST
+
+Session goal: process the user's answers to the `.vdmp` planning questions and
+update the backlog planning item accordingly.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,180p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,180p' docs/architecture/module-map.md`
+- `sed -n '1,180p' docs/architecture/coding-rules.md`
+- `sed -n '1,180p' docs/architecture/testing-strategy.md`
+- `sed -n '1,180p' docs/roadmap/current-milestone.md`
+- `sed -n '1,180p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,240p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `git status --short --branch`
+- `sed -n '80,245p' tasks/backlog.md`
+- `git diff --check`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Converted answered inline backlog questions into `### Resolved Planning
+  Decisions`.
+- Added a `### Suggested .vdmp Format Direction` section recommending a
+  readable JSON encoding mapped outside core into Vedenemo-owned structures.
+- Updated the planned architecture text and Mermaid component diagram to use a
+  separate `ModelInstanceDumpStore` SPI and browser cloud dump support from the
+  first implementation.
+- Reduced open questions to schema precheck behavior, duplicate-link handling,
+  and endpoint ownership, with a recommended root-scoped `/data` route
+  direction.
+- No implementation was started.
+- Verification passed: `git diff --check` reported no whitespace errors.

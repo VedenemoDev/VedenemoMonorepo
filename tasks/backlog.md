@@ -92,16 +92,18 @@ format parser can be separate, but it must not bypass model, attribute,
 
 Terminal CLI file access and browser virtual CLI cloud access should remain
 separate capabilities. Terminal commands can read and write `.vdmp` files under
-`.vedenemo` by default. Browser commands should use backend-managed storage if
-enabled, mirroring the existing `.vdos` snapshot split, so browser code never
-needs direct local filesystem or cloud credential access.
+`.vedenemo` by default. Browser commands should use backend-managed storage
+from the start, mirroring the existing `.vdos` snapshot split, so browser code
+never needs direct local filesystem or cloud credential access.
 
 The first dump storage abstraction should be separate enough from `.vdos`
 model snapshots to avoid mixing model definition snapshots with model-instance
-data dumps. A later implementation may generalize artifact storage, but the
-planning baseline should assume separate concepts: model script snapshots
-preserve model definitions, while instance dumps preserve data for one loaded
-model version.
+data dumps. Implement a new Vedenemo-owned SPI, tentatively
+`ModelInstanceDumpStore`, instead of generalizing the current `SnapshotStore`
+for this first slice. A later implementation may generalize artifact storage,
+but the planning baseline should assume separate concepts: model script
+snapshots preserve model definitions, while instance dumps preserve data for
+one loaded model version.
 
 ```mermaid
 flowchart LR
@@ -112,12 +114,14 @@ flowchart LR
     InstanceService["ModelInstanceService<br/>existing validation rules"]
     InstanceRegistry["ModelInstanceRegistry<br/>process-local data"]
     LocalFiles[".vedenemo/*.vdmp"]
-    CloudStore["Cloud dump store<br/>optional backend adapter"]
+    DumpStoreSpi["ModelInstanceDumpStore SPI<br/>Vedenemo-owned port"]
+    CloudStore["Cloud dump store<br/>backend adapter"]
 
     TerminalCli -->|dsave/dload| LocalFiles
     TerminalCli -->|HTTP dump import/export| WebApi
     BrowserCli -->|console dsave/dload| WebApi
-    WebApi -->|store/retrieve for browser| CloudStore
+    WebApi -->|store/retrieve for browser| DumpStoreSpi
+    DumpStoreSpi --> CloudStore
     WebApi --> DumpService
     DumpService --> InstanceService
     InstanceService --> InstanceRegistry
@@ -160,78 +164,131 @@ sequenceDiagram
     API-->>CLI: New root id, warnings, counts
 ```
 
+### Resolved Planning Decisions
+
+- `dsave` should accept source-root selectors similar to model `msave`:
+  a number from the most recent `dumps` or model-instance root list, a root
+  UUID, or a model-instance root visible name.
+- When multiple model-instance roots exist, `dsave` must not guess silently.
+  It should resolve an explicit selector or ask interactively.
+- `dload` always creates a new model-instance root. Loading into or merging
+  with an existing root is out of scope for this task.
+- One `.vdmp` file represents one model-instance root. Multiple roots in one
+  dump file are out of scope.
+- Imported entity-instance UUIDs and association-link UUIDs are newly
+  allocated during load. The importer must remap links from dump-local source
+  identifiers to the newly created entity-instance IDs.
+- Dump metadata should be generous for troubleshooting. Include at least source
+  root id, root visible name, saved timestamp, source model `azName`, source
+  model visible name, and source model version.
+- Version compatibility should compare the numeric model version only for now.
+  Lifecycle labels such as `SNAPSHOT` and `RELEASE` are conceptual future work
+  and should not affect this task.
+- Any version mismatch is reported. Loading a dump from a newer model version
+  into an older loaded model version is prohibited. Loading an older dump into a
+  newer loaded model version is allowed only after a yes/no confirmation.
+- Partial import is acceptable for development-time use. The load result must
+  report created entity counts, created association-link counts, and failed
+  inserts with useful diagnostics.
+- Blank optional values should be represented explicitly as `null` in the dump.
+  Empty strings may be preserved only for string-like data types where an empty
+  string is the actual submitted value.
+- `dumps` mirrors the current `snapshots` split: terminal CLI lists local
+  `.vdmp` files, while browser virtual CLI lists cloud-backed dump files.
+- `save` and `load` are renamed to `msave` and `mload` immediately. Do not keep
+  `save` and `load` as backward-compatible aliases in this task.
+- Keep the list commands as `snapshots` for model `.vdos` files and `dumps` for
+  model-instance `.vdmp` files.
+- Browser virtual CLI supports `dsave` and `dload` through backend-managed cloud
+  dump storage from the first implementation.
+- Use a new Vedenemo-owned dump storage SPI separate from the existing `.vdos`
+  `SnapshotStore`.
+- After successful `dload`, the CLI should attach/select the newly created
+  model-instance root. The browser virtual CLI and UX should do the same where
+  practical.
+- Planning is complete only when command names, file format, module/API
+  ownership, compatibility rules, and acceptance criteria are all finalized.
+
+### Suggested `.vdmp` Format Direction
+
+Use JSON as the initial `.vdmp` encoding, with a strict Vedenemo-owned logical
+schema and Jackson mapping kept outside core. Human editability is less
+important than for `.vdos`, but JSON remains readable enough for
+troubleshooting, simple to inspect in logs, and direct to validate.
+
+The recommended structure is:
+
+```json
+{
+  "format": "vedenemo-instance-dump",
+  "formatVersion": 1,
+  "savedAt": "2026-08-20T17:50:00Z",
+  "model": {
+    "azName": "FamilyUnitTreeCompositeWithDates",
+    "visName": "Family Unit Tree Composite With Dates",
+    "version": "1.0.0"
+  },
+  "root": {
+    "sourceInstanceRootId": "00000000-0000-0000-0000-000000000000",
+    "visName": "British royal family"
+  },
+  "entities": [
+    {
+      "entityAzName": "Person",
+      "records": [
+        {
+          "dumpId": "person-1",
+          "values": {
+            "FullName": "Charles III",
+            "BirthDate": "1948-11-14",
+            "DeathDate": null
+          }
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "associationAzName": "FamilyUnit_Child_Person",
+      "sourceDumpId": "family-1",
+      "targetDumpId": "person-1"
+    }
+  ]
+}
+```
+
+`dumpId` values are dump-local identifiers only. They exist so links can refer
+to records during import while still allowing the backend to allocate new
+runtime UUIDs. They do not need to match existing runtime entity-instance IDs.
+
+The core-facing dump model should be represented as Vedenemo-owned records or
+classes. If JSON is used, `vedenemo-web-api` or a dedicated adapter should map
+between JSON and those Vedenemo-owned structures. Core should own validation
+and import/export behavior, but not Jackson annotations or Jackson-specific
+types.
+
 ### Open Questions
 
-- Should `dsave` save the currently selected/attached model instance root, or
-  should the CLI first add model-instance selection commands because runtime  
-  instance data currently has no CLI context? => A: There are similar parameters like in 'msave'
-  i.e. referring to numbered list item returned from 'dumps' command, or giving model instance root visible name, or UUID
-- How should `dsave` identify the source root when a model has multiple
-  instance roots: by latest `dumps`/root list number, root UUID, root visible
-  name, or an interactive prompt? => A: I actually answered to this pretty in the previous answer.
-- Should `.vdmp` dump loading preserve original entity-instance UUIDs and link
-  UUIDs, or should it always allocate new IDs and remap association links during
-  import? => A: Always allocat new IDs (but if this causes some problems, please let me know)
-- Should the dump include root metadata such as `instanceRootId`, root visible
-  name, saved timestamp, source model `azName`, source model visible name, and
-  source model version? => A: Yes, that's idea, more metada the better for possible troubleshooting
-- What is the exact compatibility rule for semantic versions: compare only
-  numeric major/minor/patch, include lifecycle labels such as `SNAPSHOT` and
-  `RELEASE`, and how should missing lifecycle data be handled? 
-  => A: Lifecycle labels not implemented yet, just planned at conceptual level, 
-  so now compare now only numeric version, and not making any differene at this
-  point about level of change, so any version mismatch is noted, but load
-  on top of older version model version is prohibited, for newer there is just 
-  warning with confirmation question about continuation of import. 
 - When loading an older dump into a newer model version, should compatibility be
   schema-driven in addition to version-driven, for example rejecting missing
   target entities/attributes/associations before prompting?
-- Should `.vdmp` be a pure core-owned format like `.vdos`, or should JSON
-  serialization live only in `vedenemo-web-api` behind core-owned import/export
-  data structures? => A: Can you elaborate this question more?
-- Should the initial `.vdmp` format be line-oriented Vedenemo text, JSON, or a
-  hybrid text format, and does human review/editability matter as much as it
-  does for `.vdos` model scripts?
-   => A: Human review/editability is not so important, but enough readeble for troubleshooting.
-   Give your suggestion about possible format in separate section of this planning backlog item.
-- Should dump import validate all records and links before creating the new root
-  atomically, or is partial import with diagnostics acceptable for development
-  time?  => A: Partial import is acceptable. There should be similar reporting as now
-  when scripts are loading data for the amount of loaded entities and associations,
-  also there should be information about failed inserts.
-- How should duplicate or invalid association links be handled, especially while
-  association cardinality is still not enforced for runtime instance data?
-- Should blank optional values be omitted from dumps, represented explicitly as
-  null, or preserved as empty strings for string-like data types only?
-   => A: Represented explicitly as null, or preserved as empty strings for string-like data.
-- Should `dload` create one new model-instance root per dump file in all cases,
-  or should the format eventually allow multiple roots in one file?
-   => A: New model instance root per dump file, no plans currently allow multiple root in one file.
-- Should `dumps` list local `.vdmp` files only, cloud-backed browser-console
-  dumps only, or both depending on terminal versus virtual CLI capability,
-  mirroring the existing `snapshots` split?
-    => A: Mirroring 'snapshots' split i.e. just local files for normal console,
-    and just cloud-backed files on browser console.
-- Are the model command renames `save` -> `msave` and `load` -> `mload`
-  intended to replace the old command names immediately, or should `save` and
-  `load` remain temporary aliases for backward compatibility?  => A: Replacing right away.
-- Should `snapshots` be renamed to something model-specific such as
-  `msnapshots`, since `dumps` will be data-specific and existing browser
-  console behavior already uses cloud snapshots for `.vdos` files?  => A: just keeping as planned now: snapshots and dumps
-- Should browser virtual CLI support `dsave`/`dload` through a new cloud dump
-  store from the start, or should the first implementation be terminal-only like
-  the earliest `.vdos` file commands?  => A: both right from the start
-- Should there be a new Vedenemo-owned SPI such as `ModelInstanceDumpStore`,
-  separate from the existing `.vdos` `SnapshotStore`, or should the current
-  snapshot abstraction be generalized?  => A: new separate
-- Which HTTP endpoints should back dump export/import: model-root scoped routes
-  under `/data/{modelAzName}/roots/{instanceRootId}/...`, top-level dump routes,
-  or console-only commands?  => A: Can you elaborate this question more?
-- Should dump load attach/select the newly created model instance root in the
-  CLI/UX after success, once model-instance selection exists?  => A: Yes, should attach to newly created model instances model, at least in CLI, and not bad to do same at UX for virtual console.
-- What are the acceptance criteria for the planning-complete version of this
-  task: finalized command names, finalized file format, module/API ownership,
-  compatibility rules, or all of these?  => A: All of these
+- Should schema compatibility be checked before creating the new root, even
+  though record/link import can be partial? A practical rule would be:
+  missing model, missing entity, missing attribute, incompatible `DataType`, or
+  missing association rejects the whole dump before import; invalid individual
+  values or links are reported as failed inserts during partial import.
+- For duplicate links in the dump, should the importer create duplicates because
+  current runtime data does not enforce cardinality, or should duplicate
+  `associationAzName` + source + target combinations be skipped and reported?
+- Endpoint ownership needs one final decision. Root-scoped data routes, for
+  example `GET /data/{modelAzName}/roots/{instanceRootId}/dump` and
+  `POST /data/{modelAzName}/dumps`, make the relationship to runtime data
+  explicit. Top-level dump routes, for example `GET /dumps/...` and
+  `POST /dumps`, match artifact storage but are less obviously tied to one
+  model/root. Console-only commands avoid public API expansion but make dump
+  behavior harder to test and reuse outside the CLI. Recommended direction:
+  root-scoped `/data` routes for import/export, with CLI and browser console
+  commands as thin clients over those routes.
 
 
 ## Family unit composite DATE model and loaders
