@@ -8446,3 +8446,80 @@ Current status and next steps:
   boundaries, command renames, and planning completion criteria.
 - No implementation was started.
 - Verification passed: `git diff --check` reported no whitespace errors.
+
+## 2026-08-20 20:50 EEST
+
+Session goal: add planning documentation notes for the future `.vdmp`
+model-instance dump storage format and link the new documentation file from the
+README.
+
+Files changed:
+
+- `SESSION.md`
+- `README.md`
+- `docs/model-instance-dump-format.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,460p' README.md`
+- `sed -n '1,150p' tasks/backlog.md`
+- `rg --files docs | sort`
+- `git status --short --branch`
+- `git diff -- tasks/backlog.md README.md docs/model-instance-dump-format.md`
+- `git diff --check`
+- `rg -n "general-purpose software|No representation or warranty|solely responsible|Apache License 2.0|warranty disclaimer" README.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added a backlog remark requiring a dedicated `.vdmp` storage-format Markdown
+  file to be finalized with the implementation.
+- Added placeholder documentation at `docs/model-instance-dump-format.md`.
+- Linked the placeholder from `README.md` near the existing `.vdos` file
+  documentation.
+- Preserved the README general-purpose software disclaimer.
+- Verification passed: `git diff --check` reported no whitespace errors.
+
+## 2026-08-20 20:55 EEST
+
+Session goal: add planned architectural decision notes and Mermaid diagrams to
+the backlog planning item for development-time model-instance dump files.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,180p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,180p' docs/architecture/module-map.md`
+- `sed -n '1,180p' docs/architecture/coding-rules.md`
+- `sed -n '1,180p' docs/architecture/testing-strategy.md`
+- `sed -n '1,180p' docs/roadmap/current-milestone.md`
+- `sed -n '1,180p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '35,170p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `### Planned Architectural Decisions` to the `.vdmp` backlog item.
+- Captured the planned boundaries: development-time dump support, pure core
+  rules, no third-party leakage into core, reuse of `ModelInstanceService`
+  validation, separate terminal/browser storage capabilities, and separation
+  from `.vdos` model snapshots.
+- Added Mermaid diagrams for the planned component flow, export flow, and
+  import flow.
+- No implementation was started.
+- Verification passed: `git diff --check` reported no whitespace errors.

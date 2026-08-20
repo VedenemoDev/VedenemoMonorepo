@@ -398,6 +398,10 @@ On import, command lines are replayed and the resulting model is validated
 against the snapshot. Imported commands become baseline model state and are not
 added to the current session undo stack.
 
+The planned development-time model-instance dump format will use `.vdmp` files.
+Its storage format is tracked in
+[docs/model-instance-dump-format.md](docs/model-instance-dump-format.md).
+
 ## Frontend Build
 
 ```bash

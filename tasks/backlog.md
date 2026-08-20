@@ -55,12 +55,110 @@ Then data itself in a proper format to make easy to go through data and insert i
 There is no possibility yet to load data to existing model instance i.e. merge, but
 loading dump creates always a new data instance.
 
+The implementation task must also define and maintain a dedicated Markdown
+documentation file for the `.vdmp` storage format. The initial placeholder is
+`docs/model-instance-dump-format.md`, and the final implementation should keep
+that document synchronized with the exact dump metadata, record/link structure,
+compatibility checks, and import/export behavior.
+
 For data loading there are the following rules at CLI side:
 - Corresponding model need to be of course loaded to system before loading data
 - It is not possible to load newer version data to older version of the model
 - It is possible to load old version data to a newer version, model but there should
   warning and confirmative message to ask from user (yes/no) if he/she wants to proceed
   data dump load regardless of the model version mismatch.
+
+### Planned Architectural Decisions
+
+The `.vdmp` work should be treated as development-time model-instance dump
+support, not as the final durable persistence architecture. The dump feature
+externalizes one model-instance root at a time so process-local instance data
+can be saved, reviewed, moved, and loaded again without rerunning ad hoc HTTP
+loader scripts.
+
+The core boundary remains strict. Model-instance dump rules should be owned by
+pure Vedenemo code in `vedenemo-core` and/or Vedenemo-owned API/SPI types.
+Third-party JSON libraries, HTTP DTOs, cloud SDKs, and browser-specific
+behavior must stay outside core. If JSON is selected as the first `.vdmp`
+encoding, Jackson mapping belongs in `vedenemo-web-api` or an adapter layer,
+with core receiving and returning Vedenemo-owned dump structures.
+
+The import/export behavior should reuse the existing `ModelInstanceService`
+validation path instead of creating a parallel set of instance-data rules. Dump
+import should create a new model-instance root and then insert records and
+links through the same validation semantics used by `/data` operations. Any
+format parser can be separate, but it must not bypass model, attribute,
+`DataType`, entity-instance, or association-link validation.
+
+Terminal CLI file access and browser virtual CLI cloud access should remain
+separate capabilities. Terminal commands can read and write `.vdmp` files under
+`.vedenemo` by default. Browser commands should use backend-managed storage if
+enabled, mirroring the existing `.vdos` snapshot split, so browser code never
+needs direct local filesystem or cloud credential access.
+
+The first dump storage abstraction should be separate enough from `.vdos`
+model snapshots to avoid mixing model definition snapshots with model-instance
+data dumps. A later implementation may generalize artifact storage, but the
+planning baseline should assume separate concepts: model script snapshots
+preserve model definitions, while instance dumps preserve data for one loaded
+model version.
+
+```mermaid
+flowchart LR
+    TerminalCli["Terminal CLI<br/>local file access"]
+    BrowserCli["Browser virtual CLI<br/>no local file access"]
+    WebApi["vedenemo-web-api<br/>HTTP DTOs and optional JSON mapping"]
+    DumpService["Core dump use cases<br/>pure Vedenemo structures"]
+    InstanceService["ModelInstanceService<br/>existing validation rules"]
+    InstanceRegistry["ModelInstanceRegistry<br/>process-local data"]
+    LocalFiles[".vedenemo/*.vdmp"]
+    CloudStore["Cloud dump store<br/>optional backend adapter"]
+
+    TerminalCli -->|dsave/dload| LocalFiles
+    TerminalCli -->|HTTP dump import/export| WebApi
+    BrowserCli -->|console dsave/dload| WebApi
+    WebApi -->|store/retrieve for browser| CloudStore
+    WebApi --> DumpService
+    DumpService --> InstanceService
+    InstanceService --> InstanceRegistry
+```
+
+```mermaid
+sequenceDiagram
+    participant CLI as Terminal CLI
+    participant API as Web API
+    participant Dump as Dump import/export use case
+    participant Instance as ModelInstanceService
+    participant File as .vedenemo/*.vdmp
+
+    CLI->>API: Export selected model-instance root
+    API->>Dump: Build dump from root
+    Dump->>Instance: Read root records and links
+    Instance-->>Dump: Validated instance-data snapshot
+    Dump-->>API: Dump structure or encoded content
+    API-->>CLI: .vdmp content
+    CLI->>File: Write file with overwrite confirmation
+```
+
+```mermaid
+sequenceDiagram
+    participant CLI as Terminal or browser CLI
+    participant Store as Local file or cloud store
+    participant API as Web API
+    participant Dump as Dump import/export use case
+    participant Instance as ModelInstanceService
+
+    CLI->>Store: Select .vdmp dump
+    Store-->>CLI: Dump content or key
+    CLI->>API: Load dump
+    API->>Dump: Parse and check model metadata
+    Dump->>Instance: Create new model-instance root
+    Dump->>Instance: Insert entity records
+    Dump->>Instance: Insert association links
+    Instance-->>Dump: Created root and imported counts
+    Dump-->>API: Import result
+    API-->>CLI: New root id, warnings, counts
+```
 
 ### Open Questions
 
