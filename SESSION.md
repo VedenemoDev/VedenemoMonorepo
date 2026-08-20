@@ -8640,3 +8640,41 @@ Current status and next steps:
   mapped for import.
 - Remaining open question is endpoint ownership.
 - Verification passed: `git diff --check` reported no whitespace errors.
+
+## 2026-08-20 23:25 EEST
+
+Session goal: resolve `.vdmp` endpoint ownership as root-scoped `/data` routes
+and add API route template examples for the planned use scenarios.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,120p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,120p' docs/architecture/module-map.md`
+- `sed -n '1,120p' docs/architecture/coding-rules.md`
+- `sed -n '1,120p' docs/architecture/testing-strategy.md`
+- `sed -n '1,160p' docs/roadmap/current-milestone.md`
+- `sed -n '1,120p' tasks/current-task.md`
+- `tail -n 70 SESSION.md`
+- `sed -n '185,310p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+- `sed -n '195,340p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+
+Current status and next steps:
+
+- Moved endpoint ownership into resolved planning decisions as root-scoped
+  `/data` routes.
+- Added `### Planned API Route Templates` with runtime dump content routes and
+  browser cloud dump store routes.
+- Covered root listing, root export, submitted dump precheck, submitted dump
+  import, cloud dump listing, cloud save/overwrite, cloud precheck, cloud load,
+  and optional cloud delete.
+- No open planning questions remain in the backlog item.
+- Verification passed: `git diff --check` reported no whitespace errors.

@@ -212,11 +212,62 @@ sequenceDiagram
   dump storage from the first implementation.
 - Use a new Vedenemo-owned dump storage SPI separate from the existing `.vdos`
   `SnapshotStore`.
+- Use root-scoped `/data` routes for dump import/export. CLI and browser
+  virtual console commands should stay thin clients over these HTTP routes.
 - After successful `dload`, the CLI should attach/select the newly created
   model-instance root. The browser virtual CLI and UX should do the same where
   practical.
 - Planning is complete only when command names, file format, module/API
   ownership, compatibility rules, and acceptance criteria are all finalized.
+
+### Planned API Route Templates
+
+These route names are planning templates, not implemented endpoints yet. They
+use root-scoped `/data` routes because `.vdmp` files preserve data for one
+model-instance root under one loaded model.
+
+Runtime dump content routes:
+
+```text
+GET  /data/{modelAzName}/roots
+GET  /data/{modelAzName}/roots/{instanceRootId}/dump
+POST /data/{modelAzName}/dumps/_precheck
+POST /data/{modelAzName}/dumps
+```
+
+- `GET /data/{modelAzName}/roots` already lists runtime roots and can support
+  source-root selection for `dsave`.
+- `GET /data/{modelAzName}/roots/{instanceRootId}/dump` exports one runtime
+  root as `.vdmp` content.
+- `POST /data/{modelAzName}/dumps/_precheck` reads submitted `.vdmp` content
+  and returns model/version/schema diagnostics without creating a root. CLI and
+  browser console can use this before asking for older-version load
+  confirmation.
+- `POST /data/{modelAzName}/dumps` imports submitted `.vdmp` content, creates a
+  new model-instance root, returns the new root id, created counts, skipped
+  duplicate-link counts, failed insert diagnostics, and any warnings.
+
+Browser cloud dump store routes:
+
+```text
+GET    /data/{modelAzName}/dumps
+PUT    /data/{modelAzName}/roots/{instanceRootId}/dumps/{dumpName}
+POST   /data/{modelAzName}/dumps/{dumpKey}/_precheck
+POST   /data/{modelAzName}/dumps/{dumpKey}/load
+DELETE /data/{modelAzName}/dumps/{dumpKey}
+```
+
+- `GET /data/{modelAzName}/dumps` lists stored cloud `.vdmp` dumps for browser
+  virtual CLI `dumps`.
+- `PUT /data/{modelAzName}/roots/{instanceRootId}/dumps/{dumpName}` exports the
+  selected runtime root and stores or overwrites a named cloud dump for browser
+  virtual CLI `dsave`.
+- `POST /data/{modelAzName}/dumps/{dumpKey}/_precheck` validates a stored cloud
+  dump before browser virtual CLI `dload` confirmation.
+- `POST /data/{modelAzName}/dumps/{dumpKey}/load` imports a stored cloud dump
+  into a new model-instance root.
+- `DELETE /data/{modelAzName}/dumps/{dumpKey}` is optional for the first
+  implementation unless delete management is explicitly included.
 
 ### Suggested `.vdmp` Format Direction
 
@@ -278,15 +329,8 @@ types.
 
 ### Open Questions
 
-- Endpoint ownership needs one final decision. Root-scoped data routes, for
-  example `GET /data/{modelAzName}/roots/{instanceRootId}/dump` and
-  `POST /data/{modelAzName}/dumps`, make the relationship to runtime data
-  explicit. Top-level dump routes, for example `GET /dumps/...` and
-  `POST /dumps`, match artifact storage but are less obviously tied to one
-  model/root. Console-only commands avoid public API expansion but make dump
-  behavior harder to test and reuse outside the CLI. Recommended direction:
-  root-scoped `/data` routes for import/export, with CLI and browser console
-  commands as thin clients over those routes.
+- No open planning questions remain at this point. The next step is to turn
+  the resolved planning decisions into implementation acceptance criteria.
 
 
 ## Family unit composite DATE model and loaders
