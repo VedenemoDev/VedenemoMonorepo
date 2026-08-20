@@ -1,5 +1,68 @@
 # Backlog
 
+## Development-time model instance data persistence as file dumps
+
+Status: planning
+
+### Goals
+
+#### General goals
+
+We are not yet planning and implementing actual persistence solution(s), which probably finally goes trough some adapter 
+i.e. via abstraction layer allowing supporting multiple persistence alternatives.
+
+However, we are now implementing way to save and read model instance data to/from dump files. 
+This would replace (and be alternative for running scripts that call directly HTTP API to insert model instance data).
+And this is also a proof-of-concept on abstraction layer in a sense, that this is just a single way
+to externalize model instance data, and later there might be other export formats, but this
+first format is totally proprietary for this tool. And the actual format is part of planning
+I will give to you, but first I go throug CLI changes related to the matter.
+
+#### CLI changes
+
+In a similar fashion, as user can now give 'snapshots' command user give command 'dumps' 
+to list save model data instance dumps. In virtual CLI files are stored to cloud bucket, 
+if such configure, and in normal CLI under .vedenemo directory like .vdos files, and
+if no absolute file path is given, this is default directory to find dump files.
+A new file extension .vdmp is introduced for storing model instance data dumps.
+
+The following CLI commands are modified (on the left old command, and new command on the right):
+
+save  -> msave     (i.e. m-letter prefix added to mark that we are saving a model)
+load  -> mload     (i.e. m-letter prefix added to mark that we are loading a model)
+
+In addition to 'dumps' command the following two new commands are added (working both in normal and virtual CLI):
+
+dsave     (i.e.dm-letter prefix added to mark that we are saving a data dump)
+dload     (i.e. m-letter prefix added to mark that we are loading a data dump)
+
+Naturally 'help' command contents needs to be updated accordingly to document changed commands,
+in addition to actual implementation.
+
+My suggestion for default dump file name on save is [Model name]_vN.N_yyyy-mm-dd, but 
+user can modify the suggestion. User is warned about possible file override with yes/no 
+confirmation question for override.
+
+#### About storage format
+
+Even the actual file format is still open (i.e. you can suggest format e.g. json-based or, some other),
+there are some facts that we do know for certain. Basically dump files are not much different from
+script files calling now HTTP API, except they only contain data, and the HTTP API calls happens
+at Vedenemo application side in the code component that is responsable for model instance
+data dump operations. At the start of the model instance data dump, is of course metadata
+explaining from which model and version the data is stored from (for later compability check).
+Then data itself in a proper format to make easy to go through data and insert it.
+There is no possibility yet to load data to existing model instance i.e. merge, but
+loading dump creates always a new data instance.
+
+For data loading there are the following rules at CLI side:
+- Corresponding model need to be of course loaded to system before loading data
+- It is not possible to load newer version data to older version of the model
+- It is possible to load old version data to a newer version, model but there should
+  warning and confirmative message to ask from user (yes/no) if he/she wants to proceed
+  data dump load regardless of the model version mismatch.
+
+
 ## Family unit composite DATE model and loaders
 
 Status: executed
