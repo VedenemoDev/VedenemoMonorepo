@@ -195,6 +195,10 @@ sequenceDiagram
 - Partial import is acceptable for development-time use. The load result must
   report created entity counts, created association-link counts, and failed
   inserts with useful diagnostics.
+- Exact duplicate links in a dump should be skipped and reported. An exact
+  duplicate means the same `associationAzName`, resolved source entity
+  instance, and resolved target entity instance after dump-local IDs have been
+  mapped for import.
 - Blank optional values should be represented explicitly as `null` in the dump.
   Empty strings may be preserved only for string-like data types where an empty
   string is the actual submitted value.
@@ -274,9 +278,6 @@ types.
 
 ### Open Questions
 
-- For duplicate links in the dump, should the importer create duplicates because
-  current runtime data does not enforce cardinality, or should duplicate
-  `associationAzName` + source + target combinations be skipped and reported?
 - Endpoint ownership needs one final decision. Root-scoped data routes, for
   example `GET /data/{modelAzName}/roots/{instanceRootId}/dump` and
   `POST /data/{modelAzName}/dumps`, make the relationship to runtime data

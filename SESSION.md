@@ -8603,3 +8603,40 @@ Current status and next steps:
   a blind reject.
 - Remaining open questions are duplicate-link handling and endpoint ownership.
 - Verification passed: `git diff --check` reported no whitespace errors.
+
+## 2026-08-20 23:17 EEST
+
+Session goal: update `.vdmp` planning with the resolved duplicate association
+link import behavior.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,140p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,140p' docs/architecture/module-map.md`
+- `sed -n '1,140p' docs/architecture/coding-rules.md`
+- `sed -n '1,140p' docs/architecture/testing-strategy.md`
+- `sed -n '1,160p' docs/roadmap/current-milestone.md`
+- `sed -n '1,140p' tasks/current-task.md`
+- `tail -n 70 SESSION.md`
+- `sed -n '185,290p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+- `sed -n '190,285p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+
+Current status and next steps:
+
+- Moved duplicate-link handling from open questions into resolved planning
+  decisions.
+- Specified that exact duplicate links are skipped and reported.
+- Defined exact duplicate as the same `associationAzName`, resolved source
+  entity instance, and resolved target entity instance after dump-local IDs are
+  mapped for import.
+- Remaining open question is endpoint ownership.
+- Verification passed: `git diff --check` reported no whitespace errors.
