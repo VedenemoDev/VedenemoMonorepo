@@ -8396,3 +8396,53 @@ Current status and next steps:
   expectations as open design questions.
 - Verification passed: `git diff --check` passed and `git check-ignore -v`
   confirms the local planning files remain ignored by `.git/info/exclude`.
+
+## 2026-08-20 19:39 EEST
+
+Session goal: analyze the new backlog task "Development-time model instance
+data persistence as file dumps" and add open planning questions to the end of
+that backlog item.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,240p' docs/architecture/module-map.md`
+- `sed -n '1,240p' docs/architecture/coding-rules.md`
+- `sed -n '1,240p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `rg -n "save|load|snapshots|session|roots|_query|records|instances|dump|vdos|help|model instance" vedenemo-cli/src/main/java vedenemo-web-api/src/main/java vedenemo-core/src/main/java vedenemo-model-api/src/main/java README.md docs/cli-reference.md docs/architecture_doc.md tasks/backlog.md -S`
+- `rg --files vedenemo-cli/src/main/java vedenemo-web-api/src/main/java vedenemo-core/src/main/java vedenemo-model-api/src/main/java vedenemo-core-spi/src/main/java vedenemo-storage-memory/src/main/java`
+- `sed -n '1,260p' docs/cli-reference.md`
+- `sed -n '1,280p' docs/architecture_doc.md`
+- `sed -n '1,320p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '1,320p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,320p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceDataset.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceRoot.java`
+- `sed -n '320,620p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '1,260p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/EntityInstance.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/instance/AssociationInstanceLink.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceRegistry.java`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+
+Current status and next steps:
+
+- Added `### Open Questions` to the new top backlog item.
+- The questions cover CLI instance-root context, `.vdmp` identity handling,
+  metadata, model-version compatibility, schema validation, format ownership,
+  atomic import behavior, terminal versus browser/cloud behavior, store/API
+  boundaries, command renames, and planning completion criteria.
+- No implementation was started.
+- Verification passed: `git diff --check` reported no whitespace errors.
