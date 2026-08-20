@@ -8565,3 +8565,41 @@ Current status and next steps:
   direction.
 - No implementation was started.
 - Verification passed: `git diff --check` reported no whitespace errors.
+
+## 2026-08-20 23:05 EEST
+
+Session goal: clarify the `.vdmp` planning decision for schema compatibility
+prechecks and diagnostics before older-dump-to-newer-model confirmation.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,180p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,180p' docs/architecture/module-map.md`
+- `sed -n '1,180p' docs/architecture/coding-rules.md`
+- `sed -n '1,180p' docs/architecture/testing-strategy.md`
+- `sed -n '1,180p' docs/roadmap/current-milestone.md`
+- `sed -n '1,180p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `sed -n '180,250p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+- `sed -n '250,320p' tasks/backlog.md`
+- `sed -n '185,290p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+
+Current status and next steps:
+
+- Moved schema compatibility precheck behavior from open questions into
+  resolved planning decisions.
+- Specified that missing model, entity, attribute, incompatible `DataType`, or
+  missing association rejects before import and before confirmation.
+- Required diagnostic output listing the exact schema problem spots instead of
+  a blind reject.
+- Remaining open questions are duplicate-link handling and endpoint ownership.
+- Verification passed: `git diff --check` reported no whitespace errors.

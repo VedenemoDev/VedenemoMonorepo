@@ -187,6 +187,11 @@ sequenceDiagram
 - Any version mismatch is reported. Loading a dump from a newer model version
   into an older loaded model version is prohibited. Loading an older dump into a
   newer loaded model version is allowed only after a yes/no confirmation.
+- Schema compatibility must be checked before asking the user to confirm an
+  older-dump-to-newer-model load. Missing model, missing entity, missing
+  attribute, incompatible `DataType`, or missing association rejects the dump
+  before import starts, but the rejection must include diagnostics listing the
+  exact problem spots.
 - Partial import is acceptable for development-time use. The load result must
   report created entity counts, created association-link counts, and failed
   inserts with useful diagnostics.
@@ -269,14 +274,6 @@ types.
 
 ### Open Questions
 
-- When loading an older dump into a newer model version, should compatibility be
-  schema-driven in addition to version-driven, for example rejecting missing
-  target entities/attributes/associations before prompting?
-- Should schema compatibility be checked before creating the new root, even
-  though record/link import can be partial? A practical rule would be:
-  missing model, missing entity, missing attribute, incompatible `DataType`, or
-  missing association rejects the whole dump before import; invalid individual
-  values or links are reported as failed inserts during partial import.
 - For duplicate links in the dump, should the importer create duplicates because
   current runtime data does not enforce cardinality, or should duplicate
   `associationAzName` + source + target combinations be skipped and reported?
