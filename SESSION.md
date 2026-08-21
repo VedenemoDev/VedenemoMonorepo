@@ -8853,3 +8853,69 @@ Current status and next steps:
 - The task explicitly keeps `dumps` as dump artifact listing and uses `roots`
   as the runtime root listing that feeds `dsave <number>`.
 - Next step is implementation in terminal CLI, browser console, tests, and docs.
+
+## 2026-08-21 10:56 EEST
+
+Session goal: execute the planned `roots` CLI backlog task as the current task,
+verify it, and mark the backlog item executed while keeping it as history.
+
+Files changed:
+
+- `SESSION.md`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+
+Commands run:
+
+- `sed -n '1,240p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '640,760p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '800,910p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '1,240p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '620,750p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '1,180p' tasks/backlog.md`
+- `sed -n '1,120p' tasks/current-task.md`
+- `sed -n '1,260p' vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `sed -n '260,620p' vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `sed -n '1,260p' vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `sed -n '260,620p' vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `rg -n "class TestModelClient|listInstanceRoots|saveDump|exportDump" vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `sed -n '1040,1260p' vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `sed -n '620,820p' vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `sed -n '1,140p' vedenemo-command-console/src/main/java/org/vedenemo/console/ModelClient.java`
+- `rg -n "attachResolvedModel|detachModel|latestInstanceRoots" vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '240,360p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `sed -n '280,330p' README.md`
+- `sed -n '480,520p' docs/cli-reference.md`
+- `sed -n '400,425p' docs/architecture_doc.md`
+- `sed -n '540,560p' docs/architecture_doc.md`
+- `mvn -B -pl vedenemo-command-console,vedenemo-cli -am test` (first run failed due to test expectation reading a generated file from the wrong directory)
+- `mvn -B -pl vedenemo-command-console,vedenemo-cli -am test`
+- `mvn -B verify`
+- `npm run build` in `vedenemo-ux`
+- `git diff --check`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `git status --short --branch`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented terminal CLI and browser console `roots`.
+- `roots` requires an attached model, lists active model-instance roots with
+  one-based numbers, visible names, versions, and root ids, and refreshes the
+  cache used by `dsave <number>`.
+- Terminal CLI root-number cache is cleared on attach/detach to avoid stale
+  root selection across models.
+- Marked the backlog item executed and kept it in `tasks/backlog.md`.
+- Updated `tasks/current-task.md` to the executed `roots` task.
+- Verification passed: targeted CLI/console tests, `mvn -B verify`,
+  `npm run build`, and `git diff --check`.
+- README disclaimer remains present.

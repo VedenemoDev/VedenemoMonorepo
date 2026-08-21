@@ -2,7 +2,7 @@
 
 ## CLI roots command for selecting model-instance dump sources
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -43,6 +43,20 @@ root ids needed by `dsave`.
 - Update `README.md`, `docs/cli-reference.md`, `tasks/current-task.md`, and
   `docs/architecture_doc.md` if the implementation changes documented CLI
   behavior or current implementation architecture.
+
+### Completion Notes
+
+- Added terminal CLI and browser console `roots` command handling.
+- `roots` requires an attached model, reads the existing root list API/client
+  path, and prints numbered roots with visible name, model version, and root id.
+- `roots` refreshes the root-number cache used by `dsave <number>`.
+- Terminal CLI clears cached root selections when attaching or detaching a
+  model.
+- Added focused terminal CLI and browser console tests for help output,
+  unattached-model handling, empty listings, populated listings, and `dsave`
+  selection from the latest root listing.
+- Updated README, CLI reference, current task, and current implementation
+  architecture documentation.
 
 ## Development-time model instance data persistence as file dumps
 

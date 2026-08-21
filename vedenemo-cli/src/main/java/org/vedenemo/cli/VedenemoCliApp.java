@@ -162,6 +162,8 @@ public final class VedenemoCliApp {
             handleAttributeCommand(consoleSession, reader, line);
         } else if ("snapshots".equals(command) && commandOnly(line)) {
             snapshots();
+        } else if ("roots".equals(command) && commandOnly(line)) {
+            roots(consoleSession);
         } else if ("dumps".equals(command) && commandOnly(line)) {
             dumps();
         } else if ("msave".equals(command)) {
@@ -173,7 +175,11 @@ public final class VedenemoCliApp {
         } else if ("dload".equals(command)) {
             loadDump(consoleSession, reader, line);
         } else if ("attach".equals(command)) {
+            latestInstanceRoots = List.of();
             attachModel(consoleSession, reader, line);
+        } else if ("detach".equals(command) && commandOnly(line)) {
+            latestInstanceRoots = List.of();
+            executeSharedConsoleCommand(consoleSession, line);
         } else {
             executeSharedConsoleCommand(consoleSession, line);
         }
@@ -204,6 +210,7 @@ public final class VedenemoCliApp {
         output.println("  msave [N | azName] [outputPath] - save a model to a .vdos file");
         output.println("  snapshots - list .vdos files from the .vedenemo directory");
         output.println("  mload <path | snapshot-number> - load a model from a .vdos file");
+        output.println("  roots - list model-instance roots for the attached model");
         output.println("  dumps - list .vdmp files from the .vedenemo directory");
         output.println("  dsave [root-id | root-number | root-name] [outputPath] - save a model-instance root to a .vdmp file");
         output.println("  dload <path | dump-number> - load a .vdmp file into a new model-instance root");
@@ -706,8 +713,7 @@ public final class VedenemoCliApp {
             }
             output.println("Multiple model-instance roots are available. Provide a root number, root id, or root visible name.");
             for (int index = 0; index < latestInstanceRoots.size(); index++) {
-                ModelInstanceRootSummary root = latestInstanceRoots.get(index);
-                output.println((index + 1) + ". " + nullText(root.visName()) + " (" + root.instanceRootId() + ")");
+                output.println(formatRoot(index, latestInstanceRoots.get(index)));
             }
             return Optional.empty();
         }
@@ -761,6 +767,34 @@ public final class VedenemoCliApp {
             path = baseDirectory.resolve(path);
         }
         return addDumpExtension(path).normalize();
+    }
+
+    private void roots(ConsoleSession consoleSession) throws IOException, InterruptedException {
+        Optional<String> modelAzName = consoleSession.attachedModelAzName();
+        if (modelAzName.isEmpty()) {
+            output.println("Attach a model before listing model-instance roots.");
+            return;
+        }
+        latestInstanceRoots = modelClient.listInstanceRoots(modelAzName.orElseThrow());
+        if (latestInstanceRoots.isEmpty()) {
+            output.println("No model-instance roots available for model " + modelAzName.orElseThrow() + ".");
+            return;
+        }
+        output.println("Model-instance roots for model " + modelAzName.orElseThrow() + ":");
+        for (int index = 0; index < latestInstanceRoots.size(); index++) {
+            output.println(formatRoot(index, latestInstanceRoots.get(index)));
+        }
+    }
+
+    private static String formatRoot(int index, ModelInstanceRootSummary root) {
+        return (index + 1)
+                + ". "
+                + nullText(root.visName())
+                + " version "
+                + nullText(root.modelVersion())
+                + " ("
+                + root.instanceRootId()
+                + ")";
     }
 
     private void load(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
@@ -823,7 +857,9 @@ public final class VedenemoCliApp {
             output.println("Usage: dsave [root-id | root-number | root-name] [outputPath]");
             return;
         }
-        latestInstanceRoots = modelClient.listInstanceRoots(modelAzName.orElseThrow());
+        if (latestInstanceRoots.isEmpty()) {
+            latestInstanceRoots = modelClient.listInstanceRoots(modelAzName.orElseThrow());
+        }
         Optional<ModelInstanceRootSummary> root = resolveDumpRoot(arguments.isEmpty() ? "" : arguments.getFirst());
         if (root.isEmpty()) {
             return;

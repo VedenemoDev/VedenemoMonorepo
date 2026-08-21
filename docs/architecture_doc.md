@@ -347,7 +347,7 @@ The module is intentionally UI-neutral:
 - it does not read terminal stdin or write terminal stdout;
 - it does not render browser UI;
 - it does not perform local filesystem access;
-- it routes `msave`, `snapshots`, `mload`, `dumps`, `dsave`, and `dload`
+- it routes `msave`, `snapshots`, `mload`, `roots`, `dumps`, `dsave`, and `dload`
   through capability-specific client operations: terminal CLI keeps local
   filesystem behavior, while browser console sessions can use backend-managed
   cloud snapshots and dumps.
@@ -413,6 +413,8 @@ Current CLI behavior:
   imports the file through the backend, and attaches to the loaded model
 - supports `dumps`, which lists `.vdmp` files from a local `.vedenemo`
   directory for numbered terminal loading
+- supports `roots`, which lists process-local model-instance roots for the
+  attached model and refreshes the root-number cache used by `dsave`
 - supports `dsave [root-id | root-number | root-name] [outputPath]`, which
   exports one selected model-instance root through the backend dump endpoint
   and writes UTF-8 JSON `.vdmp` content to a local file
@@ -551,12 +553,14 @@ loaded snapshot conflicts with an existing model `azName`, the browser console
 prompts for a replacement import `azName`. Without a configured snapshot store,
 these commands return a clear cloud snapshot store configuration error.
 
-Browser console `dumps`, `dsave`, and `dload` commands use
-`ModelInstanceDumpService` plus the configured `ModelInstanceDumpStore`.
-`dsave` exports one runtime root to `.vdmp` JSON and stores it by name.
-`dload` prechecks a stored dump, prompts before older-dump-to-newer-model
-loading, and imports it into a new model-instance root. The browser never
-receives cloud credentials.
+Browser console `roots`, `dumps`, `dsave`, and `dload` commands use
+backend-managed APIs, `ModelInstanceDumpService`, and the configured
+`ModelInstanceDumpStore`. `roots` lists active model-instance roots for the
+attached model and refreshes the root-number cache used by `dsave`. `dsave`
+exports one runtime root to `.vdmp` JSON and stores it by name. `dload`
+prechecks a stored dump, prompts before older-dump-to-newer-model loading, and
+imports it into a new model-instance root. The browser never receives cloud
+credentials.
 
 `ModelChangeBroadcaster` is a web-runtime adapter for browser model-change
 listening. It owns the Javalin WebSocket endpoint and broadcasts UTF-8 JSON
@@ -683,8 +687,8 @@ Current user-facing behavior:
   the current command entry or pending backend prompt flow
 - keeps console output scrolled to the latest history line above the command
   prompt as output is appended
-- supports browser console `msave`, `snapshots`, `mload`, `dumps`, `dsave`, and
-  `dload` through the backend when the backend snapshot/dump stores are
+- supports browser console `msave`, `snapshots`, `mload`, `roots`, `dumps`,
+  `dsave`, and `dload` through the backend when the backend snapshot/dump stores are
   configured; the browser never receives Google Cloud credentials
 
 The default runtime config in `vedenemo-ux/public/config.json` points to a

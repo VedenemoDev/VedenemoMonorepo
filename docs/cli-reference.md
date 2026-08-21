@@ -74,9 +74,10 @@ browser console, the same command names use backend cloud snapshots when the
 backend snapshot store is configured.
 
 Runtime model-instance data editing remains HTTP/API-driven, but development
-data preservation is available through `dumps`, `dsave`, and `dload`. In the
-terminal CLI these commands use local `.vdmp` files; in the browser console
-they use backend-managed cloud dump storage when configured.
+data preservation is available through `roots`, `dumps`, `dsave`, and `dload`.
+In the terminal CLI these commands use local `.vdmp` files plus backend root
+listing; in the browser console they use backend-managed root listing and cloud
+dump storage when configured.
 
 ### `ping`
 
@@ -494,12 +495,26 @@ VedenemoCli>dumps
 1. Music_Source_root_v1_2_3_2026_08_21.vdmp
 ```
 
+### `roots`
+
+Lists process-local model-instance roots for the currently attached model. Use
+this command to find the one-based root number, visible name, model version,
+and root id before running `dsave`.
+
+Example:
+
+```text
+VedenemoCli[Music]>roots
+Model-instance roots for model Music:
+1. Source root version 1.2.3 (00000000-0000-0000-0000-000000000000)
+```
+
 ### `dsave [root-id | root-number | root-name] [outputPath]`
 
 Saves exactly one model-instance root to a JSON `.vdmp` file. Attach a model
 first. If the attached model has one loaded root, `dsave` can use it without a
 selector. If multiple roots exist, provide a root id, a root number from the
-latest root listing, or an exact root visible name.
+latest `roots` listing, or an exact root visible name.
 
 If no output path is provided, the CLI prompts with an editable `.vdmp` file
 name. Relative paths use `.vedenemo` when that directory exists; absolute paths
@@ -558,11 +573,12 @@ Loaded model Example_Model from cloud snapshot Example_Model/smoke.vdos.
 If the imported model `azName` already exists, the browser console asks for a
 replacement import `azName`, matching the terminal CLI mload flow.
 
-Browser `dumps`, `dsave`, and `dload` use the backend-configured cloud dump
-store. `dumps` lists stored `.vdmp` entries for the attached model, `dsave`
-stores the selected runtime root as a named cloud dump, and `dload` imports a
-stored cloud dump into a new model-instance root after the same compatibility
-precheck used by terminal `.vdmp` loading.
+Browser `roots`, `dumps`, `dsave`, and `dload` use backend-managed APIs and the
+backend-configured cloud dump store. `roots` lists active model-instance roots
+for the attached model, `dumps` lists stored `.vdmp` entries for the attached
+model, `dsave` stores the selected runtime root as a named cloud dump, and
+`dload` imports a stored cloud dump into a new model-instance root after the
+same compatibility precheck used by terminal `.vdmp` loading.
 
 ### `undo`
 

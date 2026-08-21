@@ -295,6 +295,7 @@ undo
 msave [N | azName] [outputPath]
 snapshots
 mload <path | snapshot-number>
+roots
 dumps
 dsave [root-id | root-number | root-name] [outputPath]
 dload <path | dump-number>
@@ -308,8 +309,10 @@ Vedenemo Script file, list `.vdos` snapshots from `.vedenemo`, and load a
 `msave` defaults and relative `msave` paths use that directory; absolute
 `msave` paths are used directly. The CLI can also list `.vdmp` data dumps, save
 one model-instance root to a `.vdmp` file, and load a `.vdmp` file into a new
-model-instance root. Command words are case-insensitive; parameters such as
-model and entity `azName` values remain case-sensitive.
+model-instance root. Use `roots` while attached to a model to list active
+model-instance root numbers, visible names, model versions, and root ids before
+selecting a `dsave` source. Command words are case-insensitive; parameters such
+as model and entity `azName` values remain case-sensitive.
 
 See [docs/cli-reference.md](docs/cli-reference.md) for full command usage and
 examples.
@@ -324,6 +327,7 @@ based:
 msave [snapshotName]
 snapshots
 mload <snapshot-key | snapshot-number>
+roots
 dumps
 dsave [root-id | root-number | root-name] [dumpName]
 dload <dump-key | dump-number>

@@ -6,6 +6,7 @@ import org.vedenemo.console.CommandClient;
 import org.vedenemo.console.EntitySummary;
 import org.vedenemo.console.ModelClient;
 import org.vedenemo.console.ModelImportResult;
+import org.vedenemo.console.ModelInstanceRootSummary;
 import org.vedenemo.console.ModelSummary;
 import org.vedenemo.console.SessionClient;
 import org.vedenemo.console.SnapshotSummary;
@@ -76,6 +77,7 @@ final class VedenemoCliAppTest {
         assertTrue(result.output.contains("msave [N | azName] [outputPath] - save a model to a .vdos file"));
         assertTrue(result.output.contains("snapshots - list .vdos files from the .vedenemo directory"));
         assertTrue(result.output.contains("mload <path | snapshot-number> - load a model from a .vdos file"));
+        assertTrue(result.output.contains("roots - list model-instance roots for the attached model"));
         assertTrue(result.output.contains("dumps - list .vdmp files from the .vedenemo directory"));
         assertTrue(result.output.contains("dsave [root-id | root-number | root-name] [outputPath] - save a model-instance root to a .vdmp file"));
         assertTrue(result.output.contains("dload <path | dump-number> - load a .vdmp file into a new model-instance root"));
@@ -317,6 +319,60 @@ final class VedenemoCliAppTest {
         Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), new TestCommandClient(), "entities\nexit\n");
 
         assertTrue(result.output.contains("Attach a model before listing entities."));
+    }
+
+    @Test
+    void rootsRequiresAttachedModel() {
+        Result result = run(new TestSessionClient(UUID.randomUUID()), new TestModelClient(), new TestCommandClient(), "roots\nexit\n");
+
+        assertTrue(result.output.contains("Attach a model before listing model-instance roots."));
+    }
+
+    @Test
+    void rootsPrintsEmptyMessageForAttachedModel() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach Example_Model\nroots\nexit\n");
+
+        assertTrue(result.output.contains("No model-instance roots available for model Example_Model."));
+    }
+
+    @Test
+    void rootsPrintsNumberedModelInstanceRoots() {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.instanceRoots.add(new ModelInstanceRootSummary("root-1", "Example_Model", "1.0.0", "First root"));
+        modelClient.instanceRoots.add(new ModelInstanceRootSummary("root-2", "Example_Model", "1.1.0", "Second root"));
+
+        Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach Example_Model\nroots\nexit\n");
+
+        assertTrue(result.output.contains("Model-instance roots for model Example_Model:"));
+        assertTrue(result.output.contains("1. First root version 1.0.0 (root-1)"));
+        assertTrue(result.output.contains("2. Second root version 1.1.0 (root-2)"));
+    }
+
+    @Test
+    void dsaveByNumberUsesLatestRootsListing() throws IOException {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.instanceRoots.add(new ModelInstanceRootSummary("root-1", "Example_Model", "1.0.0", "First root"));
+        modelClient.instanceRoots.add(new ModelInstanceRootSummary("root-2", "Example_Model", "1.0.0", "Second root"));
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                new TestCommandClient(),
+                "attach Example_Model\nroots\ndsave 2 selected\nexit\n",
+                tempDirectory
+        );
+
+        assertEquals("root-2", modelClient.exportedDumpRootId);
+        assertTrue(Files.readString(tempDirectory.resolve("selected.vdmp")).contains("\"format\":\"vedenemo-instance-dump\""));
+        assertTrue(result.output.contains("Saved model-instance root root-2 to " + tempDirectory.resolve("selected.vdmp") + "."));
     }
 
     @Test
@@ -960,10 +1016,12 @@ final class VedenemoCliAppTest {
         private final List<EntitySummary> entities = new ArrayList<>();
         private final List<AttributeSummary> attributes = new ArrayList<>();
         private final List<AssociationSummary> associations = new ArrayList<>();
+        private final List<ModelInstanceRootSummary> instanceRoots = new ArrayList<>();
         private boolean pingCalled;
         private IOException addFailure;
         private String exportedScript = "";
         private String exportedModelAzName;
+        private String exportedDumpRootId;
         private String importedScript;
         private String importedOverride;
         private int importFailuresBeforeSuccess;
@@ -1012,6 +1070,13 @@ final class VedenemoCliAppTest {
         }
 
         @Override
+        public List<ModelInstanceRootSummary> listInstanceRoots(String modelAzName) {
+            return instanceRoots.stream()
+                    .filter(root -> root.modelAzName().equals(modelAzName))
+                    .toList();
+        }
+
+        @Override
         public String exportScript(String modelAzName) {
             exportedModelAzName = modelAzName;
             return exportedScript;
@@ -1043,6 +1108,12 @@ final class VedenemoCliAppTest {
         @Override
         public ModelImportResult loadSnapshot(String snapshotKey, String modelAzNameOverride) throws IOException {
             throw new IOException("cloud snapshots are not supported by terminal tests");
+        }
+
+        @Override
+        public String exportDump(String modelAzName, String instanceRootId) {
+            exportedDumpRootId = instanceRootId;
+            return "{\"format\":\"vedenemo-instance-dump\"}";
         }
     }
 

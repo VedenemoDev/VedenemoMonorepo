@@ -94,6 +94,7 @@ final class ConsoleSessionTest {
         assertTrue(result.outputLines().contains("  msave [N | azName] [outputPath] - not supported in the web console"));
         assertTrue(result.outputLines().contains("  snapshots - not supported in the web console"));
         assertTrue(result.outputLines().contains("  mload <path | snapshot-number> - not supported in the web console"));
+        assertTrue(result.outputLines().contains("  roots - list model-instance roots for the attached model"));
         assertTrue(result.outputLines().contains("  dumps - not supported in the web console"));
         assertTrue(result.outputLines().contains("  dsave [root-id | root-number | root-name] [outputPath] - not supported in the web console"));
         assertTrue(result.outputLines().contains("  dload <path | dump-number> - not supported in the web console"));
@@ -114,6 +115,7 @@ final class ConsoleSessionTest {
         assertTrue(result.outputLines().contains("  msave [snapshotName] - save the attached model to a cloud snapshot"));
         assertTrue(result.outputLines().contains("  snapshots - list cloud snapshots"));
         assertTrue(result.outputLines().contains("  mload <snapshot-key | snapshot-number> - load a model from a cloud snapshot"));
+        assertTrue(result.outputLines().contains("  roots - list model-instance roots for the attached model"));
         assertTrue(result.outputLines().contains("  dumps - list cloud model-instance data dumps"));
         assertTrue(result.outputLines().contains("  dsave [root-id | root-number | root-name] [dumpName] - save a model-instance root to a cloud dump"));
         assertTrue(result.outputLines().contains("  dload <dump-key | dump-number> - load a cloud dump into a new model-instance root"));
@@ -210,6 +212,88 @@ final class ConsoleSessionTest {
         assertEquals(ConsoleCommandResult.Status.OK, result.status());
         assertEquals(List.of("Backend responded OK."), result.outputLines());
         assertTrue(modelClient.pingCalled);
+    }
+
+    @Test
+    void rootsRequiresAttachedModel() {
+        ConsoleSession session = new ConsoleSession(
+                UUID.randomUUID(),
+                new TestModelClient(),
+                new TestSessionClient(),
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsoleWithCloudSnapshots()
+        );
+
+        ConsoleCommandResult result = session.execute("roots");
+
+        assertEquals(ConsoleCommandResult.Status.OK, result.status());
+        assertEquals(List.of("Attach a model before listing model-instance roots."), result.outputLines());
+    }
+
+    @Test
+    void rootsPrintsEmptyMessageForAttachedModel() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        TestSessionClient sessionClient = new TestSessionClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsoleWithCloudSnapshots()
+        );
+
+        session.execute("attach Example_Model");
+        ConsoleCommandResult result = session.execute("roots");
+
+        assertEquals(List.of("No model-instance roots available for model Example_Model."), result.outputLines());
+    }
+
+    @Test
+    void rootsPrintsNumberedModelInstanceRoots() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.instanceRoots.add(new ModelInstanceRootSummary("root-1", "Example_Model", "1.0.0", "First root"));
+        modelClient.instanceRoots.add(new ModelInstanceRootSummary("root-2", "Example_Model", "1.1.0", "Second root"));
+        TestSessionClient sessionClient = new TestSessionClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsoleWithCloudSnapshots()
+        );
+
+        session.execute("attach Example_Model");
+        ConsoleCommandResult result = session.execute("roots");
+
+        assertEquals("Model-instance roots for model Example_Model:", result.outputLines().getFirst());
+        assertTrue(result.outputLines().contains("1. First root version 1.0.0 (root-1)"));
+        assertTrue(result.outputLines().contains("2. Second root version 1.1.0 (root-2)"));
+    }
+
+    @Test
+    void dsaveByNumberUsesLatestRootsListing() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.instanceRoots.add(new ModelInstanceRootSummary("root-1", "Example_Model", "1.0.0", "First root"));
+        modelClient.instanceRoots.add(new ModelInstanceRootSummary("root-2", "Example_Model", "1.0.0", "Second root"));
+        TestSessionClient sessionClient = new TestSessionClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsoleWithCloudSnapshots()
+        );
+
+        session.execute("attach Example_Model");
+        session.execute("roots");
+        ConsoleCommandResult result = session.execute("dsave 2 selected");
+
+        assertEquals("root-2", modelClient.savedDumpRootId);
+        assertEquals("selected", modelClient.savedDumpName);
+        assertEquals(List.of("Saved model-instance root root-2 to cloud dump Example_Model/selected.vdmp."), result.outputLines());
     }
 
     @Test
@@ -455,9 +539,13 @@ final class ConsoleSessionTest {
         private final List<EntitySummary> entities = new ArrayList<>();
         private final List<AssociationSummary> associations = new ArrayList<>();
         private final List<SnapshotSummary> snapshots = new ArrayList<>();
+        private final List<ModelInstanceRootSummary> instanceRoots = new ArrayList<>();
+        private final List<DumpSummary> dumps = new ArrayList<>();
         private boolean pingCalled;
         private String savedSnapshotModelAzName;
         private String savedSnapshotName;
+        private String savedDumpRootId;
+        private String savedDumpName;
         private String loadedSnapshotKey;
         private String loadedModelAzNameOverride;
         private boolean duplicateOnFirstLoad;
@@ -503,6 +591,13 @@ final class ConsoleSessionTest {
         }
 
         @Override
+        public List<ModelInstanceRootSummary> listInstanceRoots(String modelAzName) {
+            return instanceRoots.stream()
+                    .filter(root -> root.modelAzName().equals(modelAzName))
+                    .toList();
+        }
+
+        @Override
         public String exportScript(String modelAzName) throws IOException {
             throw new IOException("not implemented");
         }
@@ -536,6 +631,22 @@ final class ConsoleSessionTest {
             SnapshotSummary snapshot = new SnapshotSummary(modelAzName + "/" + snapshotName + ".vdos", modelAzName, modelAzName, "1.0.0", 1, "2026-07-28T18:30:00Z");
             snapshots.add(snapshot);
             return snapshot;
+        }
+
+        @Override
+        public DumpSummary saveDump(String modelAzName, String instanceRootId, String dumpName) {
+            savedDumpRootId = instanceRootId;
+            savedDumpName = dumpName;
+            DumpSummary dump = new DumpSummary(modelAzName + "/" + dumpName + ".vdmp", modelAzName, modelAzName, "1.0.0", "Root", 1, 0, "2026-08-21T06:00:00Z");
+            dumps.add(dump);
+            return dump;
+        }
+
+        @Override
+        public List<DumpSummary> listDumps(String modelAzName) {
+            return dumps.stream()
+                    .filter(dump -> dump.modelAzName().equals(modelAzName))
+                    .toList();
         }
     }
 

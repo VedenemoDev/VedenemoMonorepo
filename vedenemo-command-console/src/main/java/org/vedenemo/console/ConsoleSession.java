@@ -148,6 +148,8 @@ public final class ConsoleSession {
                 loadSnapshot(trimmed, output);
             } else if ("snapshots".equals(command)) {
                 listSnapshots(trimmed, output);
+            } else if ("roots".equals(command)) {
+                listInstanceRoots(trimmed, output);
             } else if ("dumps".equals(command)) {
                 listDumps(trimmed, output);
             } else if ("dsave".equals(command)) {
@@ -204,6 +206,7 @@ public final class ConsoleSession {
             output.add("  msave [snapshotName] - save the attached model to a cloud snapshot");
             output.add("  snapshots - list cloud snapshots");
             output.add("  mload <snapshot-key | snapshot-number> - load a model from a cloud snapshot");
+            output.add("  roots - list model-instance roots for the attached model");
             output.add("  dumps - list cloud model-instance data dumps");
             output.add("  dsave [root-id | root-number | root-name] [dumpName] - save a model-instance root to a cloud dump");
             output.add("  dload <dump-key | dump-number> - load a cloud dump into a new model-instance root");
@@ -211,6 +214,7 @@ public final class ConsoleSession {
             output.add("  msave [N | azName] [outputPath] - not supported in the web console");
             output.add("  snapshots - not supported in the web console");
             output.add("  mload <path | snapshot-number> - not supported in the web console");
+            output.add("  roots - list model-instance roots for the attached model");
             output.add("  dumps - not supported in the web console");
             output.add("  dsave [root-id | root-number | root-name] [outputPath] - not supported in the web console");
             output.add("  dload <path | dump-number> - not supported in the web console");
@@ -280,6 +284,7 @@ public final class ConsoleSession {
         latestEntities = List.of();
         latestAttributes = List.of();
         latestAssociations = List.of();
+        latestInstanceRoots = List.of();
     }
 
     private void detachModel(List<String> output) throws IOException, InterruptedException {
@@ -293,6 +298,7 @@ public final class ConsoleSession {
         latestEntities = List.of();
         latestAttributes = List.of();
         latestAssociations = List.of();
+        latestInstanceRoots = List.of();
         output.add("Detached from model.");
     }
 
@@ -653,6 +659,26 @@ public final class ConsoleSession {
         }
     }
 
+    private void listInstanceRoots(String line, List<String> output) throws IOException, InterruptedException {
+        if (!commandOnly(line)) {
+            output.add("Usage: roots");
+            return;
+        }
+        if (attachedModelAzName == null) {
+            output.add("Attach a model before listing model-instance roots.");
+            return;
+        }
+        latestInstanceRoots = modelClient.listInstanceRoots(attachedModelAzName);
+        if (latestInstanceRoots.isEmpty()) {
+            output.add("No model-instance roots available for model " + attachedModelAzName + ".");
+            return;
+        }
+        output.add("Model-instance roots for model " + attachedModelAzName + ":");
+        for (int index = 0; index < latestInstanceRoots.size(); index++) {
+            output.add(formatRoot(index, latestInstanceRoots.get(index)));
+        }
+    }
+
     private void saveDump(String line, List<String> output) throws IOException, InterruptedException {
         if (!capabilities.cloudSnapshots()) {
             unsupportedFileCommand("dsave", output);
@@ -667,7 +693,9 @@ public final class ConsoleSession {
             output.add("Usage: dsave [root-id | root-number | root-name] [dumpName]");
             return;
         }
-        latestInstanceRoots = modelClient.listInstanceRoots(attachedModelAzName);
+        if (latestInstanceRoots.isEmpty()) {
+            latestInstanceRoots = modelClient.listInstanceRoots(attachedModelAzName);
+        }
         Optional<ModelInstanceRootSummary> root = resolveDumpRoot(arguments.isEmpty() ? "" : arguments.getFirst(), output);
         if (root.isEmpty()) {
             return;
@@ -726,8 +754,7 @@ public final class ConsoleSession {
             }
             output.add("Multiple model-instance roots are available. Provide a root number, root id, or root visible name.");
             for (int index = 0; index < latestInstanceRoots.size(); index++) {
-                ModelInstanceRootSummary root = latestInstanceRoots.get(index);
-                output.add((index + 1) + ". " + nullText(root.visName()) + " (" + root.instanceRootId() + ")");
+                output.add(formatRoot(index, latestInstanceRoots.get(index)));
             }
             return Optional.empty();
         }
@@ -747,6 +774,17 @@ public final class ConsoleSession {
                     output.add("No model-instance root found for " + value + ".");
                     return Optional.empty();
                 });
+    }
+
+    private static String formatRoot(int index, ModelInstanceRootSummary root) {
+        return (index + 1)
+                + ". "
+                + nullText(root.visName())
+                + " version "
+                + nullText(root.modelVersion())
+                + " ("
+                + root.instanceRootId()
+                + ")";
     }
 
     private String resolveDumpKey(String argument, List<String> output) {
