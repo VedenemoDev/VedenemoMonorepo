@@ -21,6 +21,8 @@ public final class ConsoleSession {
     private List<AttributeSummary> latestAttributes = List.of();
     private List<AssociationSummary> latestAssociations = List.of();
     private List<SnapshotSummary> latestSnapshots = List.of();
+    private List<ModelInstanceRootSummary> latestInstanceRoots = List.of();
+    private List<DumpSummary> latestDumps = List.of();
     private PromptFlow promptFlow;
 
     public ConsoleSession(
@@ -140,12 +142,18 @@ public final class ConsoleSession {
                 startAttributeFlow(trimmed, output);
             } else if ("assoc".equals(command)) {
                 startAssociationFlow(trimmed, output);
-            } else if ("save".equals(command)) {
+            } else if ("msave".equals(command)) {
                 saveSnapshot(trimmed, output);
-            } else if ("load".equals(command)) {
+            } else if ("mload".equals(command)) {
                 loadSnapshot(trimmed, output);
             } else if ("snapshots".equals(command)) {
                 listSnapshots(trimmed, output);
+            } else if ("dumps".equals(command)) {
+                listDumps(trimmed, output);
+            } else if ("dsave".equals(command)) {
+                saveDump(trimmed, output);
+            } else if ("dload".equals(command)) {
+                loadDump(trimmed, output);
             } else {
                 output.add("Unknown command: " + trimmed);
                 return ConsoleCommandResult.error(output);
@@ -193,13 +201,19 @@ public final class ConsoleSession {
         output.add("  assoc add [ownership | reference | relation] - add an association or relation");
         output.add("  undo - undo the latest backend command");
         if (capabilities.cloudSnapshots()) {
-            output.add("  save [snapshotName] - save the attached model to a cloud snapshot");
+            output.add("  msave [snapshotName] - save the attached model to a cloud snapshot");
             output.add("  snapshots - list cloud snapshots");
-            output.add("  load <snapshot-key | snapshot-number> - load a model from a cloud snapshot");
+            output.add("  mload <snapshot-key | snapshot-number> - load a model from a cloud snapshot");
+            output.add("  dumps - list cloud model-instance data dumps");
+            output.add("  dsave [root-id | root-number | root-name] [dumpName] - save a model-instance root to a cloud dump");
+            output.add("  dload <dump-key | dump-number> - load a cloud dump into a new model-instance root");
         } else {
-            output.add("  save [N | azName] [outputPath] - not supported in the web console");
+            output.add("  msave [N | azName] [outputPath] - not supported in the web console");
             output.add("  snapshots - not supported in the web console");
-            output.add("  load <path | snapshot-number> - not supported in the web console");
+            output.add("  mload <path | snapshot-number> - not supported in the web console");
+            output.add("  dumps - not supported in the web console");
+            output.add("  dsave [root-id | root-number | root-name] [outputPath] - not supported in the web console");
+            output.add("  dload <path | dump-number> - not supported in the web console");
         }
         output.add("  help - show this help");
         output.add("  Esc - cancel the current interactive prompt");
@@ -490,16 +504,16 @@ public final class ConsoleSession {
 
     private void saveSnapshot(String line, List<String> output) throws IOException, InterruptedException {
         if (!capabilities.cloudSnapshots()) {
-            unsupportedFileCommand("save", output);
+            unsupportedFileCommand("msave", output);
             return;
         }
         if (attachedModelAzName == null) {
             output.add("Attach a model before saving a snapshot.");
             return;
         }
-        List<String> arguments = splitArguments(argumentText(line, "save"));
+        List<String> arguments = splitArguments(argumentText(line, "msave"));
         if (arguments.size() > 1) {
-            output.add("Usage: save [snapshotName]");
+            output.add("Usage: msave [snapshotName]");
             return;
         }
         if (arguments.isEmpty()) {
@@ -549,12 +563,12 @@ public final class ConsoleSession {
 
     private void loadSnapshot(String line, List<String> output) throws IOException, InterruptedException {
         if (!capabilities.cloudSnapshots()) {
-            unsupportedFileCommand("load", output);
+            unsupportedFileCommand("mload", output);
             return;
         }
-        String argument = argumentText(line, "load");
+        String argument = argumentText(line, "mload");
         if (argument.isBlank()) {
-            output.add("Usage: load <snapshot-key | snapshot-number>");
+            output.add("Usage: mload <snapshot-key | snapshot-number>");
             return;
         }
         String snapshotKey = resolveSnapshotKey(argument, output);
@@ -599,6 +613,180 @@ public final class ConsoleSession {
         }
     }
 
+    private void listDumps(String line, List<String> output) throws IOException, InterruptedException {
+        if (!capabilities.cloudSnapshots()) {
+            unsupportedFileCommand("dumps", output);
+            return;
+        }
+        if (!commandOnly(line)) {
+            output.add("Usage: dumps");
+            return;
+        }
+        if (attachedModelAzName == null) {
+            output.add("Attach a model before listing dumps.");
+            return;
+        }
+        latestDumps = modelClient.listDumps(attachedModelAzName);
+        if (latestDumps.isEmpty()) {
+            output.add("No cloud dumps available.");
+            return;
+        }
+        output.add("Cloud dumps:");
+        for (int index = 0; index < latestDumps.size(); index++) {
+            DumpSummary dump = latestDumps.get(index);
+            output.add((index + 1) + ". "
+                    + dump.key()
+                    + " - "
+                    + nullText(dump.rootVisName())
+                    + " for "
+                    + dump.modelVisName()
+                    + " ("
+                    + dump.modelAzName()
+                    + ") version "
+                    + dump.modelVersion()
+                    + ", "
+                    + dump.entityRecordCount()
+                    + " records, "
+                    + dump.associationLinkCount()
+                    + " links, saved "
+                    + dump.savedAt());
+        }
+    }
+
+    private void saveDump(String line, List<String> output) throws IOException, InterruptedException {
+        if (!capabilities.cloudSnapshots()) {
+            unsupportedFileCommand("dsave", output);
+            return;
+        }
+        if (attachedModelAzName == null) {
+            output.add("Attach a model before saving a data dump.");
+            return;
+        }
+        List<String> arguments = splitArguments(argumentText(line, "dsave"));
+        if (arguments.size() > 2) {
+            output.add("Usage: dsave [root-id | root-number | root-name] [dumpName]");
+            return;
+        }
+        latestInstanceRoots = modelClient.listInstanceRoots(attachedModelAzName);
+        Optional<ModelInstanceRootSummary> root = resolveDumpRoot(arguments.isEmpty() ? "" : arguments.getFirst(), output);
+        if (root.isEmpty()) {
+            return;
+        }
+        if (arguments.size() < 2) {
+            promptFlow = new SaveDumpNameFlow(root.orElseThrow().instanceRootId());
+            return;
+        }
+        saveDumpToCloud(root.orElseThrow().instanceRootId(), arguments.get(1), output);
+    }
+
+    private void saveDumpToCloud(String instanceRootId, String dumpName, List<String> output) throws IOException, InterruptedException {
+        DumpSummary dump = modelClient.saveDump(attachedModelAzName, instanceRootId, dumpName);
+        latestDumps = modelClient.listDumps(attachedModelAzName);
+        output.add("Saved model-instance root " + instanceRootId + " to cloud dump " + dump.key() + ".");
+    }
+
+    private void loadDump(String line, List<String> output) throws IOException, InterruptedException {
+        if (!capabilities.cloudSnapshots()) {
+            unsupportedFileCommand("dload", output);
+            return;
+        }
+        if (attachedModelAzName == null) {
+            output.add("Attach a model before loading a data dump.");
+            return;
+        }
+        String argument = argumentText(line, "dload");
+        if (argument.isBlank()) {
+            output.add("Usage: dload <dump-key | dump-number>");
+            return;
+        }
+        String dumpKey = resolveDumpKey(argument, output);
+        if (dumpKey == null) {
+            return;
+        }
+        DumpPrecheckResult precheck = modelClient.precheckStoredDump(attachedModelAzName, dumpKey);
+        writePrecheckMessages(precheck, output);
+        if (!precheck.importable()) {
+            return;
+        }
+        if (precheck.confirmationRequired()) {
+            promptFlow = new LoadDumpConfirmationFlow(dumpKey);
+            return;
+        }
+        importStoredDump(dumpKey, false, output);
+    }
+
+    private Optional<ModelInstanceRootSummary> resolveDumpRoot(String argument, List<String> output) {
+        if (latestInstanceRoots.isEmpty()) {
+            output.add("No model-instance roots available.");
+            return Optional.empty();
+        }
+        if (argument == null || argument.isBlank()) {
+            if (latestInstanceRoots.size() == 1) {
+                return Optional.of(latestInstanceRoots.getFirst());
+            }
+            output.add("Multiple model-instance roots are available. Provide a root number, root id, or root visible name.");
+            for (int index = 0; index < latestInstanceRoots.size(); index++) {
+                ModelInstanceRootSummary root = latestInstanceRoots.get(index);
+                output.add((index + 1) + ". " + nullText(root.visName()) + " (" + root.instanceRootId() + ")");
+            }
+            return Optional.empty();
+        }
+        String value = argument.trim();
+        if (isPositiveInteger(value)) {
+            int index = Integer.parseInt(value) - 1;
+            if (index >= 0 && index < latestInstanceRoots.size()) {
+                return Optional.of(latestInstanceRoots.get(index));
+            }
+            output.add("No model-instance root found for list number " + value + ".");
+            return Optional.empty();
+        }
+        return latestInstanceRoots.stream()
+                .filter(root -> root.instanceRootId().equals(value) || (root.visName() != null && root.visName().equals(value)))
+                .findFirst()
+                .or(() -> {
+                    output.add("No model-instance root found for " + value + ".");
+                    return Optional.empty();
+                });
+    }
+
+    private String resolveDumpKey(String argument, List<String> output) {
+        String value = argument.trim();
+        if (!isPositiveInteger(value)) {
+            return value;
+        }
+        if (latestDumps.isEmpty()) {
+            output.add("Run dumps first before loading by number.");
+            return null;
+        }
+        int index = Integer.parseInt(value) - 1;
+        if (index < 0 || index >= latestDumps.size()) {
+            output.add("No dump found for list number " + value + ".");
+            return null;
+        }
+        return latestDumps.get(index).key();
+    }
+
+    private void importStoredDump(String dumpKey, boolean confirmVersionMismatch, List<String> output) throws IOException, InterruptedException {
+        DumpImportResult result = modelClient.loadStoredDump(attachedModelAzName, dumpKey, confirmVersionMismatch);
+        output.add("Loaded data dump " + dumpKey + " into model-instance root " + result.root().instanceRootId() + ".");
+        writeImportResult(result, output);
+    }
+
+    private static void writePrecheckMessages(DumpPrecheckResult precheck, List<String> output) {
+        precheck.warnings().forEach(warning -> output.add("Warning: " + warning));
+        precheck.diagnostics().forEach(diagnostic -> output.add("Diagnostic: " + diagnostic));
+    }
+
+    private static void writeImportResult(DumpImportResult result, List<String> output) {
+        result.createdEntityCounts().forEach((entity, count) -> output.add("Created " + count + " " + entity + " records."));
+        output.add("Created " + result.createdAssociationLinkCount() + " association links.");
+        if (result.skippedDuplicateLinkCount() > 0) {
+            output.add("Skipped " + result.skippedDuplicateLinkCount() + " duplicate association links.");
+        }
+        result.warnings().forEach(warning -> output.add("Warning: " + warning));
+        result.failedInserts().forEach(failure -> output.add("Failed insert: " + failure));
+    }
+
     private static String commandName(String value) {
         int spaceIndex = value.indexOf(' ');
         return spaceIndex < 0 ? value : value.substring(0, spaceIndex);
@@ -610,6 +798,10 @@ public final class ConsoleSession {
 
     private static String argumentText(String line, String command) {
         return line.length() == command.length() ? "" : line.substring(command.length()).trim();
+    }
+
+    private static String nullText(String value) {
+        return value == null || value.isBlank() ? "(unnamed)" : value;
     }
 
     private static List<String> splitArguments(String value) {
@@ -877,6 +1069,55 @@ public final class ConsoleSession {
             }
             ArrayList<String> output = new ArrayList<>();
             complete = importSnapshotWithRenamePrompt(snapshotKey, input.trim(), output);
+            return ConsoleCommandResult.ok(output);
+        }
+    }
+
+    private final class SaveDumpNameFlow extends BasePromptFlow {
+        private final String instanceRootId;
+
+        private SaveDumpNameFlow(String instanceRootId) {
+            this.instanceRootId = instanceRootId;
+        }
+
+        @Override
+        public String prompt() {
+            return "Dump name: ";
+        }
+
+        @Override
+        public ConsoleCommandResult accept(String input) throws IOException, InterruptedException {
+            if (input == null || input.isBlank()) {
+                complete = true;
+                return ConsoleCommandResult.ok(List.of("Dump name is required."));
+            }
+            ArrayList<String> output = new ArrayList<>();
+            saveDumpToCloud(instanceRootId, input.trim(), output);
+            complete = true;
+            return ConsoleCommandResult.ok(output);
+        }
+    }
+
+    private final class LoadDumpConfirmationFlow extends BasePromptFlow {
+        private final String dumpKey;
+
+        private LoadDumpConfirmationFlow(String dumpKey) {
+            this.dumpKey = dumpKey;
+        }
+
+        @Override
+        public String prompt() {
+            return "Load older dump into newer model? [y/N]: ";
+        }
+
+        @Override
+        public ConsoleCommandResult accept(String input) throws IOException, InterruptedException {
+            complete = true;
+            if (!"y".equalsIgnoreCase(input == null ? "" : input.trim())) {
+                return ConsoleCommandResult.ok(List.of("Dump load cancelled."));
+            }
+            ArrayList<String> output = new ArrayList<>();
+            importStoredDump(dumpKey, true, output);
             return ConsoleCommandResult.ok(output);
         }
     }

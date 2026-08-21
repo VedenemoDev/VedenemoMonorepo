@@ -47,18 +47,19 @@ subgraph Core["Core"]
     CoreModule["vedenemo-core<br/>CommandExecutor, commands, undo"]
     ScriptService["VedenemoScriptService<br/>.vdos import/export"]
     InstanceService["ModelInstanceService<br/>schema-validated instance data"]
+    DumpService["ModelInstanceDumpService<br/>.vdmp import/export/precheck"]
     InstanceRegistry["ModelInstanceRegistry<br/>process-local runtime data"]
     CommandJournal["ModelCommandJournal<br/>model-level command history"]
     SessionManager["SessionManager<br/>process-local active sessions"]
     Session["Session<br/>UUID, selected model, command history"]
     ModelRegistry["ModelRegistry<br/>process-local known models"]
-    Spi["vedenemo-core-spi<br/>ModelStorage and SnapshotStore ports"]
+    Spi["vedenemo-core-spi<br/>ModelStorage, SnapshotStore, and dump-store ports"]
     ModelApi["vedenemo-model-api<br/>ModelRoot, entities, attributes, associations"]
 end
 
 subgraph Adapters["Adapters"]
     MemoryStorage["vedenemo-storage-memory<br/>InMemoryModelStorage"]
-    GcsStorage["vedenemo-storage-gcs<br/>GcsSnapshotStore"]
+    GcsStorage["vedenemo-storage-gcs<br/>GCS snapshot and dump stores"]
 end
 
 ViteUX --> RuntimeConfig
@@ -97,6 +98,7 @@ SessionResource --> SessionManager
 SessionResource --> ModelRegistry
 SessionResource --> ModelEvents
 InstanceDataResource --> InstanceService
+InstanceDataResource --> DumpService
 AppRoot --> CoreModule
 AppRoot --> ModelRegistry
 AppRoot --> SessionManager
@@ -108,6 +110,7 @@ CoreModule --> CommandJournal
 ScriptService --> ModelRegistry
 ScriptService --> CommandJournal
 ScriptService --> ModelApi
+DumpService --> InstanceService
 InstanceService --> InstanceRegistry
 InstanceService --> ModelRegistry
 InstanceService --> ModelApi
@@ -174,9 +177,12 @@ Dependencies: Java JDK only.
 ### `vedenemo-core-spi`
 
 Core-facing service provider interfaces. It currently defines `ModelStorage`
-with `save` and `load` operations for `ModelRoot`, and `SnapshotStore` for
-Vedenemo `.vdos` snapshot artifacts. Snapshot records carry a backend-owned key,
-model metadata, command count, and saved timestamp.
+with `save` and `load` operations for `ModelRoot`, `SnapshotStore` for Vedenemo
+`.vdos` snapshot artifacts, and `ModelInstanceDumpStore` for `.vdmp`
+model-instance dump artifacts. Snapshot records carry a backend-owned key,
+model metadata, command count, and saved timestamp. Dump records carry a
+backend-owned key, model metadata, root visible name, entity record count,
+association link count, and saved timestamp.
 
 Dependencies:
 
@@ -260,6 +266,14 @@ stored as `BigDecimal`, `URL` values must be strict absolute URLs, and
 remaining string values in API responses and instance records. Entity queries
 support ordered comparisons for `NUMERIC`, `DATE`, `TIME`, and `DATETIME`.
 
+`ModelInstanceDumpService` owns pure Vedenemo `.vdmp` dump use cases. It
+exports one model-instance root into Vedenemo-owned dump records, prechecks
+submitted dumps for model/version/schema compatibility, and imports dumps by
+creating a new model-instance root and then calling `ModelInstanceService` for
+entity records and association links. Dump-level `null` values are omitted
+before create validation, imported entity/link UUIDs are newly allocated, and
+duplicate imported links are skipped and reported.
+
 `ModelInstanceRegistry` stores process-local runtime datasets grouped by model
 `azName` and addressed by backend-assigned globally unique `instanceRootId`
 values. Each dataset records its root id, the canonical model `azName`, the
@@ -293,11 +307,13 @@ Dependencies:
 
 ### `vedenemo-storage-gcs`
 
-Google Cloud Storage adapter for Vedenemo `.vdos` snapshots. `GcsSnapshotStore`
-implements `SnapshotStore` by storing UTF-8 `.vdos` content as bucket objects
-under the configured object prefix. Snapshot object metadata stores model
-`azName`, visible name, version, command count, saved timestamp, scope, and
-format version.
+Google Cloud Storage adapter for Vedenemo `.vdos` snapshots and `.vdmp`
+model-instance data dumps. `GcsSnapshotStore` implements `SnapshotStore` by
+storing UTF-8 `.vdos` content as bucket objects under the configured object
+prefix. `GcsModelInstanceDumpStore` implements `ModelInstanceDumpStore` by
+storing UTF-8 JSON `.vdmp` content under the configured object prefix. Object
+metadata stores model `azName`, visible name, version, saved timestamp, scope,
+format version, and artifact-specific counts.
 
 The adapter depends on the Google Cloud Storage client library. The dependency
 is isolated to this module and the web API composition layer; core and model
@@ -331,9 +347,10 @@ The module is intentionally UI-neutral:
 - it does not read terminal stdin or write terminal stdout;
 - it does not render browser UI;
 - it does not perform local filesystem access;
-- it routes `save`, `snapshots`, and `load` through capability-specific client
-  operations: terminal CLI keeps local filesystem behavior, while browser
-  console sessions can use backend-managed cloud snapshots.
+- it routes `msave`, `snapshots`, `mload`, `dumps`, `dsave`, and `dload`
+  through capability-specific client operations: terminal CLI keeps local
+  filesystem behavior, while browser console sessions can use backend-managed
+  cloud snapshots and dumps.
 
 Terminal CLI adapters and web API in-process adapters implement the shared
 client interfaces so both entry points use the same non-file command behavior.
@@ -385,15 +402,23 @@ Current CLI behavior:
 - detaches the session from the current selected model
 - supports `undo` for the latest backend command and prints operation-specific
   undo output
-- supports `save [N | azName] [outputPath]`, which exports backend-generated
+- supports `msave [N | azName] [outputPath]`, which exports backend-generated
   `.vdos` text for a model and writes it as UTF-8 to a local file; when a
   local `.vedenemo` directory exists, default and relative save paths use that
   directory, while absolute save paths are used directly
 - supports `snapshots`, which lists `.vdos` files from a local `.vedenemo`
   directory for numbered terminal loading
-- supports `load <path | snapshot-number>`, which reads a UTF-8 `.vdos` file,
+- supports `mload <path | snapshot-number>`, which reads a UTF-8 `.vdos` file,
   prefers `.vedenemo` for bare relative names when a matching file exists,
   imports the file through the backend, and attaches to the loaded model
+- supports `dumps`, which lists `.vdmp` files from a local `.vedenemo`
+  directory for numbered terminal loading
+- supports `dsave [root-id | root-number | root-name] [outputPath]`, which
+  exports one selected model-instance root through the backend dump endpoint
+  and writes UTF-8 JSON `.vdmp` content to a local file
+- supports `dload <path | dump-number>`, which reads a UTF-8 JSON `.vdmp` file,
+  prechecks it through the backend, optionally confirms older-dump-to-newer-model
+  loading, and imports it into a new model-instance root
 - supports `exit`
 - calls `DELETE /sessions/{uuid}` during normal exit and through a best-effort
   shutdown hook
@@ -441,6 +466,22 @@ and exposes:
   model-instance root's visual alias without changing URL identity
 - `GET /data/{modelAzName}/roots/{instanceRootId}/_api`, which describes the
   root-scoped runtime instance API for one loaded model
+- `GET /data/{modelAzName}/roots/{instanceRootId}/dump`, which exports one
+  runtime model-instance root as `.vdmp` JSON content
+- `POST /data/{modelAzName}/dumps/_precheck`, which checks submitted `.vdmp`
+  JSON for model, version, schema, and association compatibility without
+  creating runtime data
+- `POST /data/{modelAzName}/dumps`, which imports submitted `.vdmp` JSON into a
+  new model-instance root and returns created counts, skipped duplicate-link
+  count, warnings, and failed insert diagnostics
+- `GET /data/{modelAzName}/dumps`, which lists cloud-backed `.vdmp` dump
+  descriptors for browser console use when a dump store is configured
+- `PUT /data/{modelAzName}/roots/{instanceRootId}/dumps/{dumpName}`, which
+  exports one runtime root and writes it to the configured dump store
+- `POST /data/{modelAzName}/dumps/{dumpKey}/_precheck`, which checks a stored
+  cloud dump before browser console loading
+- `POST /data/{modelAzName}/dumps/{dumpKey}/load`, which imports a stored cloud
+  dump into a new model-instance root
 - `POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}`, which
   creates one entity instance after validating submitted attribute values
   against the modeled entity and requiring at least one submitted attribute
@@ -500,15 +541,22 @@ turn owns or links one backend edit session UUID. This keeps web-console browser
 state separate from the generic backend session API while reusing existing
 model-editing behavior under the hood.
 
-Browser console `save`, `snapshots`, and `load` commands are handled by the web
-API in-process console adapter. When `VEDENEMO_SNAPSHOT_STORE=gcs` is configured,
-the adapter exports the attached model through `VedenemoScriptService`, writes
-it through `SnapshotStore`, lists snapshot descriptors from the configured
-scope, and imports loaded snapshot content through the same `.vdos` import
-service used by normal script uploads. If a loaded snapshot conflicts with an
-existing model `azName`, the browser console prompts for a replacement import
-`azName`. Without a configured snapshot store, these commands return a clear
-cloud snapshot store configuration error.
+Browser console `msave`, `snapshots`, and `mload` commands are handled by the
+web API in-process console adapter. When `VEDENEMO_SNAPSHOT_STORE=gcs` is
+configured, the adapter exports the attached model through
+`VedenemoScriptService`, writes it through `SnapshotStore`, lists snapshot
+descriptors from the configured scope, and imports loaded snapshot content
+through the same `.vdos` import service used by normal script uploads. If a
+loaded snapshot conflicts with an existing model `azName`, the browser console
+prompts for a replacement import `azName`. Without a configured snapshot store,
+these commands return a clear cloud snapshot store configuration error.
+
+Browser console `dumps`, `dsave`, and `dload` commands use
+`ModelInstanceDumpService` plus the configured `ModelInstanceDumpStore`.
+`dsave` exports one runtime root to `.vdmp` JSON and stores it by name.
+`dload` prechecks a stored dump, prompts before older-dump-to-newer-model
+loading, and imports it into a new model-instance root. The browser never
+receives cloud credentials.
 
 `ModelChangeBroadcaster` is a web-runtime adapter for browser model-change
 listening. It owns the Javalin WebSocket endpoint and broadcasts UTF-8 JSON
@@ -534,6 +582,9 @@ Runtime configuration is read from environment variables:
 - `VEDENEMO_GCS_BUCKET`, required when `VEDENEMO_SNAPSHOT_STORE=gcs`
 - `VEDENEMO_GCS_PREFIX`, required when `VEDENEMO_SNAPSHOT_STORE=gcs`
 - `VEDENEMO_SNAPSHOT_SCOPE`, default `dev`
+- `VEDENEMO_DUMP_STORE`; set to `gcs` to enable the Google Cloud dump adapter;
+  when omitted, the backend falls back to `VEDENEMO_SNAPSHOT_STORE`
+- `VEDENEMO_DUMP_SCOPE`, default `dev`
 
 Dependencies:
 
@@ -632,9 +683,9 @@ Current user-facing behavior:
   the current command entry or pending backend prompt flow
 - keeps console output scrolled to the latest history line above the command
   prompt as output is appended
-- supports browser console `save`, `snapshots`, and `load` through the backend
-  when the backend snapshot store is configured; the browser never receives
-  Google Cloud credentials
+- supports browser console `msave`, `snapshots`, `mload`, `dumps`, `dsave`, and
+  `dload` through the backend when the backend snapshot/dump stores are
+  configured; the browser never receives Google Cloud credentials
 
 The default runtime config in `vedenemo-ux/public/config.json` points to a
 Tailscale HTTPS backend URL.

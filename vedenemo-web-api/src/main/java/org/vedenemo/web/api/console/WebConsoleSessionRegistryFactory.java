@@ -1,7 +1,9 @@
 package org.vedenemo.web.api.console;
 
+import org.vedenemo.core.instance.ModelInstanceService;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.SessionManager;
+import org.vedenemo.core.spi.dump.ModelInstanceDumpStore;
 import org.vedenemo.core.spi.snapshot.SnapshotStore;
 import org.vedenemo.console.ConsoleCapabilities;
 import org.vedenemo.web.api.events.ModelChangeBroadcaster;
@@ -20,6 +22,9 @@ public final class WebConsoleSessionRegistryFactory {
             ModelChangeBroadcaster modelChangeBroadcaster,
             Optional<SnapshotStore> snapshotStore,
             String snapshotScope,
+            Optional<ModelInstanceDumpStore> dumpStore,
+            String dumpScope,
+            ModelInstanceService instanceService,
             Clock clock
     ) {
         return new WebConsoleSessionRegistry(
@@ -30,6 +35,9 @@ public final class WebConsoleSessionRegistryFactory {
                         modelChangeBroadcaster,
                         snapshotStore,
                         snapshotScope,
+                        dumpStore,
+                        dumpScope,
+                        instanceService,
                         clock
                 ),
                 new InProcessConsoleCommandClient(sessionManager, modelChangeBroadcaster),

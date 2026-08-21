@@ -16,15 +16,31 @@ import org.vedenemo.core.instance.RelationshipDirection;
 import org.vedenemo.core.instance.RelationshipPredicate;
 import org.vedenemo.core.instance.ScalarComparison;
 import org.vedenemo.core.instance.ScalarComparisonOperator;
+import org.vedenemo.core.instance.dump.DumpAssociationLink;
+import org.vedenemo.core.instance.dump.DumpEntityGroup;
+import org.vedenemo.core.instance.dump.DumpEntityRecord;
+import org.vedenemo.core.instance.dump.DumpModel;
+import org.vedenemo.core.instance.dump.DumpRoot;
+import org.vedenemo.core.instance.dump.ModelInstanceDump;
+import org.vedenemo.core.instance.dump.ModelInstanceDumpImportResult;
+import org.vedenemo.core.instance.dump.ModelInstanceDumpPrecheckResult;
+import org.vedenemo.core.instance.dump.ModelInstanceDumpService;
 import org.vedenemo.core.model.Association;
 import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
+import org.vedenemo.core.spi.dump.ModelInstanceDumpContent;
+import org.vedenemo.core.spi.dump.ModelInstanceDumpDescriptor;
+import org.vedenemo.core.spi.dump.ModelInstanceDumpStore;
 
+import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 public final class InstanceDataResource {
 
@@ -32,10 +48,27 @@ public final class InstanceDataResource {
     };
 
     private final ModelInstanceService instanceService;
+    private final ModelInstanceDumpService dumpService;
+    private final Optional<ModelInstanceDumpStore> dumpStore;
+    private final String dumpScope;
+    private final Clock clock;
     private final ObjectMapper objectMapper;
 
     public InstanceDataResource(ModelInstanceService instanceService) {
+        this(instanceService, Optional.empty(), "dev", Clock.systemUTC());
+    }
+
+    public InstanceDataResource(
+            ModelInstanceService instanceService,
+            Optional<ModelInstanceDumpStore> dumpStore,
+            String dumpScope,
+            Clock clock
+    ) {
         this.instanceService = Objects.requireNonNull(instanceService, "instanceService must not be null");
+        this.dumpService = new ModelInstanceDumpService(instanceService);
+        this.dumpStore = Objects.requireNonNull(dumpStore, "dumpStore must not be null");
+        this.dumpScope = requireText(dumpScope, "dumpScope");
+        this.clock = Objects.requireNonNull(clock, "clock must not be null");
         this.objectMapper = new ObjectMapper()
                 .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
                 .enable(DeserializationFeature.USE_BIG_INTEGER_FOR_INTS);
@@ -105,6 +138,111 @@ public final class InstanceDataResource {
                 ModelRoot modelRoot = instanceService.describeApi(context.pathParam("modelAzName"));
                 instanceService.readRoot(context.pathParam("modelAzName"), context.pathParam("instanceRootId"));
                 writeJson(context, 200, ApiDescriptionResponse.from(modelRoot));
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
+        routes.get("/data/{modelAzName}/roots/{instanceRootId}/dump", context -> {
+            try {
+                ModelInstanceDump dump = dumpService.exportDump(
+                        context.pathParam("modelAzName"),
+                        context.pathParam("instanceRootId"),
+                        Instant.now(clock)
+                );
+                writeJson(context, 200, DumpResponse.from(dump));
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
+        routes.post("/data/{modelAzName}/dumps/_precheck", context -> {
+            try {
+                ModelInstanceDump dump = objectMapper.readValue(context.body(), DumpRequest.class).toCore();
+                writeJson(context, 200, DumpPrecheckResponse.from(dumpService.precheck(context.pathParam("modelAzName"), dump)));
+            } catch (JsonProcessingException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
+        routes.post("/data/{modelAzName}/dumps", context -> {
+            try {
+                ImportDumpRequest request = objectMapper.readValue(context.body(), ImportDumpRequest.class);
+                ModelInstanceDumpImportResult result = dumpService.importDump(
+                        context.pathParam("modelAzName"),
+                        request.dump().toCore(),
+                        request.confirmVersionMismatch()
+                );
+                writeJson(context, 201, DumpImportResponse.from(result));
+            } catch (JsonProcessingException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
+        routes.get("/data/{modelAzName}/dumps", context -> {
+            try {
+                ModelInstanceDumpStore store = configuredDumpStore();
+                List<DumpSummaryResponse> dumps = store.listDumps(dumpScope, context.pathParam("modelAzName"))
+                        .stream()
+                        .map(DumpSummaryResponse::from)
+                        .toList();
+                writeJson(context, 200, dumps);
+            } catch (IOException exception) {
+                writeJson(context, 500, new ErrorResponse(exception.getMessage()));
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
+        routes.put("/data/{modelAzName}/roots/{instanceRootId}/dumps/{dumpName}", context -> {
+            try {
+                ModelInstanceDumpStore store = configuredDumpStore();
+                ModelInstanceDump dump = dumpService.exportDump(
+                        context.pathParam("modelAzName"),
+                        context.pathParam("instanceRootId"),
+                        Instant.now(clock)
+                );
+                String content = objectMapper.writeValueAsString(DumpResponse.from(dump));
+                ModelInstanceDumpDescriptor descriptor = descriptorFor(
+                        context.pathParam("dumpName"),
+                        dump
+                );
+                writeJson(context, 200, DumpSummaryResponse.from(store.writeDump(
+                        dumpScope,
+                        dump.model().azName(),
+                        context.pathParam("dumpName"),
+                        content,
+                        descriptor
+                )));
+            } catch (IOException exception) {
+                writeJson(context, 500, new ErrorResponse(exception.getMessage()));
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
+        routes.post("/data/{modelAzName}/dumps/{dumpKey}/_precheck", context -> {
+            try {
+                ModelInstanceDump dump = readStoredDump(context.pathParam("dumpKey"));
+                writeJson(context, 200, DumpPrecheckResponse.from(dumpService.precheck(context.pathParam("modelAzName"), dump)));
+            } catch (IOException exception) {
+                writeJson(context, 500, new ErrorResponse(exception.getMessage()));
+            } catch (IllegalArgumentException exception) {
+                writeError(context, statusFor(exception), exception);
+            }
+        });
+        routes.post("/data/{modelAzName}/dumps/{dumpKey}/load", context -> {
+            try {
+                LoadStoredDumpRequest request = context.body().isBlank()
+                        ? new LoadStoredDumpRequest(false)
+                        : objectMapper.readValue(context.body(), LoadStoredDumpRequest.class);
+                ModelInstanceDump dump = readStoredDump(context.pathParam("dumpKey"));
+                ModelInstanceDumpImportResult result = dumpService.importDump(
+                        context.pathParam("modelAzName"),
+                        dump,
+                        request.confirmVersionMismatch()
+                );
+                writeJson(context, 201, DumpImportResponse.from(result));
+            } catch (IOException exception) {
+                writeJson(context, 500, new ErrorResponse(exception.getMessage()));
             } catch (IllegalArgumentException exception) {
                 writeError(context, statusFor(exception), exception);
             }
@@ -273,6 +411,40 @@ public final class InstanceDataResource {
                 .result(objectMapper.writeValueAsString(body));
     }
 
+    private ModelInstanceDumpStore configuredDumpStore() throws IOException {
+        return dumpStore.orElseThrow(() -> new IOException("Cloud dump store is not configured."));
+    }
+
+    private ModelInstanceDump readStoredDump(String dumpKey) throws IOException {
+        ModelInstanceDumpContent content = configuredDumpStore().readDump(dumpScope, dumpKey)
+                .orElseThrow(() -> new IOException("cloud dump not found: " + dumpKey));
+        try {
+            return objectMapper.readValue(content.content(), DumpRequest.class).toCore();
+        } catch (JsonProcessingException exception) {
+            throw new IOException("cloud dump parse failed: " + exception.getMessage(), exception);
+        }
+    }
+
+    private static ModelInstanceDumpDescriptor descriptorFor(String dumpName, ModelInstanceDump dump) {
+        return new ModelInstanceDumpDescriptor(
+                dump.model().azName() + "/" + dumpName + ".vdmp",
+                dump.model().azName(),
+                dump.model().visName(),
+                dump.model().version(),
+                dump.root().visName(),
+                dump.entities().stream().mapToInt(group -> group.records().size()).sum(),
+                dump.links().size(),
+                dump.savedAt()
+        );
+    }
+
+    private static String requireText(String value, String name) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(name + " must not be blank");
+        }
+        return value.trim();
+    }
+
     private record CreateLinkRequest(String sourceInstanceId, String targetInstanceId) {
 
         private void requireComplete() {
@@ -349,6 +521,163 @@ public final class InstanceDataResource {
     }
 
     private record CreateModelInstanceRootRequest(String visName) {
+    }
+
+    private record ImportDumpRequest(DumpRequest dump, boolean confirmVersionMismatch) {
+
+        private ImportDumpRequest {
+            Objects.requireNonNull(dump, "dump must not be null");
+        }
+    }
+
+    private record LoadStoredDumpRequest(boolean confirmVersionMismatch) {
+    }
+
+    private record DumpRequest(
+            String format,
+            int formatVersion,
+            String savedAt,
+            DumpModelRequest model,
+            DumpRootRequest root,
+            List<DumpEntityGroupRequest> entities,
+            List<DumpAssociationLinkRequest> links
+    ) {
+
+        private ModelInstanceDump toCore() {
+            return new ModelInstanceDump(
+                    format,
+                    formatVersion,
+                    Instant.parse(savedAt),
+                    model.toCore(),
+                    root.toCore(),
+                    entities == null ? List.of() : entities.stream().map(DumpEntityGroupRequest::toCore).toList(),
+                    links == null ? List.of() : links.stream().map(DumpAssociationLinkRequest::toCore).toList()
+            );
+        }
+    }
+
+    private record DumpModelRequest(String azName, String visName, String version) {
+
+        private DumpModel toCore() {
+            return new DumpModel(azName, visName, version);
+        }
+    }
+
+    private record DumpRootRequest(String sourceInstanceRootId, String visName) {
+
+        private DumpRoot toCore() {
+            return new DumpRoot(sourceInstanceRootId, visName);
+        }
+    }
+
+    private record DumpEntityGroupRequest(String entityAzName, List<DumpEntityRecordRequest> records) {
+
+        private DumpEntityGroup toCore() {
+            return new DumpEntityGroup(
+                    entityAzName,
+                    records == null ? List.of() : records.stream().map(DumpEntityRecordRequest::toCore).toList()
+            );
+        }
+    }
+
+    private record DumpEntityRecordRequest(String dumpId, Map<String, Object> values) {
+
+        private DumpEntityRecord toCore() {
+            return new DumpEntityRecord(dumpId, values == null ? Map.of() : values);
+        }
+    }
+
+    private record DumpAssociationLinkRequest(String associationAzName, String sourceDumpId, String targetDumpId) {
+
+        private DumpAssociationLink toCore() {
+            return new DumpAssociationLink(associationAzName, sourceDumpId, targetDumpId);
+        }
+    }
+
+    private record DumpResponse(
+            String format,
+            int formatVersion,
+            String savedAt,
+            DumpModel model,
+            DumpRoot root,
+            List<DumpEntityGroup> entities,
+            List<DumpAssociationLink> links
+    ) {
+
+        private static DumpResponse from(ModelInstanceDump dump) {
+            return new DumpResponse(
+                    dump.format(),
+                    dump.formatVersion(),
+                    dump.savedAt().toString(),
+                    dump.model(),
+                    dump.root(),
+                    dump.entities(),
+                    dump.links()
+            );
+        }
+    }
+
+    private record DumpPrecheckResponse(
+            boolean importable,
+            boolean confirmationRequired,
+            List<String> warnings,
+            List<String> diagnostics
+    ) {
+
+        private static DumpPrecheckResponse from(ModelInstanceDumpPrecheckResult result) {
+            return new DumpPrecheckResponse(
+                    result.importable(),
+                    result.confirmationRequired(),
+                    result.warnings(),
+                    result.diagnostics()
+            );
+        }
+    }
+
+    private record DumpImportResponse(
+            ModelInstanceRootResponse root,
+            Map<String, Integer> createdEntityCounts,
+            int createdAssociationLinkCount,
+            int skippedDuplicateLinkCount,
+            List<String> warnings,
+            List<String> failedInserts
+    ) {
+
+        private static DumpImportResponse from(ModelInstanceDumpImportResult result) {
+            return new DumpImportResponse(
+                    ModelInstanceRootResponse.from(result.root()),
+                    result.createdEntityCounts(),
+                    result.createdAssociationLinkCount(),
+                    result.skippedDuplicateLinkCount(),
+                    result.warnings(),
+                    result.failedInserts()
+            );
+        }
+    }
+
+    private record DumpSummaryResponse(
+            String key,
+            String modelAzName,
+            String modelVisName,
+            String modelVersion,
+            String rootVisName,
+            int entityRecordCount,
+            int associationLinkCount,
+            String savedAt
+    ) {
+
+        private static DumpSummaryResponse from(ModelInstanceDumpDescriptor descriptor) {
+            return new DumpSummaryResponse(
+                    descriptor.key(),
+                    descriptor.modelAzName(),
+                    descriptor.modelVisName(),
+                    descriptor.modelVersion(),
+                    descriptor.rootVisName(),
+                    descriptor.entityRecordCount(),
+                    descriptor.associationLinkCount(),
+                    descriptor.savedAt().toString()
+            );
+        }
     }
 
     private record ModelInstanceRootResponse(String instanceRootId, String modelAzName, String modelVersion, String visName) {

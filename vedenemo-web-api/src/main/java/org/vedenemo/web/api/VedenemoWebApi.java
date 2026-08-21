@@ -7,7 +7,9 @@ import org.vedenemo.core.instance.ModelInstanceRegistry;
 import org.vedenemo.core.instance.ModelInstanceService;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.SessionManager;
+import org.vedenemo.core.spi.dump.ModelInstanceDumpStore;
 import org.vedenemo.core.spi.snapshot.SnapshotStore;
+import org.vedenemo.storage.gcs.GcsModelInstanceDumpStore;
 import org.vedenemo.storage.gcs.GcsSnapshotStore;
 import org.vedenemo.web.api.console.WebConsoleSessionRegistryFactory;
 import org.vedenemo.web.api.events.ModelChangeBroadcaster;
@@ -25,6 +27,7 @@ import java.util.Optional;
 
 public final class VedenemoWebApi {
     private static final String DEFAULT_SNAPSHOT_SCOPE = "dev";
+    private static final String DEFAULT_DUMP_SCOPE = "dev";
 
     private VedenemoWebApi() {
     }
@@ -57,7 +60,18 @@ public final class VedenemoWebApi {
             SessionManager sessionManager,
             ModelCommandJournal commandJournal
     ) {
-        return create(config, modelRegistry, sessionManager, commandJournal, snapshotStoreFromEnvironment(System.getenv()), snapshotScopeFromEnvironment(System.getenv()), Clock.systemUTC());
+        Map<String, String> environment = System.getenv();
+        return create(
+                config,
+                modelRegistry,
+                sessionManager,
+                commandJournal,
+                snapshotStoreFromEnvironment(environment),
+                snapshotScopeFromEnvironment(environment),
+                dumpStoreFromEnvironment(environment),
+                dumpScopeFromEnvironment(environment),
+                Clock.systemUTC()
+        );
     }
 
     public static Javalin create(
@@ -69,6 +83,30 @@ public final class VedenemoWebApi {
             String snapshotScope,
             Clock clock
     ) {
+        return create(
+                config,
+                modelRegistry,
+                sessionManager,
+                commandJournal,
+                snapshotStore,
+                snapshotScope,
+                Optional.empty(),
+                DEFAULT_DUMP_SCOPE,
+                clock
+        );
+    }
+
+    public static Javalin create(
+            WebApiConfig config,
+            ModelRegistry modelRegistry,
+            SessionManager sessionManager,
+            ModelCommandJournal commandJournal,
+            Optional<SnapshotStore> snapshotStore,
+            String snapshotScope,
+            Optional<ModelInstanceDumpStore> dumpStore,
+            String dumpScope,
+            Clock clock
+    ) {
         return Javalin.create(javalinConfig -> {
             javalinConfig.startup.showJavalinBanner = false;
             javalinConfig.routes.before(context -> CorsSupport.apply(context, config));
@@ -78,13 +116,16 @@ public final class VedenemoWebApi {
             modelChangeBroadcaster.register(javalinConfig.routes);
             new ModelsResource(modelRegistry, commandJournal, modelChangeBroadcaster).register(javalinConfig.routes);
             new SessionResource(sessionManager, modelRegistry, modelChangeBroadcaster).register(javalinConfig.routes);
-            new InstanceDataResource(instanceService).register(javalinConfig.routes);
+            new InstanceDataResource(instanceService, dumpStore, dumpScope, clock).register(javalinConfig.routes);
             new ConsoleResource(WebConsoleSessionRegistryFactory.create(
                     sessionManager,
                     modelRegistry,
                     modelChangeBroadcaster,
                     snapshotStore,
                     snapshotScope,
+                    dumpStore,
+                    dumpScope,
+                    instanceService,
                     clock
             )).register(javalinConfig.routes);
         });
@@ -105,8 +146,29 @@ public final class VedenemoWebApi {
         ));
     }
 
+    private static Optional<ModelInstanceDumpStore> dumpStoreFromEnvironment(Map<String, String> environment) {
+        String store = environment.getOrDefault("VEDENEMO_DUMP_STORE", environment.getOrDefault("VEDENEMO_SNAPSHOT_STORE", ""))
+                .trim()
+                .toLowerCase(Locale.ROOT);
+        if (store.isBlank()) {
+            return Optional.empty();
+        }
+        if (!"gcs".equals(store)) {
+            throw new IllegalArgumentException("unsupported VEDENEMO_DUMP_STORE: " + store);
+        }
+        return Optional.of(new GcsModelInstanceDumpStore(
+                requireEnvironment(environment, "VEDENEMO_GCS_PROJECT_ID"),
+                requireEnvironment(environment, "VEDENEMO_GCS_BUCKET"),
+                requireEnvironment(environment, "VEDENEMO_GCS_PREFIX")
+        ));
+    }
+
     private static String snapshotScopeFromEnvironment(Map<String, String> environment) {
         return environment.getOrDefault("VEDENEMO_SNAPSHOT_SCOPE", DEFAULT_SNAPSHOT_SCOPE).trim();
+    }
+
+    private static String dumpScopeFromEnvironment(Map<String, String> environment) {
+        return environment.getOrDefault("VEDENEMO_DUMP_SCOPE", DEFAULT_DUMP_SCOPE).trim();
     }
 
     private static String requireEnvironment(Map<String, String> environment, String key) {

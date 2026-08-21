@@ -58,7 +58,7 @@ final class ConsoleSessionTest {
     }
 
     @Test
-    void rejectsSaveAndLoadAsPlainTextInWebConsole() {
+    void rejectsModelSaveAndLoadAsPlainTextInWebConsole() {
         ConsoleSession session = new ConsoleSession(
                 UUID.randomUUID(),
                 new TestModelClient(),
@@ -67,13 +67,13 @@ final class ConsoleSessionTest {
                 ConsoleCapabilities.webConsole()
         );
 
-        ConsoleCommandResult saveResult = session.execute("save");
+        ConsoleCommandResult saveResult = session.execute("msave");
         ConsoleCommandResult snapshotsResult = session.execute("snapshots");
-        ConsoleCommandResult loadResult = session.execute("load model.vdos");
+        ConsoleCommandResult loadResult = session.execute("mload model.vdos");
 
-        assertEquals(List.of("Command 'save' is not supported in the web console because it requires local file access."), saveResult.outputLines());
+        assertEquals(List.of("Command 'msave' is not supported in the web console because it requires local file access."), saveResult.outputLines());
         assertEquals(List.of("Command 'snapshots' is not supported in the web console because it requires local file access."), snapshotsResult.outputLines());
-        assertEquals(List.of("Command 'load' is not supported in the web console because it requires local file access."), loadResult.outputLines());
+        assertEquals(List.of("Command 'mload' is not supported in the web console because it requires local file access."), loadResult.outputLines());
     }
 
     @Test
@@ -91,9 +91,12 @@ final class ConsoleSessionTest {
         assertTrue(result.outputLines().contains("  add - add a new model or entity in the attached model"));
         assertTrue(result.outputLines().contains("  attr add - add an attribute to the selected entity"));
         assertTrue(result.outputLines().contains("  assoc add [ownership | reference | relation] - add an association or relation"));
-        assertTrue(result.outputLines().contains("  save [N | azName] [outputPath] - not supported in the web console"));
+        assertTrue(result.outputLines().contains("  msave [N | azName] [outputPath] - not supported in the web console"));
         assertTrue(result.outputLines().contains("  snapshots - not supported in the web console"));
-        assertTrue(result.outputLines().contains("  load <path | snapshot-number> - not supported in the web console"));
+        assertTrue(result.outputLines().contains("  mload <path | snapshot-number> - not supported in the web console"));
+        assertTrue(result.outputLines().contains("  dumps - not supported in the web console"));
+        assertTrue(result.outputLines().contains("  dsave [root-id | root-number | root-name] [outputPath] - not supported in the web console"));
+        assertTrue(result.outputLines().contains("  dload <path | dump-number> - not supported in the web console"));
     }
 
     @Test
@@ -108,9 +111,12 @@ final class ConsoleSessionTest {
 
         ConsoleCommandResult result = session.execute("help");
 
-        assertTrue(result.outputLines().contains("  save [snapshotName] - save the attached model to a cloud snapshot"));
+        assertTrue(result.outputLines().contains("  msave [snapshotName] - save the attached model to a cloud snapshot"));
         assertTrue(result.outputLines().contains("  snapshots - list cloud snapshots"));
-        assertTrue(result.outputLines().contains("  load <snapshot-key | snapshot-number> - load a model from a cloud snapshot"));
+        assertTrue(result.outputLines().contains("  mload <snapshot-key | snapshot-number> - load a model from a cloud snapshot"));
+        assertTrue(result.outputLines().contains("  dumps - list cloud model-instance data dumps"));
+        assertTrue(result.outputLines().contains("  dsave [root-id | root-number | root-name] [dumpName] - save a model-instance root to a cloud dump"));
+        assertTrue(result.outputLines().contains("  dload <dump-key | dump-number> - load a cloud dump into a new model-instance root"));
     }
 
     @Test
@@ -127,7 +133,7 @@ final class ConsoleSessionTest {
         );
 
         session.execute("attach Example_Model");
-        session.execute("save");
+        session.execute("msave");
         assertEquals("Snapshot name: ", session.prompt());
         ConsoleCommandResult result = session.execute("first");
 
@@ -153,7 +159,7 @@ final class ConsoleSessionTest {
         );
 
         ConsoleCommandResult snapshots = session.execute("snapshots");
-        ConsoleCommandResult load = session.execute("load 1");
+        ConsoleCommandResult load = session.execute("mload 1");
 
         assertEquals("Cloud snapshots:", snapshots.outputLines().getFirst());
         assertTrue(snapshots.outputLines().contains("1. Loaded_Model/first.vdos - Loaded Model (Loaded_Model) version 1.0.0, 2 commands, saved 2026-07-28T18:30:00Z"));
@@ -177,7 +183,7 @@ final class ConsoleSessionTest {
                 ConsoleCapabilities.webConsoleWithCloudSnapshots()
         );
 
-        ConsoleCommandResult firstLoad = session.execute("load Existing_Model/saved.vdos");
+        ConsoleCommandResult firstLoad = session.execute("mload Existing_Model/saved.vdos");
         assertEquals(List.of("model load failed: model already exists: Existing_Model"), firstLoad.outputLines());
         assertEquals("New model azName for import, or blank to cancel: ", session.prompt());
 

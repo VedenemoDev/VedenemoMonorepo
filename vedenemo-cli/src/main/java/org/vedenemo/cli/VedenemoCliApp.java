@@ -5,9 +5,12 @@ import org.vedenemo.console.ConsoleCapabilities;
 import org.vedenemo.console.ConsoleCommandResult;
 import org.vedenemo.console.ConsoleSession;
 import org.vedenemo.console.AssociationSummary;
+import org.vedenemo.console.DumpImportResult;
+import org.vedenemo.console.DumpPrecheckResult;
 import org.vedenemo.console.EntitySummary;
 import org.vedenemo.console.ModelClient;
 import org.vedenemo.console.ModelImportResult;
+import org.vedenemo.console.ModelInstanceRootSummary;
 import org.vedenemo.console.ModelSummary;
 import org.vedenemo.console.SessionClient;
 
@@ -21,6 +24,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -33,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class VedenemoCliApp {
 
     private static final String SNAPSHOT_DIRECTORY = ".vedenemo";
+    private static final String DUMP_EXTENSION = ".vdmp";
 
     private final SessionClient sessionClient;
     private final ModelClient modelClient;
@@ -42,6 +47,8 @@ public final class VedenemoCliApp {
     private final boolean registerShutdownHook;
     private final Path workingDirectory;
     private List<Path> latestSnapshotFiles = List.of();
+    private List<Path> latestDumpFiles = List.of();
+    private List<ModelInstanceRootSummary> latestInstanceRoots = List.of();
 
     public VedenemoCliApp(
             SessionClient sessionClient,
@@ -155,10 +162,16 @@ public final class VedenemoCliApp {
             handleAttributeCommand(consoleSession, reader, line);
         } else if ("snapshots".equals(command) && commandOnly(line)) {
             snapshots();
-        } else if ("save".equals(command)) {
+        } else if ("dumps".equals(command) && commandOnly(line)) {
+            dumps();
+        } else if ("msave".equals(command)) {
             save(consoleSession, reader, line);
-        } else if ("load".equals(command)) {
+        } else if ("mload".equals(command)) {
             load(consoleSession, reader, line);
+        } else if ("dsave".equals(command)) {
+            saveDump(consoleSession, reader, line);
+        } else if ("dload".equals(command)) {
+            loadDump(consoleSession, reader, line);
         } else if ("attach".equals(command)) {
             attachModel(consoleSession, reader, line);
         } else {
@@ -188,9 +201,12 @@ public final class VedenemoCliApp {
         output.println("  associations - list model associations, or selected entity associations");
         output.println("  assoc add [ownership | reference | relation] - add an association or relation");
         output.println("  undo - undo the latest backend command");
-        output.println("  save [N | azName] [outputPath] - save a model to a .vdos file");
+        output.println("  msave [N | azName] [outputPath] - save a model to a .vdos file");
         output.println("  snapshots - list .vdos files from the .vedenemo directory");
-        output.println("  load <path | snapshot-number> - load a model from a .vdos file");
+        output.println("  mload <path | snapshot-number> - load a model from a .vdos file");
+        output.println("  dumps - list .vdmp files from the .vedenemo directory");
+        output.println("  dsave [root-id | root-number | root-name] [outputPath] - save a model-instance root to a .vdmp file");
+        output.println("  dload <path | dump-number> - load a .vdmp file into a new model-instance root");
         output.println("  help - show this help");
         output.println("  exit - end the session and exit");
         output.println("  Esc - cancel the current interactive prompt");
@@ -604,10 +620,10 @@ public final class VedenemoCliApp {
     }
 
     private void save(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
-        String argumentText = line.length() == "save".length() ? "" : line.substring("save".length()).trim();
+        String argumentText = line.length() == "msave".length() ? "" : line.substring("msave".length()).trim();
         List<String> arguments = splitArguments(argumentText);
         if (arguments.size() > 2) {
-            output.println("Usage: save [N | azName] [outputPath]");
+            output.println("Usage: msave [N | azName] [outputPath]");
             return;
         }
         Optional<ModelSummary> model = resolveSaveModel(consoleSession, arguments);
@@ -679,10 +695,78 @@ public final class VedenemoCliApp {
         return addVdosExtension(path).normalize();
     }
 
+    private Optional<ModelInstanceRootSummary> resolveDumpRoot(String argument) {
+        if (latestInstanceRoots.isEmpty()) {
+            output.println("No model-instance roots available.");
+            return Optional.empty();
+        }
+        if (argument == null || argument.isBlank()) {
+            if (latestInstanceRoots.size() == 1) {
+                return Optional.of(latestInstanceRoots.getFirst());
+            }
+            output.println("Multiple model-instance roots are available. Provide a root number, root id, or root visible name.");
+            for (int index = 0; index < latestInstanceRoots.size(); index++) {
+                ModelInstanceRootSummary root = latestInstanceRoots.get(index);
+                output.println((index + 1) + ". " + nullText(root.visName()) + " (" + root.instanceRootId() + ")");
+            }
+            return Optional.empty();
+        }
+        String value = argument.trim();
+        if (isPositiveInteger(value)) {
+            int index = Integer.parseInt(value) - 1;
+            if (index >= 0 && index < latestInstanceRoots.size()) {
+                return Optional.of(latestInstanceRoots.get(index));
+            }
+            output.println("No model-instance root found for list number " + value + ".");
+            return Optional.empty();
+        }
+        return latestInstanceRoots.stream()
+                .filter(root -> root.instanceRootId().equals(value) || (root.visName() != null && root.visName().equals(value)))
+                .findFirst()
+                .or(() -> {
+                    output.println("No model-instance root found for " + value + ".");
+                    return Optional.empty();
+                });
+    }
+
+    private Path dumpSaveTargetPath(
+            CliInputReader reader,
+            String modelAzName,
+            ModelInstanceRootSummary root,
+            String inlinePath
+    ) throws IOException {
+        String selectedPath = inlinePath;
+        if (selectedPath == null || selectedPath.isBlank()) {
+            String defaultFileName = defaultDumpFileName(modelAzName, root);
+            String defaultPath = Files.isDirectory(snapshotDirectory()) ? SNAPSHOT_DIRECTORY + "/" + defaultFileName : defaultFileName;
+            String answer = reader.readLine("Output dump file [" + defaultPath + "]: ");
+            selectedPath = answer == null || answer.isBlank() ? defaultFileName : answer.trim();
+        }
+        return resolveDumpSavePath(selectedPath);
+    }
+
+    private String defaultDumpFileName(String modelAzName, ModelInstanceRootSummary root) {
+        String rootPart = root.visName() == null || root.visName().isBlank() ? "root" : root.visName();
+        String base = suggestAzName(modelAzName + "_" + rootPart + "_v" + root.modelVersion().replace('.', '_') + "_" + LocalDate.now());
+        if (base == null || base.isBlank()) {
+            base = modelAzName + "_dump";
+        }
+        return base + DUMP_EXTENSION;
+    }
+
+    private Path resolveDumpSavePath(String value) {
+        Path path = Path.of(value.trim());
+        if (!path.isAbsolute()) {
+            Path baseDirectory = Files.isDirectory(snapshotDirectory()) ? snapshotDirectory() : workingDirectory;
+            path = baseDirectory.resolve(path);
+        }
+        return addDumpExtension(path).normalize();
+    }
+
     private void load(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
-        String argument = line.length() == "load".length() ? "" : line.substring("load".length()).trim();
+        String argument = line.length() == "mload".length() ? "" : line.substring("mload".length()).trim();
         if (argument.isBlank()) {
-            output.println("Usage: load <path>");
+            output.println("Usage: mload <path>");
             return;
         }
         Optional<Path> sourcePath = resolveLoadSource(argument);
@@ -711,6 +795,133 @@ public final class VedenemoCliApp {
         output.println("Loaded model " + result.modelAzName() + " from " + source + " with " + result.commandCount() + " commands.");
     }
 
+    private void dumps() {
+        Path dumpDirectory = snapshotDirectory();
+        if (!Files.isDirectory(dumpDirectory)) {
+            latestDumpFiles = List.of();
+            output.println("No .vedenemo directory found at " + dumpDirectory + ".");
+            return;
+        }
+        latestDumpFiles = listFilesByExtension(dumpDirectory, DUMP_EXTENSION);
+        if (latestDumpFiles.isEmpty()) {
+            output.println("No .vdmp dumps found in " + dumpDirectory + ".");
+            return;
+        }
+        for (int index = 0; index < latestDumpFiles.size(); index++) {
+            output.println((index + 1) + ". " + latestDumpFiles.get(index).getFileName());
+        }
+    }
+
+    private void saveDump(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
+        Optional<String> modelAzName = consoleSession.attachedModelAzName();
+        if (modelAzName.isEmpty()) {
+            output.println("Attach a model before saving a data dump.");
+            return;
+        }
+        List<String> arguments = splitArguments(argumentText(line, "dsave"));
+        if (arguments.size() > 2) {
+            output.println("Usage: dsave [root-id | root-number | root-name] [outputPath]");
+            return;
+        }
+        latestInstanceRoots = modelClient.listInstanceRoots(modelAzName.orElseThrow());
+        Optional<ModelInstanceRootSummary> root = resolveDumpRoot(arguments.isEmpty() ? "" : arguments.getFirst());
+        if (root.isEmpty()) {
+            return;
+        }
+        String dumpContent;
+        try {
+            dumpContent = modelClient.exportDump(modelAzName.orElseThrow(), root.orElseThrow().instanceRootId());
+        } catch (IOException exception) {
+            output.println(exception.getMessage());
+            return;
+        }
+        Path target = dumpSaveTargetPath(
+                reader,
+                modelAzName.orElseThrow(),
+                root.orElseThrow(),
+                arguments.size() == 2 ? arguments.get(1) : null
+        );
+        if (target == null) {
+            return;
+        }
+        if (Files.exists(target)) {
+            String answer = reader.readLine("File " + target + " exists. Overwrite? [y/N]: ");
+            if (!"y".equalsIgnoreCase(answer == null ? "" : answer.trim())) {
+                output.println("Dump save cancelled.");
+                return;
+            }
+        }
+        try {
+            Files.writeString(target, dumpContent, StandardCharsets.UTF_8);
+            output.println("Saved model-instance root " + root.orElseThrow().instanceRootId() + " to " + target + ".");
+        } catch (IOException exception) {
+            output.println("Dump save failed: " + exception.getMessage());
+        }
+    }
+
+    private void loadDump(ConsoleSession consoleSession, CliInputReader reader, String line) throws IOException, InterruptedException {
+        Optional<String> modelAzName = consoleSession.attachedModelAzName();
+        if (modelAzName.isEmpty()) {
+            output.println("Attach a model before loading a data dump.");
+            return;
+        }
+        String argument = argumentText(line, "dload");
+        if (argument.isBlank()) {
+            output.println("Usage: dload <path | dump-number>");
+            return;
+        }
+        Optional<Path> sourcePath = resolveDumpLoadSource(argument);
+        if (sourcePath.isEmpty()) {
+            return;
+        }
+        Path source = sourcePath.orElseThrow();
+        if (!Files.exists(source)) {
+            output.println("File not found: " + source + ".");
+            return;
+        }
+        String dumpContent;
+        try {
+            dumpContent = Files.readString(source, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            output.println("Dump load failed: " + exception.getMessage());
+            return;
+        }
+        DumpPrecheckResult precheck;
+        try {
+            precheck = modelClient.precheckDump(modelAzName.orElseThrow(), dumpContent);
+        } catch (IOException exception) {
+            output.println(exception.getMessage());
+            return;
+        }
+        precheck.warnings().forEach(warning -> output.println("Warning: " + warning));
+        precheck.diagnostics().forEach(diagnostic -> output.println("Diagnostic: " + diagnostic));
+        if (!precheck.importable()) {
+            return;
+        }
+        boolean confirmed = false;
+        if (precheck.confirmationRequired()) {
+            String answer = reader.readLine("Load older dump into newer model? [y/N]: ");
+            if (!"y".equalsIgnoreCase(answer == null ? "" : answer.trim())) {
+                output.println("Dump load cancelled.");
+                return;
+            }
+            confirmed = true;
+        }
+        try {
+            DumpImportResult result = modelClient.importDump(modelAzName.orElseThrow(), dumpContent, confirmed);
+            output.println("Loaded data dump from " + source + " into model-instance root " + result.root().instanceRootId() + ".");
+            result.createdEntityCounts().forEach((entity, count) -> output.println("Created " + count + " " + entity + " records."));
+            output.println("Created " + result.createdAssociationLinkCount() + " association links.");
+            if (result.skippedDuplicateLinkCount() > 0) {
+                output.println("Skipped " + result.skippedDuplicateLinkCount() + " duplicate association links.");
+            }
+            result.warnings().forEach(warning -> output.println("Warning: " + warning));
+            result.failedInserts().forEach(failure -> output.println("Failed insert: " + failure));
+        } catch (IOException exception) {
+            output.println(exception.getMessage());
+        }
+    }
+
     private Optional<Path> resolveLoadSource(String argument) {
         if (isPositiveInteger(argument) && !latestSnapshotFiles.isEmpty()) {
             int index = Integer.parseInt(argument) - 1;
@@ -730,6 +941,30 @@ public final class VedenemoCliApp {
             Path snapshotPath = resolvePathWithExtension(snapshotDirectory().resolve(value.trim()).toString());
             if (Files.exists(snapshotPath)) {
                 return snapshotPath;
+            }
+        }
+        return resolvedPath;
+    }
+
+    private Optional<Path> resolveDumpLoadSource(String argument) {
+        if (isPositiveInteger(argument) && !latestDumpFiles.isEmpty()) {
+            int index = Integer.parseInt(argument) - 1;
+            if (index < 0 || index >= latestDumpFiles.size()) {
+                output.println("No dump found for list number " + argument + ".");
+                return Optional.empty();
+            }
+            return Optional.of(latestDumpFiles.get(index));
+        }
+        return Optional.of(resolveDumpLoadPath(argument));
+    }
+
+    private Path resolveDumpLoadPath(String value) {
+        Path enteredPath = Path.of(value.trim());
+        Path resolvedPath = resolvePathWithDumpExtension(value);
+        if (!enteredPath.isAbsolute() && enteredPath.getParent() == null) {
+            Path dumpPath = resolvePathWithDumpExtension(snapshotDirectory().resolve(value.trim()).toString());
+            if (Files.exists(dumpPath)) {
+                return dumpPath;
             }
         }
         return resolvedPath;
@@ -806,9 +1041,24 @@ public final class VedenemoCliApp {
         return addVdosExtension(path).normalize();
     }
 
+    private Path resolvePathWithDumpExtension(String value) {
+        Path path = Path.of(value.trim());
+        if (!path.isAbsolute()) {
+            path = workingDirectory.resolve(path);
+        }
+        return addDumpExtension(path).normalize();
+    }
+
     private Path addVdosExtension(Path path) {
         if (path.getFileName() != null && path.getFileName().toString().indexOf('.') == -1) {
             path = path.resolveSibling(path.getFileName() + ".vdos");
+        }
+        return path;
+    }
+
+    private Path addDumpExtension(Path path) {
+        if (path.getFileName() != null && path.getFileName().toString().indexOf('.') == -1) {
+            path = path.resolveSibling(path.getFileName() + DUMP_EXTENSION);
         }
         return path;
     }
@@ -818,10 +1068,14 @@ public final class VedenemoCliApp {
     }
 
     private static List<Path> listSnapshotFiles(Path snapshotDirectory) {
+        return listFilesByExtension(snapshotDirectory, ".vdos");
+    }
+
+    private static List<Path> listFilesByExtension(Path snapshotDirectory, String extension) {
         ArrayList<Path> files = new ArrayList<>();
         try (var directoryStream = Files.newDirectoryStream(snapshotDirectory)) {
             for (Path path : directoryStream) {
-                if (Files.isRegularFile(path) && path.getFileName().toString().toLowerCase().endsWith(".vdos")) {
+                if (Files.isRegularFile(path) && path.getFileName().toString().toLowerCase().endsWith(extension)) {
                     files.add(path.normalize());
                 }
             }
@@ -830,6 +1084,10 @@ public final class VedenemoCliApp {
         }
         files.sort(Comparator.comparing(path -> path.getFileName().toString(), String.CASE_INSENSITIVE_ORDER));
         return List.copyOf(files);
+    }
+
+    private static String nullText(String value) {
+        return value == null || value.isBlank() ? "(unnamed)" : value;
     }
 
     private static List<String> splitArguments(String value) {

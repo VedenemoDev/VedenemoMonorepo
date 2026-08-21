@@ -2,7 +2,7 @@
 
 ## Development-time model instance data persistence as file dumps
 
-Status: planned
+Status: executed
 
 ### Goals
 
@@ -378,6 +378,22 @@ types.
 
 - No open planning questions remain at this point. The next step is to turn
   the resolved planning decisions into implementation acceptance criteria.
+
+### Completion Notes
+
+- Added pure core `.vdmp` dump records and `ModelInstanceDumpService` for
+  export, precheck, and import.
+- Added a separate `ModelInstanceDumpStore` SPI and a Google Cloud Storage dump
+  adapter.
+- Added root-scoped runtime dump export, submitted dump precheck/import, and
+  browser cloud dump list/save/precheck/load routes.
+- Renamed model snapshot commands from `save`/`load` to `msave`/`mload`
+  without backward-compatible aliases.
+- Added terminal CLI local `.vdmp` `dumps`, `dsave`, and `dload` support.
+- Added browser console cloud `dumps`, `dsave`, and `dload` support.
+- Documented the implemented `.vdmp` JSON format in
+  `docs/model-instance-dump-format.md`.
+- Added core and web API tests for dump export/precheck/import behavior.
 
 
 ## Family unit composite DATE model and loaders

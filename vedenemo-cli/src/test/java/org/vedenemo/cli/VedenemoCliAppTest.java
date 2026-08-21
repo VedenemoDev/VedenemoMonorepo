@@ -73,9 +73,12 @@ final class VedenemoCliAppTest {
         assertTrue(result.output.contains("attr add - add an attribute to the selected entity"));
         assertTrue(result.output.contains("assoc add [ownership | reference | relation] - add an association or relation"));
         assertTrue(result.output.contains("undo - undo the latest backend command"));
-        assertTrue(result.output.contains("save [N | azName] [outputPath] - save a model to a .vdos file"));
+        assertTrue(result.output.contains("msave [N | azName] [outputPath] - save a model to a .vdos file"));
         assertTrue(result.output.contains("snapshots - list .vdos files from the .vedenemo directory"));
-        assertTrue(result.output.contains("load <path | snapshot-number> - load a model from a .vdos file"));
+        assertTrue(result.output.contains("mload <path | snapshot-number> - load a model from a .vdos file"));
+        assertTrue(result.output.contains("dumps - list .vdmp files from the .vedenemo directory"));
+        assertTrue(result.output.contains("dsave [root-id | root-number | root-name] [outputPath] - save a model-instance root to a .vdmp file"));
+        assertTrue(result.output.contains("dload <path | dump-number> - load a .vdmp file into a new model-instance root"));
         assertTrue(result.output.contains("Esc - cancel the current interactive prompt"));
         assertTrue(result.output.contains("exit - end the session and exit"));
     }
@@ -627,7 +630,7 @@ final class VedenemoCliAppTest {
                 sessionClient,
                 modelClient,
                 new TestCommandClient(),
-                "attach Example_Model\nsave\n\nexit\n",
+                "attach Example_Model\nmsave\n\nexit\n",
                 tempDirectory
         );
 
@@ -649,7 +652,7 @@ final class VedenemoCliAppTest {
                 sessionClient,
                 modelClient,
                 new TestCommandClient(),
-                "attach Example_Model\nsave\n\nexit\n",
+                "attach Example_Model\nmsave\n\nexit\n",
                 tempDirectory
         );
 
@@ -665,7 +668,7 @@ final class VedenemoCliAppTest {
         modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
         modelClient.exportedScript = "script";
 
-        run(sessionClient, modelClient, new TestCommandClient(), "list\nsave 1 export-file\nexit\n", tempDirectory);
+        run(sessionClient, modelClient, new TestCommandClient(), "list\nmsave 1 export-file\nexit\n", tempDirectory);
 
         assertEquals("Example_Model", modelClient.exportedModelAzName);
         assertEquals("script", Files.readString(tempDirectory.resolve("export-file.vdos"), StandardCharsets.UTF_8));
@@ -679,7 +682,7 @@ final class VedenemoCliAppTest {
         modelClient.exportedScript = "script";
         Path snapshotDirectory = Files.createDirectory(tempDirectory.resolve(".vedenemo"));
 
-        run(sessionClient, modelClient, new TestCommandClient(), "list\nsave 1 export-file\nexit\n", tempDirectory);
+        run(sessionClient, modelClient, new TestCommandClient(), "list\nmsave 1 export-file\nexit\n", tempDirectory);
 
         assertEquals("script", Files.readString(snapshotDirectory.resolve("export-file.vdos"), StandardCharsets.UTF_8));
         assertTrue(!Files.exists(tempDirectory.resolve("export-file.vdos")));
@@ -694,7 +697,7 @@ final class VedenemoCliAppTest {
         Path snapshotDirectory = Files.createDirectory(tempDirectory.resolve(".vedenemo"));
         Path target = tempDirectory.resolve("absolute-target");
 
-        run(sessionClient, modelClient, new TestCommandClient(), "list\nsave 1 " + target + "\nexit\n", tempDirectory);
+        run(sessionClient, modelClient, new TestCommandClient(), "list\nmsave 1 " + target + "\nexit\n", tempDirectory);
 
         assertEquals("script", Files.readString(tempDirectory.resolve("absolute-target.vdos"), StandardCharsets.UTF_8));
         assertTrue(!Files.exists(snapshotDirectory.resolve("absolute-target.vdos")));
@@ -712,7 +715,7 @@ final class VedenemoCliAppTest {
                 sessionClient,
                 modelClient,
                 new TestCommandClient(),
-                "attach Example_Model\nsave\n\ny\nexit\n",
+                "attach Example_Model\nmsave\n\ny\nexit\n",
                 tempDirectory
         );
 
@@ -726,7 +729,7 @@ final class VedenemoCliAppTest {
                 new TestSessionClient(UUID.randomUUID()),
                 new TestModelClient(),
                 new TestCommandClient(),
-                "save\nexit\n",
+                "msave\nexit\n",
                 tempDirectory
         );
 
@@ -743,7 +746,7 @@ final class VedenemoCliAppTest {
                 sessionClient,
                 modelClient,
                 new TestCommandClient(),
-                "load example\nexit\n",
+                "mload example\nexit\n",
                 tempDirectory
         );
 
@@ -798,7 +801,7 @@ final class VedenemoCliAppTest {
                 sessionClient,
                 modelClient,
                 new TestCommandClient(),
-                "snapshots\nload 2\nexit\n",
+                "snapshots\nmload 2\nexit\n",
                 tempDirectory
         );
 
@@ -816,7 +819,7 @@ final class VedenemoCliAppTest {
                 new TestSessionClient(UUID.randomUUID()),
                 modelClient,
                 new TestCommandClient(),
-                "load 1\nexit\n",
+                "mload 1\nexit\n",
                 tempDirectory
         );
 
@@ -835,7 +838,7 @@ final class VedenemoCliAppTest {
                 sessionClient,
                 modelClient,
                 new TestCommandClient(),
-                "load Levykokoelma\nexit\n",
+                "mload Levykokoelma\nexit\n",
                 tempDirectory
         );
 
@@ -852,7 +855,7 @@ final class VedenemoCliAppTest {
                 new TestSessionClient(UUID.randomUUID()),
                 modelClient,
                 new TestCommandClient(),
-                "load example\nexit\n",
+                "mload example\nexit\n",
                 tempDirectory
         );
 
@@ -865,7 +868,7 @@ final class VedenemoCliAppTest {
                 new TestSessionClient(UUID.randomUUID()),
                 new TestModelClient(),
                 new TestCommandClient(),
-                "load missing\nexit\n",
+                "mload missing\nexit\n",
                 tempDirectory
         );
 
@@ -883,7 +886,7 @@ final class VedenemoCliAppTest {
                 sessionClient,
                 modelClient,
                 new TestCommandClient(),
-                "load example\nRenamed_Model\nexit\n",
+                "mload example\nRenamed_Model\nexit\n",
                 tempDirectory
         );
 

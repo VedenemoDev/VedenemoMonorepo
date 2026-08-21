@@ -69,12 +69,14 @@ return to the normal CLI prompt without executing it.
 The browser console at `/console` uses the same CLI-like command behavior. It
 supports the same prompt flows for `add`, `attr add`, and `assoc add`; blank
 Enter accepts prompt defaults, and Esc cancels the active prompt flow. In the
-terminal CLI, `save`, `snapshots`, and `load` use local `.vdos` files. In the
+terminal CLI, `msave`, `snapshots`, and `mload` use local `.vdos` files. In the
 browser console, the same command names use backend cloud snapshots when the
 backend snapshot store is configured.
 
-Runtime model-instance data access is HTTP-only in the current implementation;
-there are no terminal or browser CLI commands for the `/data` API yet.
+Runtime model-instance data editing remains HTTP/API-driven, but development
+data preservation is available through `dumps`, `dsave`, and `dload`. In the
+terminal CLI these commands use local `.vdmp` files; in the browser console
+they use backend-managed cloud dump storage when configured.
 
 ### `ping`
 
@@ -370,20 +372,20 @@ Relation azName [Student_enrollment]:
 Relation Student_enrollment added.
 ```
 
-### `save [N | azName] [outputPath]`
+### `msave [N | azName] [outputPath]`
 
 Saves a model to a UTF-8 Vedenemo Script file with the `.vdos` extension.
 
-If no model selector is provided, `save` uses the currently attached model. If a
+If no model selector is provided, `msave` uses the currently attached model. If a
 selector is provided, it can be a model number from the latest `list` output or
 a case-insensitive model `azName`.
 
 If no output path is provided, the CLI prompts with an editable default based on
 the model `azName`. When a `.vedenemo` directory exists under the directory
-where the CLI was started, the default save location is that directory:
+where the CLI was started, the default msave location is that directory:
 
 ```text
-VedenemoCli[Example_Model]>save
+VedenemoCli[Example_Model]>msave
 Output file [.vedenemo/Example_Model.vdos]:
 Saved model Example_Model to /current/directory/.vedenemo/Example_Model.vdos.
 ```
@@ -392,7 +394,7 @@ When `.vedenemo` does not exist, the default remains the current working
 directory:
 
 ```text
-VedenemoCli[Example_Model]>save
+VedenemoCli[Example_Model]>msave
 Output file [Example_Model.vdos]:
 Saved model Example_Model to /current/directory/Example_Model.vdos.
 ```
@@ -404,11 +406,11 @@ the current working directory.
 Examples:
 
 ```text
-save
-save 1
-save Example_Model
-save Example_Model export-file
-save 1 /tmp/example.vdos
+msave
+msave 1
+msave Example_Model
+msave Example_Model export-file
+msave 1 /tmp/example.vdos
 ```
 
 If the selected output path has no extension, `.vdos` is appended. If the file
@@ -422,7 +424,7 @@ validation.
 
 Lists UTF-8 `.vdos` files from the `.vedenemo` directory under the directory
 where the CLI was started. The list is sorted by file name and can be used by
-number with `load`.
+number with `mload`.
 
 Example:
 
@@ -438,13 +440,13 @@ If `.vedenemo` does not exist, the CLI prints:
 No .vedenemo directory found at /current/directory/.vedenemo.
 ```
 
-### `load <path | snapshot-number>`
+### `mload <path | snapshot-number>`
 
 Loads a model from a UTF-8 `.vdos` file and imports it through the backend.
 
 The path can be absolute or relative to the directory where the CLI was started.
 If the path has no extension, `.vdos` is appended. For bare relative names,
-the CLI first checks `.vedenemo`, so `load Levykokoelma` loads
+the CLI first checks `.vedenemo`, so `mload Levykokoelma` loads
 `.vedenemo/Levykokoelma.vdos` when that file exists.
 
 After running `snapshots`, a numeric argument loads from the latest snapshot
@@ -453,7 +455,7 @@ list:
 ```text
 VedenemoCli>snapshots
 1. Levykokoelma.vdos
-VedenemoCli>load 1
+VedenemoCli>mload 1
 Attached to model Levykokoelma.
 Loaded model Levykokoelma from /current/directory/.vedenemo/Levykokoelma.vdos with 2 commands.
 ```
@@ -461,7 +463,7 @@ Loaded model Levykokoelma from /current/directory/.vedenemo/Levykokoelma.vdos wi
 Example:
 
 ```text
-VedenemoCli>load ./exports/example
+VedenemoCli>mload ./exports/example
 Attached to model Example_Model.
 Loaded model Example_Model from /current/directory/exports/example.vdos with 2 commands.
 VedenemoCli[Example_Model]>
@@ -479,18 +481,59 @@ model load failed with HTTP status 409: ...
 New model azName for import, or blank to cancel:
 ```
 
+### `dumps`
+
+Lists UTF-8 `.vdmp` model-instance data dump files from the `.vedenemo`
+directory. The list is sorted by file name and can be used by number with
+`dload`.
+
+Example:
+
+```text
+VedenemoCli>dumps
+1. Music_Source_root_v1_2_3_2026_08_21.vdmp
+```
+
+### `dsave [root-id | root-number | root-name] [outputPath]`
+
+Saves exactly one model-instance root to a JSON `.vdmp` file. Attach a model
+first. If the attached model has one loaded root, `dsave` can use it without a
+selector. If multiple roots exist, provide a root id, a root number from the
+latest root listing, or an exact root visible name.
+
+If no output path is provided, the CLI prompts with an editable `.vdmp` file
+name. Relative paths use `.vedenemo` when that directory exists; absolute paths
+are used directly. Existing files require overwrite confirmation.
+
+Example:
+
+```text
+VedenemoCli[Music]>dsave
+Output dump file [.vedenemo/Music_Source_root_v1_2_3_2026_08_21.vdmp]:
+Saved model-instance root 00000000-0000-0000-0000-000000000000 to /current/directory/.vedenemo/Music_Source_root_v1_2_3_2026_08_21.vdmp.
+```
+
+### `dload <path | dump-number>`
+
+Loads a `.vdmp` file into a new model-instance root under the currently
+attached model. The corresponding model must already be loaded and attached.
+The CLI runs a backend precheck first. Newer dumps are rejected before import;
+older dumps require yes/no confirmation. A successful load reports created
+record/link counts, skipped duplicate links, warnings, and failed insert
+diagnostics.
+
 ## Browser Console Snapshot Commands
 
-In `/console`, `save`, `snapshots`, and `load` use the backend-configured cloud
+In `/console`, `msave`, `snapshots`, and `mload` use the backend-configured cloud
 snapshot store instead of the terminal filesystem. The backend must be started
 with `VEDENEMO_SNAPSHOT_STORE=gcs`, `VEDENEMO_GCS_PROJECT_ID`,
 `VEDENEMO_GCS_BUCKET`, `VEDENEMO_GCS_PREFIX`, and optionally
 `VEDENEMO_SNAPSHOT_SCOPE`.
 
-Browser `save` saves the attached model to a manually named cloud snapshot:
+Browser `msave` saves the attached model to a manually named cloud snapshot:
 
 ```text
-VedenemoCli[Example_Model]>save
+VedenemoCli[Example_Model]>msave
 Snapshot name: smoke
 Saved model Example_Model to cloud snapshot Example_Model/smoke.vdos.
 ```
@@ -504,16 +547,22 @@ Cloud snapshots:
 1. Example_Model/smoke.vdos - Example Model (Example_Model) version 1.0.0, 2 commands, saved 2026-07-28T18:30:00Z
 ```
 
-Browser `load` accepts either a snapshot key or a number from the latest
+Browser `mload` accepts either a snapshot key or a number from the latest
 `snapshots` output:
 
 ```text
-VedenemoCli[Example_Model]>load 1
+VedenemoCli[Example_Model]>mload 1
 Loaded model Example_Model from cloud snapshot Example_Model/smoke.vdos.
 ```
 
 If the imported model `azName` already exists, the browser console asks for a
-replacement import `azName`, matching the terminal CLI load flow.
+replacement import `azName`, matching the terminal CLI mload flow.
+
+Browser `dumps`, `dsave`, and `dload` use the backend-configured cloud dump
+store. `dumps` lists stored `.vdmp` entries for the attached model, `dsave`
+stores the selected runtime root as a named cloud dump, and `dload` imports a
+stored cloud dump into a new model-instance root after the same compatibility
+precheck used by terminal `.vdmp` loading.
 
 ### `undo`
 

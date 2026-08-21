@@ -37,7 +37,7 @@ and limitation of liability.
 - HTTP-backed interactive `VedenemoCli`.
 - In-memory storage adapter.
 - Optional Google Cloud Storage snapshot adapter for browser console `.vdos`
-  save/load.
+  msave/mload.
 - Separate Vite/TypeScript UX with model selection, PlantUML SVG rendering,
   runtime model-instance visualizations, and a full-page browser console at
   `/console`.
@@ -59,7 +59,7 @@ vedenemo-model-api       Shared model API types. Pure JDK.
 vedenemo-core-spi        Core-facing SPI ports. Pure JDK plus Vedenemo modules.
 vedenemo-core            Commands, sessions, undo, command journal, .vdos logic.
 vedenemo-storage-memory  Initial in-memory ModelStorage adapter.
-vedenemo-storage-gcs     Google Cloud Storage SnapshotStore adapter.
+vedenemo-storage-gcs     Google Cloud Storage snapshot and dump store adapters.
 vedenemo-app             Application composition root.
 vedenemo-command-console Shared CLI-like command session behavior.
 vedenemo-web-api         Javalin HTTP backend executable jar.
@@ -292,9 +292,12 @@ attr add
 associations
 assoc add [ownership | reference | relation]
 undo
-save [N | azName] [outputPath]
+msave [N | azName] [outputPath]
 snapshots
-load <path | snapshot-number>
+mload <path | snapshot-number>
+dumps
+dsave [root-id | root-number | root-name] [outputPath]
+dload <path | dump-number>
 exit
 ```
 
@@ -302,26 +305,34 @@ The CLI can create models, create entities and attributes through backend
 commands, undo the latest session command, save a model to a UTF-8 `.vdos`
 Vedenemo Script file, list `.vdos` snapshots from `.vedenemo`, and load a
 `.vdos` file back through the backend. When a `.vedenemo` directory exists, CLI
-save defaults and relative save paths use that directory; absolute save paths
-are used directly. Command words are case-insensitive; parameters such as model
-and entity `azName` values remain case-sensitive.
+`msave` defaults and relative `msave` paths use that directory; absolute
+`msave` paths are used directly. The CLI can also list `.vdmp` data dumps, save
+one model-instance root to a `.vdmp` file, and load a `.vdmp` file into a new
+model-instance root. Command words are case-insensitive; parameters such as
+model and entity `azName` values remain case-sensitive.
 
 See [docs/cli-reference.md](docs/cli-reference.md) for full command usage and
 examples.
 
-## Browser Console Cloud Snapshots
+## Browser Console Cloud Snapshots And Dumps
 
 The browser console at `/console` uses the same plain command names for
-snapshots, but storage is backend-managed instead of local filesystem based:
+snapshots and dumps, but storage is backend-managed instead of local filesystem
+based:
 
 ```text
-save [snapshotName]
+msave [snapshotName]
 snapshots
-load <snapshot-key | snapshot-number>
+mload <snapshot-key | snapshot-number>
+dumps
+dsave [root-id | root-number | root-name] [dumpName]
+dload <dump-key | dump-number>
 ```
 
 Set `VEDENEMO_SNAPSHOT_STORE=gcs` and the `VEDENEMO_GCS_*` variables before
 starting `vedenemo-web-api` to enable the Google Cloud Storage adapter. The
+dump store can also be enabled with `VEDENEMO_DUMP_STORE=gcs`; if omitted, the
+backend uses the snapshot store setting for the dump store too. The
 browser never receives Google Cloud credentials; the backend uses its runtime
 Application Default Credentials or service account identity.
 
@@ -366,7 +377,7 @@ The console output scrolls to the latest line as commands run. The full-page
 browser console remains available directly at `/console`. The browser console
 supports the same authoring commands as `VedenemoCli`, including `add`,
 `attr add`, and `assoc add`. With the backend snapshot store configured,
-browser `save`, `snapshots`, and `load` use cloud snapshots; terminal
+browser `msave`, `snapshots`, and `mload` use cloud snapshots; terminal
 `VedenemoCli` keeps using local `.vdos` files.
 
 ## Vedenemo Script Files
@@ -398,9 +409,8 @@ On import, command lines are replayed and the resulting model is validated
 against the snapshot. Imported commands become baseline model state and are not
 added to the current session undo stack.
 
-The planned development-time model-instance dump format will use `.vdmp` files.
-Its storage format is tracked in
-[docs/model-instance-dump-format.md](docs/model-instance-dump-format.md).
+Development-time model-instance dumps use `.vdmp` JSON files. The format is
+documented in [docs/model-instance-dump-format.md](docs/model-instance-dump-format.md).
 
 ## Frontend Build
 

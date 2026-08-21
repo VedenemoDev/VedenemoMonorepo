@@ -157,7 +157,7 @@ final class ConsoleResourceTest {
 
             HttpResponse<String> command = post(
                     baseUri.resolve("/console/sessions/" + sessionId + "/commands"),
-                    "{\"command\":\"save smoke\"}"
+                    "{\"command\":\"msave smoke\"}"
             );
 
             assertEquals(201, start.statusCode());
@@ -197,7 +197,7 @@ final class ConsoleResourceTest {
 
             HttpResponse<String> save = post(
                     baseUri.resolve("/console/sessions/" + sessionId + "/commands"),
-                    "{\"command\":\"save first\"}"
+                    "{\"command\":\"msave first\"}"
             );
             HttpResponse<String> snapshots = post(
                     baseUri.resolve("/console/sessions/" + sessionId + "/commands"),
@@ -253,7 +253,7 @@ final class ConsoleResourceTest {
 
             HttpResponse<String> load = post(
                     baseUri.resolve("/console/sessions/" + sessionId + "/commands"),
-                    "{\"command\":\"load Existing_Model/saved.vdos\"}"
+                    "{\"command\":\"mload Existing_Model/saved.vdos\"}"
             );
             HttpResponse<String> rename = post(
                     baseUri.resolve("/console/sessions/" + sessionId + "/commands"),

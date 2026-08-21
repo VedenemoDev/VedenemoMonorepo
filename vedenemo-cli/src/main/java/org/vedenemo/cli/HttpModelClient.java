@@ -2,9 +2,13 @@ package org.vedenemo.cli;
 
 import org.vedenemo.console.AssociationSummary;
 import org.vedenemo.console.AttributeSummary;
+import org.vedenemo.console.DumpImportResult;
+import org.vedenemo.console.DumpPrecheckResult;
+import org.vedenemo.console.DumpSummary;
 import org.vedenemo.console.EntitySummary;
 import org.vedenemo.console.ModelClient;
 import org.vedenemo.console.ModelImportResult;
+import org.vedenemo.console.ModelInstanceRootSummary;
 import org.vedenemo.console.ModelSummary;
 import org.vedenemo.console.SnapshotSummary;
 
@@ -15,7 +19,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,6 +43,20 @@ public final class HttpModelClient implements ModelClient {
     private static final Pattern IMPORT_PATTERN = Pattern.compile(
             "\\{\"modelAzName\":\"([^\"]*)\",\"commandCount\":([0-9]+)}"
     );
+    private static final Pattern ROOT_PATTERN = Pattern.compile(
+            "\\{\"instanceRootId\":\"([^\"]*)\",\"modelAzName\":\"([^\"]*)\",\"modelVersion\":\"([^\"]*)\",\"visName\":(\"([^\"]*)\"|null)}"
+    );
+    private static final Pattern DUMP_SUMMARY_PATTERN = Pattern.compile(
+            "\\{\"key\":\"([^\"]*)\",\"modelAzName\":\"([^\"]*)\",\"modelVisName\":\"([^\"]*)\",\"modelVersion\":\"([^\"]*)\",\"rootVisName\":(\"([^\"]*)\"|null),\"entityRecordCount\":([0-9]+),\"associationLinkCount\":([0-9]+),\"savedAt\":\"([^\"]*)\"}"
+    );
+    private static final Pattern PRECHECK_PATTERN = Pattern.compile(
+            "\\{\"importable\":(true|false),\"confirmationRequired\":(true|false),\"warnings\":\\[(.*?)]\\,\"diagnostics\":\\[(.*?)]}"
+    );
+    private static final Pattern IMPORT_ROOT_PATTERN = Pattern.compile(
+            "\"root\":\\{\"instanceRootId\":\"([^\"]*)\",\"modelAzName\":\"([^\"]*)\",\"modelVersion\":\"([^\"]*)\",\"visName\":(\"([^\"]*)\"|null)}"
+    );
+    private static final Pattern CREATED_LINKS_PATTERN = Pattern.compile("\"createdAssociationLinkCount\":([0-9]+)");
+    private static final Pattern SKIPPED_LINKS_PATTERN = Pattern.compile("\"skippedDuplicateLinkCount\":([0-9]+)");
 
     private final URI apiBaseUrl;
     private final HttpClient httpClient;
@@ -145,6 +165,18 @@ public final class HttpModelClient implements ModelClient {
     }
 
     @Override
+    public List<ModelInstanceRootSummary> listInstanceRoots(String modelAzName) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/data/" + encodePath(modelAzName) + "/roots"))
+                .GET()
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("model instance root list failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+        return parseRoots(response.body());
+    }
+
+    @Override
     public String exportScript(String modelAzName) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/models/" + encodePath(modelAzName) + "/script"))
                 .GET()
@@ -189,6 +221,67 @@ public final class HttpModelClient implements ModelClient {
     @Override
     public ModelImportResult loadSnapshot(String snapshotKey, String modelAzNameOverride) throws IOException {
         throw new IOException("cloud snapshots are not supported by the terminal HTTP model client");
+    }
+
+    @Override
+    public String exportDump(String modelAzName, String instanceRootId) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve(
+                        "/data/" + encodePath(modelAzName) + "/roots/" + encodePath(instanceRootId) + "/dump"
+                ))
+                .GET()
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (response.statusCode() != 200) {
+            throw new IOException("dump save failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+        return response.body();
+    }
+
+    @Override
+    public DumpPrecheckResult precheckDump(String modelAzName, String dumpContent) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/data/" + encodePath(modelAzName) + "/dumps/_precheck"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(dumpContent, StandardCharsets.UTF_8))
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (response.statusCode() != 200) {
+            throw new IOException("dump precheck failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+        return parsePrecheck(response.body());
+    }
+
+    @Override
+    public DumpImportResult importDump(String modelAzName, String dumpContent, boolean confirmVersionMismatch) throws IOException, InterruptedException {
+        String body = "{\"dump\":" + dumpContent + ",\"confirmVersionMismatch\":" + confirmVersionMismatch + "}";
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/data/" + encodePath(modelAzName) + "/dumps"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (response.statusCode() != 201) {
+            throw new IOException("dump load failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+        return parseDumpImport(response.body());
+    }
+
+    @Override
+    public List<DumpSummary> listDumps(String modelAzName) throws IOException {
+        throw new IOException("cloud dumps are not supported by the terminal HTTP model client");
+    }
+
+    @Override
+    public DumpSummary saveDump(String modelAzName, String instanceRootId, String dumpName) throws IOException {
+        throw new IOException("cloud dumps are not supported by the terminal HTTP model client");
+    }
+
+    @Override
+    public DumpPrecheckResult precheckStoredDump(String modelAzName, String dumpKey) throws IOException {
+        throw new IOException("cloud dumps are not supported by the terminal HTTP model client");
+    }
+
+    @Override
+    public DumpImportResult loadStoredDump(String modelAzName, String dumpKey, boolean confirmVersionMismatch) throws IOException {
+        throw new IOException("cloud dumps are not supported by the terminal HTTP model client");
     }
 
     private static List<ModelSummary> parseModels(String body) throws IOException {
@@ -278,8 +371,126 @@ public final class HttpModelClient implements ModelClient {
         return new ModelImportResult(matcher.group(1), Integer.parseInt(matcher.group(2)));
     }
 
+    private static List<ModelInstanceRootSummary> parseRoots(String body) throws IOException {
+        if ("[]".equals(body)) {
+            return List.of();
+        }
+        ArrayList<ModelInstanceRootSummary> roots = new ArrayList<>();
+        Matcher matcher = ROOT_PATTERN.matcher(body);
+        while (matcher.find()) {
+            roots.add(new ModelInstanceRootSummary(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(5)));
+        }
+        if (roots.isEmpty()) {
+            throw new IOException("model instance root response did not contain parseable roots");
+        }
+        return List.copyOf(roots);
+    }
+
+    static List<DumpSummary> parseDumps(String body) throws IOException {
+        if ("[]".equals(body)) {
+            return List.of();
+        }
+        ArrayList<DumpSummary> dumps = new ArrayList<>();
+        Matcher matcher = DUMP_SUMMARY_PATTERN.matcher(body);
+        while (matcher.find()) {
+            dumps.add(new DumpSummary(
+                    matcher.group(1),
+                    matcher.group(2),
+                    matcher.group(3),
+                    matcher.group(4),
+                    matcher.group(6),
+                    Integer.parseInt(matcher.group(7)),
+                    Integer.parseInt(matcher.group(8)),
+                    matcher.group(9)
+            ));
+        }
+        if (dumps.isEmpty()) {
+            throw new IOException("dump response did not contain parseable dumps");
+        }
+        return List.copyOf(dumps);
+    }
+
+    private static DumpPrecheckResult parsePrecheck(String body) throws IOException {
+        Matcher matcher = PRECHECK_PATTERN.matcher(body);
+        if (!matcher.matches()) {
+            throw new IOException("dump precheck response did not contain parseable details");
+        }
+        return new DumpPrecheckResult(
+                Boolean.parseBoolean(matcher.group(1)),
+                Boolean.parseBoolean(matcher.group(2)),
+                parseJsonStringArray(matcher.group(3)),
+                parseJsonStringArray(matcher.group(4))
+        );
+    }
+
+    private static DumpImportResult parseDumpImport(String body) throws IOException {
+        Matcher rootMatcher = IMPORT_ROOT_PATTERN.matcher(body);
+        if (!rootMatcher.find()) {
+            throw new IOException("dump load response did not contain root details");
+        }
+        ModelInstanceRootSummary root = new ModelInstanceRootSummary(
+                rootMatcher.group(1),
+                rootMatcher.group(2),
+                rootMatcher.group(3),
+                rootMatcher.group(5)
+        );
+        return new DumpImportResult(
+                root,
+                parseCreatedEntityCounts(body),
+                parseRequiredInt(CREATED_LINKS_PATTERN, body, "created association-link count"),
+                parseRequiredInt(SKIPPED_LINKS_PATTERN, body, "skipped duplicate-link count"),
+                parseNamedArray(body, "warnings"),
+                parseNamedArray(body, "failedInserts")
+        );
+    }
+
+    private static Map<String, Integer> parseCreatedEntityCounts(String body) {
+        LinkedHashMap<String, Integer> counts = new LinkedHashMap<>();
+        Matcher matcher = Pattern.compile("\"createdEntityCounts\":\\{([^}]*)}").matcher(body);
+        if (!matcher.find() || matcher.group(1).isBlank()) {
+            return counts;
+        }
+        Matcher countMatcher = Pattern.compile("\"([^\"]+)\":([0-9]+)").matcher(matcher.group(1));
+        while (countMatcher.find()) {
+            counts.put(countMatcher.group(1), Integer.parseInt(countMatcher.group(2)));
+        }
+        return counts;
+    }
+
+    private static int parseRequiredInt(Pattern pattern, String body, String name) throws IOException {
+        Matcher matcher = pattern.matcher(body);
+        if (!matcher.find()) {
+            throw new IOException("dump load response did not contain " + name);
+        }
+        return Integer.parseInt(matcher.group(1));
+    }
+
+    private static List<String> parseNamedArray(String body, String name) {
+        Matcher matcher = Pattern.compile("\"" + name + "\":\\[(.*?)]").matcher(body);
+        if (!matcher.find()) {
+            return List.of();
+        }
+        return parseJsonStringArray(matcher.group(1));
+    }
+
+    private static List<String> parseJsonStringArray(String content) {
+        if (content == null || content.isBlank()) {
+            return List.of();
+        }
+        ArrayList<String> values = new ArrayList<>();
+        Matcher matcher = Pattern.compile("\"((?:\\\\.|[^\"])*)\"").matcher(content);
+        while (matcher.find()) {
+            values.add(unescapeJson(matcher.group(1)));
+        }
+        return List.copyOf(values);
+    }
+
     private static String escapeJson(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private static String unescapeJson(String value) {
+        return value.replace("\\\"", "\"").replace("\\\\", "\\");
     }
 
     private static String encodePath(String value) {

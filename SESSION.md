@@ -8768,3 +8768,53 @@ Current status and next steps:
   handling, diagnostics, tests, and implementation documentation updates.
 - Marked the backlog item as `planned`.
 - Verification passed: `git diff --check` reported no whitespace errors.
+
+## 2026-08-21 09:30 EEST
+
+Session goal: recover status after a remote compact 404 and verify the last
+executed `.vdmp` backlog task and repository state.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 160 SESSION.md`
+- `git status --short --branch`
+- `git log --oneline -8`
+- `git diff --stat`
+- `git diff --name-only`
+- `sed -n '1,260p' tasks/backlog.md`
+- `rg -n "vdmp|dumps|dsave|dload|msave|mload|ModelInstanceDump|Dump" README.md docs tasks vedenemo-*`
+- `mvn -B verify`
+- `git diff --check`
+- `git ls-files --others --exclude-standard`
+- `rg -n "case \\\"save\\\"|case \\\"load\\\"|\\bsave\\s*->|\\bload\\s*->|Command 'save'|Command 'load'|\\bsave \\[|\\bload <" vedenemo-* README.md docs tasks`
+- `find vedenemo-core/src/main/java vedenemo-core/src/test/java vedenemo-core-spi/src/main/java vedenemo-storage-gcs/src/main/java -path '*dump*' -type f -print`
+- `git diff -- docs/model-instance-dump-format.md tasks/current-task.md tasks/backlog.md`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `npm run build` in `vedenemo-ux`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- The interrupted remote compact request appears to be an external ChatGPT
+  compact endpoint failure, not a repository failure.
+- `tasks/current-task.md` and the top backlog item both mark development-time
+  model-instance `.vdmp` dumps as executed.
+- The implementation remains uncommitted and includes modified docs, CLI,
+  shared console, web API, tests, and new untracked dump-related source files.
+- Backend verification passed with `mvn -B verify`.
+- Frontend verification passed with `npm run build` in `vedenemo-ux`; Vite
+  reported existing large chunk warnings.
+- `git diff --check` passed.
+- README still contains the required general-purpose software disclaimer.
+- Next step is a focused code review or commit of the uncommitted `.vdmp`
+  implementation.

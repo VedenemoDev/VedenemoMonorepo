@@ -229,6 +229,37 @@ final class InstanceDataResourceTest {
     }
 
     @Test
+    void exportsPrechecksAndImportsModelInstanceDumpJson() throws Exception {
+        String rootId = createRoot("Source root");
+        String artistId = responseId(post(rootPath(rootId, "/Artist"), """
+                {"Name":"Miles Davis","Website":"https://example.com"}
+                """));
+        String albumId = responseId(post(rootPath(rootId, "/Album"), """
+                {"Title":"Kind of Blue"}
+                """));
+        post(rootPath(rootId, "/_links/Album_Artist"), """
+                {"sourceInstanceId":"%s","targetInstanceId":"%s"}
+                """.formatted(albumId, artistId));
+
+        HttpResponse<String> exported = get(rootPath(rootId, "/dump"));
+        HttpResponse<String> precheck = post("/data/Music/dumps/_precheck", exported.body());
+        HttpResponse<String> imported = post("/data/Music/dumps", """
+                {"dump":%s,"confirmVersionMismatch":false}
+                """.formatted(exported.body()));
+
+        assertEquals(200, exported.statusCode());
+        assertTrue(exported.body().contains("\"format\":\"vedenemo-instance-dump\""));
+        assertTrue(exported.body().contains("\"sourceInstanceRootId\":\"" + rootId + "\""));
+        assertTrue(exported.body().contains("\"Rating\":null"));
+        assertEquals(200, precheck.statusCode());
+        assertTrue(precheck.body().contains("\"importable\":true"));
+        assertEquals(201, imported.statusCode());
+        assertTrue(imported.body().contains("\"createdEntityCounts\":{\"Artist\":1,\"Album\":1}"));
+        assertTrue(imported.body().contains("\"createdAssociationLinkCount\":1"));
+        assertTrue(imported.body().contains("\"skippedDuplicateLinkCount\":0"));
+    }
+
+    @Test
     void queriesEntityInstancesWithComparisonOperators() throws Exception {
         String rootId = createRoot(null);
         String milesId = responseId(post(rootPath(rootId, "/Artist"), """

@@ -1,46 +1,54 @@
 # Current Task
 
-## Family unit composite DATE model and loaders
+## Development-time model instance data persistence as file dumps
 
 Status: executed.
 
 ### Goal
 
-Create a new `.vdos` model based on `FamilyUnitTreeComposite.vdos` that uses
-the new `DATE` data type for modeled date fields, and add data loading scripts
-for the British and Swedish royal-family datasets.
+Implement development-time model-instance data dumps using `.vdmp` JSON files,
+with terminal CLI local file support, browser console cloud dump support,
+backend import/export/precheck routes, and pure core-owned dump behavior.
 
 ### Scope
 
-- Keep the original `FamilyUnitTreeComposite.vdos` unchanged.
-- Add a new model script with a distinct model `azName` and visible name.
-- Keep the same entities, attributes, and associations as the source model.
-- Change only date-meaning attributes from `TEXT` to `DATE`:
-  - `Person.BirthDate`;
-  - `Person.DeathDate`;
-  - `FamilyUnit.StartDate`;
-  - `FamilyUnit.EndDate`.
-- Add British and Swedish data-loading scripts that target the new model.
-- Preserve existing royal-family data values and links.
-- Omit blank optional date values when creating records for the `DATE` model.
+- Keep `.vdmp` as development-time dump support, not final durable persistence.
+- Export and import one model-instance root per dump.
+- Keep core dump structures and import/export rules free of third-party
+  dependencies.
+- Keep JSON mapping and HTTP DTO handling in `vedenemo-web-api`.
+- Keep terminal CLI file I/O local to `vedenemo-cli`.
+- Keep browser console storage behind backend-managed dump storage.
+- Rename model snapshot commands from `save`/`load` to `msave`/`mload` without
+  backward-compatible aliases.
 
 ### Acceptance Criteria
 
-- The new `.vdos` script imports successfully.
-- Both new loader scripts can load their datasets against a local backend.
-- Existing source model and loader scripts remain available unchanged.
-- Verification demonstrates the new model accepts `DATE` attributes and the
-  royal-family loaders avoid invalid blank date submissions.
+- Terminal CLI can list `.vdmp` files with `dumps`, save a selected
+  model-instance root with `dsave`, and import a dump into a new root with
+  `dload`.
+- Browser console exposes `dumps`, `dsave`, and `dload` through the configured
+  backend dump store.
+- Backend exposes root-scoped dump export, submitted dump precheck/import, and
+  cloud dump list/save/precheck/load routes.
+- Dump import validates model/version/schema compatibility before import,
+  requires confirmation for older-dump-to-newer-model loads, rejects newer
+  dumps, omits dump-level `null` values before create validation, remaps
+  dump-local ids, skips duplicate links, and reports counts/diagnostics.
+- `.vdmp` format documentation and current implementation architecture docs are
+  synchronized.
 
 ### Completion Notes
 
-- Added `.vedenemo/FamilyUnitTreeCompositeWithDates.vdos`.
-- The new model keeps the original `Person`, `FamilyUnit`, and relation
-  structure from `FamilyUnitTreeComposite.vdos`.
-- Changed `BirthDate`, `DeathDate`, `StartDate`, and `EndDate` to `DATE`.
-- Added British and Swedish royal-family loaders for the new model.
-- The new loaders omit blank optional date values before POSTing instance data,
-  because `DATE` does not accept blank strings.
-- Verified direct `.vdos` import returns HTTP `201`.
-- Verified both loaders create separate model instance roots and load all people,
-  family units, and association links against a local backend.
+- Added pure core `.vdmp` records and `ModelInstanceDumpService`.
+- Added `ModelInstanceDumpStore` SPI and GCS dump-store adapter.
+- Added `/data/{modelAzName}/roots/{instanceRootId}/dump`,
+  `/data/{modelAzName}/dumps/_precheck`, `/data/{modelAzName}/dumps`, and
+  browser cloud dump routes under `/data/{modelAzName}/dumps`.
+- Renamed model snapshot commands to `msave` and `mload` across terminal CLI,
+  browser console, tests, and docs.
+- Added terminal CLI local `.vdmp` `dumps`, `dsave`, and `dload` support.
+- Added browser console cloud `dumps`, `dsave`, and `dload` support.
+- Documented the implemented `.vdmp` JSON format in
+  `docs/model-instance-dump-format.md`.
+- Verified with `mvn -B verify`.
