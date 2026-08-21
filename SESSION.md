@@ -8712,3 +8712,59 @@ Current status and next steps:
 - Backend `GET /data/{modelAzName}/dumps` is for browser virtual CLI cloud dump
   listing because browser dumps are stored behind backend-managed cloud storage.
 - Verification passed: `git diff --check` reported no whitespace errors.
+
+## 2026-08-21 08:39 EEST
+
+Session goal: review the planned "Development-time model instance data
+persistence as file dumps" backlog item once more for hidden open issues and
+mark it planned if ready.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 160 SESSION.md`
+- `rg -n "Development-time model instance data persistence|file dumps|persistence|planned" tasks docs local-planning SESSION.md`
+- `sed -n '1,180p' tasks/backlog.md`
+- `sed -n '180,380p' tasks/backlog.md`
+- `git status --short --branch`
+- `rg -n "GET\\s+/data|POST\\s+/data|/data/|ModelInstanceService|class ModelInstance|record .*Instance|snapshots|save|load|msave|mload|dsave|dload" vedenemo-* docs README.md tasks/current-task.md`
+- `rg --files vedenemo-core vedenemo-core-spi vedenemo-web-api vedenemo-cli vedenemo-app vedenemo-storage-memory`
+- `sed -n '1,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,280p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceDataset.java`
+- `sed -n '1,260p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '260,620p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '1,260p' vedenemo-command-console/src/main/java/org/vedenemo/console/ModelClient.java`
+- `sed -n '1,220p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleCapabilities.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/AssociationInstanceLink.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/model/ModelVersion.java` (failed: file is in `vedenemo-model-api`)
+- `rg -n "record ModelVersion|class ModelVersion|version\\(\\)" vedenemo-core vedenemo-model-api vedenemo-web-api`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/InstanceValue.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/EntityInstance.java`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Found one hidden implementation ambiguity: the plan stored omitted optional
+  values as JSON `null`, while the current instance service rejects null
+  runtime values.
+- Resolved it in the backlog item: dump-level `null` means "no submitted value"
+  and must be omitted from the create payload before calling the existing
+  validation path.
+- Added concrete acceptance criteria for command renames, `dumps`/`dsave`/
+  `dload`, `.vdmp` format documentation, compatibility precheck, duplicate-link
+  handling, diagnostics, tests, and implementation documentation updates.
+- Marked the backlog item as `planned`.
+- Verification passed: `git diff --check` reported no whitespace errors.

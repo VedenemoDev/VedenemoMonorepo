@@ -2,7 +2,7 @@
 
 ## Development-time model instance data persistence as file dumps
 
-Status: planning
+Status: planned
 
 ### Goals
 
@@ -202,6 +202,10 @@ sequenceDiagram
 - Blank optional values should be represented explicitly as `null` in the dump.
   Empty strings may be preserved only for string-like data types where an empty
   string is the actual submitted value.
+- During import, `null` dump values mean "no submitted value" and must be
+  omitted from the instance-data create payload before calling the existing
+  validation path. They must not be passed into `ModelInstanceService` as
+  runtime `InstanceValue` values, because current instance values are non-null.
 - `dumps` mirrors the current `snapshots` split: terminal CLI lists local
   `.vdmp` files, while browser virtual CLI lists cloud-backed dump files.
 - `save` and `load` are renamed to `msave` and `mload` immediately. Do not keep
@@ -219,6 +223,43 @@ sequenceDiagram
   practical.
 - Planning is complete only when command names, file format, module/API
   ownership, compatibility rules, and acceptance criteria are all finalized.
+
+### Acceptance Criteria
+
+- `save` and `load` model snapshot commands are renamed to `msave` and
+  `mload` in the shared command console, terminal CLI behavior, browser console
+  behavior, help text, tests, and user documentation, without backward-compatible
+  aliases in this task.
+- Terminal CLI `dumps` lists local `.vedenemo/*.vdmp` files, and browser
+  virtual CLI `dumps` lists backend-managed cloud dump entries.
+- Terminal CLI and browser virtual CLI support `dsave` for exporting exactly
+  one selected model-instance root to `.vdmp`, with explicit source-root
+  selection when multiple roots exist and overwrite confirmation for existing
+  dump names.
+- Terminal CLI and browser virtual CLI support `dload` for importing a `.vdmp`
+  into a newly created model-instance root, then selecting the new root where
+  practical.
+- `.vdmp` content uses the documented JSON format version, metadata fields,
+  entity record groups, dump-local record ids, and association links described
+  in `docs/model-instance-dump-format.md`.
+- Dump export preserves model metadata, root metadata, entity values, explicit
+  `null` omitted values, and association links for one root.
+- Dump import rejects missing model, missing entity, missing attribute,
+  incompatible `DataType`, missing association, and newer-dump-to-older-model
+  cases before creating instance data, with diagnostics that name the exact
+  problem spots.
+- Older-dump-to-newer-model loads run schema precheck first and then require
+  yes/no confirmation before import.
+- Import creates new entity-instance UUIDs and association-link UUIDs, remaps
+  dump-local ids for links, skips exact duplicate links, and reports created
+  entity counts, created link counts, skipped duplicate-link counts, warnings,
+  and failed insert diagnostics.
+- The implementation adds focused unit/API/CLI tests for format mapping,
+  compatibility precheck, null-as-omitted import behavior, duplicate-link
+  handling, route behavior, and command rename behavior.
+- `docs/model-instance-dump-format.md`, `docs/cli-reference.md`, `README.md`,
+  `tasks/current-task.md`, and `docs/architecture_doc.md` are updated only as
+  required by the concrete implementation.
 
 ### Planned API Route Templates
 
