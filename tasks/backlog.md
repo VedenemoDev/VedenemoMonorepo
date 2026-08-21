@@ -1,5 +1,49 @@
 # Backlog
 
+## CLI roots command for selecting model-instance dump sources
+
+Status: planned
+
+### Goal
+
+Add a CLI command named `roots` that lists the active model's process-local
+model-instance roots so users can discover the root numbers, visible names, and
+root ids needed by `dsave`.
+
+### Scope
+
+- Add `roots` to the terminal CLI and browser virtual CLI command surface.
+- Require an attached model before listing roots.
+- Reuse the existing backend root listing route
+  `GET /data/{modelAzName}/roots`.
+- Display each root with a stable one-based number for the current listing,
+  the root visible name, and the root id.
+- Update the latest root-list cache used by `dsave` root-number selection.
+- Keep `dumps` focused on `.vdmp` dump artifact listing; do not overload it to
+  list active runtime roots.
+- Keep CLI behavior thin over the existing HTTP/backend client abstractions.
+
+### Acceptance Criteria
+
+- `help` shows `roots` near the data dump commands in both terminal and browser
+  console modes.
+- Running `roots` without an attached model prints a clear message requiring a
+  model attachment.
+- Running `roots` for an attached model with no instance roots prints a clear
+  empty-state message.
+- Running `roots` for an attached model with roots lists one-based numbers,
+  visible names, model version when available, and root ids.
+- After `roots`, `dsave <number>` resolves the selected root from the latest
+  roots listing.
+- Browser virtual CLI `roots` uses backend-managed in-process root listing and
+  terminal CLI `roots` uses the HTTP client route.
+- Add focused terminal CLI and browser console tests for help output,
+  unattached-model handling, empty listings, populated listings, and `dsave`
+  root-number selection after `roots`.
+- Update `README.md`, `docs/cli-reference.md`, `tasks/current-task.md`, and
+  `docs/architecture_doc.md` if the implementation changes documented CLI
+  behavior or current implementation architecture.
+
 ## Development-time model instance data persistence as file dumps
 
 Status: executed

@@ -8818,3 +8818,38 @@ Current status and next steps:
 - README still contains the required general-purpose software disclaimer.
 - Next step is a focused code review or commit of the uncommitted `.vdmp`
   implementation.
+
+## 2026-08-21 09:57 EEST
+
+Session goal: plan a missing CLI `roots` command so users can list active
+model-instance roots before selecting a `dsave` source.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 140 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,120p' tasks/backlog.md`
+- `rg -n "roots|list.*root|ModelInstanceRootSummary|dsave|dload" vedenemo-command-console vedenemo-cli vedenemo-web-api docs README.md tasks/current-task.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added a newest-first planned backlog task:
+  `CLI roots command for selecting model-instance dump sources`.
+- The planned command lists the attached model's active process-local
+  model-instance roots with one-based numbers, visible names, versions, and
+  root ids.
+- The task explicitly keeps `dumps` as dump artifact listing and uses `roots`
+  as the runtime root listing that feeds `dsave <number>`.
+- Next step is implementation in terminal CLI, browser console, tests, and docs.
