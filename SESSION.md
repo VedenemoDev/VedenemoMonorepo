@@ -8919,3 +8919,62 @@ Current status and next steps:
 - Verification passed: targeted CLI/console tests, `mvn -B verify`,
   `npm run build`, and `git diff --check`.
 - README disclaimer remains present.
+
+## 2026-08-21 12:21 EEST
+
+Session goal: add browser virtual CLI parity for suggested `.vdmp` dump names
+when `dsave` is run without an explicit dump name.
+
+Files changed:
+
+- `SESSION.md`
+- `docs/cli-reference.md`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short`
+- `rg -n "vdmp|dsave|dumps|suggest|completion|complete|tab|saveDump|default.*dump|name suggestion|filename" vedenemo-cli vedenemo-command-console vedenemo-web-api vedenemo-ux README.md docs/cli-reference.md`
+- `rg -n "ConsoleSession|virtual|terminal|input|command" vedenemo-ux/src vedenemo-web-api/src/main/java/org/vedenemo/web`
+- `sed -n '1,260p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '1,280p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '1080,1225p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '660,735p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '1110,1145p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '250,330p' vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `sed -n '880,1090p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '880,1010p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '520,665p' vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `sed -n '365,430p' docs/cli-reference.md`
+- `sed -n '240,285p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleModelClient.java`
+- `sed -n '350,380p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleModelClient.java`
+- `sed -n '400,440p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '720,765p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '1,35p' vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `sed -n '512,586p' docs/cli-reference.md`
+- `mvn -B -pl vedenemo-command-console test`
+- `mvn -B -pl vedenemo-command-console,vedenemo-web-api -am test`
+- `git diff --stat`
+- `git status --short`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Browser virtual CLI `dsave` now prompts with a deterministic suggested dump
+  name when no dump name is provided.
+- Pressing Enter accepts the suggested name; typing a value still overrides it.
+- The stored cloud dump key continues to include the backend-added `.vdmp`
+  suffix.
+- Updated CLI reference with the browser console prompt behavior.
+- Verification passed: `mvn -B -pl vedenemo-command-console test`,
+  `mvn -B -pl vedenemo-command-console,vedenemo-web-api -am test`, and
+  `git diff --check`.

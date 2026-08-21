@@ -580,6 +580,16 @@ model, `dsave` stores the selected runtime root as a named cloud dump, and
 `dload` imports a stored cloud dump into a new model-instance root after the
 same compatibility precheck used by terminal `.vdmp` loading.
 
+When browser `dsave` is run without a dump name, it prompts with an editable
+default dump name based on the attached model, selected root, model version, and
+current date. Press Enter to accept the suggestion:
+
+```text
+VedenemoCli[Music]>dsave
+Dump name [Music_Source_root_v1_2_3_2026_08_21]:
+Saved model-instance root 00000000-0000-0000-0000-000000000000 to cloud dump Music/Music_Source_root_v1_2_3_2026_08_21.vdmp.
+```
+
 ### `undo`
 
 Asks the backend to undo the latest executed command for the current session.

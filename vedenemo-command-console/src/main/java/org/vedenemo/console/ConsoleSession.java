@@ -1,6 +1,7 @@
 package org.vedenemo.console;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -701,7 +702,7 @@ public final class ConsoleSession {
             return;
         }
         if (arguments.size() < 2) {
-            promptFlow = new SaveDumpNameFlow(root.orElseThrow().instanceRootId());
+            promptFlow = new SaveDumpNameFlow(root.orElseThrow());
             return;
         }
         saveDumpToCloud(root.orElseThrow().instanceRootId(), arguments.get(1), output);
@@ -957,6 +958,15 @@ public final class ConsoleSession {
         return suggestion;
     }
 
+    private static String defaultDumpName(String modelAzName, ModelInstanceRootSummary root) {
+        String rootPart = root.visName() == null || root.visName().isBlank() ? "root" : root.visName();
+        String base = suggestAzName(modelAzName + "_" + rootPart + "_v" + root.modelVersion().replace('.', '_') + "_" + LocalDate.now());
+        if (base == null || base.isBlank()) {
+            return modelAzName + "_dump";
+        }
+        return base;
+    }
+
     private boolean isAssociationAzNameAvailable(String azName) throws IOException, InterruptedException {
         return modelClient.listAssociations(attachedModelAzName).stream()
                 .noneMatch(association -> association.azName().equalsIgnoreCase(azName));
@@ -1112,25 +1122,24 @@ public final class ConsoleSession {
     }
 
     private final class SaveDumpNameFlow extends BasePromptFlow {
-        private final String instanceRootId;
+        private final ModelInstanceRootSummary root;
+        private final String suggestion;
 
-        private SaveDumpNameFlow(String instanceRootId) {
-            this.instanceRootId = instanceRootId;
+        private SaveDumpNameFlow(ModelInstanceRootSummary root) {
+            this.root = root;
+            this.suggestion = defaultDumpName(attachedModelAzName, root);
         }
 
         @Override
         public String prompt() {
-            return "Dump name: ";
+            return "Dump name [" + suggestion + "]: ";
         }
 
         @Override
         public ConsoleCommandResult accept(String input) throws IOException, InterruptedException {
-            if (input == null || input.isBlank()) {
-                complete = true;
-                return ConsoleCommandResult.ok(List.of("Dump name is required."));
-            }
+            String dumpName = input == null || input.isBlank() ? suggestion : input.trim();
             ArrayList<String> output = new ArrayList<>();
-            saveDumpToCloud(instanceRootId, input.trim(), output);
+            saveDumpToCloud(root.instanceRootId(), dumpName, output);
             complete = true;
             return ConsoleCommandResult.ok(output);
         }

@@ -3,6 +3,7 @@ package org.vedenemo.console;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -297,6 +298,50 @@ final class ConsoleSessionTest {
     }
 
     @Test
+    void dsaveWithoutNamePromptsWithSuggestedDumpName() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.instanceRoots.add(new ModelInstanceRootSummary("root-1", "Example_Model", "1.2.3", "Source root"));
+        TestSessionClient sessionClient = new TestSessionClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsoleWithCloudSnapshots()
+        );
+
+        session.execute("attach Example_Model");
+        session.execute("dsave");
+
+        assertEquals("Dump name [Example_Model_Source_root_v1_2_3_" + dumpDateSuffix() + "]: ", session.prompt());
+    }
+
+    @Test
+    void dsavePromptAcceptsSuggestedDumpName() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.instanceRoots.add(new ModelInstanceRootSummary("root-1", "Example_Model", "1.2.3", "Source root"));
+        TestSessionClient sessionClient = new TestSessionClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                new TestCommandClient(),
+                ConsoleCapabilities.webConsoleWithCloudSnapshots()
+        );
+
+        session.execute("attach Example_Model");
+        session.execute("dsave");
+        ConsoleCommandResult result = session.execute("");
+
+        String expectedName = "Example_Model_Source_root_v1_2_3_" + dumpDateSuffix();
+        assertEquals("root-1", modelClient.savedDumpRootId);
+        assertEquals(expectedName, modelClient.savedDumpName);
+        assertEquals(List.of("Saved model-instance root root-1 to cloud dump Example_Model/" + expectedName + ".vdmp."), result.outputLines());
+    }
+
+    @Test
     void listsModelAssociationsWhenNoEntityIsSelected() {
         TestModelClient modelClient = new TestModelClient();
         modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
@@ -532,6 +577,10 @@ final class ConsoleSessionTest {
         modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
         modelClient.entities.add(new EntitySummary("Order", "Order", "1.0.0", null));
         return modelClient;
+    }
+
+    private static String dumpDateSuffix() {
+        return LocalDate.now().toString().replace('-', '_');
     }
 
     private static final class TestModelClient implements ModelClient {
