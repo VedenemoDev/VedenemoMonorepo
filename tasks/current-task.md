@@ -1,43 +1,47 @@
 # Current Task
 
-## Radial tree visualization wizard path
+## Tree of life visualization wizard path
 
 Status: executed.
 
 ### Goal
 
-Add a `Radial tree` chart type to the existing model-instance visualization
+Add a `Tree of life` chart type to the existing model-instance visualization
 wizard with the same runtime binding and data behavior as the implemented D3
-`Tidy tree`, changing only the visualization layout.
+tree charts, changing only the visualization layout and skipping branch-length
+support for now.
 
 ### Scope
 
-- Add `Radial tree` to the frontend chart-type registry.
+- Add `Tree of life` to the frontend chart-type registry.
 - Reuse the existing tree eligibility, model-element binding, root-selection,
   Level 1 filtering, query loading, association-link loading, cycle guard, and
   tree-data transformation path.
-- Render the selected tree data with a D3 radial tree layout inspired by
-  <https://observablehq.com/@d3/radial-tree-component>.
+- Render the selected tree data with a D3 radial cluster layout inspired by
+  <https://observablehq.com/@d3/tree-of-life>.
+- Skip the Observable example's branch length property for this slice.
 - Keep visualization bindings runtime-only and frontend-only.
 - Update implementation documentation and task bookkeeping.
 
 ### Acceptance Criteria
 
-- The visualization wizard chart type step lists selectable `Tidy tree` and
-  `Radial tree` options for eligible model-instance roots.
-- `Radial tree` uses the same binding step and validation behavior as
-  `Tidy tree`.
-- Visualizing `Radial tree` fetches the same root-scoped instance data and
-  association links as `Tidy tree`.
-- The visualization step renders the result as a scrollable D3 radial SVG tree.
+- The visualization wizard chart type step lists selectable `Tidy tree`,
+  `Radial tree`, and `Tree of life` options for eligible model-instance roots.
+- `Tree of life` uses the same binding step and validation behavior as the
+  existing tree charts.
+- Visualizing `Tree of life` fetches the same root-scoped instance data and
+  association links as the existing tree charts.
+- The visualization step renders the result as a scrollable D3 radial cluster
+  SVG tree with leaf labels on a common rim.
+- No branch-length binding or data property is introduced.
 - Frontend build succeeds.
 
 ### Completion Notes
 
-- Added `Radial tree` as a second chart type.
+- Added `Tree of life` as a third chart type.
 - Reused the existing tree binding and data-building flow.
-- Added a D3 radial renderer using `d3.tree` with angular/radius coordinates
-  and `d3.linkRadial`.
+- Added a D3 radial cluster renderer using `d3.cluster`, constant-depth leaf
+  placement, outer-rim leaf labels, and faint label-extension links.
 - Updated README, visualization docs, and current implementation architecture
   docs.
 - Verified with `npm run build` in `vedenemo-ux`.

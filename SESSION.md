@@ -9043,3 +9043,61 @@ Current status and next steps:
 - Verification passed: `npm run build` in `vedenemo-ux`, `git diff --check`,
   and README disclaimer check.
 - No backend changes were needed.
+
+## 2026-08-22 21:08 EEST
+
+Session goal: add a Tree of life visualization wizard path using the same
+runtime binding behavior as the existing D3 tree chart paths, without branch
+length support.
+
+Files changed:
+
+- `SESSION.md`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `rg -n "RADIAL_TREE|TIDY_TREE|CHART_TYPES|RadialTreeRenderer|TidyTreeRenderer|visualization-canvas" vedenemo-ux/src/App.tsx`
+- `sed -n '1030,1070p' vedenemo-ux/src/styles.css`
+- `sed -n '360,382p' README.md`
+- `sed -n '1,190p' docs/visualizations.md`
+- `sed -n '658,714p' docs/architecture_doc.md`
+- `npm run build` in `vedenemo-ux`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `rg -n "Tree of life|Tidy tree|Radial tree|branch length|branch-length|only implemented" README.md docs/visualizations.md docs/architecture_doc.md tasks/current-task.md tasks/backlog.md vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css | sed -n '1,260p'`
+- `git status --short`
+
+Current status and next steps:
+
+- Added `Tree of life` to the visualization wizard chart-type registry.
+- Reused the existing tree eligibility, binding, root-selection, Level 1
+  filtering, query loading, association-link loading, cycle guard, and tree
+  data-building flow.
+- Added a D3 radial cluster renderer using `d3.cluster`, constant-depth leaf
+  placement, outer-rim leaf labels, top-level subtree coloring, and faint
+  label-extension links.
+- Skipped branch-length binding and branch-length data handling for this slice.
+- Updated README, visualization docs, current implementation architecture docs,
+  backlog, and current task records.
+- Verification passed: `npm run build` in `vedenemo-ux`, `git diff --check`,
+  and README disclaimer check.
+- No backend changes were needed.

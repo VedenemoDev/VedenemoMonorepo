@@ -1061,6 +1061,29 @@ body {
   font-weight: 650;
 }
 
+.tree-of-life-links path {
+  fill: none;
+  stroke-width: 1.2;
+  stroke-opacity: 0.78;
+}
+
+.tree-of-life-link-extensions path {
+  fill: none;
+  stroke: #94a3b8;
+  stroke-opacity: 0.38;
+  stroke-width: 1;
+}
+
+.tree-of-life-labels text {
+  font-family: system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: #f9fafb;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
 .api-docs-summary {
   display: grid;
   gap: 0.75rem;

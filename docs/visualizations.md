@@ -5,7 +5,8 @@ model instance data in the browser UX. It lets a user map model elements to a
 chart-specific binding and render the selected model-instance root without
 persisting the chart configuration.
 
-The implemented chart types are D3-backed `Tidy tree` and `Radial tree`.
+The implemented chart types are D3-backed `Tidy tree`, `Radial tree`, and
+`Tree of life`.
 
 ## Scope
 
@@ -68,17 +69,17 @@ The wizard has three steps.
 
 ### Chart Type
 
-The chart type step lists available chart types. `Tidy tree` and `Radial tree`
-are currently implemented.
+The chart type step lists available chart types. `Tidy tree`, `Radial tree`,
+and `Tree of life` are currently implemented.
 
-The wizard disables invalid chart types and shows the reason. For both tree
+The wizard disables invalid chart types and shows the reason. For all tree
 charts, the selected model must have at least one association between entities.
 
 ### Binding
 
 The binding step maps model elements to chart concepts.
 
-For `Tidy tree` and `Radial tree`, the binding includes:
+For `Tidy tree`, `Radial tree`, and `Tree of life`, the binding includes:
 
 - chart root label
 - one or more entity levels
@@ -117,7 +118,9 @@ The visualization step fetches real root-scoped instance data:
 The UX transforms the selected entities and links into chart tree data and
 renders a scrollable SVG tree with D3. `Tidy tree` uses the rectangular D3 tree
 layout. `Radial tree` uses the same hierarchy and binding data with D3 radial
-links and radial node placement.
+links and radial node placement. `Tree of life` uses the same hierarchy and
+binding data with a D3 radial cluster layout, leaf labels on a common outer
+rim, and faint label-extension links. Branch length is not modeled or used.
 
 Use `Refresh` to reload backend data without losing the current runtime binding.
 
@@ -166,7 +169,8 @@ intact while still rendering a one-direction family tree projection.
 
 ## Current Limits
 
-- `Tidy tree` and `Radial tree` are the implemented chart types.
+- `Tidy tree`, `Radial tree`, and `Tree of life` are the implemented chart
+  types.
 - Visualization bindings are runtime-only and are not stored.
 - The flow is intended as a proof of concept, not a general-purpose chart
   designer.
@@ -174,6 +178,8 @@ intact while still rendering a one-direction family tree projection.
   persistence.
 - The chart currently uses entity paths and association links; it does not
   infer hierarchy automatically without a user-selected binding.
+- `Tree of life` currently uses constant-depth cluster layout only; branch
+  length is intentionally skipped.
 
 ## Related Docs
 

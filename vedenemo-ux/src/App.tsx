@@ -277,6 +277,7 @@ const MIN_CONSOLE_PANE_HEIGHT = 256;
 const MAX_CONSOLE_PANE_VIEWPORT_RATIO = 0.75;
 const TIDY_TREE_CHART_ID = "tidy-tree";
 const RADIAL_TREE_CHART_ID = "radial-tree";
+const TREE_OF_LIFE_CHART_ID = "tree-of-life";
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   const response = await fetch("/config.json", { cache: "no-store" });
@@ -547,6 +548,12 @@ const CHART_TYPES: ChartTypeDefinition[] = [
     summary: "Radial node-link tree for the same hierarchical bindings.",
     evaluateEligibility: evaluateTidyTreeEligibility,
   },
+  {
+    id: TREE_OF_LIFE_CHART_ID,
+    name: "Tree of life",
+    summary: "Radial cluster tree with leaf labels on a common rim.",
+    evaluateEligibility: evaluateTidyTreeEligibility,
+  },
 ];
 
 function readConnectedModelAzName(): string {
@@ -784,7 +791,7 @@ function evaluateTidyTreeEligibility(apiDescription: ApiDescriptionResponse): Ch
   if (!hasAcyclicAssociation) {
     return {
       selectable: false,
-      reason: "Tidy tree needs at least one association between entities.",
+      reason: "Tree charts need at least one association between entities.",
     };
   }
   return { selectable: true };
@@ -3422,6 +3429,8 @@ function VisualizationWizardPage() {
             <div className="visualization-canvas" aria-label={`${selectedChartType.name} visualization`}>
               {visualizationData.tree === null ? (
                 <div className="tree-empty">{visualizationData.status === "loading" ? "Loading tree..." : "No visualization data"}</div>
+              ) : selectedChartType.id === TREE_OF_LIFE_CHART_ID ? (
+                <TreeOfLifeRenderer tree={visualizationData.tree} />
               ) : selectedChartType.id === RADIAL_TREE_CHART_ID ? (
                 <RadialTreeRenderer tree={visualizationData.tree} />
               ) : (
@@ -4344,6 +4353,91 @@ function RadialTreeRenderer({ tree }: { tree: TidyTreeNode }) {
 
 function radialLabelGoesOutward(node: d3.HierarchyPointNode<TidyTreeNode>): boolean {
   return node.x < Math.PI === !node.children;
+}
+
+function TreeOfLifeRenderer({ tree }: { tree: TidyTreeNode }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    const svgElement = svgRef.current;
+    if (svgElement === null) {
+      return;
+    }
+
+    const hierarchy = d3.hierarchy<TidyTreeNode>(tree)
+      .sum((node) => node.children.length === 0 ? 1 : 0)
+      .sort((left, right) => d3.ascending(left.height, right.height) || left.data.label.localeCompare(right.data.label));
+    const leafCount = Math.max(1, hierarchy.leaves().length);
+    const innerRadius = Math.max(250, hierarchy.height * 130 + 80, leafCount * 8);
+    const labelRadius = innerRadius + 8;
+    const labelAllowance = 250;
+    const width = Math.max(760, (innerRadius + labelAllowance) * 2);
+    const color = d3.scaleOrdinal<string>()
+      .domain((hierarchy.children ?? []).map((node) => node.data.label))
+      .range(d3.schemeTableau10);
+    const root = d3.cluster<TidyTreeNode>()
+      .size([2 * Math.PI, innerRadius])
+      .separation(() => 1)
+      (hierarchy);
+    const leaves = root.leaves();
+    const linkGenerator = d3.linkRadial<d3.HierarchyPointLink<TidyTreeNode>, d3.HierarchyPointNode<TidyTreeNode>>()
+      .angle((node) => node.x)
+      .radius((node) => node.y);
+
+    const svg = d3.select(svgElement);
+    svg.selectAll("*").remove();
+    svg
+      .attr("viewBox", `${-width / 2} ${-width / 2} ${width} ${width}`)
+      .attr("width", width)
+      .attr("height", width);
+
+    svg.append("g")
+      .attr("class", "tree-of-life-link-extensions")
+      .selectAll("path")
+      .data(leaves)
+      .join("path")
+      .attr("d", (node) => {
+        const [x1, y1] = radialPoint(node.x, node.y);
+        const [x2, y2] = radialPoint(node.x, innerRadius);
+        return `M${x1},${y1}L${x2},${y2}`;
+      });
+
+    svg.append("g")
+      .attr("class", "tree-of-life-links")
+      .selectAll("path")
+      .data(root.links())
+      .join("path")
+      .attr("stroke", (link) => treeOfLifeNodeColor(link.target, color))
+      .attr("d", (link) => linkGenerator(link));
+
+    svg.append("g")
+      .attr("class", "tree-of-life-labels")
+      .selectAll("text")
+      .data(leaves)
+      .join("text")
+      .attr("dy", "0.31em")
+      .attr("transform", (node) => `rotate(${node.x * 180 / Math.PI - 90}) translate(${labelRadius},0)${node.x >= Math.PI ? " rotate(180)" : ""}`)
+      .attr("text-anchor", (node) => node.x < Math.PI ? "start" : "end")
+      .attr("fill", (node) => treeOfLifeNodeColor(node, color))
+      .text((node) => node.data.label)
+      .append("title")
+      .text((node) => node.ancestors().reverse().map((ancestor) => ancestor.data.label).join(" / "));
+  }, [tree]);
+
+  return <svg ref={svgRef} className="tidy-tree-svg" role="img" aria-label="Tree of life" />;
+}
+
+function radialPoint(angle: number, radius: number): [number, number] {
+  const adjustedAngle = angle - Math.PI / 2;
+  return [Math.cos(adjustedAngle) * radius, Math.sin(adjustedAngle) * radius];
+}
+
+function treeOfLifeNodeColor(
+  node: d3.HierarchyPointNode<TidyTreeNode>,
+  color: d3.ScaleOrdinal<string, string>,
+): string {
+  const topLevelAncestor = node.ancestors().find((ancestor) => ancestor.depth === 1);
+  return topLevelAncestor === undefined ? "#1f2937" : color(topLevelAncestor.data.label);
 }
 
 function QueryConsolePage() {

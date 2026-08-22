@@ -659,7 +659,8 @@ Current user-facing behavior:
   the user bind model entities, association traversal direction, and label
   templates to chart-specific visual concepts
 - includes a frontend chart-type registry for visualization chart extensions;
-  the registered D3-backed `Tidy tree` and `Radial tree` charts share
+  the registered D3-backed `Tidy tree`, `Radial tree`, and `Tree of life`
+  charts share
   eligibility, binding, data loading, and tree-data transformation logic; they
   validate chart eligibility, block non-recursive cyclic entity paths while
   allowing explicit self-association recursion, support outgoing and incoming
@@ -668,7 +669,8 @@ Current user-facing behavior:
   criteria, support optional query-style filtering for the first entity level
   under a synthetic root, fetch entity instances plus association links, skip
   already visited instance ids on the current render path, and render a
-  scrollable SVG tree with a refresh control
+  scrollable SVG tree with a refresh control; `Tree of life` currently uses
+  constant-depth radial cluster layout and does not use branch lengths
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle
@@ -708,9 +710,9 @@ Frontend adapter responsibilities:
 - `PlantUmlDiagramRendererAdapter` lazy-loads `@plantuml/core` and renders the
   generated PlantUML source to SVG in the browser. The heavy renderer chunk is
   loaded only when a diagram is rendered.
-- D3 is a frontend-only dependency used by `/visualizeWizard` for the Tidy tree
-  and Radial tree proof-of-concept renderers. No D3 dependency is introduced
-  into backend or core modules.
+- D3 is a frontend-only dependency used by `/visualizeWizard` for the Tidy
+  tree, Radial tree, and Tree of life proof-of-concept renderers. No D3
+  dependency is introduced into backend or core modules.
 
 ## Runtime Flows
 
