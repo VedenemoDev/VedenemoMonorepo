@@ -659,15 +659,16 @@ Current user-facing behavior:
   the user bind model entities, association traversal direction, and label
   templates to chart-specific visual concepts
 - includes a frontend chart-type registry for visualization chart extensions;
-  the first registered chart is a D3-backed `Tidy tree` that validates chart
-  eligibility, blocks non-recursive cyclic entity paths while allowing explicit
-  self-association recursion, supports outgoing and incoming association
-  traversal, supports either a synthetic chart root or a single entity-instance
-  root selected with query-style scalar and relationship criteria, supports
-  optional query-style filtering for the first entity level under a synthetic
-  root, fetches entity instances plus association links, skips already visited
-  instance ids on the current render path, and renders a scrollable SVG tree
-  with a refresh control
+  the registered D3-backed `Tidy tree` and `Radial tree` charts share
+  eligibility, binding, data loading, and tree-data transformation logic; they
+  validate chart eligibility, block non-recursive cyclic entity paths while
+  allowing explicit self-association recursion, support outgoing and incoming
+  association traversal, support either a synthetic chart root or a single
+  entity-instance root selected with query-style scalar and relationship
+  criteria, support optional query-style filtering for the first entity level
+  under a synthetic root, fetch entity instances plus association links, skip
+  already visited instance ids on the current render path, and render a
+  scrollable SVG tree with a refresh control
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle
@@ -708,8 +709,8 @@ Frontend adapter responsibilities:
   generated PlantUML source to SVG in the browser. The heavy renderer chunk is
   loaded only when a diagram is rendered.
 - D3 is a frontend-only dependency used by `/visualizeWizard` for the Tidy tree
-  proof-of-concept renderer. No D3 dependency is introduced into backend or core
-  modules.
+  and Radial tree proof-of-concept renderers. No D3 dependency is introduced
+  into backend or core modules.
 
 ## Runtime Flows
 
@@ -942,7 +943,7 @@ sequenceDiagram
     participant UX as vedenemo-ux /visualizeWizard
     participant Config as /config.json
     participant API as vedenemo-web-api
-    participant D3 as D3 Tidy tree renderer
+    participant D3 as D3 tree renderer
 
     UX->>Config: fetch runtime config
     Config-->>UX: apiBaseUrl

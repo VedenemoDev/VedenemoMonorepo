@@ -8978,3 +8978,68 @@ Current status and next steps:
 - Verification passed: `mvn -B -pl vedenemo-command-console test`,
   `mvn -B -pl vedenemo-command-console,vedenemo-web-api -am test`, and
   `git diff --check`.
+
+## 2026-08-22 19:42 EEST
+
+Session goal: add a Radial tree visualization wizard path with the same
+runtime binding behavior as the existing D3 Tidy tree path.
+
+Files changed:
+
+- `SESSION.md`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `rg -n "tidy|Tidy|wizard|d3|visualization|radial|tree" vedenemo-ux/src vedenemo-web-api/src vedenemo-command-console/src vedenemo-cli/src README.md docs tasks -g '!docs/architecture/*'`
+- `rg --files vedenemo-ux/src | sort`
+- `find vedenemo-ux -maxdepth 2 -type f -name 'package.json' -o -name 'vite.config.*' -o -name 'tsconfig*.json'`
+- `sed -n '160,340p' vedenemo-ux/src/App.tsx`
+- `sed -n '520,840p' vedenemo-ux/src/App.tsx`
+- `sed -n '840,1320p' vedenemo-ux/src/App.tsx`
+- `sed -n '1320,1365p' vedenemo-ux/src/App.tsx`
+- `sed -n '2940,3440p' vedenemo-ux/src/App.tsx`
+- `sed -n '3440,4190p' vedenemo-ux/src/App.tsx`
+- `sed -n '4190,4270p' vedenemo-ux/src/App.tsx`
+- `sed -n '990,1070p' vedenemo-ux/src/styles.css`
+- `cat vedenemo-ux/tsconfig.json`
+- `npm run build` in `vedenemo-ux`
+- `sed -n '1,220p' docs/visualizations.md`
+- `sed -n '360,385p' README.md`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `sed -n '650,675p' docs/architecture_doc.md`
+- `sed -n '936,966p' docs/architecture_doc.md`
+- `sed -n '1,70p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `rg -n "only implemented|first implemented|Tidy tree is currently|Refresh data|Radial tree|Tidy tree" docs/visualizations.md README.md docs/architecture_doc.md tasks/current-task.md tasks/backlog.md`
+- `git diff --check`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `git diff --stat`
+- `git status --short`
+
+Current status and next steps:
+
+- Added `Radial tree` to the visualization wizard chart-type registry.
+- Reused the existing tree eligibility, binding, root-selection, Level 1
+  filtering, query loading, association-link loading, cycle guard, and tree
+  data-building flow.
+- Added a D3 radial tree SVG renderer using `d3.tree` with angular/radius
+  coordinates and `d3.linkRadial`.
+- Updated README, visualization docs, current implementation architecture docs,
+  backlog, and current task records.
+- Verification passed: `npm run build` in `vedenemo-ux`, `git diff --check`,
+  and README disclaimer check.
+- No backend changes were needed.

@@ -276,6 +276,7 @@ const DEFAULT_CONSOLE_PANE_HEIGHT = 360;
 const MIN_CONSOLE_PANE_HEIGHT = 256;
 const MAX_CONSOLE_PANE_VIEWPORT_RATIO = 0.75;
 const TIDY_TREE_CHART_ID = "tidy-tree";
+const RADIAL_TREE_CHART_ID = "radial-tree";
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   const response = await fetch("/config.json", { cache: "no-store" });
@@ -538,6 +539,12 @@ const CHART_TYPES: ChartTypeDefinition[] = [
     id: TIDY_TREE_CHART_ID,
     name: "Tidy tree",
     summary: "Hierarchical node-link tree for acyclic entity paths.",
+    evaluateEligibility: evaluateTidyTreeEligibility,
+  },
+  {
+    id: RADIAL_TREE_CHART_ID,
+    name: "Radial tree",
+    summary: "Radial node-link tree for the same hierarchical bindings.",
     evaluateEligibility: evaluateTidyTreeEligibility,
   },
 ];
@@ -3412,9 +3419,11 @@ function VisualizationWizardPage() {
                 </button>
               </div>
             </div>
-            <div className="visualization-canvas" aria-label="Tidy tree visualization">
+            <div className="visualization-canvas" aria-label={`${selectedChartType.name} visualization`}>
               {visualizationData.tree === null ? (
                 <div className="tree-empty">{visualizationData.status === "loading" ? "Loading tree..." : "No visualization data"}</div>
+              ) : selectedChartType.id === RADIAL_TREE_CHART_ID ? (
+                <RadialTreeRenderer tree={visualizationData.tree} />
               ) : (
                 <TidyTreeRenderer tree={visualizationData.tree} />
               )}
@@ -4259,6 +4268,82 @@ function TidyTreeRenderer({ tree }: { tree: TidyTreeNode }) {
   }, [tree]);
 
   return <svg ref={svgRef} className="tidy-tree-svg" role="img" aria-label="Tidy tree" />;
+}
+
+function RadialTreeRenderer({ tree }: { tree: TidyTreeNode }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    const svgElement = svgRef.current;
+    if (svgElement === null) {
+      return;
+    }
+
+    const hierarchy = d3.hierarchy<TidyTreeNode>(tree)
+      .sort((left, right) => left.data.label.localeCompare(right.data.label));
+    const radius = Math.max(210, hierarchy.height * 150 + 90);
+    const root = d3.tree<TidyTreeNode>()
+      .size([2 * Math.PI, radius])
+      .separation((left, right) => (left.parent === right.parent ? 1 : 2) / Math.max(1, left.depth))
+      (hierarchy);
+    const layoutRadius = Math.max(...root.descendants().map((node) => node.y ?? 0));
+    const width = Math.max(720, layoutRadius * 2 + 360);
+    const height = width;
+    const centerX = width * 0.5;
+    const centerY = height * 0.52;
+    const linkGenerator = d3.linkRadial<d3.HierarchyPointLink<TidyTreeNode>, d3.HierarchyPointNode<TidyTreeNode>>()
+      .angle((node) => node.x)
+      .radius((node) => node.y);
+
+    const svg = d3.select(svgElement);
+    svg.selectAll("*").remove();
+    svg
+      .attr("viewBox", `${-centerX} ${-centerY} ${width} ${height}`)
+      .attr("width", width)
+      .attr("height", height);
+
+    svg.append("g")
+      .attr("class", "tidy-tree-links")
+      .attr("fill", "none")
+      .selectAll("path")
+      .data(root.links())
+      .join("path")
+      .attr("d", (link) => linkGenerator(link));
+
+    const nodeGroup = svg.append("g")
+      .attr("class", "tidy-tree-nodes")
+      .selectAll("g")
+      .data(root.descendants())
+      .join("g")
+      .attr("transform", (node) => `rotate(${node.x * 180 / Math.PI - 90}) translate(${node.y},0)`);
+
+    nodeGroup.append("circle")
+      .attr("r", 5);
+
+    nodeGroup.append("title")
+      .text((node) => node.data.detail === undefined ? node.data.label : `${node.data.label} - ${node.data.detail}`);
+
+    nodeGroup.append("text")
+      .attr("transform", (node) => node.x >= Math.PI ? "rotate(180)" : null)
+      .attr("x", (node) => radialLabelGoesOutward(node) ? 11 : -11)
+      .attr("dy", "-0.15em")
+      .attr("text-anchor", (node) => radialLabelGoesOutward(node) ? "start" : "end")
+      .text((node) => node.data.label);
+
+    nodeGroup.append("text")
+      .attr("class", "tidy-tree-detail")
+      .attr("transform", (node) => node.x >= Math.PI ? "rotate(180)" : null)
+      .attr("x", (node) => radialLabelGoesOutward(node) ? 11 : -11)
+      .attr("dy", "1.15em")
+      .attr("text-anchor", (node) => radialLabelGoesOutward(node) ? "start" : "end")
+      .text((node) => node.data.detail ?? "");
+  }, [tree]);
+
+  return <svg ref={svgRef} className="tidy-tree-svg" role="img" aria-label="Radial tree" />;
+}
+
+function radialLabelGoesOutward(node: d3.HierarchyPointNode<TidyTreeNode>): boolean {
+  return node.x < Math.PI === !node.children;
 }
 
 function QueryConsolePage() {

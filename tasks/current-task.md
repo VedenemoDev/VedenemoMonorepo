@@ -1,46 +1,43 @@
 # Current Task
 
-## CLI roots command for selecting model-instance dump sources
+## Radial tree visualization wizard path
 
 Status: executed.
 
 ### Goal
 
-Add a CLI command named `roots` that lists the active model's process-local
-model-instance roots so users can discover the root numbers, visible names, and
-root ids needed by `dsave`.
+Add a `Radial tree` chart type to the existing model-instance visualization
+wizard with the same runtime binding and data behavior as the implemented D3
+`Tidy tree`, changing only the visualization layout.
 
 ### Scope
 
-- Add `roots` to the terminal CLI and browser virtual CLI command surface.
-- Require an attached model before listing roots.
-- Reuse the existing backend root listing route
-  `GET /data/{modelAzName}/roots`.
-- Display each root with a stable one-based number for the current listing,
-  visible name, model version, and root id.
-- Update the latest root-list cache used by `dsave` root-number selection.
-- Keep `dumps` focused on `.vdmp` dump artifact listing.
+- Add `Radial tree` to the frontend chart-type registry.
+- Reuse the existing tree eligibility, model-element binding, root-selection,
+  Level 1 filtering, query loading, association-link loading, cycle guard, and
+  tree-data transformation path.
+- Render the selected tree data with a D3 radial tree layout inspired by
+  <https://observablehq.com/@d3/radial-tree-component>.
+- Keep visualization bindings runtime-only and frontend-only.
+- Update implementation documentation and task bookkeeping.
 
 ### Acceptance Criteria
 
-- `help` shows `roots` near the data dump commands in terminal and browser
-  console modes.
-- Running `roots` without an attached model prints a clear message requiring a
-  model attachment.
-- Running `roots` for an attached model with no instance roots prints a clear
-  empty-state message.
-- Running `roots` for an attached model with roots lists one-based numbers,
-  visible names, model versions, and root ids.
-- After `roots`, `dsave <number>` resolves the selected root from the latest
-  roots listing.
-- Browser virtual CLI `roots` uses backend-managed in-process root listing and
-  terminal CLI `roots` uses the HTTP client route.
+- The visualization wizard chart type step lists selectable `Tidy tree` and
+  `Radial tree` options for eligible model-instance roots.
+- `Radial tree` uses the same binding step and validation behavior as
+  `Tidy tree`.
+- Visualizing `Radial tree` fetches the same root-scoped instance data and
+  association links as `Tidy tree`.
+- The visualization step renders the result as a scrollable D3 radial SVG tree.
+- Frontend build succeeds.
 
 ### Completion Notes
 
-- Added terminal CLI `roots` command.
-- Added browser console `roots` command.
-- `roots` refreshes the cached root list used by `dsave <number>`.
-- Terminal CLI clears cached roots on model attach/detach.
-- Updated README, CLI reference, architecture implementation docs, and tests.
-- Verified with `mvn -B verify`.
+- Added `Radial tree` as a second chart type.
+- Reused the existing tree binding and data-building flow.
+- Added a D3 radial renderer using `d3.tree` with angular/radius coordinates
+  and `d3.linkRadial`.
+- Updated README, visualization docs, and current implementation architecture
+  docs.
+- Verified with `npm run build` in `vedenemo-ux`.

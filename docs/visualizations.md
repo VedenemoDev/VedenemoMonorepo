@@ -5,7 +5,7 @@ model instance data in the browser UX. It lets a user map model elements to a
 chart-specific binding and render the selected model-instance root without
 persisting the chart configuration.
 
-The first implemented chart type is a D3-backed `Tidy tree`.
+The implemented chart types are D3-backed `Tidy tree` and `Radial tree`.
 
 ## Scope
 
@@ -68,18 +68,17 @@ The wizard has three steps.
 
 ### Chart Type
 
-The chart type step lists available chart types. `Tidy tree` is currently the
-only implemented chart.
+The chart type step lists available chart types. `Tidy tree` and `Radial tree`
+are currently implemented.
 
-The wizard disables invalid chart types and shows the reason. For `Tidy tree`,
-the selected model must have at least one association between two different
-entities.
+The wizard disables invalid chart types and shows the reason. For both tree
+charts, the selected model must have at least one association between entities.
 
 ### Binding
 
 The binding step maps model elements to chart concepts.
 
-For `Tidy tree`, the binding includes:
+For `Tidy tree` and `Radial tree`, the binding includes:
 
 - chart root label
 - one or more entity levels
@@ -116,10 +115,11 @@ The visualization step fetches real root-scoped instance data:
   `GET /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}`
 
 The UX transforms the selected entities and links into chart tree data and
-renders a scrollable SVG tree with D3.
+renders a scrollable SVG tree with D3. `Tidy tree` uses the rectangular D3 tree
+layout. `Radial tree` uses the same hierarchy and binding data with D3 radial
+links and radial node placement.
 
-Use `Refresh data` to reload backend data without losing the current runtime
-binding.
+Use `Refresh` to reload backend data without losing the current runtime binding.
 
 ## Tidy Tree Example
 
@@ -146,7 +146,7 @@ Use one of the loaded roots:
 - `British Royal Family Tree Tidy`
 - `Swedish Royal Family Tree Tidy`
 
-Then bind the Tidy tree through the outgoing display-node path:
+Then bind the tree chart through the outgoing display-node path:
 
 ```text
 FamilyUnitNode0
@@ -166,7 +166,7 @@ intact while still rendering a one-direction family tree projection.
 
 ## Current Limits
 
-- `Tidy tree` is the only implemented chart type.
+- `Tidy tree` and `Radial tree` are the implemented chart types.
 - Visualization bindings are runtime-only and are not stored.
 - The flow is intended as a proof of concept, not a general-purpose chart
   designer.
