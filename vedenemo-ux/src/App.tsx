@@ -4381,9 +4381,6 @@ function TreeOfLifeRenderer({ tree }: { tree: TidyTreeNode }) {
       (hierarchy);
     const nodes = root.descendants();
     const leaves = root.leaves();
-    const linkGenerator = d3.linkRadial<d3.HierarchyPointLink<TidyTreeNode>, d3.HierarchyPointNode<TidyTreeNode>>()
-      .angle((node) => node.x)
-      .radius((node) => node.y);
 
     const svg = d3.select(svgElement);
     svg.selectAll("*").remove();
@@ -4409,7 +4406,7 @@ function TreeOfLifeRenderer({ tree }: { tree: TidyTreeNode }) {
       .data(root.links())
       .join("path")
       .attr("stroke", (link) => treeOfLifeNodeColor(link.target, color))
-      .attr("d", (link) => linkGenerator(link));
+      .attr("d", treeOfLifeLinkPath);
 
     const nodeGroup = svg.append("g")
       .attr("class", "tree-of-life-nodes")
@@ -4451,6 +4448,26 @@ function TreeOfLifeRenderer({ tree }: { tree: TidyTreeNode }) {
 function radialPoint(angle: number, radius: number): [number, number] {
   const adjustedAngle = angle - Math.PI / 2;
   return [Math.cos(adjustedAngle) * radius, Math.sin(adjustedAngle) * radius];
+}
+
+function treeOfLifeLinkPath(link: d3.HierarchyPointLink<TidyTreeNode>): string {
+  const sourceAngle = link.source.x;
+  const sourceRadius = link.source.y;
+  const targetAngle = link.target.x;
+  const targetRadius = link.target.y;
+  const [sourceX, sourceY] = radialPoint(sourceAngle, sourceRadius);
+  const [cornerX, cornerY] = radialPoint(targetAngle, sourceRadius);
+  const [targetX, targetY] = radialPoint(targetAngle, targetRadius);
+  if (sourceRadius === 0) {
+    return `M${sourceX},${sourceY}L${targetX},${targetY}`;
+  }
+  const largeArcFlag = Math.abs(targetAngle - sourceAngle) > Math.PI ? 1 : 0;
+  const sweepFlag = targetAngle > sourceAngle ? 1 : 0;
+  return [
+    `M${sourceX},${sourceY}`,
+    `A${sourceRadius},${sourceRadius} 0 ${largeArcFlag},${sweepFlag} ${cornerX},${cornerY}`,
+    `L${targetX},${targetY}`,
+  ].join("");
 }
 
 function treeOfLifeNodeColor(

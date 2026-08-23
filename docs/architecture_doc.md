@@ -670,8 +670,8 @@ Current user-facing behavior:
   under a synthetic root, fetch entity instances plus association links, skip
   already visited instance ids on the current render path, and render a
   scrollable SVG tree with a refresh control; `Tree of life` currently uses
-  constant-depth radial cluster layout, labels internal binding levels, and does
-  not use branch lengths
+  constant-depth radial cluster layout, angular radial link segments, labels
+  internal binding levels, and does not use branch lengths
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle

@@ -9044,6 +9044,56 @@ Current status and next steps:
   and README disclaimer check.
 - No backend changes were needed.
 
+## 2026-08-23 15:29 EEST
+
+Session goal: revise Tree of life visualization links so they use angular
+radial joints like the Observable example instead of smooth Radial tree-style
+curves.
+
+Files changed:
+
+- `SESSION.md`
+- `docs/architecture_doc.md`
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `sed -n '4358,4468p' vedenemo-ux/src/App.tsx`
+- `npm run build` in `vedenemo-ux`
+- `sed -n '112,128p' docs/visualizations.md`
+- `sed -n '666,676p' docs/architecture_doc.md`
+- `sed -n '38,50p' tasks/current-task.md`
+- `sed -n '38,52p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Replaced Tree of life's `d3.linkRadial` edge path generation with an angular
+  radial path helper.
+- Tree of life links now draw an arc at the parent radius and a radial segment
+  out to the child; root-to-child links remain direct because the parent radius
+  is zero.
+- Radial tree still uses smooth `d3.linkRadial` links, so the two radial
+  visualizations differ by layout geometry and link shape, not just color.
+- Updated visualization docs, current implementation architecture docs, current
+  task, and backlog notes to describe angular Tree of life links.
+- Verification passed: `npm run build` in `vedenemo-ux`, `git diff --check`,
+  and README disclaimer check.
+
 ## 2026-08-23 13:27 EEST
 
 Session goal: fix Tree of life visualization so binding levels visible in
