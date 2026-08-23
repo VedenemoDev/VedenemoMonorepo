@@ -9042,6 +9042,53 @@ Current status and next steps:
   backlog, and current task records.
 - Verification passed: `npm run build` in `vedenemo-ux`, `git diff --check`,
   and README disclaimer check.
+
+## 2026-08-23 17:21 EEST
+
+Session goal: expand the Charles III family tree sample data so life events are
+attached to several people, not only Charles.
+
+Files changed:
+
+- `SESSION.md`
+- `.vedenemo/FamilyTree_Charles_III_Family_Tree_v1_0_0_2026_08_21.vdmp`
+- `scripts/LoadFamilyTreeModelData.bash`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `nl -ba scripts/LoadFamilyTreeModelData.bash | sed -n '311,352p'`
+- `rg -n "vdmp|dump|dload|dsave|LoadFamilyTreeModelData|Life events created" scripts vedenemo-* docs tasks README.md -g '!**/target/**' -g '!vedenemo-ux/node_modules/**'`
+- `wc -c .vedenemo/FamilyTree_Charles_III_Family_Tree_v1_0_0_2026_08_21.vdmp`
+- `python3 -m json.tool .vedenemo/FamilyTree_Charles_III_Family_Tree_v1_0_0_2026_08_21.vdmp >/tmp/familytree_dump_pretty.json`
+- `python3 -m json.tool .vedenemo/FamilyTree_Charles_III_Family_Tree_v1_0_0_2026_08_21.vdmp >/tmp/familytree_dump_updated_pretty.json`
+- Python JSON checks for loader `LIFE_EVENTS`, dump `LifeEvent` records,
+  `Person_LifeEvents` distribution, and link endpoint integrity.
+- `git diff --check`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Expanded `scripts/LoadFamilyTreeModelData.bash` from 5 Charles-only
+  `LifeEvent` records to 19 life events across 9 people.
+- Added life events for Elizabeth II, Philip, Diana, William, Harry, George,
+  Charlotte, and Louis while preserving the existing Charles events.
+- Updated the checked-in Charles III `.vdmp` dump with matching `LifeEvent`
+  records plus `Person_LifeEvents`, `LifeEvent_Place`, and `LifeEvent_Sources`
+  links.
+- Verification passed: dump JSON is valid, the dump has 19 life events and 19
+  `Person_LifeEvents` links across 9 people, all dump link endpoints resolve,
+  the loader has matching event distribution, and `git diff --check` passed.
 - No backend changes were needed.
 
 ## 2026-08-23 15:29 EEST

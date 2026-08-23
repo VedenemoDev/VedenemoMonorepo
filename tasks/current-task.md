@@ -1,52 +1,43 @@
 # Current Task
 
-## Tree of life visualization wizard path
+## Charles III family tree life-event sample coverage
 
 Status: executed.
 
 ### Goal
 
-Add a `Tree of life` chart type to the existing model-instance visualization
-wizard with the same runtime binding and data behavior as the implemented D3
-tree charts, changing only the visualization layout and skipping branch-length
-support for now.
+Update the `Charles III Family Tree` test data so `LifeEvent` records are not
+attached only to Charles. The sample should provide life events for several
+people so relationship traversal and visualization bindings can exercise
+non-Charles `Person_LifeEvents` paths.
 
 ### Scope
 
-- Add `Tree of life` to the frontend chart-type registry.
-- Reuse the existing tree eligibility, model-element binding, root-selection,
-  Level 1 filtering, query loading, association-link loading, cycle guard, and
-  tree-data transformation path.
-- Render the selected tree data with a D3 radial cluster layout inspired by
-  <https://observablehq.com/@d3/tree-of-life>.
-- Skip the Observable example's branch length property for this slice.
-- Keep visualization bindings runtime-only and frontend-only.
-- Update implementation documentation and task bookkeeping.
+- Add non-Charles `LifeEvent` entries to
+  `scripts/LoadFamilyTreeModelData.bash`.
+- Reuse existing `Person`, `Place`, and `SourceRecord` sample data.
+- Keep the loader idempotent through the existing `ensure_entity` and
+  `ensure_link` behavior.
+- Update the checked-in
+  `.vedenemo/FamilyTree_Charles_III_Family_Tree_v1_0_0_2026_08_21.vdmp`
+  dump to match the loader.
+- Do not change the `FamilyTree` model definition.
 
 ### Acceptance Criteria
 
-- The visualization wizard chart type step lists selectable `Tidy tree`,
-  `Radial tree`, and `Tree of life` options for eligible model-instance roots.
-- `Tree of life` uses the same binding step and validation behavior as the
-  existing tree charts.
-- Visualizing `Tree of life` fetches the same root-scoped instance data and
-  association links as the existing tree charts.
-- The visualization step renders the result as a scrollable D3 radial cluster
-  SVG tree with leaf labels on a common rim.
-- No branch-length binding or data property is introduced.
-- Frontend build succeeds.
+- `LIFE_EVENTS` in the loader includes events for Charles and other people.
+- The checked-in `.vdmp` contains matching `LifeEvent` records.
+- The checked-in `.vdmp` contains `Person_LifeEvents` links from multiple
+  people, not only Charles.
+- The dump remains valid JSON.
 
 ### Completion Notes
 
-- Added `Tree of life` as a third chart type.
-- Reused the existing tree binding and data-building flow.
-- Added a D3 radial cluster renderer using `d3.cluster`, constant-depth leaf
-  placement, angular radial link segments, visible internal binding-level nodes
-  and labels, outer-rim leaf labels, and faint label-extension links.
-- Fixed Tree of life rendering so the same binding levels visible in Radial
-  tree also appear in Tree of life, instead of labeling only leaves.
-- Revised Tree of life links to use angular radial joints instead of the smooth
-  `d3.linkRadial` curves used by Radial tree.
-- Updated README, visualization docs, and current implementation architecture
-  docs.
-- Verified with `npm run build` in `vedenemo-ux`.
+- Expanded the Charles III sample from 5 life events for Charles only to 19
+  life events across 9 people.
+- Added events for Elizabeth II, Philip, Diana, William, Harry, George,
+  Charlotte, and Louis while preserving the existing Charles events.
+- Updated the checked-in `.vdmp` with matching `LifeEvent`,
+  `Person_LifeEvents`, `LifeEvent_Place`, and `LifeEvent_Sources` entries.
+- Verified loader event distribution and dump link distribution with Python
+  JSON checks.
