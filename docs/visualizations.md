@@ -119,8 +119,9 @@ The UX transforms the selected entities and links into chart tree data and
 renders a scrollable SVG tree with D3. `Tidy tree` uses the rectangular D3 tree
 layout. `Radial tree` uses the same hierarchy and binding data with D3 radial
 links and radial node placement. `Tree of life` uses the same hierarchy and
-binding data with a D3 radial cluster layout, leaf labels on a common outer
-rim, and faint label-extension links. Branch length is not modeled or used.
+binding data with a D3 radial cluster layout, visible nodes and labels for
+internal binding levels, leaf labels on a common outer rim, and faint
+label-extension links. Branch length is not modeled or used.
 
 Use `Refresh` to reload backend data without losing the current runtime binding.
 

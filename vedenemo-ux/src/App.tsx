@@ -4379,6 +4379,7 @@ function TreeOfLifeRenderer({ tree }: { tree: TidyTreeNode }) {
       .size([2 * Math.PI, innerRadius])
       .separation(() => 1)
       (hierarchy);
+    const nodes = root.descendants();
     const leaves = root.leaves();
     const linkGenerator = d3.linkRadial<d3.HierarchyPointLink<TidyTreeNode>, d3.HierarchyPointNode<TidyTreeNode>>()
       .angle((node) => node.x)
@@ -4410,13 +4411,33 @@ function TreeOfLifeRenderer({ tree }: { tree: TidyTreeNode }) {
       .attr("stroke", (link) => treeOfLifeNodeColor(link.target, color))
       .attr("d", (link) => linkGenerator(link));
 
+    const nodeGroup = svg.append("g")
+      .attr("class", "tree-of-life-nodes")
+      .selectAll("g")
+      .data(nodes)
+      .join("g")
+      .attr("transform", (node) => `rotate(${node.x * 180 / Math.PI - 90}) translate(${node.y},0)`);
+
+    nodeGroup.append("circle")
+      .attr("r", (node) => node.depth === 0 ? 5 : 3.5)
+      .attr("fill", (node) => treeOfLifeNodeColor(node, color));
+
+    nodeGroup.append("title")
+      .text((node) => node.ancestors().reverse().map((ancestor) => ancestor.data.label).join(" / "));
+
+    svg.append("text")
+      .attr("class", "tree-of-life-root-label")
+      .attr("text-anchor", "middle")
+      .attr("dy", "-0.85em")
+      .text(root.data.label);
+
     svg.append("g")
       .attr("class", "tree-of-life-labels")
       .selectAll("text")
-      .data(leaves)
+      .data(nodes.filter((node) => node.depth > 0))
       .join("text")
       .attr("dy", "0.31em")
-      .attr("transform", (node) => `rotate(${node.x * 180 / Math.PI - 90}) translate(${labelRadius},0)${node.x >= Math.PI ? " rotate(180)" : ""}`)
+      .attr("transform", (node) => `rotate(${node.x * 180 / Math.PI - 90}) translate(${treeOfLifeLabelRadius(node, labelRadius)},0)${node.x >= Math.PI ? " rotate(180)" : ""}`)
       .attr("text-anchor", (node) => node.x < Math.PI ? "start" : "end")
       .attr("fill", (node) => treeOfLifeNodeColor(node, color))
       .text((node) => node.data.label)
@@ -4438,6 +4459,10 @@ function treeOfLifeNodeColor(
 ): string {
   const topLevelAncestor = node.ancestors().find((ancestor) => ancestor.depth === 1);
   return topLevelAncestor === undefined ? "#1f2937" : color(topLevelAncestor.data.label);
+}
+
+function treeOfLifeLabelRadius(node: d3.HierarchyPointNode<TidyTreeNode>, leafLabelRadius: number): number {
+  return node.children === undefined ? leafLabelRadius : node.y + 10;
 }
 
 function QueryConsolePage() {

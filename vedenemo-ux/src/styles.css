@@ -1074,6 +1074,12 @@ body {
   stroke-width: 1;
 }
 
+.tree-of-life-nodes circle {
+  stroke: #fff;
+  stroke-width: 1.6;
+}
+
+.tree-of-life-root-label,
 .tree-of-life-labels text {
   font-family: system-ui, sans-serif;
   font-size: 11px;
@@ -1082,6 +1088,12 @@ body {
   stroke: #f9fafb;
   stroke-width: 3px;
   stroke-linejoin: round;
+}
+
+.tree-of-life-root-label {
+  fill: #111827;
+  font-size: 12px;
+  font-weight: 750;
 }
 
 .api-docs-summary {

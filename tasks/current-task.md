@@ -41,7 +41,10 @@ support for now.
 - Added `Tree of life` as a third chart type.
 - Reused the existing tree binding and data-building flow.
 - Added a D3 radial cluster renderer using `d3.cluster`, constant-depth leaf
-  placement, outer-rim leaf labels, and faint label-extension links.
+  placement, visible internal binding-level nodes and labels, outer-rim leaf
+  labels, and faint label-extension links.
+- Fixed Tree of life rendering so the same binding levels visible in Radial
+  tree also appear in Tree of life, instead of labeling only leaves.
 - Updated README, visualization docs, and current implementation architecture
   docs.
 - Verified with `npm run build` in `vedenemo-ux`.

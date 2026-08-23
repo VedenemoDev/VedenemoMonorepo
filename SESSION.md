@@ -9044,6 +9044,62 @@ Current status and next steps:
   and README disclaimer check.
 - No backend changes were needed.
 
+## 2026-08-23 13:27 EEST
+
+Session goal: fix Tree of life visualization so binding levels visible in
+Radial tree also appear in Tree of life for the same model data.
+
+Files changed:
+
+- `SESSION.md`
+- `docs/architecture_doc.md`
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1200,1325p' vedenemo-ux/src/App.tsx`
+- `sed -n '4200,4438p' vedenemo-ux/src/App.tsx`
+- `sed -n '4438,4458p' vedenemo-ux/src/App.tsx`
+- `sed -n '1040,1095p' vedenemo-ux/src/styles.css`
+- `cat vedenemo-ux/package.json`
+- `npm run build` in `vedenemo-ux`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `rg -n "Tree of life|outer-rim|leaf labels|constant-depth|label-extension|branch" docs/visualizations.md docs/architecture_doc.md tasks/current-task.md tasks/backlog.md`
+- `sed -n '112,184p' docs/visualizations.md`
+- `sed -n '1,55p' tasks/current-task.md`
+- `sed -n '1,55p' tasks/backlog.md`
+- `git diff --check`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css docs/visualizations.md docs/architecture_doc.md tasks/current-task.md tasks/backlog.md | sed -n '1,300p'`
+- `git status --short`
+
+Current status and next steps:
+
+- Identified the mismatch: Tree of life rendered labels only for
+  `root.leaves()`, while Radial tree renders all descendants.
+- Updated Tree of life to draw all hierarchy nodes, add a center root label,
+  label internal non-root binding levels at their own radius, and keep leaf
+  labels on the outer rim.
+- Added CSS for visible Tree of life node markers and the root label.
+- Updated visualization docs, current implementation architecture docs, current
+  task, and backlog completion notes to describe internal binding-level labels.
+- Verification passed: `npm run build` in `vedenemo-ux`, `git diff --check`,
+  and README disclaimer check.
+- No backend changes were needed.
+
 ## 2026-08-22 21:08 EEST
 
 Session goal: add a Tree of life visualization wizard path using the same
