@@ -170,7 +170,9 @@ as read-only snapshot lists and can be removed while a model is under
 construction or while undo applies an inverse command.
 
 `Versionable` requires `activeSince`. `deprecatedSince` is optional, but when it
-is present it must be strictly later than `activeSince`.
+is present it must be strictly later than `activeSince`. `retiredSince` is also
+optional metadata. The current implementation stores and exposes it but does
+not yet enforce retired item usage rules.
 
 Dependencies: Java JDK only.
 
@@ -239,7 +241,8 @@ format. The format is UTF-8 text with:
 - a `commands` section using stable command slugs such as `create-entity`,
   `create-attribute`, and `create-association`
 - a `snapshot` section containing the final entity/attribute tree, model-level
-  associations, and lifecycle version metadata
+  associations, and lifecycle version metadata including `activeSince`,
+  `deprecatedSince`, and optional `retiredSince`
 
 Association command and snapshot lines include common fields for association
 identity, kind, endpoints, cardinality, and lifecycle metadata. Relation lines

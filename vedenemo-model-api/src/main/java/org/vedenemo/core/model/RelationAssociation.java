@@ -27,7 +27,19 @@ public final class RelationAssociation extends Versionable implements Associatio
             ModelVersion activeSince,
             ModelVersion deprecatedSince
     ) {
-        super(activeSince, deprecatedSince);
+        this(azName, visName, sourceEnd, targetEnd, activeSince, deprecatedSince, null);
+    }
+
+    public RelationAssociation(
+            String azName,
+            String visName,
+            RelationEnd sourceEnd,
+            RelationEnd targetEnd,
+            ModelVersion activeSince,
+            ModelVersion deprecatedSince,
+            ModelVersion retiredSince
+    ) {
+        super(activeSince, deprecatedSince, retiredSince);
         this.azName = ModelTextRules.requireAzName(azName);
         this.visName = ModelTextRules.requireVisName(visName);
         this.sourceEnd = Objects.requireNonNull(sourceEnd, "sourceEnd must not be null");
@@ -108,11 +120,12 @@ public final class RelationAssociation extends Versionable implements Associatio
                 && sourceEnd.equals(that.sourceEnd)
                 && targetEnd.equals(that.targetEnd)
                 && activeSince().equals(that.activeSince())
-                && deprecatedSince().equals(that.deprecatedSince());
+                && deprecatedSince().equals(that.deprecatedSince())
+                && retiredSince().equals(that.retiredSince());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(azName, visName, sourceEnd, targetEnd, activeSince(), deprecatedSince());
+        return Objects.hash(azName, visName, sourceEnd, targetEnd, activeSince(), deprecatedSince(), retiredSince());
     }
 }

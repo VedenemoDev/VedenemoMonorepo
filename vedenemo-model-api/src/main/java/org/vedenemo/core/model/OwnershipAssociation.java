@@ -30,7 +30,20 @@ public final class OwnershipAssociation extends Versionable implements Associati
             ModelVersion activeSince,
             ModelVersion deprecatedSince
     ) {
-        super(activeSince, deprecatedSince);
+        this(azName, visName, sourceEntityAzName, targetEntityAzName, cardinality, activeSince, deprecatedSince, null);
+    }
+
+    public OwnershipAssociation(
+            String azName,
+            String visName,
+            String sourceEntityAzName,
+            String targetEntityAzName,
+            Cardinality cardinality,
+            ModelVersion activeSince,
+            ModelVersion deprecatedSince,
+            ModelVersion retiredSince
+    ) {
+        super(activeSince, deprecatedSince, retiredSince);
         this.azName = ModelTextRules.requireAzName(azName);
         this.visName = ModelTextRules.requireVisName(visName);
         VEntity.uniquenessKey(sourceEntityAzName);
@@ -84,11 +97,21 @@ public final class OwnershipAssociation extends Versionable implements Associati
                 && targetEntityAzName.equals(that.targetEntityAzName)
                 && cardinality.equals(that.cardinality)
                 && activeSince().equals(that.activeSince())
-                && deprecatedSince().equals(that.deprecatedSince());
+                && deprecatedSince().equals(that.deprecatedSince())
+                && retiredSince().equals(that.retiredSince());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(azName, visName, sourceEntityAzName, targetEntityAzName, cardinality, activeSince(), deprecatedSince());
+        return Objects.hash(
+                azName,
+                visName,
+                sourceEntityAzName,
+                targetEntityAzName,
+                cardinality,
+                activeSince(),
+                deprecatedSince(),
+                retiredSince()
+        );
     }
 }

@@ -3,6 +3,8 @@ package org.vedenemo.core.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 
 class VAttributeTest {
@@ -17,6 +19,15 @@ class VAttributeTest {
         assertEquals("Display name", attribute.visName());
         assertEquals(DataType.TEXT, attribute.type());
         assertEquals(VERSION, attribute.activeSince());
+        assertEquals(Optional.empty(), attribute.retiredSince());
+    }
+
+    @Test
+    void acceptsRetiredSinceMetadata() {
+        ModelVersion retiredSince = new ModelVersion(3, 0, 0);
+        VAttribute attribute = new VAttribute("Display_name", "Display name", DataType.TEXT, VERSION, null, retiredSince);
+
+        assertEquals(Optional.of(retiredSince), attribute.retiredSince());
     }
 
     @Test

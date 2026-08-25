@@ -116,7 +116,8 @@ final class InProcessConsoleModelClient implements ModelClient {
                         entity.azName(),
                         entity.visName(),
                         entity.activeSince().toString(),
-                        entity.deprecatedSince().map(Object::toString).orElse(null)
+                        entity.deprecatedSince().map(Object::toString).orElse(null),
+                        entity.retiredSince().map(Object::toString).orElse(null)
                 ))
                 .toList();
     }
@@ -135,7 +136,8 @@ final class InProcessConsoleModelClient implements ModelClient {
                         attribute.visName(),
                         attribute.type().name(),
                         attribute.activeSince().toString(),
-                        attribute.deprecatedSince().map(Object::toString).orElse(null)
+                        attribute.deprecatedSince().map(Object::toString).orElse(null),
+                        attribute.retiredSince().map(Object::toString).orElse(null)
                 ))
                 .toList();
     }
@@ -294,7 +296,8 @@ final class InProcessConsoleModelClient implements ModelClient {
                 association.sourceCardinality() == null ? null : association.sourceCardinality().toString(),
                 association.targetCardinality() == null ? null : association.targetCardinality().toString(),
                 association.activeSince().toString(),
-                association.deprecatedSince().map(Object::toString).orElse(null)
+                association.deprecatedSince().map(Object::toString).orElse(null),
+                association.retiredSince().map(Object::toString).orElse(null)
         );
     }
 

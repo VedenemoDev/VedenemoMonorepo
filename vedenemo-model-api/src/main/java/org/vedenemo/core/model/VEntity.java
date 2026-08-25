@@ -17,7 +17,17 @@ public final class VEntity extends Versionable {
     }
 
     public VEntity(String azName, String visName, ModelVersion activeSince, ModelVersion deprecatedSince) {
-        super(activeSince, deprecatedSince);
+        this(azName, visName, activeSince, deprecatedSince, null);
+    }
+
+    public VEntity(
+            String azName,
+            String visName,
+            ModelVersion activeSince,
+            ModelVersion deprecatedSince,
+            ModelVersion retiredSince
+    ) {
+        super(activeSince, deprecatedSince, retiredSince);
         this.azName = ModelTextRules.requireAzName(azName);
         this.visName = ModelTextRules.requireVisName(visName);
     }

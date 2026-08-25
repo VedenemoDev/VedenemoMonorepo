@@ -1,5 +1,32 @@
 # Backlog
 
+## Enforce lifecycle use semantics for deprecated and retired model items
+
+Status: planned
+
+### Goal
+
+Use versionable item lifecycle metadata during authoring and data operations so
+`deprecatedSince` and `retiredSince` affect behavior instead of remaining
+informational metadata only.
+
+### Scope
+
+- Define which model-authoring, instance-data, import, and visualization flows
+  must warn for deprecated items.
+- Define which flows must reject or hide retired items.
+- Decide validation rules between `activeSince`, `deprecatedSince`, and
+  `retiredSince`.
+- Add focused tests after the intended behavior is defined.
+
+### Notes
+
+- Current implementation stores and exposes `retiredSince`, but does not enforce
+  item usage semantics yet.
+- `deprecatedSince` means an item is deprecated but can still be used.
+- `retiredSince` means an item should be prohibited from use once enforcement is
+  implemented.
+
 ## Charles III family tree life-event sample coverage
 
 Status: executed

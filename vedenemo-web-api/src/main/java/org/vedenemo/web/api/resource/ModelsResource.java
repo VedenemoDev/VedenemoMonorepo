@@ -185,13 +185,14 @@ public final class ModelsResource {
         }
     }
 
-    private record EntityResponse(String azName, String visName, String activeSince, String deprecatedSince) {
+    private record EntityResponse(String azName, String visName, String activeSince, String deprecatedSince, String retiredSince) {
         private static EntityResponse from(VEntity entity) {
             return new EntityResponse(
                     entity.azName(),
                     entity.visName(),
                     entity.activeSince().toString(),
-                    entity.deprecatedSince().map(Object::toString).orElse(null)
+                    entity.deprecatedSince().map(Object::toString).orElse(null),
+                    entity.retiredSince().map(Object::toString).orElse(null)
             );
         }
     }
@@ -201,7 +202,8 @@ public final class ModelsResource {
             String visName,
             String dataType,
             String activeSince,
-            String deprecatedSince
+            String deprecatedSince,
+            String retiredSince
     ) {
         private static AttributeResponse from(VAttribute attribute) {
             return new AttributeResponse(
@@ -209,7 +211,8 @@ public final class ModelsResource {
                     attribute.visName(),
                     attribute.type().name(),
                     attribute.activeSince().toString(),
-                    attribute.deprecatedSince().map(Object::toString).orElse(null)
+                    attribute.deprecatedSince().map(Object::toString).orElse(null),
+                    attribute.retiredSince().map(Object::toString).orElse(null)
             );
         }
     }
@@ -226,7 +229,8 @@ public final class ModelsResource {
             String sourceCardinality,
             String targetCardinality,
             String activeSince,
-            String deprecatedSince
+            String deprecatedSince,
+            String retiredSince
     ) {
         private static AssociationResponse from(Association association) {
             return new AssociationResponse(
@@ -241,7 +245,8 @@ public final class ModelsResource {
                     association.sourceCardinality() == null ? null : association.sourceCardinality().toString(),
                     association.targetCardinality() == null ? null : association.targetCardinality().toString(),
                     association.activeSince().toString(),
-                    association.deprecatedSince().map(Object::toString).orElse(null)
+                    association.deprecatedSince().map(Object::toString).orElse(null),
+                    association.retiredSince().map(Object::toString).orElse(null)
             );
         }
     }

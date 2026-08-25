@@ -9254,3 +9254,82 @@ Current status and next steps:
 - Verification passed: `npm run build` in `vedenemo-ux`, `git diff --check`,
   and README disclaimer check.
 - No backend changes were needed.
+## 2026-08-25 20:13 EEST
+
+Session goal: add optional `retiredSince` lifecycle version metadata to
+versionable model items without adding usage validation.
+
+Files changed:
+
+- `SESSION.md`
+- `README.md`
+- `docs/architecture_doc.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/AssociationSummary.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/AttributeSummary.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/EntitySummary.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/Association.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/OwnershipAssociation.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ReferenceAssociation.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/RelationAssociation.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/VAttribute.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/VEntity.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/Versionable.java`
+- `vedenemo-model-api/src/test/java/org/vedenemo/core/model/AssociationTest.java`
+- `vedenemo-model-api/src/test/java/org/vedenemo/core/model/VAttributeTest.java`
+- `vedenemo-model-api/src/test/java/org/vedenemo/core/model/VEntityTest.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleModelClient.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `rg -n "activeSince|deprecatedSince|Lifecycle|VersionInfo|version information|versionInfo" .`
+- `rg --files`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `sed -n '1,140p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/Versionable.java`
+- `sed -n '1,130p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VEntity.java`
+- `sed -n '1,120p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VAttribute.java`
+- `sed -n '1,150p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/RelationAssociation.java`
+- `sed -n '1,380p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '380,680p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '150,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `sed -n '1,85p' vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `mvn -q -DskipTests compile`
+- `mvn -q -pl vedenemo-command-console compile`
+- `mvn -q clean compile`
+- `mvn clean verify`
+- `mvn clean verify` with elevated local socket permissions for web API tests
+- `git diff --check`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `git status --short`
+- `git diff --stat`
+- `rg -n "retiredSince" vedenemo-model-api vedenemo-core vedenemo-web-api vedenemo-cli vedenemo-command-console README.md docs/architecture_doc.md tasks/current-task.md tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added nullable `retiredSince` metadata to `Versionable`, entities,
+  attributes, and associations while preserving existing constructors.
+- Updated `.vdos` snapshot export to emit `retiredSince=null` and import to
+  accept missing `retiredSince` for existing scripts.
+- Exposed nullable `retiredSince` through HTTP DTOs, terminal CLI parsing, and
+  browser-console summaries.
+- Updated implementation docs, README example, current task record, and backlog
+  future-work notes.
+- Verification passed: `mvn clean verify` with elevated local socket
+  permissions, `git diff --check`, and README disclaimer check.
+- Future work remains to define and enforce deprecated/retired usage semantics.

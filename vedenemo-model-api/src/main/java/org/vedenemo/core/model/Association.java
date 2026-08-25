@@ -34,6 +34,8 @@ public sealed interface Association permits OwnershipAssociation, ReferenceAssoc
 
     Optional<ModelVersion> deprecatedSince();
 
+    Optional<ModelVersion> retiredSince();
+
     AssociationKind kind();
 
     static String uniquenessKey(String azName) {

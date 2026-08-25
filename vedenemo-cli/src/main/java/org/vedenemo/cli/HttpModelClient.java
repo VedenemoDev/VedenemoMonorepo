@@ -32,13 +32,13 @@ public final class HttpModelClient implements ModelClient {
             "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"version\":\"([^\"]*)\"}"
     );
     private static final Pattern ENTITY_PATTERN = Pattern.compile(
-            "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"activeSince\":\"([^\"]*)\",\"deprecatedSince\":(\"([^\"]*)\"|null)}"
+            "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"activeSince\":\"([^\"]*)\",\"deprecatedSince\":(\"([^\"]*)\"|null),\"retiredSince\":(\"([^\"]*)\"|null)}"
     );
     private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile(
-            "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"dataType\":\"([^\"]*)\",\"activeSince\":\"([^\"]*)\",\"deprecatedSince\":(\"([^\"]*)\"|null)}"
+            "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"dataType\":\"([^\"]*)\",\"activeSince\":\"([^\"]*)\",\"deprecatedSince\":(\"([^\"]*)\"|null),\"retiredSince\":(\"([^\"]*)\"|null)}"
     );
     private static final Pattern ASSOCIATION_PATTERN = Pattern.compile(
-            "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"kind\":\"([^\"]*)\",\"sourceEntityAzName\":\"([^\"]*)\",\"targetEntityAzName\":\"([^\"]*)\",\"cardinality\":\"([^\"]*)\",\"sourceRoleName\":(\"([^\"]*)\"|null),\"targetRoleName\":(\"([^\"]*)\"|null),\"sourceCardinality\":(\"([^\"]*)\"|null),\"targetCardinality\":(\"([^\"]*)\"|null),\"activeSince\":\"([^\"]*)\",\"deprecatedSince\":(\"([^\"]*)\"|null)}"
+            "\\{\"azName\":\"([^\"]*)\",\"visName\":\"([^\"]*)\",\"kind\":\"([^\"]*)\",\"sourceEntityAzName\":\"([^\"]*)\",\"targetEntityAzName\":\"([^\"]*)\",\"cardinality\":\"([^\"]*)\",\"sourceRoleName\":(\"([^\"]*)\"|null),\"targetRoleName\":(\"([^\"]*)\"|null),\"sourceCardinality\":(\"([^\"]*)\"|null),\"targetCardinality\":(\"([^\"]*)\"|null),\"activeSince\":\"([^\"]*)\",\"deprecatedSince\":(\"([^\"]*)\"|null),\"retiredSince\":(\"([^\"]*)\"|null)}"
     );
     private static final Pattern IMPORT_PATTERN = Pattern.compile(
             "\\{\"modelAzName\":\"([^\"]*)\",\"commandCount\":([0-9]+)}"
@@ -306,7 +306,7 @@ public final class HttpModelClient implements ModelClient {
         ArrayList<EntitySummary> entities = new ArrayList<>();
         Matcher matcher = ENTITY_PATTERN.matcher(body);
         while (matcher.find()) {
-            entities.add(new EntitySummary(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(5)));
+            entities.add(new EntitySummary(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(5), matcher.group(7)));
         }
         if (entities.isEmpty()) {
             throw new IOException("entity response did not contain parseable entities");
@@ -326,7 +326,8 @@ public final class HttpModelClient implements ModelClient {
                     matcher.group(2),
                     matcher.group(3),
                     matcher.group(4),
-                    matcher.group(6)
+                    matcher.group(6),
+                    matcher.group(8)
             ));
         }
         if (attributes.isEmpty()) {
@@ -354,7 +355,8 @@ public final class HttpModelClient implements ModelClient {
                     matcher.group(12),
                     matcher.group(14),
                     matcher.group(15),
-                    matcher.group(17)
+                    matcher.group(17),
+                    matcher.group(19)
             ));
         }
         if (associations.isEmpty()) {

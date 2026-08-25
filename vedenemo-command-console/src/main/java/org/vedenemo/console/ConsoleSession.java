@@ -315,7 +315,14 @@ public final class ConsoleSession {
         }
         for (int index = 0; index < latestEntities.size(); index++) {
             EntitySummary entity = latestEntities.get(index);
-            output.add((index + 1) + ". " + entity.visName() + " (" + entity.azName() + ") active since " + entity.activeSince());
+            output.add((index + 1) + ". "
+                    + entity.visName()
+                    + " ("
+                    + entity.azName()
+                    + ") active since "
+                    + entity.activeSince()
+                    + deprecatedSuffix(entity.deprecatedSince())
+                    + retiredSuffix(entity.retiredSince()));
         }
     }
 
@@ -405,7 +412,8 @@ public final class ConsoleSession {
                     + attribute.dataType()
                     + " active since "
                     + attribute.activeSince()
-                    + deprecatedSuffix(attribute.deprecatedSince()));
+                    + deprecatedSuffix(attribute.deprecatedSince())
+                    + retiredSuffix(attribute.retiredSince()));
         }
     }
 
@@ -443,7 +451,8 @@ public final class ConsoleSession {
                     + relationEndSuffix(association)
                     + " active since "
                     + association.activeSince()
-                    + deprecatedSuffix(association.deprecatedSince()));
+                    + deprecatedSuffix(association.deprecatedSince())
+                    + retiredSuffix(association.retiredSince()));
         }
     }
 
@@ -872,6 +881,13 @@ public final class ConsoleSession {
             return "";
         }
         return " deprecated since " + deprecatedSince;
+    }
+
+    private static String retiredSuffix(String retiredSince) {
+        if (retiredSince == null) {
+            return "";
+        }
+        return " retired since " + retiredSince;
     }
 
     private static String relationEndSuffix(AssociationSummary association) {

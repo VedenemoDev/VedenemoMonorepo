@@ -58,6 +58,7 @@ public final class VedenemoScriptService {
                     .append(" visName=").append(quote(entity.visName()))
                     .append(" activeSince=").append(entity.activeSince())
                     .append(" deprecatedSince=").append(versionOrNull(entity.deprecatedSince().orElse(null)))
+                    .append(" retiredSince=").append(versionOrNull(entity.retiredSince().orElse(null)))
                     .append("\n");
             for (VAttribute attribute : entity.attributes()) {
                 script.append("attribute entity=").append(entity.azName())
@@ -66,6 +67,7 @@ public final class VedenemoScriptService {
                         .append(" dataType=").append(attribute.type().name())
                         .append(" activeSince=").append(attribute.activeSince())
                         .append(" deprecatedSince=").append(versionOrNull(attribute.deprecatedSince().orElse(null)))
+                        .append(" retiredSince=").append(versionOrNull(attribute.retiredSince().orElse(null)))
                         .append("\n");
             }
         }
@@ -80,6 +82,7 @@ public final class VedenemoScriptService {
                     .append(" cardinality=").append(association.cardinality())
                     .append(" activeSince=").append(association.activeSince())
                     .append(" deprecatedSince=").append(versionOrNull(association.deprecatedSince().orElse(null)))
+                    .append(" retiredSince=").append(versionOrNull(association.retiredSince().orElse(null)))
                     .append("\n");
         }
         return script.toString();
@@ -268,7 +271,8 @@ public final class VedenemoScriptService {
                     required(values, "azName", lineIndex),
                     required(values, "visName", lineIndex),
                     ModelVersion.parse(required(values, "activeSince", lineIndex)),
-                    parseNullableVersion(required(values, "deprecatedSince", lineIndex))
+                    parseNullableVersion(required(values, "deprecatedSince", lineIndex)),
+                    parseOptionalNullableVersion(values.get("retiredSince"))
             ));
         } else if ("attribute".equals(keyword)) {
             snapshot.attributes.add(new SnapshotAttribute(
@@ -277,7 +281,8 @@ public final class VedenemoScriptService {
                     required(values, "visName", lineIndex),
                     DataType.valueOf(required(values, "dataType", lineIndex)),
                     ModelVersion.parse(required(values, "activeSince", lineIndex)),
-                    parseNullableVersion(required(values, "deprecatedSince", lineIndex))
+                    parseNullableVersion(required(values, "deprecatedSince", lineIndex)),
+                    parseOptionalNullableVersion(values.get("retiredSince"))
             ));
         } else if ("association".equals(keyword)) {
             snapshot.associations.add(new SnapshotAssociation(
@@ -292,7 +297,8 @@ public final class VedenemoScriptService {
                     parseOptionalCardinality(values.get("sourceCardinality")),
                     parseOptionalCardinality(values.get("targetCardinality")),
                     ModelVersion.parse(required(values, "activeSince", lineIndex)),
-                    parseNullableVersion(required(values, "deprecatedSince", lineIndex))
+                    parseNullableVersion(required(values, "deprecatedSince", lineIndex)),
+                    parseOptionalNullableVersion(values.get("retiredSince"))
             ));
         } else {
             throw new IllegalArgumentException("unsupported snapshot line " + (lineIndex + 1));
@@ -304,7 +310,8 @@ public final class VedenemoScriptService {
             VEntity actual = findEntity(modelRoot, expected.azName());
             if (!actual.visName().equals(expected.visName())
                     || !actual.activeSince().equals(expected.activeSince())
-                    || !actual.deprecatedSince().equals(Optional.ofNullable(expected.deprecatedSince()))) {
+                    || !actual.deprecatedSince().equals(Optional.ofNullable(expected.deprecatedSince()))
+                    || !actual.retiredSince().equals(Optional.ofNullable(expected.retiredSince()))) {
                 throw new IllegalArgumentException("snapshot entity does not match replayed commands: " + expected.azName());
             }
         }
@@ -318,7 +325,8 @@ public final class VedenemoScriptService {
             if (!actual.visName().equals(expected.visName())
                     || actual.type() != expected.dataType()
                     || !actual.activeSince().equals(expected.activeSince())
-                    || !actual.deprecatedSince().equals(Optional.ofNullable(expected.deprecatedSince()))) {
+                    || !actual.deprecatedSince().equals(Optional.ofNullable(expected.deprecatedSince()))
+                    || !actual.retiredSince().equals(Optional.ofNullable(expected.retiredSince()))) {
                 throw new IllegalArgumentException("snapshot attribute does not match replayed commands: " + expected.azName());
             }
         }
@@ -337,7 +345,8 @@ public final class VedenemoScriptService {
                     || !actual.cardinality().equals(expected.cardinality())
                     || relationSnapshotEndsMismatch(actual, expected)
                     || !actual.activeSince().equals(expected.activeSince())
-                    || !actual.deprecatedSince().equals(Optional.ofNullable(expected.deprecatedSince()))) {
+                    || !actual.deprecatedSince().equals(Optional.ofNullable(expected.deprecatedSince()))
+                    || !actual.retiredSince().equals(Optional.ofNullable(expected.retiredSince()))) {
                 throw new IllegalArgumentException("snapshot association does not match replayed commands: " + expected.azName());
             }
         }
@@ -533,6 +542,13 @@ public final class VedenemoScriptService {
         return ModelVersion.parse(value);
     }
 
+    private static ModelVersion parseOptionalNullableVersion(String value) {
+        if (value == null) {
+            return null;
+        }
+        return parseNullableVersion(value);
+    }
+
     private static Cardinality parseOptionalCardinality(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -559,7 +575,8 @@ public final class VedenemoScriptService {
             String azName,
             String visName,
             ModelVersion activeSince,
-            ModelVersion deprecatedSince
+            ModelVersion deprecatedSince,
+            ModelVersion retiredSince
     ) {
     }
 
@@ -569,7 +586,8 @@ public final class VedenemoScriptService {
             String visName,
             DataType dataType,
             ModelVersion activeSince,
-            ModelVersion deprecatedSince
+            ModelVersion deprecatedSince,
+            ModelVersion retiredSince
     ) {
     }
 
@@ -585,7 +603,8 @@ public final class VedenemoScriptService {
             Cardinality sourceCardinality,
             Cardinality targetCardinality,
             ModelVersion activeSince,
-            ModelVersion deprecatedSince
+            ModelVersion deprecatedSince,
+            ModelVersion retiredSince
     ) {
     }
 }

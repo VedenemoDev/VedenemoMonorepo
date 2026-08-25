@@ -125,7 +125,7 @@ final class ModelsResourceTest {
 
         assertEquals(200, response.statusCode());
         assertEquals("""
-                [{"azName":"Customer","visName":"Customer","activeSince":"1.0.0","deprecatedSince":null},{"azName":"Order","visName":"Order","activeSince":"1.0.0","deprecatedSince":null}]\
+                [{"azName":"Customer","visName":"Customer","activeSince":"1.0.0","deprecatedSince":null,"retiredSince":null},{"azName":"Order","visName":"Order","activeSince":"1.0.0","deprecatedSince":null,"retiredSince":null}]\
                 """, response.body());
     }
 
@@ -140,7 +140,7 @@ final class ModelsResourceTest {
 
         assertEquals(200, response.statusCode());
         assertEquals("""
-                [{"azName":"Email","visName":"Email","dataType":"TEXT","activeSince":"1.0.0","deprecatedSince":null},{"azName":"Website","visName":"Website","dataType":"URL","activeSince":"1.0.0","deprecatedSince":null}]\
+                [{"azName":"Email","visName":"Email","dataType":"TEXT","activeSince":"1.0.0","deprecatedSince":null,"retiredSince":null},{"azName":"Website","visName":"Website","dataType":"URL","activeSince":"1.0.0","deprecatedSince":null,"retiredSince":null}]\
                 """, response.body());
     }
 
@@ -164,7 +164,7 @@ final class ModelsResourceTest {
         assertEquals(200, modelResponse.statusCode());
         assertEquals(modelResponse.body(), entityResponse.body());
         assertEquals("""
-                [{"azName":"Customer_Orders","visName":"orders","kind":"OWNERSHIP","sourceEntityAzName":"Customer","targetEntityAzName":"Order","cardinality":"0..*","sourceRoleName":null,"targetRoleName":null,"sourceCardinality":null,"targetCardinality":"0..*","activeSince":"1.0.0","deprecatedSince":null}]\
+                [{"azName":"Customer_Orders","visName":"orders","kind":"OWNERSHIP","sourceEntityAzName":"Customer","targetEntityAzName":"Order","cardinality":"0..*","sourceRoleName":null,"targetRoleName":null,"sourceCardinality":null,"targetCardinality":"0..*","activeSince":"1.0.0","deprecatedSince":null,"retiredSince":null}]\
                 """, modelResponse.body());
     }
 
@@ -189,7 +189,7 @@ final class ModelsResourceTest {
         assertEquals(200, response.statusCode());
         assertTrue(response.body().contains("vedenemo-script 1"));
         assertTrue(response.body().contains("create-entity model=Example_Model entity=Customer visName=\"Customer\" activeSince=1.0.0"));
-        assertTrue(response.body().contains("attribute entity=Customer azName=Email visName=\"Email\" dataType=TEXT activeSince=1.0.0 deprecatedSince=null"));
+        assertTrue(response.body().contains("attribute entity=Customer azName=Email visName=\"Email\" dataType=TEXT activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
     }
 
     @Test

@@ -3,6 +3,8 @@ package org.vedenemo.core.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 
 final class AssociationTest {
@@ -27,6 +29,24 @@ final class AssociationTest {
         assertEquals(Cardinality.parse("0..*"), association.cardinality());
         assertEquals(AssociationKind.OWNERSHIP, association.kind());
         assertEquals(VERSION, association.activeSince());
+        assertEquals(Optional.empty(), association.retiredSince());
+    }
+
+    @Test
+    void acceptsRetiredSinceMetadata() {
+        ModelVersion retiredSince = ModelVersion.parse("3.0.0");
+        OwnershipAssociation association = new OwnershipAssociation(
+                "Customer_Orders",
+                "orders",
+                "Customer",
+                "Order",
+                Cardinality.parse("0..*"),
+                VERSION,
+                null,
+                retiredSince
+        );
+
+        assertEquals(Optional.of(retiredSince), association.retiredSince());
     }
 
     @Test

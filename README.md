@@ -406,8 +406,8 @@ create-entity model=Example_Model entity=Customer visName="Customer" activeSince
 create-attribute model=Example_Model entity=Customer attribute=Email visName="Email" dataType=TEXT activeSince=1.0.0
 
 snapshot
-entity azName=Customer visName="Customer" activeSince=1.0.0 deprecatedSince=null
-attribute entity=Customer azName=Email visName="Email" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+entity azName=Customer visName="Customer" activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Customer azName=Email visName="Email" dataType=TEXT activeSince=1.0.0 deprecatedSince=null retiredSince=null
 ```
 
 On import, command lines are replayed and the resulting model is validated

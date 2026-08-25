@@ -19,7 +19,18 @@ public final class VAttribute extends Versionable {
             ModelVersion activeSince,
             ModelVersion deprecatedSince
     ) {
-        super(activeSince, deprecatedSince);
+        this(azName, visName, type, activeSince, deprecatedSince, null);
+    }
+
+    public VAttribute(
+            String azName,
+            String visName,
+            DataType type,
+            ModelVersion activeSince,
+            ModelVersion deprecatedSince,
+            ModelVersion retiredSince
+    ) {
+        super(activeSince, deprecatedSince, retiredSince);
         this.azName = ModelTextRules.requireAzName(azName);
         this.visName = ModelTextRules.requireVisName(visName);
         this.type = Objects.requireNonNull(type, "type must not be null");
@@ -53,11 +64,12 @@ public final class VAttribute extends Versionable {
                 && visName.equals(that.visName)
                 && type == that.type
                 && activeSince().equals(that.activeSince())
-                && deprecatedSince().equals(that.deprecatedSince());
+                && deprecatedSince().equals(that.deprecatedSince())
+                && retiredSince().equals(that.retiredSince());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(azName, visName, type, activeSince(), deprecatedSince());
+        return Objects.hash(azName, visName, type, activeSince(), deprecatedSince(), retiredSince());
     }
 }

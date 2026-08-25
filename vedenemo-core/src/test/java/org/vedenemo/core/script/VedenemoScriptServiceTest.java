@@ -64,10 +64,10 @@ final class VedenemoScriptServiceTest {
         assertTrue(script.contains("create-attribute model=Example_Model entity=Customer attribute=Email visName=\"Email\" dataType=TEXT activeSince=1.0.0"));
         assertTrue(script.contains("create-association model=Example_Model kind=OWNERSHIP association=Customer_Orders visName=\"orders\" source=Customer target=Order cardinality=0..* activeSince=1.0.0"));
         assertTrue(script.contains("create-association model=Example_Model kind=RELATION association=Customer_Order_Relation visName=\"orders\" source=Customer sourceRole=\"customer\" sourceCardinality=1 target=Order targetRole=\"order\" targetCardinality=0..* cardinality=0..* activeSince=1.0.0"));
-        assertTrue(script.contains("entity azName=Customer visName=\"Customer\" activeSince=1.0.0 deprecatedSince=null"));
-        assertTrue(script.contains("attribute entity=Customer azName=Email visName=\"Email\" dataType=TEXT activeSince=1.0.0 deprecatedSince=null"));
-        assertTrue(script.contains("association azName=Customer_Orders visName=\"orders\" kind=OWNERSHIP source=Customer target=Order cardinality=0..* activeSince=1.0.0 deprecatedSince=null"));
-        assertTrue(script.contains("association azName=Customer_Order_Relation visName=\"orders\" kind=RELATION source=Customer sourceRole=\"customer\" sourceCardinality=1 target=Order targetRole=\"order\" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null"));
+        assertTrue(script.contains("entity azName=Customer visName=\"Customer\" activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
+        assertTrue(script.contains("attribute entity=Customer azName=Email visName=\"Email\" dataType=TEXT activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
+        assertTrue(script.contains("association azName=Customer_Orders visName=\"orders\" kind=OWNERSHIP source=Customer target=Order cardinality=0..* activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
+        assertTrue(script.contains("association azName=Customer_Order_Relation visName=\"orders\" kind=RELATION source=Customer sourceRole=\"customer\" sourceCardinality=1 target=Order targetRole=\"order\" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
     }
 
     @Test

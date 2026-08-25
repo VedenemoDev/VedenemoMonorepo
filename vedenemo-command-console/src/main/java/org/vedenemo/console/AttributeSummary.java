@@ -5,6 +5,10 @@ public record AttributeSummary(
         String visName,
         String dataType,
         String activeSince,
-        String deprecatedSince
+        String deprecatedSince,
+        String retiredSince
 ) {
+    public AttributeSummary(String azName, String visName, String dataType, String activeSince, String deprecatedSince) {
+        this(azName, visName, dataType, activeSince, deprecatedSince, null);
+    }
 }

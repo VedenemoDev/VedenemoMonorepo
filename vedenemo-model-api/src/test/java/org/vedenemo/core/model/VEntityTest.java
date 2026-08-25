@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
@@ -20,6 +21,15 @@ class VEntityTest {
         assertEquals("Customer", entity.azName());
         assertEquals("Customer", entity.visName());
         assertEquals(VERSION, entity.activeSince());
+        assertEquals(Optional.empty(), entity.retiredSince());
+    }
+
+    @Test
+    void acceptsRetiredSinceMetadata() {
+        ModelVersion retiredSince = new ModelVersion(3, 0, 0);
+        VEntity entity = new VEntity("Customer", "Customer", VERSION, null, retiredSince);
+
+        assertEquals(Optional.of(retiredSince), entity.retiredSince());
     }
 
     @Test
