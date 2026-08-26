@@ -229,6 +229,7 @@ public final class ModelInstanceService {
             case DATE -> dateValue(attribute, submittedValue);
             case TIME -> timeValue(attribute, submittedValue);
             case DATETIME -> dateTimeValue(attribute, submittedValue);
+            case LOCATION -> locationValue(attribute, submittedValue);
         };
     }
 
@@ -316,6 +317,43 @@ public final class ModelInstanceService {
             throw new IllegalArgumentException(attribute.azName() + " must be an " + valueType + " string");
         }
         return value;
+    }
+
+    private static InstanceValue locationValue(VAttribute attribute, Object submittedValue) {
+        if (submittedValue instanceof LocationValue value) {
+            return new InstanceValue(DataType.LOCATION, value);
+        }
+        if (!(submittedValue instanceof Map<?, ?> values)) {
+            throw new IllegalArgumentException(attribute.azName() + " must be a LOCATION object");
+        }
+        if (!values.containsKey("latitude")) {
+            throw new IllegalArgumentException(attribute.azName() + " LOCATION latitude is required");
+        }
+        if (!values.containsKey("longitude")) {
+            throw new IllegalArgumentException(attribute.azName() + " LOCATION longitude is required");
+        }
+        return new InstanceValue(
+                DataType.LOCATION,
+                new LocationValue(
+                        coordinate(attribute, values.get("latitude"), "latitude"),
+                        coordinate(attribute, values.get("longitude"), "longitude")
+                )
+        );
+    }
+
+    private static double coordinate(VAttribute attribute, Object value, String coordinateName) {
+        if (!(value instanceof Number number)) {
+            throw new IllegalArgumentException(attribute.azName() + " LOCATION " + coordinateName + " must be numeric");
+        }
+        double coordinate = number.doubleValue();
+        try {
+            if ("latitude".equals(coordinateName)) {
+                return new LocationValue(coordinate, 0.0d).latitude();
+            }
+            return new LocationValue(0.0d, coordinate).longitude();
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException(attribute.azName() + " " + exception.getMessage(), exception);
+        }
     }
 
     private static boolean matchesAll(EntityInstance instance, Map<String, InstanceValue> expectedValues) {
@@ -437,7 +475,7 @@ public final class ModelInstanceService {
             case DATE -> LocalDate.parse((String) actual.value()).compareTo(LocalDate.parse((String) expected.value()));
             case TIME -> LocalTime.parse((String) actual.value()).compareTo(LocalTime.parse((String) expected.value()));
             case DATETIME -> LocalDateTime.parse((String) actual.value()).compareTo(LocalDateTime.parse((String) expected.value()));
-            case TEXT, URL, DATA -> throw new IllegalArgumentException("comparison requires ordered values");
+            case TEXT, URL, DATA, LOCATION -> throw new IllegalArgumentException("comparison requires ordered values");
         };
     }
 

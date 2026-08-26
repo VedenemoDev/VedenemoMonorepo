@@ -7,5 +7,6 @@ public enum DataType {
     DATA,
     DATE,
     TIME,
-    DATETIME
+    DATETIME,
+    LOCATION
 }

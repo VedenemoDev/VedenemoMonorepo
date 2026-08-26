@@ -2,6 +2,7 @@ package org.vedenemo.core.instance.dump;
 
 import org.junit.jupiter.api.Test;
 import org.vedenemo.core.instance.EntityInstance;
+import org.vedenemo.core.instance.LocationValue;
 import org.vedenemo.core.instance.ModelInstanceRegistry;
 import org.vedenemo.core.instance.ModelInstanceService;
 import org.vedenemo.core.model.Cardinality;
@@ -49,6 +50,37 @@ final class ModelInstanceDumpServiceTest {
         assertEquals("Miles Davis", record.values().get("Name"));
         assertTrue(record.values().containsKey("Rating"));
         assertEquals(null, record.values().get("Rating"));
+    }
+
+    @Test
+    void exportsAndImportsLocationValuesAsStructuredValues() {
+        Fixture fixture = fixture("1.2.3");
+        EntityInstance artist = fixture.instanceService.createEntityInstance(
+                "Music",
+                fixture.rootId,
+                "Artist",
+                Map.of("Name", "Miles Davis", "Location", Map.of("latitude", 62.1234567, "longitude", 30.1234567))
+        );
+
+        ModelInstanceDump dump = fixture.dumpService.exportDump("Music", fixture.rootId, Instant.parse("2026-08-21T05:00:00Z"));
+        DumpEntityRecord record = dump.entities().stream()
+                .filter(group -> group.entityAzName().equals("Artist"))
+                .findFirst()
+                .orElseThrow()
+                .records()
+                .getFirst();
+        ModelInstanceDumpImportResult result = fixture.dumpService.importDump("Music", dump, false);
+        EntityInstance imported = fixture.instanceService.listEntityInstances(
+                "Music",
+                result.root().instanceRootId(),
+                "Artist",
+                Map.of("Location", Map.of("latitude", 62.1234567, "longitude", 30.1234567))
+        ).getFirst();
+
+        assertEquals(artist.id().value(), record.dumpId());
+        assertEquals(new LocationValue(62.1234567, 30.1234567), record.values().get("Location"));
+        assertEquals("Miles Davis", imported.values().get("Name").value());
+        assertEquals(new LocationValue(62.1234567, 30.1234567), imported.values().get("Location").value());
     }
 
     @Test
@@ -101,12 +133,32 @@ final class ModelInstanceDumpServiceTest {
         assertTrue(result.diagnostics().contains("association not found: Missing_Association"));
     }
 
+    @Test
+    void reportsInvalidLocationDumpValuesDuringPrecheck() {
+        Fixture fixture = fixture("1.0.0");
+        ModelInstanceDump dump = new ModelInstanceDump(
+                ModelInstanceDump.FORMAT,
+                ModelInstanceDump.FORMAT_VERSION,
+                Instant.parse("2026-08-21T05:00:00Z"),
+                new DumpModel("Music", "Music", "1.0.0"),
+                new DumpRoot("source-root", "Imported root"),
+                List.of(new DumpEntityGroup("Artist", List.of(new DumpEntityRecord("artist-1", Map.of("Location", Map.of("latitude", "62.0", "longitude", 30.0)))))),
+                List.of()
+        );
+
+        ModelInstanceDumpPrecheckResult result = fixture.dumpService.precheck("Music", dump);
+
+        assertFalse(result.importable());
+        assertTrue(result.diagnostics().contains("attribute type mismatch: Artist.Location expects LOCATION but dump value is MapN"));
+    }
+
     private static Fixture fixture(String version) {
         ModelRegistry modelRegistry = new ModelRegistry();
         ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Music", "Music", version));
         VEntity artist = modelRoot.addEntity(new VEntity("Artist", "Artist", modelRoot.version()));
         artist.addAttribute(new VAttribute("Name", "Name", DataType.TEXT, modelRoot.version()));
         artist.addAttribute(new VAttribute("Rating", "Rating", DataType.NUMERIC, modelRoot.version()));
+        artist.addAttribute(new VAttribute("Location", "Location", DataType.LOCATION, modelRoot.version()));
         VEntity album = modelRoot.addEntity(new VEntity("Album", "Album", modelRoot.version()));
         album.addAttribute(new VAttribute("Title", "Title", DataType.TEXT, modelRoot.version()));
         modelRoot.addAssociation(new OwnershipAssociation(

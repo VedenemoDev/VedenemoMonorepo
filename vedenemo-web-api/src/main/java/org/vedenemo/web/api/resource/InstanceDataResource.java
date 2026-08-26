@@ -10,6 +10,7 @@ import org.vedenemo.core.instance.AssociationInstanceLink;
 import org.vedenemo.core.instance.EntityInstance;
 import org.vedenemo.core.instance.EntityInstanceQuery;
 import org.vedenemo.core.instance.InstanceValue;
+import org.vedenemo.core.instance.LocationValue;
 import org.vedenemo.core.instance.ModelInstanceRoot;
 import org.vedenemo.core.instance.ModelInstanceService;
 import org.vedenemo.core.instance.RelationshipDirection;
@@ -742,6 +743,7 @@ public final class InstanceDataResource {
                 case DATE -> "2026-08-12";
                 case TIME -> "18:30:00";
                 case DATETIME -> "2026-08-12T18:30";
+                case LOCATION -> "{\"latitude\":62.1234567,\"longitude\":30.1234567}";
             };
         }
     }
@@ -813,6 +815,12 @@ public final class InstanceDataResource {
         }
 
         private static Object rawValue(InstanceValue value) {
+            if (value.value() instanceof LocationValue locationValue) {
+                Map<String, Object> location = new LinkedHashMap<>();
+                location.put("latitude", locationValue.latitude());
+                location.put("longitude", locationValue.longitude());
+                return location;
+            }
             return value.value();
         }
     }

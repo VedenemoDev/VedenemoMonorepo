@@ -3,6 +3,7 @@ package org.vedenemo.core.instance.dump;
 import org.vedenemo.core.instance.AssociationInstanceLink;
 import org.vedenemo.core.instance.EntityInstance;
 import org.vedenemo.core.instance.InstanceValue;
+import org.vedenemo.core.instance.LocationValue;
 import org.vedenemo.core.instance.ModelInstanceRoot;
 import org.vedenemo.core.instance.ModelInstanceService;
 import org.vedenemo.core.model.Association;
@@ -215,7 +216,28 @@ public final class ModelInstanceDumpService {
         return switch (type) {
             case TEXT, DATA, URL, DATE, TIME, DATETIME -> value instanceof String;
             case NUMERIC -> value instanceof Number || value instanceof String;
+            case LOCATION -> value instanceof LocationValue || locationFitsType(value);
         };
+    }
+
+    private static boolean locationFitsType(Object value) {
+        if (!(value instanceof Map<?, ?> values)) {
+            return false;
+        }
+        if (!values.containsKey("latitude") || !values.containsKey("longitude")) {
+            return false;
+        }
+        Object latitude = values.get("latitude");
+        Object longitude = values.get("longitude");
+        if (!(latitude instanceof Number latitudeNumber) || !(longitude instanceof Number longitudeNumber)) {
+            return false;
+        }
+        try {
+            new LocationValue(latitudeNumber.doubleValue(), longitudeNumber.doubleValue());
+            return true;
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
     }
 
     private static Map<String, VEntity> entitiesByKey(ModelRoot modelRoot) {

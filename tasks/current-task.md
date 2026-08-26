@@ -1,44 +1,63 @@
 # Current Task
 
-## Add retiredSince lifecycle metadata
+## Add new LOCATION datatype
 
 Status: executed.
 
 ### Goal
 
-Add optional `retiredSince` version metadata to versionable model items so it
-can be populated and enforced by later work. `deprecatedSince` continues to
-mean the item is deprecated but still usable. `retiredSince` records the version
-from which an item should be considered prohibited from use once validation is
-implemented.
+Add a built-in `LOCATION` attribute data type for WGS 84 geographic point
+coordinates while preserving core purity and keeping map/visualization behavior
+out of the datatype itself.
 
 ### Scope
 
-- Add nullable `retiredSince` metadata to versionable entities, attributes, and
-  associations.
-- Keep existing constructors and existing data compatible when the value is not
-  present.
-- Include `retiredSince` in HTTP lifecycle DTOs and console summaries.
-- Include `retiredSince` in new `.vdos` snapshot exports.
-- Allow `.vdos` imports without `retiredSince` to continue working.
-- Do not add validation or enforcement for deprecated or retired item usage.
+- Add `LOCATION` to the supported `DataType` values.
+- Represent normalized runtime location values with a dedicated pure-JDK record.
+- Accept structured HTTP and `.vdmp` values with numeric `latitude` and
+  `longitude` fields.
+- Validate required, finite WGS 84 latitude and longitude ranges.
+- Support exact equality matching for `LOCATION` values.
+- Reject ordered comparison, string containment, string-shaped coordinates,
+  missing coordinates, non-numeric coordinates, and non-finite coordinates.
+- Allow `.vdos` model scripts to declare attributes with `dataType=LOCATION`.
+- Keep map, spatial search, route/track, altitude, timestamp, and UX helper
+  behavior out of this task.
 
 ### Acceptance Criteria
 
-- Existing model creation flows continue to create items with no retired
-  version.
-- Existing `.vdos` files that omit `retiredSince` can still be imported.
-- New `.vdos` exports include `retiredSince=null` when no retired version is set.
-- Entity, attribute, and association API responses include nullable
-  `retiredSince`.
+- `LOCATION` is available as a built-in Vedenemo attribute data type.
+- A model entity can define an attribute whose type is `LOCATION`.
+- `.vdos` model scripts can declare attributes with `dataType=LOCATION`.
+- A normalized `LOCATION` instance value is represented in core by a dedicated
+  pure-JDK record.
+- HTTP instance create/update requests accept `LOCATION` values only as
+  structured objects with numeric `latitude` and `longitude` fields.
+- HTTP instance responses return `LOCATION` values as structured objects with
+  `latitude` and `longitude` fields.
+- `.vdmp` dump export/import preserves normalized `LOCATION` values without
+  intentional rounding or truncation.
+- Latitude and longitude are interpreted as WGS 84 decimal-degree coordinates.
+- Latitude and longitude ranges are validated.
+- Missing latitude or longitude values are rejected.
+- Non-numeric, non-finite, or string-shaped location values are rejected using
+  the normal Vedenemo validation/error mechanism.
+- Exact equality filtering/querying works for `LOCATION` values.
+- Ordered comparison and string containment operators reject `LOCATION`
+  attributes.
+- The data type itself does not depend on any map or visualization
+  implementation.
 - Backend verification succeeds.
 
 ### Completion Notes
 
-- Added `retiredSince` to `Versionable` and all concrete versionable model item
-  types.
-- Kept compatibility constructors for existing callers and test fixtures.
-- Updated `.vdos` snapshot export/import, snapshot validation, HTTP responses,
-  terminal CLI parsing, and browser-console summaries.
-- Added a backlog item for future lifecycle usage enforcement instead of adding
-  validation in this task.
+- Added `DataType.LOCATION` and pure-JDK `LocationValue`.
+- Added core instance normalization, finite/range validation, and exact
+  equality matching for structured location values.
+- Kept ordered comparison and string containment unsupported for `LOCATION`.
+- Updated HTTP responses to emit structured `{latitude, longitude}` objects.
+- Updated `.vdmp` precheck/import/export support for location values.
+- Updated `.vdos` script tests and datatype parsing paths for CLI, browser
+  console, and HTTP session commands.
+- Updated README, CLI reference, current implementation architecture docs, and
+  backlog history.

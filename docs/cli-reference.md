@@ -274,7 +274,7 @@ The CLI asks for a visible name, suggests an ASCII `azName`, and asks for a data
 type. Suggestions preserve digits after the first ASCII letter, so
 `Attribute 2` suggests `Attribute_2`. Press Enter at the data type prompt to
 use `TEXT`. Data type input accepts case-insensitive aliases such as `text`,
-`number`, `url`, `data`, `date`, `time`, and `datetime`.
+`number`, `url`, `data`, `date`, `time`, `datetime`, and `location`.
 
 Example:
 

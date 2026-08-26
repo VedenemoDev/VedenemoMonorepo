@@ -9384,3 +9384,85 @@ Current status and next steps:
   visualizations as future work.
 - Verification passed: `git diff --check`.
 - Next step is implementation only after this planning description is accepted.
+## 2026-08-26 15:57 EEST
+
+Session goal: execute the `Add new LOCATION datatype` task as the current task,
+run backend verification, and keep the backlog item as executed history.
+
+Files changed:
+
+- `SESSION.md`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/InstanceValue.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/LocationValue.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/dump/ModelInstanceDumpService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/dump/ModelInstanceDumpServiceTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleCommandClient.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `sed -n '1,190p' tasks/backlog.md`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,520p' vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `sed -n '1,220p' vedenemo-core/src/test/java/org/vedenemo/core/instance/dump/ModelInstanceDumpServiceTest.java`
+- `sed -n '1,620p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `sed -n '1,260p' vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java`
+- `sed -n '1,240p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '240,680p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '1,180p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `rg -n "DataType\\.values|parse\\(|data type|DATETIME|TEXT" vedenemo-command-console/src/main/java vedenemo-cli/src/main/java vedenemo-web-api/src/main/java vedenemo-core/src/main/java`
+- `sed -n '880,945p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '1150,1190p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '105,140p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleCommandClient.java`
+- `sed -n '345,375p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `mvn -q -pl vedenemo-core,vedenemo-web-api -am test`
+- `mvn -q -pl vedenemo-core,vedenemo-web-api -am test` with elevated local socket permissions
+- `rg -n "TEXT|NUMERIC|URL|DATA|DATE|TIME|DATETIME|DataType|data type|instance values|values are" README.md docs/architecture_doc.md docs/cli-reference.md tasks/current-task.md tasks/backlog.md`
+- `sed -n '190,220p' README.md`
+- `sed -n '135,275p' docs/architecture_doc.md`
+- `sed -n '260,300p' docs/cli-reference.md`
+- `rg -n "LOCATION|LocationValue|location" vedenemo-model-api vedenemo-core vedenemo-web-api vedenemo-cli vedenemo-command-console README.md docs/architecture_doc.md docs/cli-reference.md tasks/current-task.md tasks/backlog.md -g '!target'`
+- `git diff --stat`
+- `git diff --check`
+- `mvn -q clean verify`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `LOCATION` as a built-in `DataType`.
+- Added pure-JDK `LocationValue` for normalized WGS 84 latitude/longitude
+  values.
+- Added structured location value normalization, finite/range validation, and
+  exact equality matching in core instance-data flows.
+- Kept string-shaped coordinates, ordered comparison, string containment, and
+  spatial search unsupported for this slice.
+- Updated `.vdmp` dump precheck/import/export, HTTP instance JSON responses,
+  `.vdos` script coverage, CLI datatype normalization, command-console
+  datatype normalization, and HTTP session command parsing.
+- Updated README, CLI reference, current implementation architecture docs,
+  current task, and backlog history.
+- Verification passed: targeted Maven test run with local socket permissions,
+  `mvn -q clean verify`, `git diff --check`, and README disclaimer check.
+- No frontend build was run because no frontend files changed.

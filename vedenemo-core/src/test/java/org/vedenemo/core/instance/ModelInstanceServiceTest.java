@@ -296,6 +296,76 @@ final class ModelInstanceServiceTest {
     }
 
     @Test
+    void createsAndQueriesLocationValuesByExactEquality() {
+        Fixture fixture = fixture();
+        String rootId = fixture.rootId();
+        Map<String, Object> coordinates = Map.of("latitude", 62.1234567, "longitude", 30.1234567);
+        EntityInstance match = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of(
+                "Name", "Located Artist",
+                "Location", coordinates
+        ));
+        fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of(
+                "Name", "Other Artist",
+                "Location", Map.of("latitude", 63.0, "longitude", 31.0)
+        ));
+
+        List<EntityInstance> listed = fixture.service.listEntityInstances("Music", rootId, "Artist", Map.of("Location", coordinates));
+        List<EntityInstance> queried = fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(Map.of("Location", coordinates), List.of(), List.of())
+        );
+
+        assertEquals(new LocationValue(62.1234567, 30.1234567), match.values().get("Location").value());
+        assertEquals(List.of(match.id()), listed.stream().map(EntityInstance::id).toList());
+        assertEquals(List.of(match.id()), queried.stream().map(EntityInstance::id).toList());
+    }
+
+    @Test
+    void rejectsInvalidLocationValuesAndUnsupportedLocationComparisons() {
+        Fixture fixture = fixture();
+        String rootId = fixture.rootId();
+        fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of(
+                "Name", "Located Artist",
+                "Location", Map.of("latitude", 62.1234567, "longitude", 30.1234567)
+        ));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Location", "62.1234567,30.1234567")));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Location", Map.of("latitude", 62.1234567))));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Location", Map.of("latitude", 91.0, "longitude", 30.0))));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Location", Map.of("latitude", 62.0, "longitude", 181.0))));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Location", Map.of("latitude", Double.NaN, "longitude", 30.0))));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Location", Map.of("latitude", "62.0", "longitude", 30.0))));
+        assertThrows(IllegalArgumentException.class, () -> fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(new ScalarComparison("Location", ScalarComparisonOperator.GREATER_THAN, Map.of("latitude", 62.0, "longitude", 30.0))),
+                        List.of()
+                )
+        ));
+        assertThrows(IllegalArgumentException.class, () -> fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(new ScalarComparison("Location", ScalarComparisonOperator.CONTAINS, Map.of("latitude", 62.0, "longitude", 30.0))),
+                        List.of()
+                )
+        ));
+    }
+
+    @Test
     void listsAndQueriesAllMatchingInstancesWithoutImplicitLimit() {
         Fixture fixture = fixture();
         String rootId = fixture.rootId();
@@ -410,6 +480,7 @@ final class ModelInstanceServiceTest {
         artist.addAttribute(new VAttribute("BirthDate", "Birth Date", DataType.DATE, modelRoot.version()));
         artist.addAttribute(new VAttribute("SetTime", "Set Time", DataType.TIME, modelRoot.version()));
         artist.addAttribute(new VAttribute("LastPlayedAt", "Last Played At", DataType.DATETIME, modelRoot.version()));
+        artist.addAttribute(new VAttribute("Location", "Location", DataType.LOCATION, modelRoot.version()));
         VEntity album = modelRoot.addEntity(new VEntity("Album", "Album", modelRoot.version()));
         album.addAttribute(new VAttribute("Title", "Title", DataType.TEXT, modelRoot.version()));
         modelRoot.addAssociation(new OwnershipAssociation(

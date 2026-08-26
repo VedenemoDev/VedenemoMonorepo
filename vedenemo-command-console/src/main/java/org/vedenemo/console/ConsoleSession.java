@@ -929,6 +929,7 @@ public final class ConsoleSession {
             case "date" -> "DATE";
             case "time" -> "TIME";
             case "datetime" -> "DATETIME";
+            case "location" -> "LOCATION";
             default -> value.trim();
         };
     }

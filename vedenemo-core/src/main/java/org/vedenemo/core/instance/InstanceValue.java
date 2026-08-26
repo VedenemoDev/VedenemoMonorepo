@@ -24,6 +24,9 @@ public record InstanceValue(DataType type, Object value) {
                 || type == DataType.DATETIME) && !(value instanceof String)) {
             throw new IllegalArgumentException(type + " instance value must be a String");
         }
+        if (type == DataType.LOCATION && !(value instanceof LocationValue)) {
+            throw new IllegalArgumentException("LOCATION instance value must be a LocationValue");
+        }
     }
 
     public boolean matches(InstanceValue other) {

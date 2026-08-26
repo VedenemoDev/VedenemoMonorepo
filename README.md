@@ -206,8 +206,10 @@ created through dedicated `_links` endpoints using source and target instance
 ids.
 
 Supported scalar data types include `TEXT`, `NUMERIC`, `URL`, `DATA`, `DATE`,
-`TIME`, and `DATETIME`. Date and time values are stored and queried as ISO
-strings; the UX formats them with the browser locale for display.
+`TIME`, `DATETIME`, and `LOCATION`. Date and time values are stored and queried
+as ISO strings; the UX formats them with the browser locale for display.
+Location values are WGS 84 point coordinates represented as structured
+`latitude`/`longitude` objects.
 
 Each loaded model can have multiple process-local model-instance roots. Create
 one with `POST /data/{modelAzName}/roots`; the backend returns a globally

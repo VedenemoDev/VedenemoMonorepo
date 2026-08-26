@@ -2,7 +2,7 @@
 
 ## Add new LOCATION datatype
 
-Status: planning
+Status: executed
 
 ### Goal
 
@@ -135,29 +135,44 @@ These can later be introduced as separate concepts or extensions without changin
 
 ### Acceptance Criteria
 
-- [ ] `LOCATION` is available as a built-in Vedenemo attribute data type.
-- [ ] A model entity can define an attribute whose type is `LOCATION`.
-- [ ] `.vdos` model scripts can declare attributes with `dataType=LOCATION`.
-- [ ] A normalized `LOCATION` instance value is represented in core by a
+- [x] `LOCATION` is available as a built-in Vedenemo attribute data type.
+- [x] A model entity can define an attribute whose type is `LOCATION`.
+- [x] `.vdos` model scripts can declare attributes with `dataType=LOCATION`.
+- [x] A normalized `LOCATION` instance value is represented in core by a
       dedicated pure-JDK record.
-- [ ] HTTP instance create/update requests accept `LOCATION` values only as
+- [x] HTTP instance create/update requests accept `LOCATION` values only as
       structured objects with numeric `latitude` and `longitude` fields.
-- [ ] HTTP instance responses return `LOCATION` values as structured objects
+- [x] HTTP instance responses return `LOCATION` values as structured objects
       with `latitude` and `longitude` fields.
-- [ ] `.vdmp` dump export/import preserves normalized `LOCATION` values without
+- [x] `.vdmp` dump export/import preserves normalized `LOCATION` values without
       intentional rounding or truncation.
-- [ ] Latitude and longitude are interpreted as WGS 84 decimal-degree
+- [x] Latitude and longitude are interpreted as WGS 84 decimal-degree
       coordinates.
-- [ ] Latitude and longitude ranges are validated.
-- [ ] Missing latitude or longitude values are rejected.
-- [ ] Non-numeric, non-finite, or string-shaped location values are rejected
+- [x] Latitude and longitude ranges are validated.
+- [x] Missing latitude or longitude values are rejected.
+- [x] Non-numeric, non-finite, or string-shaped location values are rejected
       using the normal Vedenemo validation/error mechanism.
-- [ ] Exact equality filtering/querying works for `LOCATION` values.
-- [ ] Ordered comparison and string containment operators reject `LOCATION`
+- [x] Exact equality filtering/querying works for `LOCATION` values.
+- [x] Ordered comparison and string containment operators reject `LOCATION`
       attributes.
-- [ ] The data type itself does not depend on any map or visualization
+- [x] The data type itself does not depend on any map or visualization
       implementation.
-- [ ] Backend verification succeeds.
+- [x] Backend verification succeeds.
+
+### Completion Notes
+
+- Added `DataType.LOCATION` and a dedicated pure-JDK `LocationValue` record.
+- Added structured instance value normalization with finite WGS 84 latitude and
+  longitude validation.
+- Added exact equality filtering/querying for `LOCATION` values.
+- Kept ordered comparison, string containment, string coordinate input, and
+  spatial search out of the initial implementation.
+- Updated HTTP API responses and `.vdmp` dump import/export support for
+  structured `{latitude, longitude}` values.
+- Accepted `LOCATION` through `.vdos` model scripts, HTTP session command
+  parsing, command-console parsing, and CLI datatype input normalization.
+- Updated current implementation docs, README, CLI reference, current task, and
+  backlog history.
 
 ### Future Work
 

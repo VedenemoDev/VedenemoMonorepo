@@ -79,6 +79,7 @@ final class InstanceDataResourceTest {
         assertTrue(response.body().contains("\"modelAzName\":\"Music\""));
         assertTrue(response.body().contains("\"azName\":\"Artist\""));
         assertTrue(response.body().contains("\"azName\":\"Name\",\"visName\":\"Name\",\"dataType\":\"TEXT\""));
+        assertTrue(response.body().contains("\"azName\":\"Location\",\"visName\":\"Location\",\"dataType\":\"LOCATION\""));
         assertTrue(response.body().contains("\"azName\":\"Album_Artist\""));
         assertTrue(response.body().contains("\"create\":\"/data/{modelAzName}/roots/{instanceRootId}/_links/Album_Artist\""));
     }
@@ -386,6 +387,40 @@ final class InstanceDataResourceTest {
     }
 
     @Test
+    void createsAndQueriesLocationEntityValuesByExactEquality() throws Exception {
+        String rootId = createRoot(null);
+        String locatedId = responseId(post(rootPath(rootId, "/Artist"), """
+                {
+                  "Name":"Located Artist",
+                  "Location":{"latitude":62.1234567,"longitude":30.1234567}
+                }
+                """));
+        String otherId = responseId(post(rootPath(rootId, "/Artist"), """
+                {
+                  "Name":"Other Artist",
+                  "Location":{"latitude":63.0,"longitude":31.0}
+                }
+                """));
+
+        HttpResponse<String> listFiltered = get(rootPath(rootId, "/Artist?Name=Located%20Artist"));
+        HttpResponse<String> equalityQuery = post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "equals": {
+                      "Location": {"latitude":62.1234567,"longitude":30.1234567}
+                    }
+                  }
+                }
+                """);
+
+        assertEquals(200, listFiltered.statusCode());
+        assertTrue(listFiltered.body().contains("\"Location\":{\"latitude\":62.1234567,\"longitude\":30.1234567}"));
+        assertEquals(200, equalityQuery.statusCode());
+        assertTrue(equalityQuery.body().contains("\"id\":\"" + locatedId + "\""));
+        assertTrue(!equalityQuery.body().contains("\"id\":\"" + otherId + "\""));
+    }
+
+    @Test
     void keepsEntityInstancesIsolatedByRoot() throws Exception {
         String firstRootId = createRoot("First archive");
         String secondRootId = createRoot("Second archive");
@@ -441,6 +476,15 @@ final class InstanceDataResourceTest {
         assertEquals(400, post(rootPath(rootId, "/Artist"), """
                 {"LastPlayedAt":"2026-08-12T18:30:00Z"}
                 """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist"), """
+                {"Location":"62.1234567,30.1234567"}
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist"), """
+                {"Location":{"latitude":91.0,"longitude":30.0}}
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist"), """
+                {"Location":{"latitude":"62.0","longitude":30.0}}
+                """).statusCode());
         assertEquals(400, post(rootPath(rootId, "/Artist/_query"), """
                 {
                   "where": {
@@ -455,6 +499,24 @@ final class InstanceDataResourceTest {
                   "where": {
                     "comparisons": [
                       {"attributeAzName": "Rating", "operator": "contains", "value": 99}
+                    ]
+                  }
+                }
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "comparisons": [
+                      {"attributeAzName": "Location", "operator": ">", "value": {"latitude":62.0,"longitude":30.0}}
+                    ]
+                  }
+                }
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "comparisons": [
+                      {"attributeAzName": "Location", "operator": "contains", "value": {"latitude":62.0,"longitude":30.0}}
                     ]
                   }
                 }
@@ -493,6 +555,7 @@ final class InstanceDataResourceTest {
         artist.addAttribute(new VAttribute("BirthDate", "Birth Date", DataType.DATE, modelRoot.version()));
         artist.addAttribute(new VAttribute("SetTime", "Set Time", DataType.TIME, modelRoot.version()));
         artist.addAttribute(new VAttribute("LastPlayedAt", "Last Played At", DataType.DATETIME, modelRoot.version()));
+        artist.addAttribute(new VAttribute("Location", "Location", DataType.LOCATION, modelRoot.version()));
         VEntity album = modelRoot.addEntity(new VEntity("Album", "Album", modelRoot.version()));
         album.addAttribute(new VAttribute("Title", "Title", DataType.TEXT, modelRoot.version()));
         modelRoot.addAssociation(new OwnershipAssociation(

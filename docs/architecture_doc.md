@@ -138,7 +138,7 @@ Shared model API module. It currently contains:
 - `Cardinality`, a pure value object for association multiplicity text such as
   `1`, `0..1`, `0..*`, `1..*`, and bounded ranges
 - `DataType`, the enum of supported attribute data types: `TEXT`, `NUMERIC`,
-  `URL`, `DATA`, `DATE`, `TIME`, and `DATETIME`
+  `URL`, `DATA`, `DATE`, `TIME`, `DATETIME`, and `LOCATION`
 - `VAttribute`, a model attribute with `azName`, `visName`, `DataType`, and
   lifecycle version metadata
 - `VEntity`, a model entity with `azName`, `visName`, lifecycle version
@@ -264,10 +264,13 @@ operations against the currently loaded `ModelRoot` in `ModelRegistry`.
 Instances are generic records, not generated Java classes. Attribute values are
 stored in ordered maps keyed by modeled attribute `azName`; values are
 normalized as pure JDK values according to `DataType`. `NUMERIC` values are
-stored as `BigDecimal`, `URL` values must be strict absolute URLs, and
+stored as `BigDecimal`, `URL` values must be strict absolute URLs,
 `DATE`, `TIME`, and `DATETIME` values are validated as ISO local strings while
-remaining string values in API responses and instance records. Entity queries
-support ordered comparisons for `NUMERIC`, `DATE`, `TIME`, and `DATETIME`.
+remaining string values in API responses and instance records, and `LOCATION`
+values are validated WGS 84 point coordinates stored in the pure-JDK
+`LocationValue` record. Entity queries support ordered comparisons for
+`NUMERIC`, `DATE`, `TIME`, and `DATETIME`; `LOCATION` supports exact equality
+matching but not ordered comparison or string containment.
 
 `ModelInstanceDumpService` owns pure Vedenemo `.vdmp` dump use cases. It
 exports one model-instance root into Vedenemo-owned dump records, prechecks
