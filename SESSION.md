@@ -9333,3 +9333,54 @@ Current status and next steps:
 - Verification passed: `mvn clean verify` with elevated local socket
   permissions, `git diff --check`, and README disclaimer check.
 - Future work remains to define and enforce deprecated/retired usage semantics.
+## 2026-08-26 15:03 EEST
+
+Session goal: analyze and refine the planning backlog item for adding a new
+`LOCATION` datatype, without implementing it yet.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `rg -n "enum DataType|DataType|STRING|INTEGER|DECIMAL|BOOLEAN|DATE|attribute type|Attribute" vedenemo-model-api vedenemo-core vedenemo-web-api vedenemo-cli vedenemo-command-console README.md docs tasks -g '!target'`
+- `rg -n "create attribute|attribute-create|attribute|DataType" scripts .vedenemo -g '*.vdos' -g '*.bash'`
+- `rg --files vedenemo-model-api/src/main/java vedenemo-core/src/main/java vedenemo-web-api/src/main/java vedenemo-cli/src/main/java vedenemo-command-console/src/main/java | rg "(DataType|Attribute|Value|Instance|Data)"`
+- `sed -n '1,120p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `sed -n '1,140p' vedenemo-core/src/main/java/org/vedenemo/core/instance/InstanceValue.java`
+- `sed -n '220,460p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `rg -n "record .*Request|record .*Response|InstanceValue|attributes|value\\(\\)" vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '260,620p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/dump/ModelInstanceDumpService.java`
+- `sed -n '683,822p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/EntityInstance.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '1,170p' tasks/backlog.md`
+- `git diff --check`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Refined the `LOCATION` backlog task into an implementation-ready planning
+  description.
+- Captured the agreed choices: dedicated pure-JDK record, WGS 84 decimal-degree
+  point semantics, structured numeric JSON only, exact equality matching only,
+  `.vdos` datatype declarations, `.vdmp` instance dump support, and no map or
+  visualization dependency.
+- Added spatial matching, richer GPX concepts, UX helpers, and geographic
+  visualizations as future work.
+- Verification passed: `git diff --check`.
+- Next step is implementation only after this planning description is accepted.

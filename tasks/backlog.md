@@ -1,5 +1,179 @@
 # Backlog
 
+## Add new LOCATION datatype
+
+Status: planning
+
+### Goal
+
+Add a new built-in `LOCATION` attribute data type to the Vedenemo model.
+
+A model author must be able to define an entity attribute whose value represents
+a geographic point. Instance values for that attribute must carry coordinate
+precision sufficient for importing and representing positions originating from
+GPX data.
+
+### Example
+
+Conceptually, a model could contain an entity such as:
+
+```text
+Entity: Tree
+Attributes:
+  name: TEXT
+  species: TEXT
+  location: LOCATION
+```
+
+An instance value should use a structured representation equivalent to:
+
+```json
+{
+  "location": {
+    "latitude": 62.1234567,
+    "longitude": 30.1234567
+  }
+}
+```
+
+### Coordinate System
+
+`LOCATION` uses geographic coordinates based on:
+
+- WGS 84 (`EPSG:4326`)
+- latitude in decimal degrees
+- longitude in decimal degrees
+
+This corresponds to the coordinate system normally used by GPX data.
+
+### Data Representation
+
+The logical value of `LOCATION` consists of:
+
+```text
+latitude:  double
+longitude: double
+```
+
+Represent normalized core values with a dedicated pure-JDK record rather than a
+generic `Map` or JSON-specific type. The record should store:
+
+- `latitude`
+- `longitude`
+
+Use IEEE 754 64-bit floating-point values (`double`) for the coordinates. The
+implementation must not intentionally round, truncate, or reformat coordinates
+beyond normal parsing and serialization of the normalized double values.
+
+For HTTP and `.vdmp` dump JSON, represent a non-null `LOCATION` value as a
+structured object with numeric `latitude` and `longitude` fields. Do not accept
+string coordinate forms such as `"62.1234567,30.1234567"` in the initial
+implementation.
+
+### Validation
+
+A `LOCATION` value is valid when:
+
+```text
+-90.0  <= latitude  <= 90.0
+-180.0 <= longitude <= 180.0
+```
+
+Both latitude and longitude are required for a non-null `LOCATION` value.
+
+Latitude and longitude must be finite numeric values. `NaN`, positive infinity,
+and negative infinity are invalid.
+
+Existing Vedenemo rules concerning optional/null attribute values should apply to the `LOCATION` attribute itself.
+
+### Query Behavior
+
+Support exact equality matching for `LOCATION` values in the same places where
+other equality filters are currently supported.
+
+Do not add ordered comparison, string containment, bounding-box search, distance
+search, nearest-neighbor search, or other spatial query operators in the initial
+implementation.
+
+### Scope
+
+The first implementation represents a geographic point only.
+
+Included:
+
+- `LOCATION` as a built-in `DataType`
+- pure-JDK dedicated value record for normalized core instance values
+- latitude
+- longitude
+- WGS 84 coordinate reference system
+- GPX-level coordinate precision
+- structured HTTP JSON input/output for instance values
+- `.vdmp` dump export/import support for instance values
+- equality filtering/querying for exact same location values
+- `.vdos` model script support for declaring `dataType=LOCATION`
+- CLI and command-console attribute creation/listing support through the
+  existing datatype prompt and summaries
+- implementation documentation updates if concrete API, dump, or script
+  behavior changes
+
+Not included in the initial implementation:
+
+- altitude/elevation
+- timestamp
+- accuracy radius
+- heading
+- speed
+- coordinate reference systems other than WGS 84
+- routes, tracks, lines, or polygons
+- reverse geocoding or textual addresses
+- string coordinate input formats
+- bounding-box, radius/distance, nearest-neighbor, range, or other spatial
+  match criteria
+- map or visualization behavior
+
+These can later be introduced as separate concepts or extensions without changing the basic meaning of `LOCATION`.
+
+### Acceptance Criteria
+
+- [ ] `LOCATION` is available as a built-in Vedenemo attribute data type.
+- [ ] A model entity can define an attribute whose type is `LOCATION`.
+- [ ] `.vdos` model scripts can declare attributes with `dataType=LOCATION`.
+- [ ] A normalized `LOCATION` instance value is represented in core by a
+      dedicated pure-JDK record.
+- [ ] HTTP instance create/update requests accept `LOCATION` values only as
+      structured objects with numeric `latitude` and `longitude` fields.
+- [ ] HTTP instance responses return `LOCATION` values as structured objects
+      with `latitude` and `longitude` fields.
+- [ ] `.vdmp` dump export/import preserves normalized `LOCATION` values without
+      intentional rounding or truncation.
+- [ ] Latitude and longitude are interpreted as WGS 84 decimal-degree
+      coordinates.
+- [ ] Latitude and longitude ranges are validated.
+- [ ] Missing latitude or longitude values are rejected.
+- [ ] Non-numeric, non-finite, or string-shaped location values are rejected
+      using the normal Vedenemo validation/error mechanism.
+- [ ] Exact equality filtering/querying works for `LOCATION` values.
+- [ ] Ordered comparison and string containment operators reject `LOCATION`
+      attributes.
+- [ ] The data type itself does not depend on any map or visualization
+      implementation.
+- [ ] Backend verification succeeds.
+
+### Future Work
+
+- Add altitude/elevation support if needed for richer GPX imports.
+- Add timestamped tracks, routes, lines, or polygons as separate concepts.
+- Add bounding-box, radius/distance, nearest-neighbor, range, or other spatial
+  match criteria.
+- Add UX helper functionality for importing or assigning location values.
+- Add geographic visualizations that recognize `LOCATION` attributes.
+
+### Design Note
+
+`LOCATION` should describe the **semantic meaning of the data**, not its visualization.
+
+A visualization layer can later recognize `LOCATION` attributes and offer geographic visualizations such as maps, point plots, tracks or spatial overlays without requiring the model author to define visualization-specific coordinates or bindings.
+
 ## Enforce lifecycle use semantics for deprecated and retired model items
 
 Status: planned
