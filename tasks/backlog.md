@@ -2,6 +2,8 @@
 
 ## Add Model-Level `ValueSet` Constraint Support
 
+Status: planning
+
 ### Goal
 
 Introduce a model-level `ValueSet` concept that can be used to restrict the allowed values of entity attributes.
