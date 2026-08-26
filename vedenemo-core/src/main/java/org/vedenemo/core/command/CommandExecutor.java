@@ -9,6 +9,7 @@ import org.vedenemo.core.model.RelationAssociation;
 import org.vedenemo.core.model.RelationEnd;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
+import org.vedenemo.core.model.ValueSet;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.spi.storage.ModelStorage;
 import org.vedenemo.core.session.Session;
@@ -87,6 +88,22 @@ public final class CommandExecutor {
                     createAssociationCommand.associationAzName()
             );
         }
+        if (command instanceof CreateValueSetCommand createValueSetCommand) {
+            apply(new DeleteValueSetCommand(createValueSetCommand.modelAzName(), createValueSetCommand.valueSetAzName()));
+            return UndoResult.undoneCreateValueSet(createValueSetCommand.modelAzName(), createValueSetCommand.valueSetAzName());
+        }
+        if (command instanceof SetAttributeValueSetCommand setAttributeValueSetCommand) {
+            apply(new ClearAttributeValueSetCommand(
+                    setAttributeValueSetCommand.modelAzName(),
+                    setAttributeValueSetCommand.entityAzName(),
+                    setAttributeValueSetCommand.attributeAzName()
+            ));
+            return UndoResult.undoneSetAttributeValueSet(
+                    setAttributeValueSetCommand.modelAzName(),
+                    setAttributeValueSetCommand.entityAzName(),
+                    setAttributeValueSetCommand.attributeAzName()
+            );
+        }
         throw new IllegalStateException("command has no undo counterpart: " + command.getClass().getSimpleName());
     }
 
@@ -95,12 +112,20 @@ public final class CommandExecutor {
             applyCreateEntity(createEntityCommand);
         } else if (command instanceof CreateAttributeCommand createAttributeCommand) {
             applyCreateAttribute(createAttributeCommand);
+        } else if (command instanceof CreateValueSetCommand createValueSetCommand) {
+            applyCreateValueSet(createValueSetCommand);
+        } else if (command instanceof SetAttributeValueSetCommand setAttributeValueSetCommand) {
+            applySetAttributeValueSet(setAttributeValueSetCommand);
         } else if (command instanceof CreateAssociationCommand createAssociationCommand) {
             applyCreateAssociation(createAssociationCommand);
         } else if (command instanceof DeleteAssociationCommand deleteAssociationCommand) {
             applyDeleteAssociation(deleteAssociationCommand);
         } else if (command instanceof DeleteAttributeCommand deleteAttributeCommand) {
             applyDeleteAttribute(deleteAttributeCommand);
+        } else if (command instanceof DeleteValueSetCommand deleteValueSetCommand) {
+            applyDeleteValueSet(deleteValueSetCommand);
+        } else if (command instanceof ClearAttributeValueSetCommand clearAttributeValueSetCommand) {
+            applyClearAttributeValueSet(clearAttributeValueSetCommand);
         } else if (command instanceof DeleteEntityCommand deleteEntityCommand) {
             applyDeleteEntity(deleteEntityCommand);
         } else if (command instanceof NoOpCommand) {
@@ -122,8 +147,27 @@ public final class CommandExecutor {
                 command.attributeAzName(),
                 command.attributeVisName(),
                 command.dataType(),
-                modelRoot.version()
+                modelRoot.version(),
+                null,
+                null,
+                requireCompatibleValueSet(modelRoot, command.dataType(), command.valueSetAzName())
         ));
+    }
+
+    private void applyCreateValueSet(CreateValueSetCommand command) {
+        ModelRoot modelRoot = selectedModel(command.modelAzName());
+        modelRoot.addValueSet(new ValueSet(command.valueSetAzName(), command.dataType(), command.entries()));
+    }
+
+    private void applySetAttributeValueSet(SetAttributeValueSetCommand command) {
+        ModelRoot modelRoot = selectedModel(command.modelAzName());
+        VEntity entity = findEntity(modelRoot, command.entityAzName());
+        VAttribute attribute = findAttribute(entity, command.attributeAzName());
+        if (attribute.valueSetAzName() != null) {
+            throw new IllegalStateException("attribute already references a ValueSet");
+        }
+        String valueSetAzName = requireCompatibleValueSet(modelRoot, attribute.type(), command.valueSetAzName());
+        entity.replaceAttribute(attribute.withValueSetAzName(valueSetAzName));
     }
 
     private void applyCreateAssociation(CreateAssociationCommand command) {
@@ -137,6 +181,21 @@ public final class CommandExecutor {
         VEntity entity = findEntity(modelRoot, command.entityAzName());
         entity.removeAttribute(command.attributeAzName())
                 .orElseThrow(() -> new IllegalStateException("attribute not found"));
+    }
+
+    private void applyDeleteValueSet(DeleteValueSetCommand command) {
+        ModelRoot modelRoot = modelRegistry.find(command.modelAzName())
+                .orElseThrow(() -> new IllegalStateException("selected model not found"));
+        modelRoot.removeValueSet(command.valueSetAzName())
+                .orElseThrow(() -> new IllegalStateException("ValueSet not found"));
+    }
+
+    private void applyClearAttributeValueSet(ClearAttributeValueSetCommand command) {
+        ModelRoot modelRoot = modelRegistry.find(command.modelAzName())
+                .orElseThrow(() -> new IllegalStateException("selected model not found"));
+        VEntity entity = findEntity(modelRoot, command.entityAzName());
+        VAttribute attribute = findAttribute(entity, command.attributeAzName());
+        entity.replaceAttribute(attribute.withValueSetAzName(null));
     }
 
     private void applyDeleteAssociation(DeleteAssociationCommand command) {
@@ -169,6 +228,26 @@ public final class CommandExecutor {
                 .filter(entity -> VEntity.uniquenessKey(entity.azName()).equals(targetKey))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("entity not found"));
+    }
+
+    private static VAttribute findAttribute(VEntity entity, String attributeAzName) {
+        String targetKey = VAttribute.uniquenessKey(attributeAzName);
+        return entity.attributes().stream()
+                .filter(attribute -> VAttribute.uniquenessKey(attribute.azName()).equals(targetKey))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("attribute not found"));
+    }
+
+    private static String requireCompatibleValueSet(ModelRoot modelRoot, org.vedenemo.core.model.DataType attributeType, String valueSetAzName) {
+        if (valueSetAzName == null) {
+            return null;
+        }
+        ValueSet valueSet = modelRoot.findValueSet(valueSetAzName)
+                .orElseThrow(() -> new IllegalArgumentException("ValueSet not found: " + valueSetAzName));
+        if (valueSet.type() != attributeType) {
+            throw new IllegalArgumentException("ValueSet type " + valueSet.type() + " is not compatible with attribute type " + attributeType);
+        }
+        return valueSet.azName();
     }
 
     private static Association toAssociation(CreateAssociationCommand command, ModelRoot modelRoot) {

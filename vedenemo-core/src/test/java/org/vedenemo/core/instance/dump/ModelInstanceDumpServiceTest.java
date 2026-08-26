@@ -11,6 +11,8 @@ import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.OwnershipAssociation;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
+import org.vedenemo.core.model.ValueSet;
+import org.vedenemo.core.model.ValueSetEntry;
 import org.vedenemo.core.registry.ModelRegistry;
 
 import java.time.Instant;
@@ -152,13 +154,37 @@ final class ModelInstanceDumpServiceTest {
         assertTrue(result.diagnostics().contains("attribute type mismatch: Artist.Location expects LOCATION but dump value is MapN"));
     }
 
+    @Test
+    void reportsValueSetViolationsDuringPrecheck() {
+        Fixture fixture = fixture("1.0.0");
+        ModelInstanceDump dump = new ModelInstanceDump(
+                ModelInstanceDump.FORMAT,
+                ModelInstanceDump.FORMAT_VERSION,
+                Instant.parse("2026-08-21T05:00:00Z"),
+                new DumpModel("Music", "Music", "1.0.0"),
+                new DumpRoot("source-root", "Imported root"),
+                List.of(new DumpEntityGroup("Artist", List.of(new DumpEntityRecord("artist-1", Map.of("Species", "BIRCH"))))),
+                List.of()
+        );
+
+        ModelInstanceDumpPrecheckResult result = fixture.dumpService.precheck("Music", dump);
+
+        assertFalse(result.importable());
+        assertTrue(result.diagnostics().contains("attribute value outside ValueSet: Artist.Species must be one of TreeSpecies"));
+    }
+
     private static Fixture fixture(String version) {
         ModelRegistry modelRegistry = new ModelRegistry();
         ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Music", "Music", version));
+        modelRoot.addValueSet(new ValueSet("TreeSpecies", DataType.TEXT, List.of(
+                new ValueSetEntry("PINE", "Pine"),
+                new ValueSetEntry("SPRUCE", "Spruce")
+        )));
         VEntity artist = modelRoot.addEntity(new VEntity("Artist", "Artist", modelRoot.version()));
         artist.addAttribute(new VAttribute("Name", "Name", DataType.TEXT, modelRoot.version()));
         artist.addAttribute(new VAttribute("Rating", "Rating", DataType.NUMERIC, modelRoot.version()));
         artist.addAttribute(new VAttribute("Location", "Location", DataType.LOCATION, modelRoot.version()));
+        artist.addAttribute(new VAttribute("Species", "Species", DataType.TEXT, modelRoot.version(), null, null, "TreeSpecies"));
         VEntity album = modelRoot.addEntity(new VEntity("Album", "Album", modelRoot.version()));
         album.addAttribute(new VAttribute("Title", "Title", DataType.TEXT, modelRoot.version()));
         modelRoot.addAssociation(new OwnershipAssociation(

@@ -131,7 +131,8 @@ GcsStorage --> Spi
 Shared model API module. It currently contains:
 
 - `ModelRoot`, the first concrete model root entity, which owns ordered
-  `VEntity` instances and ordered model-level associations
+  `VEntity` instances, ordered model-level `ValueSet` definitions, and ordered
+  model-level associations
 - `ModelVersion`, a normalized semantic version value
 - `Versionable`, an abstract base class for model elements with lifecycle
   version metadata
@@ -139,8 +140,11 @@ Shared model API module. It currently contains:
   `1`, `0..1`, `0..*`, `1..*`, and bounded ranges
 - `DataType`, the enum of supported attribute data types: `TEXT`, `NUMERIC`,
   `URL`, `DATA`, `DATE`, `TIME`, `DATETIME`, and `LOCATION`
-- `VAttribute`, a model attribute with `azName`, `visName`, `DataType`, and
-  lifecycle version metadata
+- `VAttribute`, a model attribute with `azName`, `visName`, `DataType`,
+  optional model-local `ValueSet` reference, and lifecycle version metadata
+- `ValueSet` and `ValueSetEntry`, model-level finite allowed-value sets for
+  `TEXT`, `NUMERIC`, `DATE`, and `TIME` attributes; each entry has a stored
+  technical value and a visual name
 - `VEntity`, a model entity with `azName`, `visName`, lifecycle version
   metadata, and an ordered attribute collection
 - `Association`, a sealed interface for first-class model-level associations
@@ -161,13 +165,14 @@ uniqueness case-insensitively. It exposes attributes as a read-only snapshot
 list. Attributes can be removed by `azName` or by `VAttribute` instance while a
 model is under construction.
 
-`ModelRoot` preserves entity and association insertion order. It enforces entity
-`azName` uniqueness and association `azName` uniqueness case-insensitively in
-separate model-level namespaces. Association creation validates that source and
-target entities already exist. Relations validate both named ends through the
-same model-level association collection. Entities and associations are exposed
-as read-only snapshot lists and can be removed while a model is under
-construction or while undo applies an inverse command.
+`ModelRoot` preserves value-set, entity, and association insertion order. It
+enforces entity `azName`, value-set `azName`, and association `azName`
+uniqueness case-insensitively in separate model-level namespaces. Association
+creation validates that source and target entities already exist. Relations
+validate both named ends through the same model-level association collection.
+Entities, value sets, and associations are exposed as read-only snapshot lists
+and can be removed while a model is under construction or while undo applies an
+inverse command.
 
 `Versionable` requires `activeSince`. `deprecatedSince` is optional, but when it
 is present it must be strictly later than `activeSince`. `retiredSince` is also
@@ -195,8 +200,10 @@ Dependencies:
 
 Core command module. It currently contains a sealed `Command` marker interface,
 `NoOpCommand`, `CreateEntityCommand`, `CreateAttributeCommand`,
+`CreateValueSetCommand`, `SetAttributeValueSetCommand`,
 `CreateAssociationCommand`, internal `DeleteEntityCommand`,
-`DeleteAttributeCommand`, and `DeleteAssociationCommand` counterparts,
+`DeleteAttributeCommand`, `DeleteValueSetCommand`,
+`ClearAttributeValueSetCommand`, and `DeleteAssociationCommand` counterparts,
 `UndoResult`,
 `ModelCommandJournal`, `VedenemoScriptService`, `CommandExecutor`, `Session`,
 `SessionManager`, `ModelRegistry`, and process-local instance-data support.
@@ -218,7 +225,9 @@ in the model journal.
 
 `CommandExecutor` is bound to exactly one active `Session` and the process-local
 `ModelRegistry`. It can execute `CreateEntityCommand` against the selected
-model, `CreateAttributeCommand` against an entity in the selected model, and
+model, `CreateValueSetCommand` against the selected model,
+`CreateAttributeCommand` against an entity in the selected model,
+`SetAttributeValueSetCommand` against an existing compatible attribute, and
 `CreateAssociationCommand` against the selected model. `CreateAssociationCommand`
 creates directed ownership/reference associations or bidirectional relations
 depending on its `AssociationKind` and relation end fields. Successful commands
@@ -226,8 +235,11 @@ are recorded in the session and in the model-level command journal. Failed
 commands are not recorded. Undo is stack-based and only applies to the latest
 successful command: create-entity is undone through the internal
 `DeleteEntityCommand` inverse, create-attribute is undone through the internal
-`DeleteAttributeCommand` inverse, and create-association is undone through the
-internal `DeleteAssociationCommand` inverse. Undo removes the original command
+`DeleteAttributeCommand` inverse, create-value-set is undone through the
+internal `DeleteValueSetCommand` inverse, set-attribute-value-set is undone
+through the internal `ClearAttributeValueSetCommand` inverse, and
+create-association is undone through the internal `DeleteAssociationCommand`
+inverse. Undo removes the original command
 from active session command history and from the model-level command journal,
 then returns a core-owned `UndoResult` containing a stable command identifier
 such as `create-entity`, `create-attribute`, or `create-association` plus the
@@ -268,7 +280,9 @@ stored as `BigDecimal`, `URL` values must be strict absolute URLs,
 `DATE`, `TIME`, and `DATETIME` values are validated as ISO local strings while
 remaining string values in API responses and instance records, and `LOCATION`
 values are validated WGS 84 point coordinates stored in the pure-JDK
-`LocationValue` record. Entity queries support ordered comparisons for
+`LocationValue` record. When an attribute references a `ValueSet`, future
+instance create/update operations and `.vdmp` import precheck validate that the
+normalized value belongs to the referenced set. Entity queries support ordered comparisons for
 `NUMERIC`, `DATE`, `TIME`, and `DATETIME`; `LOCATION` supports exact equality
 matching but not ordered comparison or string containment.
 
@@ -397,8 +411,11 @@ Current CLI behavior:
 - selects an entity with `entity [N | azName]`
 - clears only selected entity context with `entity detach`
 - lists attributes in the selected entity with `attributes`, including data
-  type and lifecycle version fields
+  type, optional `ValueSet` reference, and lifecycle version fields
 - creates attributes in the selected entity with `attr add`
+- creates model-level value sets with `vset add`
+- attaches a model-level value set to an attribute in the selected entity with
+  `attr vset`
 - lists associations with `associations`; when an entity is selected the list is
   scoped to associations touching that entity, otherwise it is model-scoped
 - creates directed ownership/reference associations and bidirectional relations
@@ -447,8 +464,10 @@ and exposes:
 - `GET /models/{modelAzName}/entities`, which lists entities in insertion order
   for one model
 - `GET /models/{modelAzName}/entities/{entityAzName}/attributes`, which lists
-  attributes in insertion order for one entity, including `DataType` and
-  lifecycle version fields
+  attributes in insertion order for one entity, including `DataType`, optional
+  `valueSetAzName`, and lifecycle version fields
+- `GET /models/{modelAzName}/value-sets`, which lists model-level `ValueSet`
+  definitions and entries
 - `GET /models/{modelAzName}/associations`, which lists model-level
   associations in insertion order
 - `GET /models/{modelAzName}/entities/{entityAzName}/associations`, which lists
@@ -525,6 +544,12 @@ and exposes:
 - `POST /sessions/{uuid}/commands/create-attribute`, which creates a
   `VAttribute` in an entity in the session's selected model through
   `CommandExecutor`
+- `POST /sessions/{uuid}/commands/create-value-set`, which creates a
+  model-level `ValueSet` in the session's selected model through
+  `CommandExecutor`
+- `POST /sessions/{uuid}/commands/set-attribute-value-set`, which attaches a
+  compatible model-level `ValueSet` to an existing attribute in the session's
+  selected model through `CommandExecutor`
 - `POST /sessions/{uuid}/commands/create-association`, which creates a directed
   ownership/reference association or bidirectional relation in the session's
   selected model through `CommandExecutor`

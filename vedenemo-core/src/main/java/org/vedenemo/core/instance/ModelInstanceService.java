@@ -5,6 +5,7 @@ import org.vedenemo.core.model.DataType;
 import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
+import org.vedenemo.core.model.ValueSet;
 import org.vedenemo.core.registry.ModelRegistry;
 
 import java.math.BigDecimal;
@@ -66,7 +67,7 @@ public final class ModelInstanceService {
     public EntityInstance createEntityInstance(String modelAzName, String instanceRootId, String entityAzName, Map<String, Object> submittedValues) {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);
-        Map<String, InstanceValue> values = normalizeValues(entity, submittedValues);
+        Map<String, InstanceValue> values = normalizeValues(modelRoot, entity, submittedValues);
         requireSubmittedAttributeData(values);
         EntityInstance instance = new EntityInstance(
                 InstanceId.random(),
@@ -81,7 +82,7 @@ public final class ModelInstanceService {
     public List<EntityInstance> listEntityInstances(String modelAzName, String instanceRootId, String entityAzName, Map<String, Object> filters) {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);
-        Map<String, InstanceValue> normalizedFilters = normalizeValues(entity, filters);
+        Map<String, InstanceValue> normalizedFilters = normalizeValues(modelRoot, entity, filters);
         return requireDataset(modelRoot, instanceRootId)
                 .listEntityInstances(entity.azName())
                 .stream()
@@ -107,7 +108,7 @@ public final class ModelInstanceService {
     public EntityInstance updateEntityInstance(String modelAzName, String instanceRootId, String entityAzName, String instanceId, Map<String, Object> submittedValues) {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);
-        Map<String, InstanceValue> values = normalizeValues(entity, submittedValues);
+        Map<String, InstanceValue> values = normalizeValues(modelRoot, entity, submittedValues);
         requireSubmittedAttributeData(values);
         EntityInstance instance = new EntityInstance(
                 new InstanceId(instanceId),
@@ -122,7 +123,7 @@ public final class ModelInstanceService {
     public List<EntityInstance> queryEntityInstances(String modelAzName, String instanceRootId, String entityAzName, EntityInstanceQuery query) {
         ModelRoot modelRoot = requireModel(modelAzName);
         VEntity entity = requireEntity(modelRoot, entityAzName);
-        List<NormalizedScalarComparison> comparisons = normalizeScalarComparisons(entity, query.equals(), query.comparisons());
+        List<NormalizedScalarComparison> comparisons = normalizeScalarComparisons(modelRoot, entity, query.equals(), query.comparisons());
         List<NormalizedRelationshipPredicate> relationships = query.relationships().stream()
                 .map(predicate -> normalizeRelationshipPredicate(modelRoot, entity, predicate))
                 .toList();
@@ -186,7 +187,7 @@ public final class ModelInstanceService {
                 .orElseThrow(() -> new IllegalArgumentException("association not found"));
     }
 
-    private static Map<String, InstanceValue> normalizeValues(VEntity entity, Map<String, Object> submittedValues) {
+    private static Map<String, InstanceValue> normalizeValues(ModelRoot modelRoot, VEntity entity, Map<String, Object> submittedValues) {
         Objects.requireNonNull(submittedValues, "submittedValues must not be null");
         Map<String, VAttribute> attributesByKey = new LinkedHashMap<>();
         for (VAttribute attribute : entity.attributes()) {
@@ -203,7 +204,7 @@ public final class ModelInstanceService {
             String attributeKey = VAttribute.uniquenessKey(attribute.azName());
             for (Map.Entry<String, Object> entry : submittedValues.entrySet()) {
                 if (VAttribute.uniquenessKey(entry.getKey()).equals(attributeKey)) {
-                    normalizedValues.put(attribute.azName(), normalizeValue(attribute, entry.getValue()));
+                    normalizedValues.put(attribute.azName(), normalizeConstrainedValue(modelRoot, attribute, entry.getValue()));
                     break;
                 }
             }
@@ -231,6 +232,26 @@ public final class ModelInstanceService {
             case DATETIME -> dateTimeValue(attribute, submittedValue);
             case LOCATION -> locationValue(attribute, submittedValue);
         };
+    }
+
+    private static InstanceValue normalizeConstrainedValue(ModelRoot modelRoot, VAttribute attribute, Object submittedValue) {
+        InstanceValue value = normalizeValue(attribute, submittedValue);
+        requireValueSetMembership(modelRoot, attribute, value);
+        return value;
+    }
+
+    private static void requireValueSetMembership(ModelRoot modelRoot, VAttribute attribute, InstanceValue value) {
+        if (attribute.valueSetAzName() == null) {
+            return;
+        }
+        ValueSet valueSet = modelRoot.findValueSet(attribute.valueSetAzName())
+                .orElseThrow(() -> new IllegalArgumentException("ValueSet not found: " + attribute.valueSetAzName()));
+        if (valueSet.type() != attribute.type()) {
+            throw new IllegalArgumentException("ValueSet type " + valueSet.type() + " is not compatible with attribute type " + attribute.type());
+        }
+        if (!valueSet.containsTechnicalValue(value.value())) {
+            throw new IllegalArgumentException(attribute.azName() + " must be one of ValueSet " + valueSet.azName());
+        }
     }
 
     private static InstanceValue stringValue(VAttribute attribute, Object submittedValue) {
@@ -367,6 +388,7 @@ public final class ModelInstanceService {
     }
 
     private static List<NormalizedScalarComparison> normalizeScalarComparisons(
+            ModelRoot modelRoot,
             VEntity entity,
             Map<String, Object> equals,
             List<ScalarComparison> comparisons
@@ -382,17 +404,17 @@ public final class ModelInstanceService {
         for (ScalarComparison comparison : allComparisons) {
             VAttribute attribute = requireAttribute(attributesByKey, comparison.attributeAzName());
             requireOperatorAllowed(attribute, comparison.operator());
-            InstanceValue value = normalizeComparisonValue(attribute, comparison.operator(), comparison.value());
+            InstanceValue value = normalizeComparisonValue(modelRoot, attribute, comparison.operator(), comparison.value());
             normalized.add(new NormalizedScalarComparison(attribute.azName(), comparison.operator(), value));
         }
         return List.copyOf(normalized);
     }
 
-    private static InstanceValue normalizeComparisonValue(VAttribute attribute, ScalarComparisonOperator operator, Object submittedValue) {
+    private static InstanceValue normalizeComparisonValue(ModelRoot modelRoot, VAttribute attribute, ScalarComparisonOperator operator, Object submittedValue) {
         if (operator == ScalarComparisonOperator.CONTAINS) {
             return stringValue(attribute, submittedValue);
         }
-        return normalizeValue(attribute, submittedValue);
+        return normalizeConstrainedValue(modelRoot, attribute, submittedValue);
     }
 
     private static Map<String, VAttribute> attributesByKey(VEntity entity) {
@@ -504,7 +526,7 @@ public final class ModelInstanceService {
                 association,
                 predicate.direction(),
                 relatedEntity,
-                normalizeScalarComparisons(relatedEntity, predicate.equals(), predicate.comparisons())
+                normalizeScalarComparisons(modelRoot, relatedEntity, predicate.equals(), predicate.comparisons())
         );
     }
 

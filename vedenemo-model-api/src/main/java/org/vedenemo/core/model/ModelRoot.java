@@ -11,6 +11,7 @@ public final class ModelRoot {
     private final String azName;
     private final String visName;
     private final ModelVersion version;
+    private final Map<String, ValueSet> valueSetsByAzName = new LinkedHashMap<>();
     private final Map<String, VEntity> entitiesByAzName = new LinkedHashMap<>();
     private final Map<String, Association> associationsByAzName = new LinkedHashMap<>();
 
@@ -48,6 +49,28 @@ public final class ModelRoot {
         }
         entitiesByAzName.put(key, entity);
         return entity;
+    }
+
+    public synchronized ValueSet addValueSet(ValueSet valueSet) {
+        Objects.requireNonNull(valueSet, "valueSet must not be null");
+        String key = ValueSet.uniquenessKey(valueSet.azName());
+        if (valueSetsByAzName.containsKey(key)) {
+            throw new IllegalArgumentException("ValueSet azName must be unique within ModelRoot");
+        }
+        valueSetsByAzName.put(key, valueSet);
+        return valueSet;
+    }
+
+    public synchronized Optional<ValueSet> removeValueSet(String azName) {
+        return Optional.ofNullable(valueSetsByAzName.remove(ModelTextRules.uniquenessKey(azName)));
+    }
+
+    public synchronized Optional<ValueSet> findValueSet(String azName) {
+        return Optional.ofNullable(valueSetsByAzName.get(ValueSet.uniquenessKey(azName)));
+    }
+
+    public synchronized List<ValueSet> valueSets() {
+        return List.copyOf(valueSetsByAzName.values());
     }
 
     public synchronized Optional<VEntity> removeEntity(String azName) {

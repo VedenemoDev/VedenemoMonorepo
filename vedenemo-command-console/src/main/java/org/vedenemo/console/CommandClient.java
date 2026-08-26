@@ -1,6 +1,7 @@
 package org.vedenemo.console;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 public interface CommandClient {
@@ -12,7 +13,32 @@ public interface CommandClient {
             String entityAzName,
             String attributeAzName,
             String attributeVisName,
+            String dataType,
+            String valueSetAzName
+    ) throws IOException, InterruptedException;
+
+    default void createAttribute(
+            UUID sessionId,
+            String entityAzName,
+            String attributeAzName,
+            String attributeVisName,
             String dataType
+    ) throws IOException, InterruptedException {
+        createAttribute(sessionId, entityAzName, attributeAzName, attributeVisName, dataType, null);
+    }
+
+    void createValueSet(
+            UUID sessionId,
+            String valueSetAzName,
+            String dataType,
+            List<ValueSetEntryInput> entries
+    ) throws IOException, InterruptedException;
+
+    void setAttributeValueSet(
+            UUID sessionId,
+            String entityAzName,
+            String attributeAzName,
+            String valueSetAzName
     ) throws IOException, InterruptedException;
 
     void createAssociation(

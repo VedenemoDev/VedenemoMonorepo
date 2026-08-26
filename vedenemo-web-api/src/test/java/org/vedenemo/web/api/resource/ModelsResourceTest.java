@@ -10,6 +10,8 @@ import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.OwnershipAssociation;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
+import org.vedenemo.core.model.ValueSet;
+import org.vedenemo.core.model.ValueSetEntry;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.web.api.VedenemoWebApi;
 import org.vedenemo.web.api.http.WebApiConfig;
@@ -22,6 +24,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
 import java.util.Set;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -140,7 +143,23 @@ final class ModelsResourceTest {
 
         assertEquals(200, response.statusCode());
         assertEquals("""
-                [{"azName":"Email","visName":"Email","dataType":"TEXT","activeSince":"1.0.0","deprecatedSince":null,"retiredSince":null},{"azName":"Website","visName":"Website","dataType":"URL","activeSince":"1.0.0","deprecatedSince":null,"retiredSince":null}]\
+                [{"azName":"Email","visName":"Email","dataType":"TEXT","valueSetAzName":null,"activeSince":"1.0.0","deprecatedSince":null,"retiredSince":null},{"azName":"Website","visName":"Website","dataType":"URL","valueSetAzName":null,"activeSince":"1.0.0","deprecatedSince":null,"retiredSince":null}]\
+                """, response.body());
+    }
+
+    @Test
+    void listValueSetsReturnsModelLevelValueSets() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addValueSet(new ValueSet("TreeSpecies", DataType.TEXT, List.of(
+                new ValueSetEntry("PINE", "Pine"),
+                new ValueSetEntry("SPRUCE", "Spruce")
+        )));
+
+        HttpResponse<String> response = get("/models/Example_Model/value-sets");
+
+        assertEquals(200, response.statusCode());
+        assertEquals("""
+                [{"azName":"TreeSpecies","dataType":"TEXT","entries":[{"technicalValue":"PINE","visName":"Pine"},{"technicalValue":"SPRUCE","visName":"Spruce"}]}]\
                 """, response.body());
     }
 

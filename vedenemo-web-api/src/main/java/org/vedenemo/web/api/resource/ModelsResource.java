@@ -8,6 +8,8 @@ import org.vedenemo.core.model.Association;
 import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
+import org.vedenemo.core.model.ValueSet;
+import org.vedenemo.core.model.ValueSetEntry;
 import org.vedenemo.core.registry.DuplicateModelRootException;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.script.VedenemoScriptImportResult;
@@ -76,6 +78,17 @@ public final class ModelsResource {
                     .map(EntityResponse::from)
                     .toList();
             writeJson(context, 200, entities);
+        });
+        routes.get("/models/{modelAzName}/value-sets", context -> {
+            ModelRoot modelRoot = findModel(context.pathParam("modelAzName"));
+            if (modelRoot == null) {
+                writeJson(context, 404, new ErrorResponse("model not found"));
+                return;
+            }
+            List<ValueSetResponse> valueSets = modelRoot.valueSets().stream()
+                    .map(ValueSetResponse::from)
+                    .toList();
+            writeJson(context, 200, valueSets);
         });
         routes.get("/models/{modelAzName}/entities/{entityAzName}/attributes", context -> {
             ModelRoot modelRoot = findModel(context.pathParam("modelAzName"));
@@ -201,6 +214,7 @@ public final class ModelsResource {
             String azName,
             String visName,
             String dataType,
+            String valueSetAzName,
             String activeSince,
             String deprecatedSince,
             String retiredSince
@@ -210,6 +224,7 @@ public final class ModelsResource {
                     attribute.azName(),
                     attribute.visName(),
                     attribute.type().name(),
+                    attribute.valueSetAzName(),
                     attribute.activeSince().toString(),
                     attribute.deprecatedSince().map(Object::toString).orElse(null),
                     attribute.retiredSince().map(Object::toString).orElse(null)
@@ -248,6 +263,22 @@ public final class ModelsResource {
                     association.deprecatedSince().map(Object::toString).orElse(null),
                     association.retiredSince().map(Object::toString).orElse(null)
             );
+        }
+    }
+
+    private record ValueSetResponse(String azName, String dataType, List<ValueSetEntryResponse> entries) {
+        private static ValueSetResponse from(ValueSet valueSet) {
+            return new ValueSetResponse(
+                    valueSet.azName(),
+                    valueSet.type().name(),
+                    valueSet.entries().stream().map(ValueSetEntryResponse::from).toList()
+            );
+        }
+    }
+
+    private record ValueSetEntryResponse(Object technicalValue, String visName) {
+        private static ValueSetEntryResponse from(ValueSetEntry entry) {
+            return new ValueSetEntryResponse(entry.technicalValue(), entry.visName());
         }
     }
 

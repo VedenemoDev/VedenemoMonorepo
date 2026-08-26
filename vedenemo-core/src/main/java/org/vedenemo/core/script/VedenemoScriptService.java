@@ -4,7 +4,9 @@ import org.vedenemo.core.command.Command;
 import org.vedenemo.core.command.CreateAssociationCommand;
 import org.vedenemo.core.command.CreateAttributeCommand;
 import org.vedenemo.core.command.CreateEntityCommand;
+import org.vedenemo.core.command.CreateValueSetCommand;
 import org.vedenemo.core.command.ModelCommandJournal;
+import org.vedenemo.core.command.SetAttributeValueSetCommand;
 import org.vedenemo.core.model.Association;
 import org.vedenemo.core.model.AssociationKind;
 import org.vedenemo.core.model.Cardinality;
@@ -17,6 +19,8 @@ import org.vedenemo.core.model.RelationAssociation;
 import org.vedenemo.core.model.RelationEnd;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
+import org.vedenemo.core.model.ValueSet;
+import org.vedenemo.core.model.ValueSetEntry;
 import org.vedenemo.core.registry.ModelRegistry;
 
 import java.util.ArrayList;
@@ -53,6 +57,12 @@ public final class VedenemoScriptService {
         }
         script.append("\n");
         script.append("snapshot\n");
+        for (ValueSet valueSet : modelRoot.valueSets()) {
+            script.append("value-set azName=").append(valueSet.azName())
+                    .append(" dataType=").append(valueSet.type().name())
+                    .append(valueSetEntryFields(valueSet))
+                    .append("\n");
+        }
         for (VEntity entity : modelRoot.entities()) {
             script.append("entity azName=").append(entity.azName())
                     .append(" visName=").append(quote(entity.visName()))
@@ -65,6 +75,7 @@ public final class VedenemoScriptService {
                         .append(" azName=").append(attribute.azName())
                         .append(" visName=").append(quote(attribute.visName()))
                         .append(" dataType=").append(attribute.type().name())
+                        .append(valueSetField(attribute.valueSetAzName()))
                         .append(" activeSince=").append(attribute.activeSince())
                         .append(" deprecatedSince=").append(versionOrNull(attribute.deprecatedSince().orElse(null)))
                         .append(" retiredSince=").append(versionOrNull(attribute.retiredSince().orElse(null)))
@@ -122,6 +133,22 @@ public final class VedenemoScriptService {
                     + " attribute=" + createAttributeCommand.attributeAzName()
                     + " visName=" + quote(createAttributeCommand.attributeVisName())
                     + " dataType=" + createAttributeCommand.dataType().name()
+                    + valueSetField(createAttributeCommand.valueSetAzName())
+                    + " activeSince=" + modelVersion;
+        }
+        if (command instanceof CreateValueSetCommand createValueSetCommand) {
+            ValueSet valueSet = new ValueSet(createValueSetCommand.valueSetAzName(), createValueSetCommand.dataType(), createValueSetCommand.entries());
+            return "create-value-set model=" + createValueSetCommand.modelAzName()
+                    + " valueSet=" + createValueSetCommand.valueSetAzName()
+                    + " dataType=" + createValueSetCommand.dataType().name()
+                    + valueSetEntryFields(valueSet)
+                    + " activeSince=" + modelVersion;
+        }
+        if (command instanceof SetAttributeValueSetCommand setAttributeValueSetCommand) {
+            return "set-attribute-value-set model=" + setAttributeValueSetCommand.modelAzName()
+                    + " entity=" + setAttributeValueSetCommand.entityAzName()
+                    + " attribute=" + setAttributeValueSetCommand.attributeAzName()
+                    + " valueSet=" + setAttributeValueSetCommand.valueSetAzName()
                     + " activeSince=" + modelVersion;
         }
         if (command instanceof CreateAssociationCommand createAssociationCommand) {
@@ -150,7 +177,24 @@ public final class VedenemoScriptService {
                     createAttributeCommand.entityAzName(),
                     createAttributeCommand.attributeAzName(),
                     createAttributeCommand.attributeVisName(),
-                    createAttributeCommand.dataType()
+                    createAttributeCommand.dataType(),
+                    createAttributeCommand.valueSetAzName()
+            );
+        }
+        if (command instanceof CreateValueSetCommand createValueSetCommand) {
+            return new CreateValueSetCommand(
+                    modelAzName,
+                    createValueSetCommand.valueSetAzName(),
+                    createValueSetCommand.dataType(),
+                    createValueSetCommand.entries()
+            );
+        }
+        if (command instanceof SetAttributeValueSetCommand setAttributeValueSetCommand) {
+            return new SetAttributeValueSetCommand(
+                    modelAzName,
+                    setAttributeValueSetCommand.entityAzName(),
+                    setAttributeValueSetCommand.attributeAzName(),
+                    setAttributeValueSetCommand.valueSetAzName()
             );
         }
         if (command instanceof CreateAssociationCommand createAssociationCommand) {
@@ -182,8 +226,32 @@ public final class VedenemoScriptService {
                     createAttributeCommand.attributeAzName(),
                     createAttributeCommand.attributeVisName(),
                     createAttributeCommand.dataType(),
-                    modelRoot.version()
+                    modelRoot.version(),
+                    null,
+                    null,
+                    requireCompatibleValueSet(modelRoot, createAttributeCommand.dataType(), createAttributeCommand.valueSetAzName())
             ));
+            return;
+        }
+        if (command instanceof CreateValueSetCommand createValueSetCommand) {
+            modelRoot.addValueSet(new ValueSet(
+                    createValueSetCommand.valueSetAzName(),
+                    createValueSetCommand.dataType(),
+                    createValueSetCommand.entries()
+            ));
+            return;
+        }
+        if (command instanceof SetAttributeValueSetCommand setAttributeValueSetCommand) {
+            VEntity entity = findEntity(modelRoot, setAttributeValueSetCommand.entityAzName());
+            VAttribute attribute = findAttribute(entity, setAttributeValueSetCommand.attributeAzName());
+            if (attribute.valueSetAzName() != null) {
+                throw new IllegalArgumentException("attribute already references a ValueSet");
+            }
+            entity.replaceAttribute(attribute.withValueSetAzName(requireCompatibleValueSet(
+                    modelRoot,
+                    attribute.type(),
+                    setAttributeValueSetCommand.valueSetAzName()
+            )));
             return;
         }
         if (command instanceof CreateAssociationCommand createAssociationCommand) {
@@ -246,7 +314,20 @@ public final class VedenemoScriptService {
                     required(values, "entity", lineIndex),
                     required(values, "attribute", lineIndex),
                     required(values, "visName", lineIndex),
-                    DataType.valueOf(required(values, "dataType", lineIndex))
+                    DataType.valueOf(required(values, "dataType", lineIndex)),
+                    values.get("valueSet")
+            );
+            case "create-value-set" -> new CreateValueSetCommand(
+                    required(values, "model", lineIndex),
+                    required(values, "valueSet", lineIndex),
+                    DataType.valueOf(required(values, "dataType", lineIndex)),
+                    parseValueSetEntries(DataType.valueOf(required(values, "dataType", lineIndex)), values, lineIndex)
+            );
+            case "set-attribute-value-set" -> new SetAttributeValueSetCommand(
+                    required(values, "model", lineIndex),
+                    required(values, "entity", lineIndex),
+                    required(values, "attribute", lineIndex),
+                    required(values, "valueSet", lineIndex)
             );
             case "create-association" -> new CreateAssociationCommand(
                     required(values, "model", lineIndex),
@@ -280,9 +361,17 @@ public final class VedenemoScriptService {
                     required(values, "azName", lineIndex),
                     required(values, "visName", lineIndex),
                     DataType.valueOf(required(values, "dataType", lineIndex)),
+                    values.get("valueSet"),
                     ModelVersion.parse(required(values, "activeSince", lineIndex)),
                     parseNullableVersion(required(values, "deprecatedSince", lineIndex)),
                     parseOptionalNullableVersion(values.get("retiredSince"))
+            ));
+        } else if ("value-set".equals(keyword)) {
+            DataType dataType = DataType.valueOf(required(values, "dataType", lineIndex));
+            snapshot.valueSets.add(new SnapshotValueSet(
+                    required(values, "azName", lineIndex),
+                    dataType,
+                    parseValueSetEntries(dataType, values, lineIndex)
             ));
         } else if ("association".equals(keyword)) {
             snapshot.associations.add(new SnapshotAssociation(
@@ -319,11 +408,22 @@ public final class VedenemoScriptService {
         if (actualEntityCount != snapshot.entities.size()) {
             throw new IllegalArgumentException("snapshot entity count does not match replayed commands for " + targetModelAzName);
         }
+        for (SnapshotValueSet expected : snapshot.valueSets) {
+            ValueSet actual = findValueSet(modelRoot, expected.azName());
+            ValueSet expectedValueSet = new ValueSet(expected.azName(), expected.dataType(), expected.entries());
+            if (!actual.equals(expectedValueSet)) {
+                throw new IllegalArgumentException("snapshot ValueSet does not match replayed commands: " + expected.azName());
+            }
+        }
+        if (modelRoot.valueSets().size() != snapshot.valueSets.size()) {
+            throw new IllegalArgumentException("snapshot ValueSet count does not match replayed commands for " + targetModelAzName);
+        }
         for (SnapshotAttribute expected : snapshot.attributes) {
             VEntity entity = findEntity(modelRoot, expected.entityAzName());
             VAttribute actual = findAttribute(entity, expected.azName());
             if (!actual.visName().equals(expected.visName())
                     || actual.type() != expected.dataType()
+                    || !Objects.equals(actual.valueSetAzName(), expected.valueSetAzName())
                     || !actual.activeSince().equals(expected.activeSince())
                     || !actual.deprecatedSince().equals(Optional.ofNullable(expected.deprecatedSince()))
                     || !actual.retiredSince().equals(Optional.ofNullable(expected.retiredSince()))) {
@@ -377,6 +477,23 @@ public final class VedenemoScriptService {
                 .filter(association -> Association.uniquenessKey(association.azName()).equals(targetKey))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("association not found: " + associationAzName));
+    }
+
+    private static ValueSet findValueSet(ModelRoot modelRoot, String valueSetAzName) {
+        return modelRoot.findValueSet(valueSetAzName)
+                .orElseThrow(() -> new IllegalArgumentException("ValueSet not found: " + valueSetAzName));
+    }
+
+    private static String requireCompatibleValueSet(ModelRoot modelRoot, DataType dataType, String valueSetAzName) {
+        if (valueSetAzName == null) {
+            return null;
+        }
+        ValueSet valueSet = modelRoot.findValueSet(valueSetAzName)
+                .orElseThrow(() -> new IllegalArgumentException("ValueSet not found: " + valueSetAzName));
+        if (valueSet.type() != dataType) {
+            throw new IllegalArgumentException("ValueSet type " + valueSet.type() + " is not compatible with attribute type " + dataType);
+        }
+        return valueSet.azName();
     }
 
     private static Association toAssociation(CreateAssociationCommand command, ModelRoot modelRoot) {
@@ -442,6 +559,44 @@ public final class VedenemoScriptService {
         }
         return " targetRole=" + quote(association.targetRoleName())
                 + " targetCardinality=" + association.targetCardinality();
+    }
+
+    private static String valueSetField(String valueSetAzName) {
+        if (valueSetAzName == null) {
+            return "";
+        }
+        return " valueSet=" + valueSetAzName;
+    }
+
+    private static String valueSetEntryFields(ValueSet valueSet) {
+        StringBuilder builder = new StringBuilder();
+        List<ValueSetEntry> entries = valueSet.entries();
+        for (int index = 0; index < entries.size(); index++) {
+            ValueSetEntry entry = entries.get(index);
+            int number = index + 1;
+            builder.append(" entry").append(number).append("=").append(quote(entry.technicalValue().toString()))
+                    .append(" entry").append(number).append("VisName=").append(quote(entry.visName()));
+        }
+        return builder.toString();
+    }
+
+    private static List<ValueSetEntry> parseValueSetEntries(DataType dataType, Map<String, String> values, int lineIndex) {
+        ArrayList<ValueSetEntry> entries = new ArrayList<>();
+        for (int number = 1; ; number++) {
+            String value = values.get("entry" + number);
+            String visName = values.get("entry" + number + "VisName");
+            if (value == null && visName == null) {
+                break;
+            }
+            if (value == null || visName == null) {
+                throw new IllegalArgumentException("incomplete ValueSet entry " + number + " on script line " + (lineIndex + 1));
+            }
+            entries.add(new ValueSetEntry(ValueSet.normalizeTechnicalValue(dataType, value), visName));
+        }
+        if (entries.isEmpty()) {
+            throw new IllegalArgumentException("missing ValueSet entries on script line " + (lineIndex + 1));
+        }
+        return List.copyOf(entries);
     }
 
     private static boolean relationSnapshotEndsMismatch(Association actual, SnapshotAssociation expected) {
@@ -566,9 +721,17 @@ public final class VedenemoScriptService {
     }
 
     private static final class Snapshot {
+        private final List<SnapshotValueSet> valueSets = new ArrayList<>();
         private final List<SnapshotEntity> entities = new ArrayList<>();
         private final List<SnapshotAttribute> attributes = new ArrayList<>();
         private final List<SnapshotAssociation> associations = new ArrayList<>();
+    }
+
+    private record SnapshotValueSet(
+            String azName,
+            DataType dataType,
+            List<ValueSetEntry> entries
+    ) {
     }
 
     private record SnapshotEntity(
@@ -585,6 +748,7 @@ public final class VedenemoScriptService {
             String azName,
             String visName,
             DataType dataType,
+            String valueSetAzName,
             ModelVersion activeSince,
             ModelVersion deprecatedSince,
             ModelVersion retiredSince

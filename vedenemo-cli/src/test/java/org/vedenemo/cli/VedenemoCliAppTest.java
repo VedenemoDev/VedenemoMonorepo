@@ -11,6 +11,7 @@ import org.vedenemo.console.ModelSummary;
 import org.vedenemo.console.SessionClient;
 import org.vedenemo.console.SnapshotSummary;
 import org.vedenemo.console.UndoCommandResult;
+import org.vedenemo.console.ValueSetEntryInput;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -1164,7 +1165,8 @@ final class VedenemoCliAppTest {
                 String entityAzName,
                 String attributeAzName,
                 String attributeVisName,
-                String dataType
+                String dataType,
+                String valueSetAzName
         ) throws IOException {
             if (createAttributeFailure != null) {
                 throw createAttributeFailure;
@@ -1174,6 +1176,14 @@ final class VedenemoCliAppTest {
             createdAttributeAzName = attributeAzName;
             createdAttributeVisName = attributeVisName;
             createdAttributeDataType = dataType;
+        }
+
+        @Override
+        public void createValueSet(UUID sessionId, String valueSetAzName, String dataType, List<ValueSetEntryInput> entries) {
+        }
+
+        @Override
+        public void setAttributeValueSet(UUID sessionId, String entityAzName, String attributeAzName, String valueSetAzName) {
         }
 
         @Override

@@ -279,6 +279,51 @@ final class SessionResourceTest {
     }
 
     @Test
+    void createValueSetAndAttributeReferenceCommandsUpdateSelectedModel() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addEntity(new org.vedenemo.core.model.VEntity("Tree", "Tree", modelRoot.version()));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        HttpResponse<String> valueSetResponse = post("/sessions/" + sessionId + "/commands/create-value-set", """
+                {"valueSetAzName":"TreeSpecies","dataType":"TEXT","entries":[{"technicalValue":"PINE","visName":"Pine"},{"technicalValue":"SPRUCE","visName":"Spruce"}]}
+                """);
+        HttpResponse<String> attributeResponse = post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Tree","attributeAzName":"Species","attributeVisName":"Species","dataType":"TEXT","valueSetAzName":"TreeSpecies"}
+                """);
+
+        assertEquals(200, valueSetResponse.statusCode());
+        assertTrue(valueSetResponse.body().contains("\"azName\":\"TreeSpecies\""));
+        assertEquals(200, attributeResponse.statusCode());
+        assertEquals(1, modelRoot.valueSets().size());
+        assertEquals("TreeSpecies", modelRoot.entities().getFirst().attributes().getFirst().valueSetAzName());
+    }
+
+    @Test
+    void setAttributeValueSetCommandAttachesExistingCompatibleAttribute() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        org.vedenemo.core.model.VEntity tree = modelRoot.addEntity(new org.vedenemo.core.model.VEntity("Tree", "Tree", modelRoot.version()));
+        tree.addAttribute(new org.vedenemo.core.model.VAttribute("Species", "Species", org.vedenemo.core.model.DataType.TEXT, modelRoot.version()));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+        post("/sessions/" + sessionId + "/commands/create-value-set", """
+                {"valueSetAzName":"TreeSpecies","dataType":"TEXT","entries":[{"technicalValue":"PINE","visName":"Pine"}]}
+                """);
+
+        HttpResponse<String> response = post("/sessions/" + sessionId + "/commands/set-attribute-value-set", """
+                {"entityAzName":"Tree","attributeAzName":"Species","valueSetAzName":"TreeSpecies"}
+                """);
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("\"valueSetAzName\":\"TreeSpecies\""));
+        assertEquals("TreeSpecies", modelRoot.entities().getFirst().attributes().getFirst().valueSetAzName());
+    }
+
+    @Test
     void createAttributeCommandRejectsMissingEntity() throws Exception {
         modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
         UUID sessionId = extractSessionId(post("/sessions/start").body());

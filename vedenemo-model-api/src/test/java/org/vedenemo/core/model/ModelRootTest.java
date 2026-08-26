@@ -184,6 +184,42 @@ final class ModelRootTest {
         assertEquals(List.of(first, second), modelRoot.associations());
     }
 
+    @Test
+    void addsValueSetsInInsertionOrderAndRejectsDuplicates() {
+        ModelRoot modelRoot = ModelRoot.create("Example_Model", "Example Model", "1.0.0");
+        ValueSet species = new ValueSet("TreeSpecies", DataType.TEXT, List.of(
+                new ValueSetEntry("PINE", "Pine"),
+                new ValueSetEntry("SPRUCE", "Spruce")
+        ));
+        ValueSet ratings = new ValueSet("Ratings", DataType.NUMERIC, List.of(
+                new ValueSetEntry("1.0", "One"),
+                new ValueSetEntry("2.0", "Two")
+        ));
+
+        modelRoot.addValueSet(species);
+        modelRoot.addValueSet(ratings);
+
+        assertEquals(List.of(species, ratings), modelRoot.valueSets());
+        assertEquals(species, modelRoot.findValueSet("treespecies").orElseThrow());
+        assertThrows(IllegalArgumentException.class, () -> modelRoot.addValueSet(new ValueSet("treespecies", DataType.TEXT, List.of(
+                new ValueSetEntry("BIRCH", "Birch")
+        ))));
+    }
+
+    @Test
+    void valueSetSupportsOnlyInitialDataTypesAndNormalizesNumericValues() {
+        ValueSet numeric = new ValueSet("Ratings", DataType.NUMERIC, List.of(new ValueSetEntry("1.0", "One")));
+
+        assertTrue(numeric.containsTechnicalValue("1.00"));
+        assertThrows(IllegalArgumentException.class, () -> new ValueSet("Locations", DataType.LOCATION, List.of(
+                new ValueSetEntry("POINT", "Point")
+        )));
+        assertThrows(IllegalArgumentException.class, () -> new ValueSet("DuplicateRatings", DataType.NUMERIC, List.of(
+                new ValueSetEntry("1.0", "One"),
+                new ValueSetEntry("1.00", "Duplicate One")
+        )));
+    }
+
     private static VEntity entity(String azName) {
         return new VEntity(azName, azName, ModelVersion.parse("1.0.0"));
     }

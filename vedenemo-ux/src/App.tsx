@@ -56,6 +56,7 @@ type ApiDescriptionResponse = {
   modelAzName: string;
   modelVisName: string;
   modelVersion?: string;
+  valueSets?: ValueSetDescription[];
   entities: EntityDescription[];
   associations?: AssociationDescription[];
 };
@@ -64,6 +65,18 @@ type AttributeDescription = {
   azName: string;
   visName: string;
   dataType: string;
+  valueSetAzName?: string | null;
+};
+
+type ValueSetDescription = {
+  azName: string;
+  dataType: string;
+  entries: ValueSetEntryDescription[];
+};
+
+type ValueSetEntryDescription = {
+  technicalValue: unknown;
+  visName: string;
 };
 
 type AssociationDescription = {

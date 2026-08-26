@@ -65,6 +65,12 @@ public final class ModelCommandJournal {
         if (command instanceof CreateAssociationCommand createAssociationCommand) {
             return createAssociationCommand.modelAzName();
         }
+        if (command instanceof CreateValueSetCommand createValueSetCommand) {
+            return createValueSetCommand.modelAzName();
+        }
+        if (command instanceof SetAttributeValueSetCommand setAttributeValueSetCommand) {
+            return setAttributeValueSetCommand.modelAzName();
+        }
         if (command instanceof DeleteAssociationCommand deleteAssociationCommand) {
             return deleteAssociationCommand.modelAzName();
         }
@@ -73,6 +79,12 @@ public final class ModelCommandJournal {
         }
         if (command instanceof DeleteAttributeCommand deleteAttributeCommand) {
             return deleteAttributeCommand.modelAzName();
+        }
+        if (command instanceof DeleteValueSetCommand deleteValueSetCommand) {
+            return deleteValueSetCommand.modelAzName();
+        }
+        if (command instanceof ClearAttributeValueSetCommand clearAttributeValueSetCommand) {
+            return clearAttributeValueSetCommand.modelAzName();
         }
         if (command instanceof NoOpCommand) {
             return null;

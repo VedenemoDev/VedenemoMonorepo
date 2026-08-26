@@ -7,6 +7,8 @@ import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.OwnershipAssociation;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
+import org.vedenemo.core.model.ValueSet;
+import org.vedenemo.core.model.ValueSetEntry;
 import org.vedenemo.core.registry.ModelRegistry;
 
 import java.math.BigDecimal;
@@ -77,6 +79,26 @@ final class ModelInstanceServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> fixture.service.updateEntityInstance("Music", rootId, "Artist", instance.id().value(), Map.of()));
         assertEquals(1, fixture.service.countEntityInstances("Music", rootId, "Artist"));
+    }
+
+    @Test
+    void enforcesAttributeValueSetForFutureCreateUpdateAndFilters() {
+        Fixture fixture = fixture();
+        String rootId = fixture.rootId();
+
+        EntityInstance instance = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of(
+                "Name", "Miles Davis",
+                "Species", "PINE"
+        ));
+
+        assertEquals("PINE", instance.values().get("Species").value());
+        assertEquals(1, fixture.service.listEntityInstances("Music", rootId, "Artist", Map.of("Species", "PINE")).size());
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Species", "BIRCH")));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.updateEntityInstance("Music", rootId, "Artist", instance.id().value(), Map.of("Species", "BIRCH")));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.listEntityInstances("Music", rootId, "Artist", Map.of("Species", "BIRCH")));
     }
 
     @Test
@@ -473,6 +495,10 @@ final class ModelInstanceServiceTest {
     private static Fixture fixture() {
         ModelRegistry modelRegistry = new ModelRegistry();
         ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Music", "Music", "1.2.3"));
+        modelRoot.addValueSet(new ValueSet("TreeSpecies", DataType.TEXT, List.of(
+                new ValueSetEntry("PINE", "Pine"),
+                new ValueSetEntry("SPRUCE", "Spruce")
+        )));
         VEntity artist = modelRoot.addEntity(new VEntity("Artist", "Artist", modelRoot.version()));
         artist.addAttribute(new VAttribute("Name", "Name", DataType.TEXT, modelRoot.version()));
         artist.addAttribute(new VAttribute("Rating", "Rating", DataType.NUMERIC, modelRoot.version()));
@@ -481,6 +507,7 @@ final class ModelInstanceServiceTest {
         artist.addAttribute(new VAttribute("SetTime", "Set Time", DataType.TIME, modelRoot.version()));
         artist.addAttribute(new VAttribute("LastPlayedAt", "Last Played At", DataType.DATETIME, modelRoot.version()));
         artist.addAttribute(new VAttribute("Location", "Location", DataType.LOCATION, modelRoot.version()));
+        artist.addAttribute(new VAttribute("Species", "Species", DataType.TEXT, modelRoot.version(), null, null, "TreeSpecies"));
         VEntity album = modelRoot.addEntity(new VEntity("Album", "Album", modelRoot.version()));
         album.addAttribute(new VAttribute("Title", "Title", DataType.TEXT, modelRoot.version()));
         modelRoot.addAssociation(new OwnershipAssociation(

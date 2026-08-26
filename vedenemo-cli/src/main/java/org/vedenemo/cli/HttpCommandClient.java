@@ -2,6 +2,7 @@ package org.vedenemo.cli;
 
 import org.vedenemo.console.CommandClient;
 import org.vedenemo.console.UndoCommandResult;
+import org.vedenemo.console.ValueSetEntryInput;
 
 import java.io.IOException;
 import java.net.URI;
@@ -9,6 +10,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Objects;
+import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,22 +53,62 @@ public final class HttpCommandClient implements CommandClient {
             String entityAzName,
             String attributeAzName,
             String attributeVisName,
-            String dataType
+            String dataType,
+            String valueSetAzName
     ) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/sessions/" + sessionId + "/commands/create-attribute"))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString("""
-                        {"entityAzName":"%s","attributeAzName":"%s","attributeVisName":"%s","dataType":"%s"}\
+                        {"entityAzName":"%s","attributeAzName":"%s","attributeVisName":"%s","dataType":"%s","valueSetAzName":%s}\
                         """.formatted(
                         escapeJson(entityAzName),
                         escapeJson(attributeAzName),
                         escapeJson(attributeVisName),
-                        escapeJson(dataType)
+                        escapeJson(dataType),
+                        jsonStringOrNull(valueSetAzName)
                 )))
                 .build();
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() != 200) {
             throw new IOException("attribute add failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+    }
+
+    @Override
+    public void createValueSet(UUID sessionId, String valueSetAzName, String dataType, List<ValueSetEntryInput> entries)
+            throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/sessions/" + sessionId + "/commands/create-value-set"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("""
+                        {"valueSetAzName":"%s","dataType":"%s","entries":[%s]}\
+                        """.formatted(
+                        escapeJson(valueSetAzName),
+                        escapeJson(dataType),
+                        valueSetEntriesJson(entries)
+                )))
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("value set add failed with HTTP status " + response.statusCode() + ": " + response.body());
+        }
+    }
+
+    @Override
+    public void setAttributeValueSet(UUID sessionId, String entityAzName, String attributeAzName, String valueSetAzName)
+            throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/sessions/" + sessionId + "/commands/set-attribute-value-set"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("""
+                        {"entityAzName":"%s","attributeAzName":"%s","valueSetAzName":"%s"}\
+                        """.formatted(
+                        escapeJson(entityAzName),
+                        escapeJson(attributeAzName),
+                        escapeJson(valueSetAzName)
+                )))
+                .build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) {
+            throw new IOException("attribute value set attach failed with HTTP status " + response.statusCode() + ": " + response.body());
         }
     }
 
@@ -139,5 +181,22 @@ public final class HttpCommandClient implements CommandClient {
             return "null";
         }
         return "\"" + escapeJson(value) + "\"";
+    }
+
+    private static String valueSetEntriesJson(List<ValueSetEntryInput> entries) {
+        return entries.stream()
+                .map(entry -> "{\"technicalValue\":%s,\"visName\":\"%s\"}".formatted(
+                        jsonValue(entry.technicalValue()),
+                        escapeJson(entry.visName())
+                ))
+                .reduce((left, right) -> left + "," + right)
+                .orElse("");
+    }
+
+    private static String jsonValue(Object value) {
+        if (value instanceof Number number) {
+            return number.toString();
+        }
+        return jsonStringOrNull(Objects.toString(value, null));
     }
 }

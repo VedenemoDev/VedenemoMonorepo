@@ -9466,3 +9466,205 @@ Current status and next steps:
 - Verification passed: targeted Maven test run with local socket permissions,
   `mvn -q clean verify`, `git diff --check`, and README disclaimer check.
 - No frontend build was run because no frontend files changed.
+
+## 2026-08-26 23:14 EEST
+
+Session goal: analyze and refine the planning backlog item for model-level
+`ValueSet` constraint support, without implementing it yet.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `tail -n 140 SESSION.md`
+- `rg -n "ValueSet|value set|constraint|constraints|allowed|enum|DataType|Attribute" -S . --glob '!vedenemo-ux/node_modules/**'`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java`
+- `sed -n '1,180p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VAttribute.java`
+- `sed -n '1,210p' vedenemo-core/src/main/java/org/vedenemo/core/command/CreateAttributeCommand.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '260,620p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '220,500p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,240p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelResource.java`
+- `sed -n '1,220p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `sed -n '1,140p' vedenemo-core/src/main/java/org/vedenemo/core/command/Command.java`
+- `sed -n '1,180p' vedenemo-core/src/main/java/org/vedenemo/core/command/ModelCommandJournal.java`
+- `rg -n "AttributeResponse|valueSet|attributes\\(" vedenemo-web-api/src/main/java/org/vedenemo/web/api -S`
+- `sed -n '1,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `sed -n '700,780p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '120,160p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleModelClient.java`
+- `rg -n "models/\\{azName\\}/attributes|valueSets|commands/create|attr add|attribute" vedenemo-ux/src/App.tsx -S`
+- `sed -n '1,120p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `sed -n '1,180p' tasks/backlog.md`
+- `sed -n '1,210p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Refined the `ValueSet` backlog task to use existing `DataType` names and
+  avoid implying new data types.
+- Scoped the first slice to `TEXT`, `NUMERIC`, `DATE`, and `TIME` value sets.
+- Captured that the `ValueSet` entry technical value is the value stored in
+  instance data, with `visName` as display metadata.
+- Captured both authoring flows: creating an attribute with a `ValueSet`
+  reference and attaching a `ValueSet` to an existing compatible attribute.
+- Captured that constraints are enforced for future instance create/update
+  operations and `.vdmp` import, without retroactive instance-data scans when
+  attaching constraints.
+- Captured create-only initial value sets, with entry append/deprecation as
+  future considerations.
+- Next step is implementation only after this planning description is accepted.
+## 2026-08-26 23:38 EEST
+
+Session goal: execute `Add Model-Level ValueSet Constraint Support` as the
+current task, verify backend/frontend builds, and preserve the completed task as
+backlog history.
+
+Files changed:
+
+- `SESSION.md`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpCommandClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/AttributeSummary.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/CommandClient.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/ValueSetEntryInput.java`
+- `vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/ClearAttributeValueSetCommand.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/Command.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CreateAttributeCommand.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CreateValueSetCommand.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/DeleteValueSetCommand.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/ModelCommandJournal.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/SetAttributeValueSetCommand.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/UndoResult.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/dump/ModelInstanceDumpService.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/dump/ModelInstanceDumpServiceTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/VAttribute.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/VEntity.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ValueSet.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ValueSetEntry.java`
+- `vedenemo-model-api/src/test/java/org/vedenemo/core/model/ModelRootTest.java`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleCommandClient.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleModelClient.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/SessionResourceTest.java`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `sed -n '1,240p' docs/architecture_doc_instructions.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `rg --files vedenemo-model-api/src/main/java vedenemo-model-api/src/test/java vedenemo-core/src/main/java vedenemo-core/src/test/java vedenemo-web-api/src/main/java vedenemo-web-api/src/test/java vedenemo-cli/src/main/java vedenemo-cli/src/test/java vedenemo-command-console/src/main/java vedenemo-command-console/src/test/java | sort`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `sed -n '1,260p' vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `sed -n '1,260p' vedenemo-model-api/src/test/java/org/vedenemo/core/model/ModelRootTest.java`
+- `sed -n '1,260p' vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `sed -n '1,280p' vedenemo-core/src/main/java/org/vedenemo/core/instance/dump/ModelInstanceDumpService.java`
+- `sed -n '260,560p' vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `sed -n '260,620p' vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `sed -n '1,360p' vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java`
+- `sed -n '1,360p' vedenemo-core/src/test/java/org/vedenemo/core/instance/dump/ModelInstanceDumpServiceTest.java`
+- `sed -n '1,380p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `sed -n '1,460p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/SessionResourceTest.java`
+- `sed -n '1,120p' vedenemo-command-console/src/main/java/org/vedenemo/console/CommandClient.java`
+- `sed -n '1,140p' vedenemo-command-console/src/main/java/org/vedenemo/console/ModelClient.java`
+- `sed -n '1,120p' vedenemo-command-console/src/main/java/org/vedenemo/console/AttributeSummary.java`
+- `sed -n '1,240p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '240,620p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '1,220p' vedenemo-cli/src/main/java/org/vedenemo/cli/HttpCommandClient.java`
+- `mvn -q clean -pl vedenemo-model-api,vedenemo-core,vedenemo-command-console,vedenemo-cli,vedenemo-web-api -am -DskipTests compile`
+- `mvn -q -pl vedenemo-model-api,vedenemo-core,vedenemo-command-console,vedenemo-cli,vedenemo-web-api -am test`
+- `mvn -q -pl vedenemo-model-api,vedenemo-core -am test`
+- `mvn -q clean verify`
+- `cd vedenemo-ux && npm run build`
+- `git status --short`
+- `git diff --stat`
+- `git diff --check`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented model-level `ValueSet` definitions for `TEXT`, `NUMERIC`,
+  `DATE`, and `TIME`.
+- Added optional attribute value-set references and compatibility validation.
+- Added command, undo, journal, `.vdos`, HTTP, CLI/browser-console, instance
+  validation, and `.vdmp` precheck support.
+- Updated frontend API-description types for value-set metadata.
+- Marked the current task and backlog history entry executed.
+- Verification passed: `mvn -q clean verify`, `cd vedenemo-ux && npm run build`,
+  `git diff --check`, and README disclaimer check.
+- No next implementation step remains for this task; future work is entry
+  append/deprecation semantics.
+
+## 2026-08-26 23:51 EEST
+
+Session goal: commit the completed ValueSet implementation with an appropriate
+detailed commit message and push it to the remote.
+
+Files changed:
+
+- `SESSION.md`
+- Existing staged ValueSet implementation, tests, UX type metadata, and
+  documentation updates listed in the previous session entry.
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short`
+- `git status --short --branch`
+- `git diff --cached --stat`
+- `git diff --cached --check`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --cached --name-only`
+
+Current status and next steps:
+
+- Staged ValueSet implementation reviewed at summary level and ready to commit.
+- `git diff --cached --check` passed.
+- README disclaimer preservation check passed.
+- Next step is to stage this session entry, create the detailed commit, and
+  push `main` to `origin`.

@@ -4,6 +4,7 @@ import org.vedenemo.core.model.DataType;
 import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
+import org.vedenemo.core.model.ValueSet;
 
 import java.util.Objects;
 
@@ -12,8 +13,19 @@ public record CreateAttributeCommand(
         String entityAzName,
         String attributeAzName,
         String attributeVisName,
-        DataType dataType
+        DataType dataType,
+        String valueSetAzName
 ) implements Command {
+
+    public CreateAttributeCommand(
+            String modelAzName,
+            String entityAzName,
+            String attributeAzName,
+            String attributeVisName,
+            DataType dataType
+    ) {
+        this(modelAzName, entityAzName, attributeAzName, attributeVisName, dataType, null);
+    }
 
     public CreateAttributeCommand {
         modelAzName = requireModelAzName(modelAzName);
@@ -21,6 +33,7 @@ public record CreateAttributeCommand(
         attributeAzName = requireAttributeAzName(attributeAzName);
         attributeVisName = requireVisName(attributeVisName);
         dataType = Objects.requireNonNull(dataType, "dataType must not be null");
+        valueSetAzName = normalizeValueSetAzName(valueSetAzName);
     }
 
     private static String requireModelAzName(String value) {
@@ -43,6 +56,14 @@ public record CreateAttributeCommand(
         if (value.isBlank()) {
             throw new IllegalArgumentException("attributeVisName must not be blank");
         }
+        return value;
+    }
+
+    private static String normalizeValueSetAzName(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        ValueSet.uniquenessKey(value);
         return value;
     }
 }

@@ -4,11 +4,14 @@ import org.junit.jupiter.api.Test;
 import org.vedenemo.core.command.CommandExecutor;
 import org.vedenemo.core.command.CreateAssociationCommand;
 import org.vedenemo.core.command.CreateEntityCommand;
+import org.vedenemo.core.command.CreateValueSetCommand;
 import org.vedenemo.core.command.ModelCommandJournal;
+import org.vedenemo.core.command.SetAttributeValueSetCommand;
 import org.vedenemo.core.model.AssociationKind;
 import org.vedenemo.core.model.Cardinality;
 import org.vedenemo.core.model.DataType;
 import org.vedenemo.core.model.ModelRoot;
+import org.vedenemo.core.model.ValueSetEntry;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.Session;
 import org.vedenemo.core.spi.storage.ModelStorage;
@@ -26,6 +29,12 @@ final class VedenemoScriptServiceTest {
         Fixture fixture = fixture();
         fixture.executor.execute(new CreateEntityCommand("Example_Model", "Customer", "Customer"));
         fixture.executor.execute(new CreateEntityCommand("Example_Model", "Order", "Order"));
+        fixture.executor.execute(new CreateValueSetCommand(
+                "Example_Model",
+                "TreeSpecies",
+                DataType.TEXT,
+                java.util.List.of(new ValueSetEntry("PINE", "Pine"), new ValueSetEntry("SPRUCE", "Spruce"))
+        ));
         fixture.executor.execute(new org.vedenemo.core.command.CreateAttributeCommand(
                 "Example_Model",
                 "Customer",
@@ -33,6 +42,7 @@ final class VedenemoScriptServiceTest {
                 "Email",
                 DataType.TEXT
         ));
+        fixture.executor.execute(new SetAttributeValueSetCommand("Example_Model", "Customer", "Email", "TreeSpecies"));
         fixture.executor.execute(new org.vedenemo.core.command.CreateAttributeCommand(
                 "Example_Model",
                 "Customer",
@@ -68,12 +78,15 @@ final class VedenemoScriptServiceTest {
         assertTrue(script.contains("vedenemo-script 1"));
         assertTrue(script.contains("model azName=Example_Model visName=\"Example Model\" version=1.0.0"));
         assertTrue(script.contains("create-entity model=Example_Model entity=Customer visName=\"Customer\" activeSince=1.0.0"));
+        assertTrue(script.contains("create-value-set model=Example_Model valueSet=TreeSpecies dataType=TEXT entry1=\"PINE\" entry1VisName=\"Pine\" entry2=\"SPRUCE\" entry2VisName=\"Spruce\" activeSince=1.0.0"));
         assertTrue(script.contains("create-attribute model=Example_Model entity=Customer attribute=Email visName=\"Email\" dataType=TEXT activeSince=1.0.0"));
+        assertTrue(script.contains("set-attribute-value-set model=Example_Model entity=Customer attribute=Email valueSet=TreeSpecies activeSince=1.0.0"));
         assertTrue(script.contains("create-attribute model=Example_Model entity=Customer attribute=Location visName=\"Location\" dataType=LOCATION activeSince=1.0.0"));
         assertTrue(script.contains("create-association model=Example_Model kind=OWNERSHIP association=Customer_Orders visName=\"orders\" source=Customer target=Order cardinality=0..* activeSince=1.0.0"));
         assertTrue(script.contains("create-association model=Example_Model kind=RELATION association=Customer_Order_Relation visName=\"orders\" source=Customer sourceRole=\"customer\" sourceCardinality=1 target=Order targetRole=\"order\" targetCardinality=0..* cardinality=0..* activeSince=1.0.0"));
         assertTrue(script.contains("entity azName=Customer visName=\"Customer\" activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
-        assertTrue(script.contains("attribute entity=Customer azName=Email visName=\"Email\" dataType=TEXT activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
+        assertTrue(script.contains("value-set azName=TreeSpecies dataType=TEXT entry1=\"PINE\" entry1VisName=\"Pine\" entry2=\"SPRUCE\" entry2VisName=\"Spruce\""));
+        assertTrue(script.contains("attribute entity=Customer azName=Email visName=\"Email\" dataType=TEXT valueSet=TreeSpecies activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
         assertTrue(script.contains("attribute entity=Customer azName=Location visName=\"Location\" dataType=LOCATION activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
         assertTrue(script.contains("association azName=Customer_Orders visName=\"orders\" kind=OWNERSHIP source=Customer target=Order cardinality=0..* activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
         assertTrue(script.contains("association azName=Customer_Order_Relation visName=\"orders\" kind=RELATION source=Customer sourceRole=\"customer\" sourceCardinality=1 target=Order targetRole=\"order\" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
@@ -90,15 +103,18 @@ final class VedenemoScriptServiceTest {
                 commands
                 create-entity model=Example_Model entity=Customer visName="Customer" activeSince=1.0.0
                 create-entity model=Example_Model entity=Order visName="Order" activeSince=1.0.0
+                create-value-set model=Example_Model valueSet=TreeSpecies dataType=TEXT entry1="PINE" entry1VisName="Pine" entry2="SPRUCE" entry2VisName="Spruce" activeSince=1.0.0
                 create-attribute model=Example_Model entity=Customer attribute=Email visName="Email" dataType=TEXT activeSince=1.0.0
+                set-attribute-value-set model=Example_Model entity=Customer attribute=Email valueSet=TreeSpecies activeSince=1.0.0
                 create-attribute model=Example_Model entity=Customer attribute=Location visName="Location" dataType=LOCATION activeSince=1.0.0
                 create-association model=Example_Model kind=REFERENCE association=Order_Customer visName="customer" source=Order target=Customer cardinality=1 activeSince=1.0.0
                 create-association model=Example_Model kind=RELATION association=Customer_Order_Relation visName="orders" source=Customer sourceRole="customer" sourceCardinality=1 target=Order targetRole="order" targetCardinality=0..* cardinality=0..* activeSince=1.0.0
 
                 snapshot
+                value-set azName=TreeSpecies dataType=TEXT entry1="PINE" entry1VisName="Pine" entry2="SPRUCE" entry2VisName="Spruce"
                 entity azName=Customer visName="Customer" activeSince=1.0.0 deprecatedSince=null
                 entity azName=Order visName="Order" activeSince=1.0.0 deprecatedSince=null
-                attribute entity=Customer azName=Email visName="Email" dataType=TEXT activeSince=1.0.0 deprecatedSince=null
+                attribute entity=Customer azName=Email visName="Email" dataType=TEXT valueSet=TreeSpecies activeSince=1.0.0 deprecatedSince=null
                 attribute entity=Customer azName=Location visName="Location" dataType=LOCATION activeSince=1.0.0 deprecatedSince=null
                 association azName=Order_Customer visName="customer" kind=REFERENCE source=Order target=Customer cardinality=1 activeSince=1.0.0 deprecatedSince=null
                 association azName=Customer_Order_Relation visName="orders" kind=RELATION source=Customer sourceRole="customer" sourceCardinality=1 target=Order targetRole="order" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null
@@ -108,14 +124,37 @@ final class VedenemoScriptServiceTest {
 
         ModelRoot model = fixture.modelRegistry.find("Example_Model").orElseThrow();
         assertEquals("Example_Model", result.modelAzName());
-        assertEquals(6, result.commandCount());
+        assertEquals(8, result.commandCount());
         assertEquals(2, model.entities().size());
         assertEquals(2, model.entities().getFirst().attributes().size());
+        assertEquals("TreeSpecies", model.entities().getFirst().attributes().getFirst().valueSetAzName());
+        assertEquals(1, model.valueSets().size());
         assertEquals(2, model.associations().size());
         assertEquals(AssociationKind.RELATION, model.associations().get(1).kind());
         assertEquals("customer", model.associations().get(1).sourceRoleName());
         assertEquals("order", model.associations().get(1).targetRoleName());
-        assertEquals(6, fixture.commandJournal.listForModel("Example_Model").size());
+        assertEquals(8, fixture.commandJournal.listForModel("Example_Model").size());
+    }
+
+    @Test
+    void importRejectsUndefinedValueSetReference() {
+        Fixture fixture = emptyFixture();
+        String script = """
+                vedenemo-script 1
+
+                model azName=Example_Model visName="Example Model" version=1.0.0
+
+                commands
+                create-entity model=Example_Model entity=Customer visName="Customer" activeSince=1.0.0
+                create-attribute model=Example_Model entity=Customer attribute=Species visName="Species" dataType=TEXT valueSet=MissingSet activeSince=1.0.0
+
+                snapshot
+                entity azName=Customer visName="Customer" activeSince=1.0.0 deprecatedSince=null
+                attribute entity=Customer azName=Species visName="Species" dataType=TEXT valueSet=MissingSet activeSince=1.0.0 deprecatedSince=null
+                """;
+
+        assertThrows(IllegalArgumentException.class, () -> fixture.scriptService.importModel(script, null));
+        assertTrue(fixture.modelRegistry.find("Example_Model").isEmpty());
     }
 
     @Test

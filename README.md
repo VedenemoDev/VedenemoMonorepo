@@ -20,10 +20,11 @@ and limitation of liability.
 - Java 21 + Maven multi-module backend.
 - Pure JDK-only core rule for model and command logic.
 - Shared model API with `ModelRoot`, `VEntity`, `VAttribute`, model-level
-  associations, cardinality, bidirectional relation ends, lifecycle version
-  metadata, and supported `DataType` values.
-- Core command execution for creating entities, attributes, directed
-  ownership/reference associations, and bidirectional relations.
+  `ValueSet` constraints, associations, cardinality, bidirectional relation
+  ends, lifecycle version metadata, and supported `DataType` values.
+- Core command execution for creating entities, value sets, attributes,
+  directed ownership/reference associations, bidirectional relations, and
+  attaching value sets to attributes.
 - Process-local runtime instance data validated against loaded model
   definitions.
 - Stack-based undo for the latest successful command in the current session.
@@ -144,6 +145,7 @@ GET    /models/list
 WS     /models/events
 GET    /models/{modelAzName}/entities
 GET    /models/{modelAzName}/entities/{entityAzName}/attributes
+GET    /models/{modelAzName}/value-sets
 GET    /models/{modelAzName}/associations
 GET    /models/{modelAzName}/entities/{entityAzName}/associations
 GET    /models/{modelAzName}/script
@@ -168,7 +170,9 @@ DELETE /sessions/{uuid}
 PUT    /sessions/{uuid}/selected-model
 DELETE /sessions/{uuid}/selected-model
 POST   /sessions/{uuid}/commands/create-entity
+POST   /sessions/{uuid}/commands/create-value-set
 POST   /sessions/{uuid}/commands/create-attribute
+POST   /sessions/{uuid}/commands/set-attribute-value-set
 POST   /sessions/{uuid}/commands/create-association
 POST   /sessions/{uuid}/commands/undo
 
@@ -201,9 +205,9 @@ Successful cleanup returns HTTP `204`.
 
 The `/data` API stores process-local runtime records for loaded models. Entity
 instance fields are JSON object properties keyed by modeled attribute `azName`
-and validated against the selected entity's `DataType`. Association links are
-created through dedicated `_links` endpoints using source and target instance
-ids.
+and validated against the selected entity's `DataType` and optional model-level
+`ValueSet` constraint. Association links are created through dedicated `_links`
+endpoints using source and target instance ids.
 
 Supported scalar data types include `TEXT`, `NUMERIC`, `URL`, `DATA`, `DATE`,
 `TIME`, `DATETIME`, and `LOCATION`. Date and time values are stored and queried
@@ -291,6 +295,8 @@ entity [N | azName]
 entity detach
 attributes
 attr add
+vset add
+attr vset
 associations
 assoc add [ownership | reference | relation]
 undo

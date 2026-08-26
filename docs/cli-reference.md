@@ -67,8 +67,9 @@ Press Esc during an interactive prompt to cancel the current operation and
 return to the normal CLI prompt without executing it.
 
 The browser console at `/console` uses the same CLI-like command behavior. It
-supports the same prompt flows for `add`, `attr add`, and `assoc add`; blank
-Enter accepts prompt defaults, and Esc cancels the active prompt flow. In the
+supports the same prompt flows for `add`, `attr add`, `vset add`, `attr vset`,
+and `assoc add`; blank Enter accepts prompt defaults, and Esc cancels the
+active prompt flow. In the
 terminal CLI, `msave`, `snapshots`, and `mload` use local `.vdos` files. In the
 browser console, the same command names use backend cloud snapshots when the
 backend snapshot store is configured.
@@ -250,8 +251,8 @@ VedenemoCli[Example_Model]>
 
 ### `attributes`
 
-Lists attributes in the selected entity. Output includes data type and lifecycle
-version fields.
+Lists attributes in the selected entity. Output includes data type, optional
+`ValueSet` reference, and lifecycle version fields.
 
 Example:
 
@@ -293,6 +294,41 @@ exists in the entity, the CLI prints the failure and keeps the current context:
 ```text
 Attribute was not added: attribute add failed with HTTP status 400: ...
 ```
+
+### `vset add`
+
+Adds a create-only model-level `ValueSet` through the backend command API.
+
+The CLI asks for the value-set `azName`, data type, and entries. The initial
+implementation supports `TEXT`, `NUMERIC`, `DATE`, and `TIME`. Enter entries
+as comma-separated `TECHNICAL=Visual Name` pairs.
+
+Example:
+
+```text
+VedenemoCli[Forestry]>vset add
+ValueSet azName: TreeSpecies
+ValueSet data type [TEXT]:
+Entries as TECHNICAL=Visual Name, comma separated: PINE=Pine, SPRUCE=Spruce
+ValueSet TreeSpecies added.
+```
+
+### `attr vset`
+
+Attaches an existing compatible model-level `ValueSet` to an existing attribute
+in the selected entity.
+
+Example:
+
+```text
+VedenemoCli[Forestry/Tree]>attr vset
+Attribute number or azName: Species
+ValueSet azName: TreeSpecies
+Attribute Species now references ValueSet TreeSpecies.
+```
+
+The initial implementation rejects attaching a value set to an attribute that
+already has a value-set reference.
 
 ### `associations`
 

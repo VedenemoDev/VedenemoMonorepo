@@ -141,6 +141,8 @@ public final class ConsoleSession {
                 startAddFlow();
             } else if ("attr".equals(command)) {
                 startAttributeFlow(trimmed, output);
+            } else if ("vset".equals(command)) {
+                startValueSetFlow(trimmed, output);
             } else if ("assoc".equals(command)) {
                 startAssociationFlow(trimmed, output);
             } else if ("msave".equals(command)) {
@@ -200,6 +202,8 @@ public final class ConsoleSession {
         output.add("  entity detach - clear the selected entity");
         output.add("  attributes - list attributes in the selected entity");
         output.add("  attr add - add an attribute to the selected entity");
+        output.add("  attr vset - attach a ValueSet to an attribute in the selected entity");
+        output.add("  vset add - add a model-level ValueSet");
         output.add("  associations - list model associations, or selected entity associations");
         output.add("  assoc add [ownership | reference | relation] - add an association or relation");
         output.add("  undo - undo the latest backend command");
@@ -410,6 +414,7 @@ public final class ConsoleSession {
                     + attribute.azName()
                     + ") type "
                     + attribute.dataType()
+                    + valueSetSuffix(attribute.valueSetAzName())
                     + " active since "
                     + attribute.activeSince()
                     + deprecatedSuffix(attribute.deprecatedSince())
@@ -470,19 +475,32 @@ public final class ConsoleSession {
     }
 
     private void startAttributeFlow(String line, List<String> output) {
-        if (!"add".equals(argumentText(line, "attr").toLowerCase())) {
-            output.add("Unknown command: " + line);
+        String argument = argumentText(line, "attr").toLowerCase();
+        if (!"add".equals(argument) && !"vset".equals(argument) && !"valueset".equals(argument)) {
+            output.add("Usage: attr add | attr vset");
             return;
         }
         if (attachedModelAzName == null) {
-            output.add("Attach a model before adding an attribute.");
+            output.add("Attach a model before changing attributes.");
             return;
         }
         if (attachedEntityAzName == null) {
-            output.add("Select an entity before adding an attribute.");
+            output.add("Select an entity before changing attributes.");
             return;
         }
-        promptFlow = new AddAttributeFlow();
+        promptFlow = "add".equals(argument) ? new AddAttributeFlow() : new AttachAttributeValueSetFlow();
+    }
+
+    private void startValueSetFlow(String line, List<String> output) {
+        if (!"add".equals(argumentText(line, "vset").toLowerCase())) {
+            output.add("Usage: vset add");
+            return;
+        }
+        if (attachedModelAzName == null) {
+            output.add("Attach a model before adding a ValueSet.");
+            return;
+        }
+        promptFlow = new AddValueSetFlow();
     }
 
     private void startAssociationFlow(String line, List<String> output) {
@@ -890,6 +908,13 @@ public final class ConsoleSession {
         return " retired since " + retiredSince;
     }
 
+    private static String valueSetSuffix(String valueSetAzName) {
+        if (valueSetAzName == null) {
+            return "";
+        }
+        return " valueSet " + valueSetAzName;
+    }
+
     private static String relationEndSuffix(AssociationSummary association) {
         if (!"RELATION".equals(association.kind())) {
             return "";
@@ -1035,6 +1060,48 @@ public final class ConsoleSession {
             return null;
         }
         return latestEntities.get(index).azName();
+    }
+
+    private String resolveAttributeReference(String value, List<String> output) throws IOException, InterruptedException {
+        if (value == null || value.trim().isEmpty()) {
+            output.add("Attribute identifier is required.");
+            return null;
+        }
+        String trimmed = value.trim();
+        if (!isPositiveInteger(trimmed)) {
+            return trimmed;
+        }
+        if (latestAttributes.isEmpty()) {
+            latestAttributes = modelClient.listAttributes(attachedModelAzName, attachedEntityAzName);
+        }
+        int index = Integer.parseInt(trimmed) - 1;
+        if (index < 0 || index >= latestAttributes.size()) {
+            output.add("No attribute found for list number " + trimmed + ".");
+            return null;
+        }
+        return latestAttributes.get(index).azName();
+    }
+
+    private static List<ValueSetEntryInput> parseValueSetEntries(String input) {
+        if (input == null || input.isBlank()) {
+            throw new IllegalArgumentException("At least one ValueSet entry is required.");
+        }
+        ArrayList<ValueSetEntryInput> entries = new ArrayList<>();
+        for (String rawEntry : input.split(",")) {
+            String entry = rawEntry.trim();
+            if (entry.isEmpty()) {
+                continue;
+            }
+            int separator = entry.indexOf('=');
+            if (separator <= 0 || separator == entry.length() - 1) {
+                throw new IllegalArgumentException("ValueSet entries must use TECHNICAL=Visual Name.");
+            }
+            entries.add(new ValueSetEntryInput(entry.substring(0, separator).trim(), entry.substring(separator + 1).trim()));
+        }
+        if (entries.isEmpty()) {
+            throw new IllegalArgumentException("At least one ValueSet entry is required.");
+        }
+        return List.copyOf(entries);
     }
 
     private interface PromptFlow {
@@ -1263,6 +1330,74 @@ public final class ConsoleSession {
             commandClient.createAttribute(backendSessionId, attachedEntityAzName, azName, visName, dataType);
             complete = true;
             return ConsoleCommandResult.ok(List.of("Attribute " + azName + " added."));
+        }
+    }
+
+    private final class AddValueSetFlow extends BasePromptFlow {
+        private String azName;
+        private String dataType;
+
+        @Override
+        public String prompt() {
+            return switch (step) {
+                case 0 -> "ValueSet azName: ";
+                case 1 -> "ValueSet data type [TEXT]: ";
+                default -> "Entries as TECHNICAL=Visual Name, comma separated: ";
+            };
+        }
+
+        @Override
+        public ConsoleCommandResult accept(String input) throws IOException, InterruptedException {
+            if (step == 0) {
+                if (input == null || input.isBlank()) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(List.of("ValueSet azName is required."));
+                }
+                azName = input.trim();
+                step = 1;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            if (step == 1) {
+                dataType = normalizeDataTypeInput(input);
+                step = 2;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            List<ValueSetEntryInput> entries = parseValueSetEntries(input);
+            commandClient.createValueSet(backendSessionId, azName, dataType, entries);
+            complete = true;
+            return ConsoleCommandResult.ok(List.of("ValueSet " + azName + " added."));
+        }
+    }
+
+    private final class AttachAttributeValueSetFlow extends BasePromptFlow {
+        private String attributeAzName;
+
+        @Override
+        public String prompt() {
+            return step == 0 ? "Attribute number or azName: " : "ValueSet azName: ";
+        }
+
+        @Override
+        public ConsoleCommandResult accept(String input) throws IOException, InterruptedException {
+            ArrayList<String> output = new ArrayList<>();
+            if (step == 0) {
+                attributeAzName = resolveAttributeReference(input, output);
+                if (attributeAzName == null) {
+                    complete = true;
+                    return ConsoleCommandResult.ok(output);
+                }
+                step = 1;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            if (input == null || input.isBlank()) {
+                complete = true;
+                return ConsoleCommandResult.ok(List.of("ValueSet azName is required."));
+            }
+            String valueSetAzName = input.trim();
+            commandClient.setAttributeValueSet(backendSessionId, attachedEntityAzName, attributeAzName, valueSetAzName);
+            latestAttributes = modelClient.listAttributes(attachedModelAzName, attachedEntityAzName);
+            complete = true;
+            return ConsoleCommandResult.ok(List.of("Attribute " + attributeAzName + " now references ValueSet " + valueSetAzName + "."));
         }
     }
 

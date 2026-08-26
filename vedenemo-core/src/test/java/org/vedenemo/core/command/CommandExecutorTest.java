@@ -5,12 +5,14 @@ import org.vedenemo.core.model.AssociationKind;
 import org.vedenemo.core.model.Cardinality;
 import org.vedenemo.core.model.DataType;
 import org.vedenemo.core.model.ModelRoot;
+import org.vedenemo.core.model.ValueSetEntry;
 import org.vedenemo.core.model.VEntity;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.Session;
 import org.vedenemo.core.spi.storage.ModelStorage;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -184,6 +186,93 @@ final class CommandExecutorTest {
         assertTrue(fixture.session.latestCommand().orElseThrow() instanceof CreateEntityCommand);
         assertEquals(1, fixture.commandJournal.listForModel("Example_Model").size());
         assertTrue(fixture.commandJournal.listForModel("Example_Model").getFirst() instanceof CreateEntityCommand);
+    }
+
+    @Test
+    void createValueSetAndAttributeReferenceAreRecordedAndUndoable() {
+        Fixture fixture = fixtureWithSelectedModelAndEntity();
+
+        fixture.executor.execute(new CreateValueSetCommand(
+                "Example_Model",
+                "TreeSpecies",
+                DataType.TEXT,
+                List.of(new ValueSetEntry("PINE", "Pine"), new ValueSetEntry("SPRUCE", "Spruce"))
+        ));
+        fixture.executor.execute(new CreateAttributeCommand(
+                "Example_Model",
+                "Customer",
+                "Species",
+                "Species",
+                DataType.TEXT,
+                "TreeSpecies"
+        ));
+
+        assertEquals(1, fixture.modelRoot.valueSets().size());
+        assertEquals("TreeSpecies", fixture.modelRoot.entities().getFirst().attributes().getFirst().valueSetAzName());
+        assertEquals(3, fixture.commandJournal.listForModel("Example_Model").size());
+
+        UndoResult result = fixture.executor.undoLatest();
+
+        assertEquals("create-attribute", result.undoneCommand());
+        assertTrue(fixture.modelRoot.entities().getFirst().attributes().isEmpty());
+
+        result = fixture.executor.undoLatest();
+
+        assertEquals("create-value-set", result.undoneCommand());
+        assertTrue(fixture.modelRoot.valueSets().isEmpty());
+    }
+
+    @Test
+    void setAttributeValueSetAttachesCompatibleExistingAttributeAndUndoClearsIt() {
+        Fixture fixture = fixtureWithSelectedModelAndEntity();
+        fixture.executor.execute(new CreateValueSetCommand(
+                "Example_Model",
+                "TreeSpecies",
+                DataType.TEXT,
+                List.of(new ValueSetEntry("PINE", "Pine"))
+        ));
+        fixture.executor.execute(new CreateAttributeCommand(
+                "Example_Model",
+                "Customer",
+                "Species",
+                "Species",
+                DataType.TEXT
+        ));
+
+        fixture.executor.execute(new SetAttributeValueSetCommand("Example_Model", "Customer", "Species", "TreeSpecies"));
+
+        assertEquals("TreeSpecies", fixture.modelRoot.entities().getFirst().attributes().getFirst().valueSetAzName());
+
+        UndoResult result = fixture.executor.undoLatest();
+
+        assertEquals("set-attribute-value-set", result.undoneCommand());
+        assertEquals(null, fixture.modelRoot.entities().getFirst().attributes().getFirst().valueSetAzName());
+    }
+
+    @Test
+    void attributeValueSetReferenceRequiresExistingCompatibleValueSet() {
+        Fixture fixture = fixtureWithSelectedModelAndEntity();
+        fixture.executor.execute(new CreateValueSetCommand(
+                "Example_Model",
+                "Ratings",
+                DataType.NUMERIC,
+                List.of(new ValueSetEntry("1", "One"))
+        ));
+
+        assertThrows(IllegalArgumentException.class, () -> fixture.executor.execute(new CreateAttributeCommand(
+                "Example_Model",
+                "Customer",
+                "Species",
+                "Species",
+                DataType.TEXT,
+                "Ratings"
+        )));
+        assertThrows(IllegalStateException.class, () -> fixture.executor.execute(new SetAttributeValueSetCommand(
+                "Example_Model",
+                "Customer",
+                "Missing",
+                "Ratings"
+        )));
     }
 
     @Test

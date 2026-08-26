@@ -30,6 +30,8 @@ import org.vedenemo.core.model.Association;
 import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
+import org.vedenemo.core.model.ValueSet;
+import org.vedenemo.core.model.ValueSetEntry;
 import org.vedenemo.core.spi.dump.ModelInstanceDumpContent;
 import org.vedenemo.core.spi.dump.ModelInstanceDumpDescriptor;
 import org.vedenemo.core.spi.dump.ModelInstanceDumpStore;
@@ -692,6 +694,7 @@ public final class InstanceDataResource {
             String modelAzName,
             String modelVisName,
             String modelVersion,
+            List<ValueSetDescriptionResponse> valueSets,
             List<EntityDescriptionResponse> entities,
             List<AssociationDescriptionResponse> associations
     ) {
@@ -701,9 +704,28 @@ public final class InstanceDataResource {
                     modelRoot.azName(),
                     modelRoot.visName(),
                     modelRoot.version().toString(),
+                    modelRoot.valueSets().stream().map(ValueSetDescriptionResponse::from).toList(),
                     modelRoot.entities().stream().map(EntityDescriptionResponse::from).toList(),
                     modelRoot.associations().stream().map(AssociationDescriptionResponse::from).toList()
             );
+        }
+    }
+
+    private record ValueSetDescriptionResponse(String azName, String dataType, List<ValueSetEntryDescriptionResponse> entries) {
+
+        private static ValueSetDescriptionResponse from(ValueSet valueSet) {
+            return new ValueSetDescriptionResponse(
+                    valueSet.azName(),
+                    valueSet.type().name(),
+                    valueSet.entries().stream().map(ValueSetEntryDescriptionResponse::from).toList()
+            );
+        }
+    }
+
+    private record ValueSetEntryDescriptionResponse(Object technicalValue, String visName) {
+
+        private static ValueSetEntryDescriptionResponse from(ValueSetEntry entry) {
+            return new ValueSetEntryDescriptionResponse(entry.technicalValue(), entry.visName());
         }
     }
 
@@ -748,10 +770,10 @@ public final class InstanceDataResource {
         }
     }
 
-    private record AttributeDescriptionResponse(String azName, String visName, String dataType) {
+    private record AttributeDescriptionResponse(String azName, String visName, String dataType, String valueSetAzName) {
 
         private static AttributeDescriptionResponse from(VAttribute attribute) {
-            return new AttributeDescriptionResponse(attribute.azName(), attribute.visName(), attribute.type().name());
+            return new AttributeDescriptionResponse(attribute.azName(), attribute.visName(), attribute.type().name(), attribute.valueSetAzName());
         }
     }
 

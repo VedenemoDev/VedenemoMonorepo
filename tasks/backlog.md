@@ -2,15 +2,18 @@
 
 ## Add Model-Level `ValueSet` Constraint Support
 
-Status: planning
+Status: executed
 
 ### Goal
 
-Introduce a model-level `ValueSet` concept that can be used to restrict the allowed values of entity attributes.
+Introduce a model-level `ValueSet` concept that can be used to restrict the
+allowed values of entity attributes.
 
-A `ValueSet` represents a named, reusable set of allowed values. It belongs to the model and can be referenced by attributes of any entity within that model.
+A `ValueSet` represents a named, reusable set of allowed values. It belongs to
+the model and can be referenced by attributes of any entity within that model.
 
-The purpose is to express domain constraints in the model itself rather than as visualization or UX-specific configuration.
+The purpose is to express domain constraints in the model itself rather than as
+visualization or UX-specific configuration.
 
 ### Example Use Case
 
@@ -18,23 +21,28 @@ A forestry model may contain a `Tree` entity with a `species` attribute:
 
 ```text
 Tree
-    species : STRING
+    species : TEXT
 ```
 
 The set of valid tree species should be restricted:
 
 ```text
-ValueSet TreeSpecies
-    PINE   -> "Pine"
-    SPRUCE -> "Spruce"
-    BIRCH  -> "Birch"
+ValueSet TreeSpecies : TEXT
+    PINE
+        visName = "Pine"
+
+    SPRUCE
+        visName = "Spruce"
+
+    BIRCH
+        visName = "Birch"
 ```
 
 The attribute can then reference the value set:
 
 ```text
 Tree
-    species : STRING
+    species : TEXT
         valueSet = TreeSpecies
 ```
 
@@ -42,7 +50,7 @@ The same `ValueSet` can be reused by other entities:
 
 ```text
 ForestStand
-    dominantSpecies : STRING
+    dominantSpecies : TEXT
         valueSet = TreeSpecies
 ```
 
@@ -53,14 +61,15 @@ Keep the attribute's technical data type and its allowed value domain as separat
 ```text
 Attribute
     dataType : DataType
-    valueSet : ValueSet?
+    valueSetAzName : String?
 ```
 
 Thus:
 
 * `DataType` defines the technical representation of a value.
 * `ValueSet` optionally restricts which values of that data type are valid.
-* `Attribute` references both where applicable.
+* `Attribute` references a `ValueSet` by model-local technical name where
+  applicable.
 
 A `ValueSet` should therefore **not initially be implemented as a new data type such as `ENUM`**.
 
@@ -75,11 +84,25 @@ A `ValueSet` should:
 * Have a data type compatible with attributes referencing it.
 * Support a stable technical value for each entry.
 * Support a human-readable visual name for each entry.
+* Treat the technical value as the stored instance value.
+* Be create-only in the initial implementation: no user-facing remove, rename,
+  or entry-edit command is required in this slice.
+
+The initial implementation should support only these `DataType` values for
+`ValueSet` definitions:
+
+* `TEXT`
+* `NUMERIC`
+* `DATE`
+* `TIME`
+
+Other currently implemented data types are deliberately deferred for the first
+slice.
 
 Conceptually:
 
 ```text
-ValueSet TreeSpecies : STRING
+ValueSet TreeSpecies : TEXT
 
     PINE
         visName = "Pine"
@@ -93,6 +116,11 @@ ValueSet TreeSpecies : STRING
 
 The exact internal representation and scripting syntax can be decided during implementation.
 
+For `TEXT` value sets, the entry's technical value is the literal attribute
+value stored in instance data. For example, if `TreeSpecies` contains `PINE`,
+then an instance stores `"PINE"` for a constrained `species` attribute; the
+display label `"Pine"` is derived from the `ValueSet` metadata.
+
 ### Validation
 
 When an attribute references a `ValueSet`:
@@ -102,11 +130,31 @@ When an attribute references a `ValueSet`:
 3. A value assigned to the attribute must be one of the values defined by the referenced `ValueSet`.
 4. Invalid values must be rejected by normal model/instance validation rather than only by the UX.
 
-### CLI integration
+The initial implementation should enforce `ValueSet` constraints for future
+instance create/update operations and `.vdmp` import. It does not need to
+retroactively scan or migrate existing model instance data when a `ValueSet` is
+attached to an existing attribute.
 
-- There should be new CLI command available for adding value sets
-- Naturally, there should be text presentation for adding value set to be stored into .vdos files, as well as to add ValueSet rescriction to an attribute
-- And also naturally,  in .vdos file each ValueSet must be defined and added to a model before it can be referenced by some attribute
+### Authoring Integration
+
+There should be user-facing command support for:
+
+* adding a model-level `ValueSet`;
+* creating an attribute with an optional `valueSet` reference;
+* attaching a `ValueSet` to an existing compatible attribute.
+
+Command execution should remain pure core logic with explicit command records,
+undo counterparts where appropriate, and journal replay support.
+
+`.vdos` export/import must preserve:
+
+* model-level `ValueSet` definitions;
+* `ValueSet` entries;
+* attribute `valueSet` references.
+
+In `.vdos`, each `ValueSet` must be defined before a command or snapshot line
+can reference it. The final syntax can be chosen during implementation, but it
+must remain hand-written parser friendly and deterministic.
 
 ### UX Implications
 
@@ -115,20 +163,16 @@ When an attribute references a `ValueSet`:
 For example:
 
 ```text
-STRING
+TEXT
     -> free text input
 
-STRING + ValueSet
+TEXT + ValueSet
     -> selection control
-
-BOOLEAN
-    -> boolean control
-
-LOCATION
-    -> location-aware editor
 ```
 
-The model should **not prescribe a specific UX widget**. A frontend may choose a dropdown, radio buttons, autocomplete control, or another suitable representation depending on the size and characteristics of the `ValueSet`.
+The model should **not prescribe a specific UX widget**. A frontend may choose a
+dropdown, radio buttons, autocomplete control, or another suitable
+representation depending on the size and characteristics of the `ValueSet`.
 
 ### Scope
 
@@ -136,10 +180,15 @@ Initial implementation should focus on:
 
 * Model-level `ValueSet` definitions.
 * ValueSet entries with technical and visual names.
-* Referencing a `ValueSet` from an attribute.
+* `TEXT`, `NUMERIC`, `DATE`, and `TIME` value sets.
+* Referencing a `ValueSet` from a new attribute.
+* Attaching a `ValueSet` to an existing compatible attribute.
 * Data-type compatibility validation.
-* Instance-value validation against the referenced `ValueSet`.
+* Instance-value validation against the referenced `ValueSet` for future
+  create/update operations.
+* `.vdmp` import validation against the referenced `ValueSet`.
 * Making `ValueSet` metadata available to consumers of the model.
+* `.vdos` export/import and replay support.
 
 ### Out of Scope
 
@@ -147,8 +196,13 @@ For the initial implementation:
 
 * User-defined enum data types.
 * Entity-specific value sets.
+* `URL`, `DATA`, `DATETIME`, and `LOCATION` value sets.
 * Dynamic/database-backed value sets.
 * Hierarchical value sets.
+* Editing, removing, renaming, or reordering existing `ValueSet` entries.
+* Retroactive validation or migration of existing instance data when a
+  `ValueSet` is attached to an existing attribute.
+* Deprecating individual `ValueSet` entries.
 * UX-specific widget definitions.
 * Treating ValueSet entries as entities with their own identity or lifecycle.
 
@@ -156,15 +210,45 @@ These capabilities can be considered separately if concrete use cases emerge.
 
 ### Acceptance Criteria
 
-* [ ] A model can define a named `ValueSet`.
-* [ ] A `ValueSet` contains a finite collection of allowed values.
-* [ ] Each entry can have a stable technical value and a human-readable visual name.
-* [ ] A `ValueSet` has a value type against which attribute compatibility can be checked.
-* [ ] Any compatible attribute in the same model can reference the `ValueSet`.
-* [ ] Multiple attributes and entities can reuse the same `ValueSet`.
-* [ ] Assigning a value outside the referenced `ValueSet` is rejected.
-* [ ] Model consumers can discover an attribute's referenced `ValueSet` and its entries.
-* [ ] No visualization- or UX-specific behavior is required in the core `ValueSet` concept.
+* [x] A model can define a named `ValueSet`.
+* [x] A `ValueSet` contains a finite collection of allowed values.
+* [x] Each entry can have a stable technical value and a human-readable visual name.
+* [x] The entry technical value is the stored instance value.
+* [x] A `ValueSet` has a value type against which attribute compatibility can be checked.
+* [x] `TEXT`, `NUMERIC`, `DATE`, and `TIME` value sets are supported.
+* [x] Any compatible attribute in the same model can reference the `ValueSet` at creation time.
+* [x] A compatible existing attribute can be updated to reference a `ValueSet`.
+* [x] Multiple attributes and entities can reuse the same `ValueSet`.
+* [x] Future instance create/update operations reject values outside the referenced `ValueSet`.
+* [x] `.vdmp` import rejects values outside the referenced `ValueSet`.
+* [x] Model consumers can discover an attribute's referenced `ValueSet` and its entries.
+* [x] `.vdos` export/import preserves `ValueSet` definitions, entries, and attribute references.
+* [x] `.vdos` import rejects references to undefined `ValueSet` definitions.
+* [x] No visualization- or UX-specific behavior is required in the core `ValueSet` concept.
+
+### Completion Notes
+
+- Added pure-JDK `ValueSet` and `ValueSetEntry` model types.
+- Added ordered model-level value-set storage on `ModelRoot`.
+- Added optional `valueSetAzName` references on `VAttribute`.
+- Added `CreateValueSetCommand` and `SetAttributeValueSetCommand` plus undo
+  counterparts.
+- Added `.vdos` command/snapshot export and import support for value sets and
+  attribute references.
+- Added instance create/update/query validation against referenced value sets.
+- Added `.vdmp` precheck rejection for values outside referenced value sets.
+- Exposed value sets and attribute references through model listing and runtime
+  API description responses.
+- Added CLI/browser-console flows for `vset add` and `attr vset`.
+- Kept value sets create-only; entry append/deprecation remains future work.
+- Verification passed with `mvn -q clean verify` and
+  `cd vedenemo-ux && npm run build`.
+
+### Future Considerations
+
+Later tasks may add support for appending entries to existing `ValueSet`
+definitions and marking individual entries deprecated so new UX selections can
+hide them while older data remains loadable.
 
 
 ## Add new LOCATION datatype

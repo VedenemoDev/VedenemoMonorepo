@@ -749,11 +749,20 @@ final class ConsoleSessionTest {
                 String entityAzName,
                 String attributeAzName,
                 String attributeVisName,
-                String dataType
+                String dataType,
+                String valueSetAzName
         ) {
             createdAttributeEntityAzName = entityAzName;
             createdAttributeAzName = attributeAzName;
             createdAttributeDataType = dataType;
+        }
+
+        @Override
+        public void createValueSet(UUID sessionId, String valueSetAzName, String dataType, List<ValueSetEntryInput> entries) {
+        }
+
+        @Override
+        public void setAttributeValueSet(UUID sessionId, String entityAzName, String attributeAzName, String valueSetAzName) {
         }
 
         @Override

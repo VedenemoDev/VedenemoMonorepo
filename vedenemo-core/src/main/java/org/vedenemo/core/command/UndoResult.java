@@ -54,6 +54,28 @@ public record UndoResult(
         );
     }
 
+    public static UndoResult undoneCreateValueSet(String modelAzName, String valueSetAzName) {
+        return new UndoResult(
+                Status.UNDONE,
+                "create-value-set",
+                modelAzName,
+                null,
+                Objects.requireNonNull(valueSetAzName, "valueSetAzName must not be null"),
+                null
+        );
+    }
+
+    public static UndoResult undoneSetAttributeValueSet(String modelAzName, String entityAzName, String attributeAzName) {
+        return new UndoResult(
+                Status.UNDONE,
+                "set-attribute-value-set",
+                modelAzName,
+                Objects.requireNonNull(entityAzName, "entityAzName must not be null"),
+                Objects.requireNonNull(attributeAzName, "attributeAzName must not be null"),
+                null
+        );
+    }
+
     public boolean isNothingToUndo() {
         return status == Status.NOTHING_TO_UNDO;
     }

@@ -1,63 +1,90 @@
 # Current Task
 
-## Add new LOCATION datatype
+## Add Model-Level `ValueSet` Constraint Support
 
 Status: executed.
 
 ### Goal
 
-Add a built-in `LOCATION` attribute data type for WGS 84 geographic point
-coordinates while preserving core purity and keeping map/visualization behavior
-out of the datatype itself.
+Introduce a model-level `ValueSet` concept that can restrict allowed values for
+entity attributes without adding a new `DataType` and without moving domain
+constraint semantics into UX-specific configuration.
+
+A `ValueSet` is a named, reusable finite set of allowed values. It belongs to a
+model and can be referenced by compatible attributes in that model.
 
 ### Scope
 
-- Add `LOCATION` to the supported `DataType` values.
-- Represent normalized runtime location values with a dedicated pure-JDK record.
-- Accept structured HTTP and `.vdmp` values with numeric `latitude` and
-  `longitude` fields.
-- Validate required, finite WGS 84 latitude and longitude ranges.
-- Support exact equality matching for `LOCATION` values.
-- Reject ordered comparison, string containment, string-shaped coordinates,
-  missing coordinates, non-numeric coordinates, and non-finite coordinates.
-- Allow `.vdos` model scripts to declare attributes with `dataType=LOCATION`.
-- Keep map, spatial search, route/track, altitude, timestamp, and UX helper
-  behavior out of this task.
+- Add pure-JDK model support for model-level `ValueSet` definitions and
+  entries.
+- Support `TEXT`, `NUMERIC`, `DATE`, and `TIME` value sets in the first slice.
+- Store the entry technical value as the actual instance value.
+- Keep the entry visual name as display metadata.
+- Allow creating an attribute with an optional `valueSet` reference.
+- Allow attaching a compatible `ValueSet` to an existing attribute.
+- Validate that referenced value sets exist in the same model.
+- Validate data-type compatibility between attributes and referenced value
+  sets.
+- Enforce `ValueSet` membership for future instance create/update operations.
+- Enforce `ValueSet` membership during `.vdmp` import.
+- Preserve `ValueSet` definitions, entries, and attribute references in
+  `.vdos` export/import.
+- Expose `ValueSet` metadata to model consumers through existing model/API
+  description flows.
+
+### Out Of Scope
+
+- New `ENUM` or user-defined enum data types.
+- `URL`, `DATA`, `DATETIME`, and `LOCATION` value sets.
+- Dynamic, database-backed, hierarchical, or entity-scoped value sets.
+- Editing, removing, renaming, or reordering existing `ValueSet` entries.
+- Retroactive validation or migration of existing instance data when a
+  `ValueSet` is attached to an existing attribute.
+- Deprecating individual `ValueSet` entries.
+- UX-specific widget definitions.
+- Treating `ValueSet` entries as entities with their own identity or lifecycle.
 
 ### Acceptance Criteria
 
-- `LOCATION` is available as a built-in Vedenemo attribute data type.
-- A model entity can define an attribute whose type is `LOCATION`.
-- `.vdos` model scripts can declare attributes with `dataType=LOCATION`.
-- A normalized `LOCATION` instance value is represented in core by a dedicated
-  pure-JDK record.
-- HTTP instance create/update requests accept `LOCATION` values only as
-  structured objects with numeric `latitude` and `longitude` fields.
-- HTTP instance responses return `LOCATION` values as structured objects with
-  `latitude` and `longitude` fields.
-- `.vdmp` dump export/import preserves normalized `LOCATION` values without
-  intentional rounding or truncation.
-- Latitude and longitude are interpreted as WGS 84 decimal-degree coordinates.
-- Latitude and longitude ranges are validated.
-- Missing latitude or longitude values are rejected.
-- Non-numeric, non-finite, or string-shaped location values are rejected using
-  the normal Vedenemo validation/error mechanism.
-- Exact equality filtering/querying works for `LOCATION` values.
-- Ordered comparison and string containment operators reject `LOCATION`
-  attributes.
-- The data type itself does not depend on any map or visualization
-  implementation.
+- A model can define a named `ValueSet`.
+- A `ValueSet` contains a finite collection of allowed values.
+- Each entry has a stable technical value and a human-readable visual name.
+- The entry technical value is the stored instance value.
+- A `ValueSet` has a value type against which attribute compatibility can be
+  checked.
+- `TEXT`, `NUMERIC`, `DATE`, and `TIME` value sets are supported.
+- A compatible attribute can reference a `ValueSet` at creation time.
+- A compatible existing attribute can be updated to reference a `ValueSet`.
+- Multiple attributes and entities can reuse the same `ValueSet`.
+- Future instance create/update operations reject values outside the referenced
+  `ValueSet`.
+- `.vdmp` import rejects values outside the referenced `ValueSet`.
+- Model consumers can discover an attribute's referenced `ValueSet` and its
+  entries.
+- `.vdos` export/import preserves `ValueSet` definitions, entries, and
+  attribute references.
+- `.vdos` import rejects references to undefined `ValueSet` definitions.
+- No visualization- or UX-specific behavior is required in the core
+  `ValueSet` concept.
 - Backend verification succeeds.
 
 ### Completion Notes
 
-- Added `DataType.LOCATION` and pure-JDK `LocationValue`.
-- Added core instance normalization, finite/range validation, and exact
-  equality matching for structured location values.
-- Kept ordered comparison and string containment unsupported for `LOCATION`.
-- Updated HTTP responses to emit structured `{latitude, longitude}` objects.
-- Updated `.vdmp` precheck/import/export support for location values.
-- Updated `.vdos` script tests and datatype parsing paths for CLI, browser
-  console, and HTTP session commands.
+- Added pure-JDK `ValueSet` and `ValueSetEntry` model types.
+- Added model-level value-set storage and optional `VAttribute.valueSetAzName`.
+- Added command support for creating value sets and attaching them to existing
+  compatible attributes.
+- Added undo counterparts for create-value-set and set-attribute-value-set.
+- Added `.vdos` export/import and snapshot validation for value sets and
+  attribute references.
+- Added instance create/update/query normalization checks for constrained
+  attributes.
+- Added `.vdmp` precheck rejection for values outside referenced value sets.
+- Exposed value sets and attribute references through HTTP model and runtime
+  API description responses.
+- Added CLI/browser-console flows for `vset add` and `attr vset`.
+- Updated frontend API-description types for value-set metadata.
 - Updated README, CLI reference, current implementation architecture docs, and
   backlog history.
+- Verification passed with `mvn -q clean verify` and
+  `cd vedenemo-ux && npm run build`.

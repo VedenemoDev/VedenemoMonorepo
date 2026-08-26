@@ -12,6 +12,7 @@ import org.vedenemo.core.model.ModelRoot;
 import org.vedenemo.core.model.ModelVersion;
 import org.vedenemo.core.model.VAttribute;
 import org.vedenemo.core.model.VEntity;
+import org.vedenemo.core.model.ValueSet;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -110,9 +111,14 @@ public final class ModelInstanceDumpService {
                         diagnostics.add("attribute not found: " + group.entityAzName() + "." + entry.getKey());
                         continue;
                     }
-                    if (entry.getValue() != null && !valueFitsType(attribute.type(), entry.getValue())) {
-                        diagnostics.add("attribute type mismatch: " + group.entityAzName() + "." + attribute.azName()
-                                + " expects " + attribute.type() + " but dump value is " + entry.getValue().getClass().getSimpleName());
+                    if (entry.getValue() != null) {
+                        if (!valueFitsType(attribute.type(), entry.getValue())) {
+                            diagnostics.add("attribute type mismatch: " + group.entityAzName() + "." + attribute.azName()
+                                    + " expects " + attribute.type() + " but dump value is " + entry.getValue().getClass().getSimpleName());
+                        } else if (!valueFitsValueSet(targetModel, attribute, entry.getValue())) {
+                            diagnostics.add("attribute value outside ValueSet: " + group.entityAzName() + "." + attribute.azName()
+                                    + " must be one of " + attribute.valueSetAzName());
+                        }
                     }
                 }
             }
@@ -235,6 +241,22 @@ public final class ModelInstanceDumpService {
         try {
             new LocationValue(latitudeNumber.doubleValue(), longitudeNumber.doubleValue());
             return true;
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
+    private static boolean valueFitsValueSet(ModelRoot modelRoot, VAttribute attribute, Object value) {
+        if (attribute.valueSetAzName() == null) {
+            return true;
+        }
+        ValueSet valueSet = modelRoot.findValueSet(attribute.valueSetAzName())
+                .orElseThrow(() -> new IllegalArgumentException("ValueSet not found: " + attribute.valueSetAzName()));
+        if (valueSet.type() != attribute.type()) {
+            return false;
+        }
+        try {
+            return valueSet.containsTechnicalValue(value);
         } catch (IllegalArgumentException exception) {
             return false;
         }

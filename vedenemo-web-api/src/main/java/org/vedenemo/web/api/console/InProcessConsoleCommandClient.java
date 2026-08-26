@@ -2,18 +2,23 @@ package org.vedenemo.web.api.console;
 
 import org.vedenemo.console.CommandClient;
 import org.vedenemo.console.UndoCommandResult;
+import org.vedenemo.console.ValueSetEntryInput;
 import org.vedenemo.core.command.CommandExecutor;
 import org.vedenemo.core.command.CreateAssociationCommand;
 import org.vedenemo.core.command.CreateAttributeCommand;
 import org.vedenemo.core.command.CreateEntityCommand;
+import org.vedenemo.core.command.CreateValueSetCommand;
+import org.vedenemo.core.command.SetAttributeValueSetCommand;
 import org.vedenemo.core.command.UndoResult;
 import org.vedenemo.core.model.AssociationKind;
 import org.vedenemo.core.model.Cardinality;
 import org.vedenemo.core.model.DataType;
+import org.vedenemo.core.model.ValueSetEntry;
 import org.vedenemo.core.session.SessionManager;
 import org.vedenemo.web.api.events.ModelChangeBroadcaster;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -42,7 +47,8 @@ final class InProcessConsoleCommandClient implements CommandClient {
             String entityAzName,
             String attributeAzName,
             String attributeVisName,
-            String dataType
+            String dataType,
+            String valueSetAzName
     ) throws IOException {
         CommandExecutor executor = executor(sessionId);
         String modelAzName = selectedModelAzName(executor);
@@ -51,8 +57,32 @@ final class InProcessConsoleCommandClient implements CommandClient {
                 entityAzName,
                 attributeAzName,
                 attributeVisName,
-                parseDataType(dataType)
+                parseDataType(dataType),
+                valueSetAzName
         ));
+        modelChangeBroadcaster.broadcastModelChanged(modelAzName);
+    }
+
+    @Override
+    public void createValueSet(UUID sessionId, String valueSetAzName, String dataType, List<ValueSetEntryInput> entries) throws IOException {
+        CommandExecutor executor = executor(sessionId);
+        String modelAzName = selectedModelAzName(executor);
+        executor.execute(new CreateValueSetCommand(
+                modelAzName,
+                valueSetAzName,
+                parseDataType(dataType),
+                entries.stream()
+                        .map(entry -> new ValueSetEntry(entry.technicalValue(), entry.visName()))
+                        .toList()
+        ));
+        modelChangeBroadcaster.broadcastModelChanged(modelAzName);
+    }
+
+    @Override
+    public void setAttributeValueSet(UUID sessionId, String entityAzName, String attributeAzName, String valueSetAzName) throws IOException {
+        CommandExecutor executor = executor(sessionId);
+        String modelAzName = selectedModelAzName(executor);
+        executor.execute(new SetAttributeValueSetCommand(modelAzName, entityAzName, attributeAzName, valueSetAzName));
         modelChangeBroadcaster.broadcastModelChanged(modelAzName);
     }
 

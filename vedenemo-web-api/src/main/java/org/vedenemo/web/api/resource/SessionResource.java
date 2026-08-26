@@ -7,10 +7,13 @@ import org.vedenemo.core.command.CommandExecutor;
 import org.vedenemo.core.command.CreateAssociationCommand;
 import org.vedenemo.core.command.CreateAttributeCommand;
 import org.vedenemo.core.command.CreateEntityCommand;
+import org.vedenemo.core.command.CreateValueSetCommand;
+import org.vedenemo.core.command.SetAttributeValueSetCommand;
 import org.vedenemo.core.command.UndoResult;
 import org.vedenemo.core.model.AssociationKind;
 import org.vedenemo.core.model.Cardinality;
 import org.vedenemo.core.model.DataType;
+import org.vedenemo.core.model.ValueSetEntry;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.Session;
 import org.vedenemo.core.session.SessionManager;
@@ -18,6 +21,7 @@ import org.vedenemo.web.api.events.ModelChangeBroadcaster;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 public final class SessionResource {
@@ -168,7 +172,8 @@ public final class SessionResource {
                         request.entityAzName(),
                         request.attributeAzName(),
                         request.attributeVisName(),
-                        dataType
+                        dataType,
+                        request.valueSetAzName()
                 ));
                 modelChangeBroadcaster.broadcastModelChanged(selectedModelAzName.orElseThrow());
             } catch (JsonProcessingException | IllegalArgumentException | IllegalStateException | NullPointerException exception) {
@@ -178,7 +183,80 @@ public final class SessionResource {
             writeJson(context, 200, new AttributeResponse(
                     request.attributeAzName(),
                     request.attributeVisName(),
-                    dataType.name()
+                    dataType.name(),
+                    request.valueSetAzName()
+            ));
+        });
+        routes.post("/sessions/{uuid}/commands/create-value-set", context -> {
+            UUID sessionId = parseSessionId(context.pathParam("uuid"));
+            if (sessionId == null) {
+                writeJson(context, 400, new ErrorResponse("session uuid is invalid"));
+                return;
+            }
+            Optional<CommandExecutor> executor = sessionManager.findExecutor(sessionId);
+            if (executor.isEmpty()) {
+                writeJson(context, 404, new ErrorResponse("session not found"));
+                return;
+            }
+            Optional<String> selectedModelAzName = executor.orElseThrow().session().selectedModelAzName();
+            if (selectedModelAzName.isEmpty()) {
+                writeJson(context, 400, new ErrorResponse("no selected model"));
+                return;
+            }
+            CreateValueSetRequest request;
+            DataType dataType;
+            try {
+                request = objectMapper.readValue(context.body(), CreateValueSetRequest.class);
+                dataType = parseDataType(request.dataType());
+                executor.orElseThrow().execute(new CreateValueSetCommand(
+                        selectedModelAzName.orElseThrow(),
+                        request.valueSetAzName(),
+                        dataType,
+                        request.entries().stream()
+                                .map(entry -> new ValueSetEntry(entry.technicalValue(), entry.visName()))
+                                .toList()
+                ));
+                modelChangeBroadcaster.broadcastModelChanged(selectedModelAzName.orElseThrow());
+            } catch (JsonProcessingException | IllegalArgumentException | IllegalStateException | NullPointerException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+                return;
+            }
+            writeJson(context, 200, new ValueSetResponse(request.valueSetAzName(), dataType.name(), request.entries()));
+        });
+        routes.post("/sessions/{uuid}/commands/set-attribute-value-set", context -> {
+            UUID sessionId = parseSessionId(context.pathParam("uuid"));
+            if (sessionId == null) {
+                writeJson(context, 400, new ErrorResponse("session uuid is invalid"));
+                return;
+            }
+            Optional<CommandExecutor> executor = sessionManager.findExecutor(sessionId);
+            if (executor.isEmpty()) {
+                writeJson(context, 404, new ErrorResponse("session not found"));
+                return;
+            }
+            Optional<String> selectedModelAzName = executor.orElseThrow().session().selectedModelAzName();
+            if (selectedModelAzName.isEmpty()) {
+                writeJson(context, 400, new ErrorResponse("no selected model"));
+                return;
+            }
+            SetAttributeValueSetRequest request;
+            try {
+                request = objectMapper.readValue(context.body(), SetAttributeValueSetRequest.class);
+                executor.orElseThrow().execute(new SetAttributeValueSetCommand(
+                        selectedModelAzName.orElseThrow(),
+                        request.entityAzName(),
+                        request.attributeAzName(),
+                        request.valueSetAzName()
+                ));
+                modelChangeBroadcaster.broadcastModelChanged(selectedModelAzName.orElseThrow());
+            } catch (JsonProcessingException | IllegalArgumentException | IllegalStateException | NullPointerException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+                return;
+            }
+            writeJson(context, 200, new AttributeValueSetResponse(
+                    request.entityAzName(),
+                    request.attributeAzName(),
+                    request.valueSetAzName()
             ));
         });
         routes.post("/sessions/{uuid}/commands/create-association", context -> {
@@ -285,7 +363,8 @@ public final class SessionResource {
             String entityAzName,
             String attributeAzName,
             String attributeVisName,
-            String dataType
+            String dataType,
+            String valueSetAzName
     ) {
     }
 
@@ -306,7 +385,22 @@ public final class SessionResource {
     private record EntityResponse(String azName, String visName) {
     }
 
-    private record AttributeResponse(String azName, String visName, String dataType) {
+    private record ValueSetEntryRequest(Object technicalValue, String visName) {
+    }
+
+    private record CreateValueSetRequest(String valueSetAzName, String dataType, List<ValueSetEntryRequest> entries) {
+    }
+
+    private record SetAttributeValueSetRequest(String entityAzName, String attributeAzName, String valueSetAzName) {
+    }
+
+    private record AttributeResponse(String azName, String visName, String dataType, String valueSetAzName) {
+    }
+
+    private record ValueSetResponse(String azName, String dataType, List<ValueSetEntryRequest> entries) {
+    }
+
+    private record AttributeValueSetResponse(String entityAzName, String attributeAzName, String valueSetAzName) {
     }
 
     private record AssociationResponse(

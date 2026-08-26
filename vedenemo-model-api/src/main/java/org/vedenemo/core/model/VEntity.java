@@ -54,6 +54,16 @@ public final class VEntity extends Versionable {
         return Optional.ofNullable(attributesByAzName.remove(ModelTextRules.uniquenessKey(azName)));
     }
 
+    public VAttribute replaceAttribute(VAttribute attribute) {
+        Objects.requireNonNull(attribute, "attribute must not be null");
+        String uniquenessKey = VAttribute.uniquenessKey(attribute.azName());
+        if (!attributesByAzName.containsKey(uniquenessKey)) {
+            throw new IllegalArgumentException("attribute not found");
+        }
+        attributesByAzName.put(uniquenessKey, attribute);
+        return attribute;
+    }
+
     public boolean removeAttribute(VAttribute attribute) {
         Objects.requireNonNull(attribute, "attribute must not be null");
         String uniquenessKey = VAttribute.uniquenessKey(attribute.azName());
