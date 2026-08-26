@@ -1,5 +1,170 @@
 # Backlog
 
+## Add Model-Level `ValueSet` Constraint Support
+
+### Goal
+
+Introduce a model-level `ValueSet` concept that can be used to restrict the allowed values of entity attributes.
+
+A `ValueSet` represents a named, reusable set of allowed values. It belongs to the model and can be referenced by attributes of any entity within that model.
+
+The purpose is to express domain constraints in the model itself rather than as visualization or UX-specific configuration.
+
+### Example Use Case
+
+A forestry model may contain a `Tree` entity with a `species` attribute:
+
+```text
+Tree
+    species : STRING
+```
+
+The set of valid tree species should be restricted:
+
+```text
+ValueSet TreeSpecies
+    PINE   -> "Pine"
+    SPRUCE -> "Spruce"
+    BIRCH  -> "Birch"
+```
+
+The attribute can then reference the value set:
+
+```text
+Tree
+    species : STRING
+        valueSet = TreeSpecies
+```
+
+The same `ValueSet` can be reused by other entities:
+
+```text
+ForestStand
+    dominantSpecies : STRING
+        valueSet = TreeSpecies
+```
+
+### Conceptual Model
+
+Keep the attribute's technical data type and its allowed value domain as separate concepts:
+
+```text
+Attribute
+    dataType : DataType
+    valueSet : ValueSet?
+```
+
+Thus:
+
+* `DataType` defines the technical representation of a value.
+* `ValueSet` optionally restricts which values of that data type are valid.
+* `Attribute` references both where applicable.
+
+A `ValueSet` should therefore **not initially be implemented as a new data type such as `ENUM`**.
+
+### ValueSet Definition
+
+A `ValueSet` should:
+
+* Have a model-unique technical name.
+* Be defined at model scope rather than entity scope.
+* Be reusable by attributes belonging to different entities.
+* Contain a finite set of allowed values.
+* Have a data type compatible with attributes referencing it.
+* Support a stable technical value for each entry.
+* Support a human-readable visual name for each entry.
+
+Conceptually:
+
+```text
+ValueSet TreeSpecies : STRING
+
+    PINE
+        visName = "Pine"
+
+    SPRUCE
+        visName = "Spruce"
+
+    BIRCH
+        visName = "Birch"
+```
+
+The exact internal representation and scripting syntax can be decided during implementation.
+
+### Validation
+
+When an attribute references a `ValueSet`:
+
+1. The `ValueSet` must exist in the same model.
+2. The attribute's data type must be compatible with the `ValueSet`.
+3. A value assigned to the attribute must be one of the values defined by the referenced `ValueSet`.
+4. Invalid values must be rejected by normal model/instance validation rather than only by the UX.
+
+### CLI integration
+
+- There should be new CLI command available for adding value sets
+- Naturally, there should be text presentation for adding value set to be stored into .vdos files, as well as to add ValueSet rescriction to an attribute
+- And also naturally,  in .vdos file each ValueSet must be defined and added to a model before it can be referenced by some attribute
+
+### UX Implications
+
+`ValueSet` metadata should allow a UX to derive an appropriate editor automatically.
+
+For example:
+
+```text
+STRING
+    -> free text input
+
+STRING + ValueSet
+    -> selection control
+
+BOOLEAN
+    -> boolean control
+
+LOCATION
+    -> location-aware editor
+```
+
+The model should **not prescribe a specific UX widget**. A frontend may choose a dropdown, radio buttons, autocomplete control, or another suitable representation depending on the size and characteristics of the `ValueSet`.
+
+### Scope
+
+Initial implementation should focus on:
+
+* Model-level `ValueSet` definitions.
+* ValueSet entries with technical and visual names.
+* Referencing a `ValueSet` from an attribute.
+* Data-type compatibility validation.
+* Instance-value validation against the referenced `ValueSet`.
+* Making `ValueSet` metadata available to consumers of the model.
+
+### Out of Scope
+
+For the initial implementation:
+
+* User-defined enum data types.
+* Entity-specific value sets.
+* Dynamic/database-backed value sets.
+* Hierarchical value sets.
+* UX-specific widget definitions.
+* Treating ValueSet entries as entities with their own identity or lifecycle.
+
+These capabilities can be considered separately if concrete use cases emerge.
+
+### Acceptance Criteria
+
+* [ ] A model can define a named `ValueSet`.
+* [ ] A `ValueSet` contains a finite collection of allowed values.
+* [ ] Each entry can have a stable technical value and a human-readable visual name.
+* [ ] A `ValueSet` has a value type against which attribute compatibility can be checked.
+* [ ] Any compatible attribute in the same model can reference the `ValueSet`.
+* [ ] Multiple attributes and entities can reuse the same `ValueSet`.
+* [ ] Assigning a value outside the referenced `ValueSet` is rejected.
+* [ ] Model consumers can discover an attribute's referenced `ValueSet` and its entries.
+* [ ] No visualization- or UX-specific behavior is required in the core `ValueSet` concept.
+
+
 ## Add new LOCATION datatype
 
 Status: executed
