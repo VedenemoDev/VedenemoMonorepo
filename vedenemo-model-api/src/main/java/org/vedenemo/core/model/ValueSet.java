@@ -69,7 +69,7 @@ public final class ValueSet {
             case NUMERIC -> numericValue(value);
             case DATE -> dateValue(value);
             case TIME -> timeValue(value);
-            case URL, DATA, DATETIME, LOCATION -> throw new IllegalArgumentException("ValueSet type is not supported: " + type);
+            case URL, DATA, DATETIME, LOCATION, LOCATION_LINE, LOCATION_AREA -> throw new IllegalArgumentException("ValueSet type is not supported: " + type);
         };
     }
 

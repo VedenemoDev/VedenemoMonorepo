@@ -2,7 +2,7 @@
 
 ## Add `LOCATION_LINE` and `LOCATION_AREA` Data Types
 
-Status: planning
+Status: executed
 
 ### Goal
 
@@ -312,34 +312,56 @@ These capabilities can be introduced separately when concrete use cases require 
 
 ### Acceptance Criteria
 
-* [ ] `LOCATION_LINE` is available as a built-in attribute data type.
-* [ ] `LOCATION_AREA` is available as a built-in attribute data type.
-* [ ] Both types are based on ordered collections of existing `LOCATION` values.
-* [ ] `LOCATION_LINE` preserves the exact ordering of its locations.
-* [ ] `LOCATION_AREA` preserves the exact ordering of its boundary locations.
-* [ ] `LOCATION_LINE` rejects values with fewer than two locations.
-* [ ] `LOCATION_AREA` rejects values with fewer than three distinct locations.
-* [ ] `LOCATION_AREA` has closed-boundary semantics without requiring or
+* [x] `LOCATION_LINE` is available as a built-in attribute data type.
+* [x] `LOCATION_AREA` is available as a built-in attribute data type.
+* [x] Both types are based on ordered collections of existing `LOCATION` values.
+* [x] `LOCATION_LINE` preserves the exact ordering of its locations.
+* [x] `LOCATION_AREA` preserves the exact ordering of its boundary locations.
+* [x] `LOCATION_LINE` rejects values with fewer than two locations.
+* [x] `LOCATION_AREA` rejects values with fewer than three distinct locations.
+* [x] `LOCATION_AREA` has closed-boundary semantics without requiring or
   accepting a repeated final point in Vedenemo HTTP and `.vdmp` values.
-* [ ] Invalid structures that cannot represent a line or area are rejected.
-* [ ] Both types can be assigned to entity attributes like existing Vedenemo data types.
-* [ ] HTTP instance create/update requests accept `LOCATION_LINE` values as
+* [x] Invalid structures that cannot represent a line or area are rejected.
+* [x] Both types can be assigned to entity attributes like existing Vedenemo data types.
+* [x] HTTP instance create/update requests accept `LOCATION_LINE` values as
   objects with a `locations` array of `LOCATION` objects.
-* [ ] HTTP instance create/update requests accept `LOCATION_AREA` values as
+* [x] HTTP instance create/update requests accept `LOCATION_AREA` values as
   objects with a `boundary` array of `LOCATION` objects.
-* [ ] HTTP instance responses return both types as structured objects without
+* [x] HTTP instance responses return both types as structured objects without
   loss of location data or ordering.
-* [ ] `.vdmp` dump export/import preserves both types without loss of location
+* [x] `.vdmp` dump export/import preserves both types without loss of location
   data or ordering.
-* [ ] `.vdos` model scripts can declare attributes with
+* [x] `.vdos` model scripts can declare attributes with
   `dataType=LOCATION_LINE` and `dataType=LOCATION_AREA`.
-* [ ] Exact equality filtering/querying works for both new data types.
-* [ ] Ordered comparison and string containment operators reject both new data
+* [x] Exact equality filtering/querying works for both new data types.
+* [x] Ordered comparison and string containment operators reject both new data
   types.
-* [ ] `ValueSet` creation rejects `LOCATION_LINE` and `LOCATION_AREA` types.
-* [ ] Model consumers can distinguish `LOCATION`, `LOCATION_LINE`, and `LOCATION_AREA`.
-* [ ] The implementation does not require generic array attribute support.
-* [ ] The implementation does not introduce visualization or map-projection dependencies into the core spatial data types.
+* [x] `ValueSet` creation rejects `LOCATION_LINE` and `LOCATION_AREA` types.
+* [x] Model consumers can distinguish `LOCATION`, `LOCATION_LINE`, and `LOCATION_AREA`.
+* [x] The implementation does not require generic array attribute support.
+* [x] The implementation does not introduce visualization or map-projection dependencies into the core spatial data types.
+
+### Completion Notes
+
+- Added `DataType.LOCATION_LINE` and `DataType.LOCATION_AREA`.
+- Added pure-JDK `LocationLineValue` and `LocationAreaValue` records.
+- Added instance normalization, equality matching, invalid structure rejection,
+  and unsupported comparison rejection for the new spatial types.
+- Added `.vdmp` export/import/precheck support for structured line and area
+  values.
+- Added `.vdos` model script declaration support through the existing
+  `DataType` command/snapshot flow.
+- Exposed structured HTTP request/response examples and model consumer
+  metadata for the new types.
+- Added terminal CLI, browser console, and HTTP session command datatype aliases
+  for `location_line` / `location-line` and `location_area` / `location-area`.
+- Updated frontend API-description handling so generated examples are
+  structured objects and spatial query operators are equality-only.
+- Updated README, CLI reference, model-instance dump format documentation, and
+  current implementation architecture docs.
+- Verification passed with `mvn -q clean verify`,
+  `cd vedenemo-ux && npm run build`, `git diff --check`, and README disclaimer
+  preservation check.
 
 
 ## Add Model-Level `ValueSet` Constraint Support

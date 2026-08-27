@@ -28,6 +28,23 @@ The initial encoding is JSON:
           "dumpId": "artist-1",
           "values": {
             "Name": "Miles Davis",
+            "Location": {
+              "latitude": 62.1234567,
+              "longitude": 30.1234567
+            },
+            "Path": {
+              "locations": [
+                { "latitude": 62.1234567, "longitude": 30.1234567 },
+                { "latitude": 62.2234567, "longitude": 30.2234567 }
+              ]
+            },
+            "Boundary": {
+              "boundary": [
+                { "latitude": 62.1234567, "longitude": 30.1234567 },
+                { "latitude": 62.2234567, "longitude": 30.2234567 },
+                { "latitude": 62.1234567, "longitude": 30.3234567 }
+              ]
+            },
             "Rating": null
           }
         }
@@ -51,6 +68,12 @@ instance UUIDs and remaps association links from dump-local ids to the new ids.
 import they are omitted from the create payload before normal instance-data
 validation runs. Empty strings are preserved only for string-like data types
 when an empty string is the actual submitted value.
+
+Structured spatial values are preserved as JSON objects. `LOCATION` uses
+`latitude` and `longitude`. `LOCATION_LINE` uses a `locations` array with at
+least two `LOCATION` objects. `LOCATION_AREA` uses a `boundary` array with at
+least three distinct `LOCATION` objects. `LOCATION_AREA` is semantically closed;
+the first point is not repeated as the final point in Vedenemo dump values.
 
 Before import, Vedenemo checks that the target model is loaded, the dump model
 `azName` matches, the dump version is not newer than the loaded model version,

@@ -484,6 +484,31 @@ final class ConsoleSessionTest {
     }
 
     @Test
+    void attrAddNormalizesLocationLineAndAreaDataTypes() {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
+        modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
+        TestSessionClient sessionClient = new TestSessionClient();
+        TestCommandClient commandClient = new TestCommandClient();
+        ConsoleSession session = new ConsoleSession(
+                sessionClient.sessionId,
+                modelClient,
+                sessionClient,
+                commandClient,
+                ConsoleCapabilities.webConsole()
+        );
+
+        session.execute("attach Example_Model");
+        session.execute("entity Customer");
+        session.execute("attr add");
+        session.execute("Path");
+        session.execute("");
+        session.execute("location-line");
+
+        assertEquals("LOCATION_LINE", commandClient.createdAttributeDataType);
+    }
+
+    @Test
     void assocAddCreatesOwnershipThroughPromptFlow() {
         TestModelClient modelClient = modelWithAssociationEntities();
         TestSessionClient sessionClient = new TestSessionClient();

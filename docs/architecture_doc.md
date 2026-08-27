@@ -139,7 +139,8 @@ Shared model API module. It currently contains:
 - `Cardinality`, a pure value object for association multiplicity text such as
   `1`, `0..1`, `0..*`, `1..*`, and bounded ranges
 - `DataType`, the enum of supported attribute data types: `TEXT`, `NUMERIC`,
-  `URL`, `DATA`, `DATE`, `TIME`, `DATETIME`, and `LOCATION`
+  `URL`, `DATA`, `DATE`, `TIME`, `DATETIME`, `LOCATION`, `LOCATION_LINE`, and
+  `LOCATION_AREA`
 - `VAttribute`, a model attribute with `azName`, `visName`, `DataType`,
   optional model-local `ValueSet` reference, and lifecycle version metadata
 - `ValueSet` and `ValueSetEntry`, model-level finite allowed-value sets for
@@ -278,13 +279,18 @@ stored in ordered maps keyed by modeled attribute `azName`; values are
 normalized as pure JDK values according to `DataType`. `NUMERIC` values are
 stored as `BigDecimal`, `URL` values must be strict absolute URLs,
 `DATE`, `TIME`, and `DATETIME` values are validated as ISO local strings while
-remaining string values in API responses and instance records, and `LOCATION`
+remaining string values in API responses and instance records, `LOCATION`
 values are validated WGS 84 point coordinates stored in the pure-JDK
-`LocationValue` record. When an attribute references a `ValueSet`, future
+`LocationValue` record, `LOCATION_LINE` values are ordered lists of
+`LocationValue` records stored in `LocationLineValue`, and `LOCATION_AREA`
+values are ordered closed-boundary lists of `LocationValue` records stored in
+`LocationAreaValue`. `LOCATION_AREA` values are semantically closed without a
+repeated final point. When an attribute references a `ValueSet`, future
 instance create/update operations and `.vdmp` import precheck validate that the
-normalized value belongs to the referenced set. Entity queries support ordered comparisons for
-`NUMERIC`, `DATE`, `TIME`, and `DATETIME`; `LOCATION` supports exact equality
-matching but not ordered comparison or string containment.
+normalized value belongs to the referenced set. Entity queries support ordered
+comparisons for `NUMERIC`, `DATE`, `TIME`, and `DATETIME`; `LOCATION`,
+`LOCATION_LINE`, and `LOCATION_AREA` support exact equality matching but not
+ordered comparison or string containment.
 
 `ModelInstanceDumpService` owns pure Vedenemo `.vdmp` dump use cases. It
 exports one model-instance root into Vedenemo-owned dump records, prechecks

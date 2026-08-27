@@ -209,11 +209,14 @@ and validated against the selected entity's `DataType` and optional model-level
 `ValueSet` constraint. Association links are created through dedicated `_links`
 endpoints using source and target instance ids.
 
-Supported scalar data types include `TEXT`, `NUMERIC`, `URL`, `DATA`, `DATE`,
-`TIME`, `DATETIME`, and `LOCATION`. Date and time values are stored and queried
-as ISO strings; the UX formats them with the browser locale for display.
-Location values are WGS 84 point coordinates represented as structured
-`latitude`/`longitude` objects.
+Supported data types include `TEXT`, `NUMERIC`, `URL`, `DATA`, `DATE`, `TIME`,
+`DATETIME`, `LOCATION`, `LOCATION_LINE`, and `LOCATION_AREA`. Date and time
+values are stored and queried as ISO strings; the UX formats them with the
+browser locale for display. Location values are WGS 84 point coordinates
+represented as structured `latitude`/`longitude` objects. `LOCATION_LINE`
+values use a `locations` array of location objects, and `LOCATION_AREA` values
+use a `boundary` array of location objects. Areas are semantically closed
+without repeating the first point as the final point.
 
 Each loaded model can have multiple process-local model-instance roots. Create
 one with `POST /data/{modelAzName}/roots`; the backend returns a globally
@@ -412,10 +415,12 @@ model azName=Example_Model visName="Example Model" version=1.0.0
 commands
 create-entity model=Example_Model entity=Customer visName="Customer" activeSince=1.0.0
 create-attribute model=Example_Model entity=Customer attribute=Email visName="Email" dataType=TEXT activeSince=1.0.0
+create-attribute model=Example_Model entity=Customer attribute=Boundary visName="Boundary" dataType=LOCATION_AREA activeSince=1.0.0
 
 snapshot
 entity azName=Customer visName="Customer" activeSince=1.0.0 deprecatedSince=null retiredSince=null
 attribute entity=Customer azName=Email visName="Email" dataType=TEXT activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Customer azName=Boundary visName="Boundary" dataType=LOCATION_AREA activeSince=1.0.0 deprecatedSince=null retiredSince=null
 ```
 
 On import, command lines are replayed and the resulting model is validated

@@ -2,6 +2,8 @@ package org.vedenemo.core.instance.dump;
 
 import org.junit.jupiter.api.Test;
 import org.vedenemo.core.instance.EntityInstance;
+import org.vedenemo.core.instance.LocationAreaValue;
+import org.vedenemo.core.instance.LocationLineValue;
 import org.vedenemo.core.instance.LocationValue;
 import org.vedenemo.core.instance.ModelInstanceRegistry;
 import org.vedenemo.core.instance.ModelInstanceService;
@@ -86,6 +88,55 @@ final class ModelInstanceDumpServiceTest {
     }
 
     @Test
+    void exportsAndImportsLocationLineAndAreaValuesAsStructuredValues() {
+        Fixture fixture = fixture("1.2.3");
+        Map<String, Object> path = Map.of("locations", List.of(
+                Map.of("latitude", 62.1234567, "longitude", 30.1234567),
+                Map.of("latitude", 62.2234567, "longitude", 30.2234567)
+        ));
+        Map<String, Object> boundary = Map.of("boundary", List.of(
+                Map.of("latitude", 62.1234567, "longitude", 30.1234567),
+                Map.of("latitude", 62.2234567, "longitude", 30.2234567),
+                Map.of("latitude", 62.1234567, "longitude", 30.3234567)
+        ));
+        fixture.instanceService.createEntityInstance(
+                "Music",
+                fixture.rootId,
+                "Artist",
+                Map.of("Name", "Spatial Artist", "Path", path, "Boundary", boundary)
+        );
+
+        ModelInstanceDump dump = fixture.dumpService.exportDump("Music", fixture.rootId, Instant.parse("2026-08-21T05:00:00Z"));
+        DumpEntityRecord record = dump.entities().stream()
+                .filter(group -> group.entityAzName().equals("Artist"))
+                .findFirst()
+                .orElseThrow()
+                .records()
+                .getFirst();
+        ModelInstanceDumpPrecheckResult precheck = fixture.dumpService.precheck("Music", dump);
+        ModelInstanceDumpImportResult result = fixture.dumpService.importDump("Music", dump, false);
+        EntityInstance imported = fixture.instanceService.listEntityInstances(
+                "Music",
+                result.root().instanceRootId(),
+                "Artist",
+                Map.of("Path", path, "Boundary", boundary)
+        ).getFirst();
+
+        assertTrue(precheck.importable());
+        assertEquals(new LocationLineValue(List.of(
+                new LocationValue(62.1234567, 30.1234567),
+                new LocationValue(62.2234567, 30.2234567)
+        )), record.values().get("Path"));
+        assertEquals(new LocationAreaValue(List.of(
+                new LocationValue(62.1234567, 30.1234567),
+                new LocationValue(62.2234567, 30.2234567),
+                new LocationValue(62.1234567, 30.3234567)
+        )), record.values().get("Boundary"));
+        assertEquals(record.values().get("Path"), imported.values().get("Path").value());
+        assertEquals(record.values().get("Boundary"), imported.values().get("Boundary").value());
+    }
+
+    @Test
     void importsNullsAsOmittedValuesAndSkipsDuplicateLinks() {
         Fixture fixture = fixture("1.2.3");
         ModelInstanceDump dump = new ModelInstanceDump(
@@ -155,6 +206,35 @@ final class ModelInstanceDumpServiceTest {
     }
 
     @Test
+    void reportsInvalidLocationLineAndAreaDumpValuesDuringPrecheck() {
+        Fixture fixture = fixture("1.0.0");
+        ModelInstanceDump dump = new ModelInstanceDump(
+                ModelInstanceDump.FORMAT,
+                ModelInstanceDump.FORMAT_VERSION,
+                Instant.parse("2026-08-21T05:00:00Z"),
+                new DumpModel("Music", "Music", "1.0.0"),
+                new DumpRoot("source-root", "Imported root"),
+                List.of(new DumpEntityGroup("Artist", List.of(new DumpEntityRecord("artist-1", Map.of(
+                        "Path", Map.of("locations", List.of(Map.of("latitude", 62.0, "longitude", 30.0))),
+                        "Boundary", Map.of("boundary", List.of(
+                                Map.of("latitude", 62.0, "longitude", 30.0),
+                                Map.of("latitude", 63.0, "longitude", 31.0),
+                                Map.of("latitude", 62.0, "longitude", 30.0)
+                        ))
+                ))))),
+                List.of()
+        );
+
+        ModelInstanceDumpPrecheckResult result = fixture.dumpService.precheck("Music", dump);
+
+        assertFalse(result.importable());
+        assertTrue(result.diagnostics().stream().anyMatch(diagnostic ->
+                diagnostic.contains("attribute type mismatch: Artist.Path expects LOCATION_LINE")));
+        assertTrue(result.diagnostics().stream().anyMatch(diagnostic ->
+                diagnostic.contains("attribute type mismatch: Artist.Boundary expects LOCATION_AREA")));
+    }
+
+    @Test
     void reportsValueSetViolationsDuringPrecheck() {
         Fixture fixture = fixture("1.0.0");
         ModelInstanceDump dump = new ModelInstanceDump(
@@ -184,6 +264,8 @@ final class ModelInstanceDumpServiceTest {
         artist.addAttribute(new VAttribute("Name", "Name", DataType.TEXT, modelRoot.version()));
         artist.addAttribute(new VAttribute("Rating", "Rating", DataType.NUMERIC, modelRoot.version()));
         artist.addAttribute(new VAttribute("Location", "Location", DataType.LOCATION, modelRoot.version()));
+        artist.addAttribute(new VAttribute("Path", "Path", DataType.LOCATION_LINE, modelRoot.version()));
+        artist.addAttribute(new VAttribute("Boundary", "Boundary", DataType.LOCATION_AREA, modelRoot.version()));
         artist.addAttribute(new VAttribute("Species", "Species", DataType.TEXT, modelRoot.version(), null, null, "TreeSpecies"));
         VEntity album = modelRoot.addEntity(new VEntity("Album", "Album", modelRoot.version()));
         album.addAttribute(new VAttribute("Title", "Title", DataType.TEXT, modelRoot.version()));

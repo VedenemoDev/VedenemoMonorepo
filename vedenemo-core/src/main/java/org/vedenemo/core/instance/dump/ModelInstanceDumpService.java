@@ -3,6 +3,8 @@ package org.vedenemo.core.instance.dump;
 import org.vedenemo.core.instance.AssociationInstanceLink;
 import org.vedenemo.core.instance.EntityInstance;
 import org.vedenemo.core.instance.InstanceValue;
+import org.vedenemo.core.instance.LocationAreaValue;
+import org.vedenemo.core.instance.LocationLineValue;
 import org.vedenemo.core.instance.LocationValue;
 import org.vedenemo.core.instance.ModelInstanceRoot;
 import org.vedenemo.core.instance.ModelInstanceService;
@@ -223,6 +225,8 @@ public final class ModelInstanceDumpService {
             case TEXT, DATA, URL, DATE, TIME, DATETIME -> value instanceof String;
             case NUMERIC -> value instanceof Number || value instanceof String;
             case LOCATION -> value instanceof LocationValue || locationFitsType(value);
+            case LOCATION_LINE -> value instanceof LocationLineValue || locationLineFitsType(value);
+            case LOCATION_AREA -> value instanceof LocationAreaValue || locationAreaFitsType(value);
         };
     }
 
@@ -244,6 +248,60 @@ public final class ModelInstanceDumpService {
         } catch (IllegalArgumentException exception) {
             return false;
         }
+    }
+
+    private static boolean locationLineFitsType(Object value) {
+        if (!(value instanceof Map<?, ?> values)) {
+            return false;
+        }
+        Object locations = values.get("locations");
+        if (!(locations instanceof List<?> locationList)) {
+            return false;
+        }
+        try {
+            new LocationLineValue(locationValues(locationList));
+            return true;
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
+    private static boolean locationAreaFitsType(Object value) {
+        if (!(value instanceof Map<?, ?> values)) {
+            return false;
+        }
+        Object boundary = values.get("boundary");
+        if (!(boundary instanceof List<?> boundaryList)) {
+            return false;
+        }
+        try {
+            new LocationAreaValue(locationValues(boundaryList));
+            return true;
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
+    }
+
+    private static List<LocationValue> locationValues(List<?> values) {
+        ArrayList<LocationValue> locations = new ArrayList<>();
+        for (Object value : values) {
+            if (value instanceof LocationValue locationValue) {
+                locations.add(locationValue);
+                continue;
+            }
+            if (!(value instanceof Map<?, ?> locationMap)
+                    || !locationMap.containsKey("latitude")
+                    || !locationMap.containsKey("longitude")) {
+                throw new IllegalArgumentException("spatial value entries must be LOCATION objects");
+            }
+            Object latitude = locationMap.get("latitude");
+            Object longitude = locationMap.get("longitude");
+            if (!(latitude instanceof Number latitudeNumber) || !(longitude instanceof Number longitudeNumber)) {
+                throw new IllegalArgumentException("spatial value LOCATION coordinates must be numeric");
+            }
+            locations.add(new LocationValue(latitudeNumber.doubleValue(), longitudeNumber.doubleValue()));
+        }
+        return locations;
     }
 
     private static boolean valueFitsValueSet(ModelRoot modelRoot, VAttribute attribute, Object value) {

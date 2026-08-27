@@ -27,6 +27,12 @@ public record InstanceValue(DataType type, Object value) {
         if (type == DataType.LOCATION && !(value instanceof LocationValue)) {
             throw new IllegalArgumentException("LOCATION instance value must be a LocationValue");
         }
+        if (type == DataType.LOCATION_LINE && !(value instanceof LocationLineValue)) {
+            throw new IllegalArgumentException("LOCATION_LINE instance value must be a LocationLineValue");
+        }
+        if (type == DataType.LOCATION_AREA && !(value instanceof LocationAreaValue)) {
+            throw new IllegalArgumentException("LOCATION_AREA instance value must be a LocationAreaValue");
+        }
     }
 
     public boolean matches(InstanceValue other) {

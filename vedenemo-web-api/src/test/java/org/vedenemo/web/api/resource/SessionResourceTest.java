@@ -403,6 +403,26 @@ final class SessionResourceTest {
     }
 
     @Test
+    void createAttributeCommandAcceptsLocationLineAndAreaDataTypes() throws Exception {
+        ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
+        modelRoot.addEntity(new org.vedenemo.core.model.VEntity("Customer", "Customer", modelRoot.version()));
+        UUID sessionId = extractSessionId(post("/sessions/start").body());
+        put("/sessions/" + sessionId + "/selected-model", """
+                {"azName":"Example_Model"}
+                """);
+
+        assertEquals(200, post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Customer","attributeAzName":"Path","attributeVisName":"Path","dataType":"location_line"}
+                """).statusCode());
+        assertEquals(200, post("/sessions/" + sessionId + "/commands/create-attribute", """
+                {"entityAzName":"Customer","attributeAzName":"Boundary","attributeVisName":"Boundary","dataType":"location-area"}
+                """).statusCode());
+
+        assertEquals(org.vedenemo.core.model.DataType.LOCATION_LINE, modelRoot.entities().getFirst().attributes().get(0).type());
+        assertEquals(org.vedenemo.core.model.DataType.LOCATION_AREA, modelRoot.entities().getFirst().attributes().get(1).type());
+    }
+
+    @Test
     void undoCommandRemovesPreviouslyCreatedAttribute() throws Exception {
         ModelRoot modelRoot = modelRegistry.add(ModelRoot.create("Example_Model", "Example Model", "1.0.0"));
         modelRoot.addEntity(new org.vedenemo.core.model.VEntity("Customer", "Customer", modelRoot.version()));

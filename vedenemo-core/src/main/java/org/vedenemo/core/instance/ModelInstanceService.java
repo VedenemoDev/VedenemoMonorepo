@@ -231,6 +231,8 @@ public final class ModelInstanceService {
             case TIME -> timeValue(attribute, submittedValue);
             case DATETIME -> dateTimeValue(attribute, submittedValue);
             case LOCATION -> locationValue(attribute, submittedValue);
+            case LOCATION_LINE -> locationLineValue(attribute, submittedValue);
+            case LOCATION_AREA -> locationAreaValue(attribute, submittedValue);
         };
     }
 
@@ -359,6 +361,64 @@ public final class ModelInstanceService {
                         coordinate(attribute, values.get("latitude"), "latitude"),
                         coordinate(attribute, values.get("longitude"), "longitude")
                 )
+        );
+    }
+
+    private static InstanceValue locationLineValue(VAttribute attribute, Object submittedValue) {
+        if (submittedValue instanceof LocationLineValue value) {
+            return new InstanceValue(DataType.LOCATION_LINE, value);
+        }
+        if (!(submittedValue instanceof Map<?, ?> values)) {
+            throw new IllegalArgumentException(attribute.azName() + " must be a LOCATION_LINE object");
+        }
+        Object locations = values.get("locations");
+        if (locations == null) {
+            throw new IllegalArgumentException(attribute.azName() + " LOCATION_LINE locations are required");
+        }
+        return new InstanceValue(DataType.LOCATION_LINE, new LocationLineValue(locationList(attribute, locations, "LOCATION_LINE locations")));
+    }
+
+    private static InstanceValue locationAreaValue(VAttribute attribute, Object submittedValue) {
+        if (submittedValue instanceof LocationAreaValue value) {
+            return new InstanceValue(DataType.LOCATION_AREA, value);
+        }
+        if (!(submittedValue instanceof Map<?, ?> values)) {
+            throw new IllegalArgumentException(attribute.azName() + " must be a LOCATION_AREA object");
+        }
+        Object boundary = values.get("boundary");
+        if (boundary == null) {
+            throw new IllegalArgumentException(attribute.azName() + " LOCATION_AREA boundary is required");
+        }
+        return new InstanceValue(DataType.LOCATION_AREA, new LocationAreaValue(locationList(attribute, boundary, "LOCATION_AREA boundary")));
+    }
+
+    private static List<LocationValue> locationList(VAttribute attribute, Object submittedValue, String valueName) {
+        if (!(submittedValue instanceof List<?> values)) {
+            throw new IllegalArgumentException(attribute.azName() + " " + valueName + " must be an array");
+        }
+        ArrayList<LocationValue> locations = new ArrayList<>();
+        for (Object value : values) {
+            locations.add(locationMember(attribute, value, valueName));
+        }
+        return locations;
+    }
+
+    private static LocationValue locationMember(VAttribute attribute, Object submittedValue, String valueName) {
+        if (submittedValue instanceof LocationValue value) {
+            return value;
+        }
+        if (!(submittedValue instanceof Map<?, ?> values)) {
+            throw new IllegalArgumentException(attribute.azName() + " " + valueName + " entries must be LOCATION objects");
+        }
+        if (!values.containsKey("latitude")) {
+            throw new IllegalArgumentException(attribute.azName() + " " + valueName + " entry LOCATION latitude is required");
+        }
+        if (!values.containsKey("longitude")) {
+            throw new IllegalArgumentException(attribute.azName() + " " + valueName + " entry LOCATION longitude is required");
+        }
+        return new LocationValue(
+                coordinate(attribute, values.get("latitude"), "latitude"),
+                coordinate(attribute, values.get("longitude"), "longitude")
         );
     }
 
@@ -497,7 +557,7 @@ public final class ModelInstanceService {
             case DATE -> LocalDate.parse((String) actual.value()).compareTo(LocalDate.parse((String) expected.value()));
             case TIME -> LocalTime.parse((String) actual.value()).compareTo(LocalTime.parse((String) expected.value()));
             case DATETIME -> LocalDateTime.parse((String) actual.value()).compareTo(LocalDateTime.parse((String) expected.value()));
-            case TEXT, URL, DATA, LOCATION -> throw new IllegalArgumentException("comparison requires ordered values");
+            case TEXT, URL, DATA, LOCATION, LOCATION_LINE, LOCATION_AREA -> throw new IllegalArgumentException("comparison requires ordered values");
         };
     }
 

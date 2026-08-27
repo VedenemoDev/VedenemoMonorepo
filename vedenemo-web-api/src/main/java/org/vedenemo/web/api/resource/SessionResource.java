@@ -461,6 +461,8 @@ public final class SessionResource {
             case "time" -> DataType.TIME;
             case "datetime" -> DataType.DATETIME;
             case "location" -> DataType.LOCATION;
+            case "location_line", "location-line" -> DataType.LOCATION_LINE;
+            case "location_area", "location-area" -> DataType.LOCATION_AREA;
             default -> throw new IllegalArgumentException("unsupported dataType: " + value);
         };
     }

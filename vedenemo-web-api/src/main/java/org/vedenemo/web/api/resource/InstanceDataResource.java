@@ -734,7 +734,7 @@ public final class InstanceDataResource {
             String visName,
             List<AttributeDescriptionResponse> attributes,
             Map<String, String> operations,
-            Map<String, String> createBodyExample
+            Map<String, Object> createBodyExample
     ) {
 
         private static EntityDescriptionResponse from(VEntity entity) {
@@ -745,7 +745,7 @@ public final class InstanceDataResource {
             operations.put("update", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName() + "/{instanceId}");
             operations.put("query", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName() + "/_query");
             operations.put("count", "/data/{modelAzName}/roots/{instanceRootId}/" + entity.azName() + "/_count");
-            Map<String, String> example = new LinkedHashMap<>();
+            Map<String, Object> example = new LinkedHashMap<>();
             entity.attributes().forEach(attribute -> example.put(attribute.azName(), exampleValue(attribute)));
             return new EntityDescriptionResponse(
                     entity.azName(),
@@ -756,16 +756,33 @@ public final class InstanceDataResource {
             );
         }
 
-        private static String exampleValue(VAttribute attribute) {
+        private static Object exampleValue(VAttribute attribute) {
             return switch (attribute.type()) {
                 case TEXT -> "text";
-                case NUMERIC -> "123.45";
+                case NUMERIC -> 123.45;
                 case URL -> "https://example.com";
                 case DATA -> "data";
                 case DATE -> "2026-08-12";
                 case TIME -> "18:30:00";
                 case DATETIME -> "2026-08-12T18:30";
-                case LOCATION -> "{\"latitude\":62.1234567,\"longitude\":30.1234567}";
+                case LOCATION -> locationResponse(new LocationValue(62.1234567, 30.1234567));
+                case LOCATION_LINE -> {
+                    Map<String, Object> line = new LinkedHashMap<>();
+                    line.put("locations", List.of(
+                            locationResponse(new LocationValue(62.1234567, 30.1234567)),
+                            locationResponse(new LocationValue(62.2234567, 30.2234567))
+                    ));
+                    yield line;
+                }
+                case LOCATION_AREA -> {
+                    Map<String, Object> area = new LinkedHashMap<>();
+                    area.put("boundary", List.of(
+                            locationResponse(new LocationValue(62.1234567, 30.1234567)),
+                            locationResponse(new LocationValue(62.2234567, 30.2234567)),
+                            locationResponse(new LocationValue(62.1234567, 30.3234567))
+                    ));
+                    yield area;
+                }
             };
         }
     }
@@ -838,13 +855,35 @@ public final class InstanceDataResource {
 
         private static Object rawValue(InstanceValue value) {
             if (value.value() instanceof LocationValue locationValue) {
-                Map<String, Object> location = new LinkedHashMap<>();
-                location.put("latitude", locationValue.latitude());
-                location.put("longitude", locationValue.longitude());
-                return location;
+                return locationResponse(locationValue);
+            }
+            if (value.value() instanceof org.vedenemo.core.instance.LocationLineValue locationLineValue) {
+                Map<String, Object> line = new LinkedHashMap<>();
+                line.put("locations", locationLineValue.locations().stream()
+                        .map(EntityInstanceResponse::locationResponse)
+                        .toList());
+                return line;
+            }
+            if (value.value() instanceof org.vedenemo.core.instance.LocationAreaValue locationAreaValue) {
+                Map<String, Object> area = new LinkedHashMap<>();
+                area.put("boundary", locationAreaValue.boundary().stream()
+                        .map(EntityInstanceResponse::locationResponse)
+                        .toList());
+                return area;
             }
             return value.value();
         }
+
+        private static Map<String, Object> locationResponse(LocationValue locationValue) {
+            return InstanceDataResource.locationResponse(locationValue);
+        }
+    }
+
+    private static Map<String, Object> locationResponse(LocationValue locationValue) {
+        Map<String, Object> location = new LinkedHashMap<>();
+        location.put("latitude", locationValue.latitude());
+        location.put("longitude", locationValue.longitude());
+        return location;
     }
 
     private record CountResponse(int count) {

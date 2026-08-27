@@ -955,6 +955,8 @@ public final class ConsoleSession {
             case "time" -> "TIME";
             case "datetime" -> "DATETIME";
             case "location" -> "LOCATION";
+            case "location_line", "location-line" -> "LOCATION_LINE";
+            case "location_area", "location-area" -> "LOCATION_AREA";
             default -> value.trim();
         };
     }

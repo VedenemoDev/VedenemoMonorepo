@@ -345,6 +345,58 @@ final class ModelInstanceServiceTest {
     }
 
     @Test
+    void createsAndQueriesLocationLineAndAreaValuesByExactEquality() {
+        Fixture fixture = fixture();
+        String rootId = fixture.rootId();
+        Map<String, Object> path = Map.of("locations", List.of(
+                Map.of("latitude", 62.1234567, "longitude", 30.1234567),
+                Map.of("latitude", 62.2234567, "longitude", 30.2234567)
+        ));
+        Map<String, Object> boundary = Map.of("boundary", List.of(
+                Map.of("latitude", 62.1234567, "longitude", 30.1234567),
+                Map.of("latitude", 62.2234567, "longitude", 30.2234567),
+                Map.of("latitude", 62.1234567, "longitude", 30.3234567)
+        ));
+        EntityInstance match = fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of(
+                "Name", "Spatial Artist",
+                "Path", path,
+                "Boundary", boundary
+        ));
+        fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of(
+                "Name", "Other Spatial Artist",
+                "Path", Map.of("locations", List.of(
+                        Map.of("latitude", 62.2234567, "longitude", 30.2234567),
+                        Map.of("latitude", 62.1234567, "longitude", 30.1234567)
+                )),
+                "Boundary", Map.of("boundary", List.of(
+                        Map.of("latitude", 62.1234567, "longitude", 30.1234567),
+                        Map.of("latitude", 62.2234567, "longitude", 30.2234567),
+                        Map.of("latitude", 62.2234567, "longitude", 30.3234567)
+                ))
+        ));
+
+        List<EntityInstance> lineMatches = fixture.service.listEntityInstances("Music", rootId, "Artist", Map.of("Path", path));
+        List<EntityInstance> areaMatches = fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(Map.of("Boundary", boundary), List.of(), List.of())
+        );
+
+        assertEquals(new LocationLineValue(List.of(
+                new LocationValue(62.1234567, 30.1234567),
+                new LocationValue(62.2234567, 30.2234567)
+        )), match.values().get("Path").value());
+        assertEquals(new LocationAreaValue(List.of(
+                new LocationValue(62.1234567, 30.1234567),
+                new LocationValue(62.2234567, 30.2234567),
+                new LocationValue(62.1234567, 30.3234567)
+        )), match.values().get("Boundary").value());
+        assertEquals(List.of(match.id()), lineMatches.stream().map(EntityInstance::id).toList());
+        assertEquals(List.of(match.id()), areaMatches.stream().map(EntityInstance::id).toList());
+    }
+
+    @Test
     void rejectsInvalidLocationValuesAndUnsupportedLocationComparisons() {
         Fixture fixture = fixture();
         String rootId = fixture.rootId();
@@ -382,6 +434,53 @@ final class ModelInstanceServiceTest {
                 new EntityInstanceQuery(
                         Map.of(),
                         List.of(new ScalarComparison("Location", ScalarComparisonOperator.CONTAINS, Map.of("latitude", 62.0, "longitude", 30.0))),
+                        List.of()
+                )
+        ));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Path", Map.of("locations", List.of(
+                        Map.of("latitude", 62.0, "longitude", 30.0)
+                )))));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Path", Map.of("locations", List.of(
+                        Map.of("latitude", 62.0, "longitude", 30.0),
+                        Map.of("latitude", "63.0", "longitude", 31.0)
+                )))));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Boundary", Map.of("boundary", List.of(
+                        Map.of("latitude", 62.0, "longitude", 30.0),
+                        Map.of("latitude", 63.0, "longitude", 31.0)
+                )))));
+        assertThrows(IllegalArgumentException.class,
+                () -> fixture.service.createEntityInstance("Music", rootId, "Artist", Map.of("Boundary", Map.of("boundary", List.of(
+                        Map.of("latitude", 62.0, "longitude", 30.0),
+                        Map.of("latitude", 63.0, "longitude", 31.0),
+                        Map.of("latitude", 62.0, "longitude", 30.0)
+                )))));
+        assertThrows(IllegalArgumentException.class, () -> fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(new ScalarComparison("Path", ScalarComparisonOperator.GREATER_THAN, Map.of("locations", List.of(
+                                Map.of("latitude", 62.0, "longitude", 30.0),
+                                Map.of("latitude", 63.0, "longitude", 31.0)
+                        )))),
+                        List.of()
+                )
+        ));
+        assertThrows(IllegalArgumentException.class, () -> fixture.service.queryEntityInstances(
+                "Music",
+                rootId,
+                "Artist",
+                new EntityInstanceQuery(
+                        Map.of(),
+                        List.of(new ScalarComparison("Boundary", ScalarComparisonOperator.CONTAINS, Map.of("boundary", List.of(
+                                Map.of("latitude", 62.0, "longitude", 30.0),
+                                Map.of("latitude", 63.0, "longitude", 31.0),
+                                Map.of("latitude", 62.5, "longitude", 30.5)
+                        )))),
                         List.of()
                 )
         ));
@@ -507,6 +606,8 @@ final class ModelInstanceServiceTest {
         artist.addAttribute(new VAttribute("SetTime", "Set Time", DataType.TIME, modelRoot.version()));
         artist.addAttribute(new VAttribute("LastPlayedAt", "Last Played At", DataType.DATETIME, modelRoot.version()));
         artist.addAttribute(new VAttribute("Location", "Location", DataType.LOCATION, modelRoot.version()));
+        artist.addAttribute(new VAttribute("Path", "Path", DataType.LOCATION_LINE, modelRoot.version()));
+        artist.addAttribute(new VAttribute("Boundary", "Boundary", DataType.LOCATION_AREA, modelRoot.version()));
         artist.addAttribute(new VAttribute("Species", "Species", DataType.TEXT, modelRoot.version(), null, null, "TreeSpecies"));
         VEntity album = modelRoot.addEntity(new VEntity("Album", "Album", modelRoot.version()));
         album.addAttribute(new VAttribute("Title", "Title", DataType.TEXT, modelRoot.version()));

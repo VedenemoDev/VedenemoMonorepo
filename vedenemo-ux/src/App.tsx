@@ -49,7 +49,7 @@ type EntityDescription = {
   visName: string;
   attributes: AttributeDescription[];
   operations: Record<string, string>;
-  createBodyExample: Record<string, string>;
+  createBodyExample: Record<string, unknown>;
 };
 
 type ApiDescriptionResponse = {
@@ -687,6 +687,10 @@ function isOrderedDataType(dataType: string): boolean {
   return dataType === "NUMERIC" || dataType === "DATE" || dataType === "TIME" || dataType === "DATETIME";
 }
 
+function isSpatialDataType(dataType: string): boolean {
+  return dataType === "LOCATION" || dataType === "LOCATION_LINE" || dataType === "LOCATION_AREA";
+}
+
 function criterionValueError(attribute: AttributeDescription, rawValue: string): string | null {
   if (attribute.dataType === "NUMERIC" && !Number.isFinite(parseCriterionValue(attribute, rawValue))) {
     return "numeric value must be valid";
@@ -738,6 +742,9 @@ function queryOperatorsFor(attribute: AttributeDescription | null): QueryOperato
   }
   if (isOrderedDataType(attribute.dataType)) {
     return ["=", "<", ">"];
+  }
+  if (isSpatialDataType(attribute.dataType)) {
+    return ["="];
   }
   return ["=", "contains"];
 }
@@ -1454,6 +1461,23 @@ function exampleValueFor(attribute: AttributeDescription): unknown {
       return "18:30:00";
     case "DATETIME":
       return "2026-08-12T18:30";
+    case "LOCATION":
+      return { latitude: 62.1234567, longitude: 30.1234567 };
+    case "LOCATION_LINE":
+      return {
+        locations: [
+          { latitude: 62.1234567, longitude: 30.1234567 },
+          { latitude: 62.2234567, longitude: 30.2234567 },
+        ],
+      };
+    case "LOCATION_AREA":
+      return {
+        boundary: [
+          { latitude: 62.1234567, longitude: 30.1234567 },
+          { latitude: 62.2234567, longitude: 30.2234567 },
+          { latitude: 62.1234567, longitude: 30.3234567 },
+        ],
+      };
     default:
       return "text";
   }

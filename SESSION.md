@@ -9722,3 +9722,176 @@ Current status and next steps:
 - Verification passed: `git diff --check`.
 - Next step is implementation when this backlog item is selected as the current
   task.
+
+## 2026-08-28 00:12 EEST
+
+Session goal: execute the planned `LOCATION_LINE` and `LOCATION_AREA` data type
+task as the current task, verify it, and mark the backlog item executed while
+preserving it as history.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `docs/model-instance-dump-format.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/InstanceValue.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/LocationAreaValue.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/LocationLineValue.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/instance/dump/ModelInstanceDumpService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/instance/dump/ModelInstanceDumpServiceTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ValueSet.java`
+- `vedenemo-model-api/src/test/java/org/vedenemo/core/model/ModelRootTest.java`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleCommandClient.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/SessionResourceTest.java`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,380p' tasks/backlog.md`
+- `rg -n "LOCATION|Location|DataType|data type|vdmp|instance" vedenemo-model-api/src/main/java vedenemo-core/src/main/java vedenemo-web-api/src/main/java vedenemo-command-console/src/main/java vedenemo-cli/src/main/java tasks docs README.md`
+- `rg --files vedenemo-model-api/src/main/java vedenemo-core/src/main/java vedenemo-web-api/src/main/java vedenemo-command-console/src/main/java vedenemo-cli/src/main/java | sort`
+- `git status --short --branch`
+- `sed -n '1,160p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/instance/LocationValue.java`
+- `sed -n '1,180p' vedenemo-core/src/main/java/org/vedenemo/core/instance/InstanceValue.java`
+- `sed -n '1,260p' docs/model-instance-dump-format.md`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '260,560p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,280p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/dump/ModelInstanceDumpService.java`
+- `sed -n '280,760p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '260,520p' vedenemo-core/src/main/java/org/vedenemo/core/instance/dump/ModelInstanceDumpService.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ValueSet.java`
+- `sed -n '1,260p' vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `sed -n '1,360p' vedenemo-core/src/test/java/org/vedenemo/core/instance/dump/ModelInstanceDumpServiceTest.java`
+- `sed -n '1,420p' vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java`
+- `sed -n '1,420p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `sed -n '420,860p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/InstanceDataResourceTest.java`
+- `sed -n '260,620p' vedenemo-core/src/test/java/org/vedenemo/core/instance/ModelInstanceServiceTest.java`
+- `sed -n '1,260p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `rg -n "LOCATION|DataType|dataType|exampleValue|Location" vedenemo-ux/src vedenemo-command-console/src/main/java vedenemo-cli/src/main/java README.md docs/cli-reference.md docs/architecture_doc.md`
+- `sed -n '900,980p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '1140,1205p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '560,760p' vedenemo-ux/src/App.tsx`
+- `sed -n '1428,1495p' vedenemo-ux/src/App.tsx`
+- `sed -n '760,1120p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `sed -n '1,220p' vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `rg -n "switch \\(.*type|case LOCATION|DataType\\.LOCATION|LOCATION ->|DATETIME ->|enum DataType|queryOperatorsFor|exampleValue" vedenemo-model-api/src/main/java vedenemo-core/src/main/java vedenemo-web-api/src/main/java vedenemo-command-console/src/main/java vedenemo-cli/src/main/java vedenemo-ux/src/App.tsx`
+- `sed -n '430,480p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `sed -n '140,175p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleCommandClient.java`
+- `rg -n "ValueSet|DataType|LOCATION" vedenemo-model-api/src/test/java vedenemo-core/src/test/java vedenemo-web-api/src/test/java vedenemo-command-console/src/test/java vedenemo-cli/src/test/java`
+- `sed -n '1,220p' vedenemo-model-api/src/test/java/org/vedenemo/core/model/ModelRootTest.java`
+- `sed -n '1,220p' vedenemo-model-api/src/test/java/org/vedenemo/core/model/ValueSetTest.java`
+- `rg --files vedenemo-model-api/src/test/java/org/vedenemo/core/model`
+- `sed -n '240,420p' vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/SessionResourceTest.java`
+- `sed -n '440,500p' vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `sed -n '520,550p' vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `mvn -q clean -pl vedenemo-model-api,vedenemo-core,vedenemo-command-console,vedenemo-cli,vedenemo-web-api -am -DskipTests compile`
+- `mvn -q -pl vedenemo-model-api,vedenemo-core,vedenemo-command-console,vedenemo-cli,vedenemo-web-api -am test`
+- `sed -n '1,220p' vedenemo-core/target/surefire-reports/org.vedenemo.core.instance.dump.ModelInstanceDumpServiceTest.txt`
+- `nl -ba vedenemo-core/src/test/java/org/vedenemo/core/instance/dump/ModelInstanceDumpServiceTest.java`
+- `mvn -q -pl vedenemo-model-api,vedenemo-core,vedenemo-command-console,vedenemo-cli,vedenemo-web-api -am test`
+- `mvn -q -pl vedenemo-model-api,vedenemo-core,vedenemo-web-api -am test`
+- `mvn -q -pl vedenemo-command-console -am test`
+- `sed -n '200,235p' README.md`
+- `sed -n '390,425p' README.md`
+- `rg -n "DataType|LOCATION|data type|attribute data" docs/cli-reference.md README.md docs/model-instance-dump-format.md`
+- `sed -n '132,150p' docs/architecture_doc.md`
+- `sed -n '274,290p' docs/architecture_doc.md`
+- `sed -n '458,472p' docs/architecture_doc.md`
+- `sed -n '250,320p' docs/cli-reference.md`
+- `sed -n '1,90p' docs/model-instance-dump-format.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,270p' tasks/backlog.md`
+- `git diff --stat`
+- `git diff --check`
+- `rg -n "LOCATION_LINE|LOCATION_AREA|location_line|location-area|LocationLineValue|LocationAreaValue" vedenemo-model-api/src/main/java vedenemo-core/src/main/java vedenemo-web-api/src/main/java vedenemo-command-console/src/main/java vedenemo-cli/src/main/java vedenemo-ux/src/App.tsx README.md docs tasks`
+- `mvn -q clean verify`
+- `npm run build`
+- `git diff --check`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `git status --short`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented `LOCATION_LINE` and `LOCATION_AREA` as built-in data types with
+  pure-JDK normalized instance records.
+- Added structured HTTP and `.vdmp` JSON handling using `locations` for lines
+  and `boundary` for areas.
+- Added validation for minimum point counts, distinct area points, and rejected
+  repeated area closing points.
+- Added exact equality matching and rejection of ordered/string-containment
+  comparisons for the new spatial types.
+- Kept `ValueSet` support excluded for the new spatial types.
+- Updated CLI/browser-console datatype aliases, frontend API examples/query
+  operators, README, CLI reference, dump format docs, current task, backlog
+  history, and current implementation architecture docs.
+- Verification passed: `mvn -q clean verify`,
+  `cd vedenemo-ux && npm run build`, `git diff --check`, and README disclaimer
+  preservation check.
+- No next implementation step remains for this task.
+
+## 2026-08-28 00:29 EEST
+
+Session goal:
+
+- Commit the completed `LOCATION_LINE` / `LOCATION_AREA` feature slice with a
+  detailed message and push it to the remote.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `git diff --stat`
+- `git diff -- README.md tasks/current-task.md tasks/backlog.md docs/architecture_doc.md docs/cli-reference.md docs/model-instance-dump-format.md`
+- `git diff -- vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java vedenemo-model-api/src/main/java/org/vedenemo/core/model/ValueSet.java vedenemo-core/src/main/java/org/vedenemo/core/instance/InstanceValue.java vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java vedenemo-core/src/main/java/org/vedenemo/core/instance/dump/ModelInstanceDumpService.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/instance/LocationLineValue.java`
+- `sed -n '1,240p' vedenemo-core/src/main/java/org/vedenemo/core/instance/LocationAreaValue.java`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `tail -n 80 SESSION.md`
+
+Current status and next steps:
+
+- Sanity-checked the feature diff, confirmed whitespace checks pass, and
+  confirmed the required README disclaimer remains present.
+- Next step is to stage all current workspace changes, create the detailed
+  feature commit, and push `main` to `origin`.

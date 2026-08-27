@@ -214,6 +214,12 @@ final class ModelRootTest {
         assertThrows(IllegalArgumentException.class, () -> new ValueSet("Locations", DataType.LOCATION, List.of(
                 new ValueSetEntry("POINT", "Point")
         )));
+        assertThrows(IllegalArgumentException.class, () -> new ValueSet("Routes", DataType.LOCATION_LINE, List.of(
+                new ValueSetEntry("LINE", "Line")
+        )));
+        assertThrows(IllegalArgumentException.class, () -> new ValueSet("Areas", DataType.LOCATION_AREA, List.of(
+                new ValueSetEntry("AREA", "Area")
+        )));
         assertThrows(IllegalArgumentException.class, () -> new ValueSet("DuplicateRatings", DataType.NUMERIC, List.of(
                 new ValueSetEntry("1.0", "One"),
                 new ValueSetEntry("1.00", "Duplicate One")

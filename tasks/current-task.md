@@ -1,90 +1,102 @@
 # Current Task
 
-## Add Model-Level `ValueSet` Constraint Support
+## Add `LOCATION_LINE` and `LOCATION_AREA` Data Types
 
 Status: executed.
 
 ### Goal
 
-Introduce a model-level `ValueSet` concept that can restrict allowed values for
-entity attributes without adding a new `DataType` and without moving domain
-constraint semantics into UX-specific configuration.
+Extend Vedenemo's existing `LOCATION` support with two structured spatial data
+types:
 
-A `ValueSet` is a named, reusable finite set of allowed values. It belongs to a
-model and can be referenced by compatible attributes in that model.
+- `LOCATION_LINE`, an ordered sequence of `LOCATION` values representing a path
+  or line.
+- `LOCATION_AREA`, an ordered sequence of `LOCATION` values representing the
+  closed outer boundary of a geographic area.
+
+Both types are domain instance values, not visualization metadata and not model
+entities.
 
 ### Scope
 
-- Add pure-JDK model support for model-level `ValueSet` definitions and
-  entries.
-- Support `TEXT`, `NUMERIC`, `DATE`, and `TIME` value sets in the first slice.
-- Store the entry technical value as the actual instance value.
-- Keep the entry visual name as display metadata.
-- Allow creating an attribute with an optional `valueSet` reference.
-- Allow attaching a compatible `ValueSet` to an existing attribute.
-- Validate that referenced value sets exist in the same model.
-- Validate data-type compatibility between attributes and referenced value
-  sets.
-- Enforce `ValueSet` membership for future instance create/update operations.
-- Enforce `ValueSet` membership during `.vdmp` import.
-- Preserve `ValueSet` definitions, entries, and attribute references in
-  `.vdos` export/import.
-- Expose `ValueSet` metadata to model consumers through existing model/API
-  description flows.
+- Add `LOCATION_LINE` and `LOCATION_AREA` as built-in `DataType` values.
+- Add pure-JDK normalized core instance value records for line and area values.
+- Reuse existing `LOCATION` coordinate semantics for each contained point.
+- Preserve exact point ordering.
+- Validate that `LOCATION_LINE` contains at least two locations.
+- Validate that `LOCATION_AREA` contains at least three distinct locations.
+- Treat `LOCATION_AREA` as semantically closed without requiring or accepting a
+  repeated final point.
+- Support model attributes, `.vdos` model scripts, HTTP instance
+  create/update/read responses, `.vdmp` export/import/precheck, and model
+  consumer API descriptions.
+- Support exact equality matching only.
+- Keep ordered comparisons, string containment, generic array support, and
+  `ValueSet` support out of scope for these spatial types.
 
 ### Out Of Scope
 
-- New `ENUM` or user-defined enum data types.
-- `URL`, `DATA`, `DATETIME`, and `LOCATION` value sets.
-- Dynamic, database-backed, hierarchical, or entity-scoped value sets.
-- Editing, removing, renaming, or reordering existing `ValueSet` entries.
-- Retroactive validation or migration of existing instance data when a
-  `ValueSet` is attached to an existing attribute.
-- Deprecating individual `ValueSet` entries.
-- UX-specific widget definitions.
-- Treating `ValueSet` entries as entities with their own identity or lifecycle.
+- Generic `ARRAY<T>` attribute support.
+- Multi-polygons, disconnected lines, polygon holes, or interior rings.
+- GIS projections, coordinate transformations, spatial indexing, spatial
+  database behavior, point-in-polygon queries, distance calculation, line
+  length calculation, or area calculation.
+- GeoJSON or GPX import/export.
+- Dedicated map, line, polygon, or spatial overlay visualization.
+- `ValueSet` support for `LOCATION_LINE` or `LOCATION_AREA`.
 
 ### Acceptance Criteria
 
-- A model can define a named `ValueSet`.
-- A `ValueSet` contains a finite collection of allowed values.
-- Each entry has a stable technical value and a human-readable visual name.
-- The entry technical value is the stored instance value.
-- A `ValueSet` has a value type against which attribute compatibility can be
-  checked.
-- `TEXT`, `NUMERIC`, `DATE`, and `TIME` value sets are supported.
-- A compatible attribute can reference a `ValueSet` at creation time.
-- A compatible existing attribute can be updated to reference a `ValueSet`.
-- Multiple attributes and entities can reuse the same `ValueSet`.
-- Future instance create/update operations reject values outside the referenced
-  `ValueSet`.
-- `.vdmp` import rejects values outside the referenced `ValueSet`.
-- Model consumers can discover an attribute's referenced `ValueSet` and its
-  entries.
-- `.vdos` export/import preserves `ValueSet` definitions, entries, and
-  attribute references.
-- `.vdos` import rejects references to undefined `ValueSet` definitions.
-- No visualization- or UX-specific behavior is required in the core
-  `ValueSet` concept.
-- Backend verification succeeds.
+- `LOCATION_LINE` is available as a built-in attribute data type.
+- `LOCATION_AREA` is available as a built-in attribute data type.
+- Both types are based on ordered collections of existing `LOCATION` values.
+- `LOCATION_LINE` preserves the exact ordering of its locations.
+- `LOCATION_AREA` preserves the exact ordering of its boundary locations.
+- `LOCATION_LINE` rejects values with fewer than two locations.
+- `LOCATION_AREA` rejects values with fewer than three distinct locations.
+- `LOCATION_AREA` has closed-boundary semantics without requiring or accepting a
+  repeated final point in Vedenemo HTTP and `.vdmp` values.
+- Invalid structures that cannot represent a line or area are rejected.
+- Both types can be assigned to entity attributes like existing Vedenemo data
+  types.
+- HTTP instance create/update requests accept `LOCATION_LINE` values as objects
+  with a `locations` array of `LOCATION` objects.
+- HTTP instance create/update requests accept `LOCATION_AREA` values as objects
+  with a `boundary` array of `LOCATION` objects.
+- HTTP instance responses return both types as structured objects without loss
+  of location data or ordering.
+- `.vdmp` dump export/import preserves both types without loss of location data
+  or ordering.
+- `.vdos` model scripts can declare attributes with
+  `dataType=LOCATION_LINE` and `dataType=LOCATION_AREA`.
+- Exact equality filtering/querying works for both new data types.
+- Ordered comparison and string containment operators reject both new data
+  types.
+- `ValueSet` creation rejects `LOCATION_LINE` and `LOCATION_AREA` types.
+- Model consumers can distinguish `LOCATION`, `LOCATION_LINE`, and
+  `LOCATION_AREA`.
+- The implementation does not require generic array attribute support.
+- The implementation does not introduce visualization or map-projection
+  dependencies into the core spatial data types.
 
 ### Completion Notes
 
-- Added pure-JDK `ValueSet` and `ValueSetEntry` model types.
-- Added model-level value-set storage and optional `VAttribute.valueSetAzName`.
-- Added command support for creating value sets and attaching them to existing
-  compatible attributes.
-- Added undo counterparts for create-value-set and set-attribute-value-set.
-- Added `.vdos` export/import and snapshot validation for value sets and
-  attribute references.
-- Added instance create/update/query normalization checks for constrained
-  attributes.
-- Added `.vdmp` precheck rejection for values outside referenced value sets.
-- Exposed value sets and attribute references through HTTP model and runtime
-  API description responses.
-- Added CLI/browser-console flows for `vset add` and `attr vset`.
-- Updated frontend API-description types for value-set metadata.
-- Updated README, CLI reference, current implementation architecture docs, and
-  backlog history.
-- Verification passed with `mvn -q clean verify` and
-  `cd vedenemo-ux && npm run build`.
+- Added `DataType.LOCATION_LINE` and `DataType.LOCATION_AREA`.
+- Added pure-JDK `LocationLineValue` and `LocationAreaValue` records.
+- Added instance normalization, equality matching, invalid structure rejection,
+  and unsupported comparison rejection for the new spatial types.
+- Added `.vdmp` export/import/precheck support for structured line and area
+  values.
+- Added `.vdos` model script declaration support through the existing
+  `DataType` command/snapshot flow.
+- Exposed structured HTTP request/response examples and model consumer
+  metadata for the new types.
+- Added terminal CLI, browser console, and HTTP session command datatype aliases
+  for `location_line` / `location-line` and `location_area` / `location-area`.
+- Updated frontend API-description handling so generated examples are
+  structured objects and spatial query operators are equality-only.
+- Updated README, CLI reference, model-instance dump format documentation,
+  current implementation architecture docs, and backlog history.
+- Verification passed with `mvn -q clean verify`,
+  `cd vedenemo-ux && npm run build`, `git diff --check`, and README disclaimer
+  preservation check.

@@ -50,6 +50,20 @@ final class VedenemoScriptServiceTest {
                 "Location",
                 DataType.LOCATION
         ));
+        fixture.executor.execute(new org.vedenemo.core.command.CreateAttributeCommand(
+                "Example_Model",
+                "Customer",
+                "Path",
+                "Path",
+                DataType.LOCATION_LINE
+        ));
+        fixture.executor.execute(new org.vedenemo.core.command.CreateAttributeCommand(
+                "Example_Model",
+                "Customer",
+                "Boundary",
+                "Boundary",
+                DataType.LOCATION_AREA
+        ));
         fixture.executor.execute(new CreateAssociationCommand(
                 "Example_Model",
                 AssociationKind.OWNERSHIP,
@@ -82,12 +96,16 @@ final class VedenemoScriptServiceTest {
         assertTrue(script.contains("create-attribute model=Example_Model entity=Customer attribute=Email visName=\"Email\" dataType=TEXT activeSince=1.0.0"));
         assertTrue(script.contains("set-attribute-value-set model=Example_Model entity=Customer attribute=Email valueSet=TreeSpecies activeSince=1.0.0"));
         assertTrue(script.contains("create-attribute model=Example_Model entity=Customer attribute=Location visName=\"Location\" dataType=LOCATION activeSince=1.0.0"));
+        assertTrue(script.contains("create-attribute model=Example_Model entity=Customer attribute=Path visName=\"Path\" dataType=LOCATION_LINE activeSince=1.0.0"));
+        assertTrue(script.contains("create-attribute model=Example_Model entity=Customer attribute=Boundary visName=\"Boundary\" dataType=LOCATION_AREA activeSince=1.0.0"));
         assertTrue(script.contains("create-association model=Example_Model kind=OWNERSHIP association=Customer_Orders visName=\"orders\" source=Customer target=Order cardinality=0..* activeSince=1.0.0"));
         assertTrue(script.contains("create-association model=Example_Model kind=RELATION association=Customer_Order_Relation visName=\"orders\" source=Customer sourceRole=\"customer\" sourceCardinality=1 target=Order targetRole=\"order\" targetCardinality=0..* cardinality=0..* activeSince=1.0.0"));
         assertTrue(script.contains("entity azName=Customer visName=\"Customer\" activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
         assertTrue(script.contains("value-set azName=TreeSpecies dataType=TEXT entry1=\"PINE\" entry1VisName=\"Pine\" entry2=\"SPRUCE\" entry2VisName=\"Spruce\""));
         assertTrue(script.contains("attribute entity=Customer azName=Email visName=\"Email\" dataType=TEXT valueSet=TreeSpecies activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
         assertTrue(script.contains("attribute entity=Customer azName=Location visName=\"Location\" dataType=LOCATION activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
+        assertTrue(script.contains("attribute entity=Customer azName=Path visName=\"Path\" dataType=LOCATION_LINE activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
+        assertTrue(script.contains("attribute entity=Customer azName=Boundary visName=\"Boundary\" dataType=LOCATION_AREA activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
         assertTrue(script.contains("association azName=Customer_Orders visName=\"orders\" kind=OWNERSHIP source=Customer target=Order cardinality=0..* activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
         assertTrue(script.contains("association azName=Customer_Order_Relation visName=\"orders\" kind=RELATION source=Customer sourceRole=\"customer\" sourceCardinality=1 target=Order targetRole=\"order\" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
     }
@@ -107,6 +125,8 @@ final class VedenemoScriptServiceTest {
                 create-attribute model=Example_Model entity=Customer attribute=Email visName="Email" dataType=TEXT activeSince=1.0.0
                 set-attribute-value-set model=Example_Model entity=Customer attribute=Email valueSet=TreeSpecies activeSince=1.0.0
                 create-attribute model=Example_Model entity=Customer attribute=Location visName="Location" dataType=LOCATION activeSince=1.0.0
+                create-attribute model=Example_Model entity=Customer attribute=Path visName="Path" dataType=LOCATION_LINE activeSince=1.0.0
+                create-attribute model=Example_Model entity=Customer attribute=Boundary visName="Boundary" dataType=LOCATION_AREA activeSince=1.0.0
                 create-association model=Example_Model kind=REFERENCE association=Order_Customer visName="customer" source=Order target=Customer cardinality=1 activeSince=1.0.0
                 create-association model=Example_Model kind=RELATION association=Customer_Order_Relation visName="orders" source=Customer sourceRole="customer" sourceCardinality=1 target=Order targetRole="order" targetCardinality=0..* cardinality=0..* activeSince=1.0.0
 
@@ -116,6 +136,8 @@ final class VedenemoScriptServiceTest {
                 entity azName=Order visName="Order" activeSince=1.0.0 deprecatedSince=null
                 attribute entity=Customer azName=Email visName="Email" dataType=TEXT valueSet=TreeSpecies activeSince=1.0.0 deprecatedSince=null
                 attribute entity=Customer azName=Location visName="Location" dataType=LOCATION activeSince=1.0.0 deprecatedSince=null
+                attribute entity=Customer azName=Path visName="Path" dataType=LOCATION_LINE activeSince=1.0.0 deprecatedSince=null
+                attribute entity=Customer azName=Boundary visName="Boundary" dataType=LOCATION_AREA activeSince=1.0.0 deprecatedSince=null
                 association azName=Order_Customer visName="customer" kind=REFERENCE source=Order target=Customer cardinality=1 activeSince=1.0.0 deprecatedSince=null
                 association azName=Customer_Order_Relation visName="orders" kind=RELATION source=Customer sourceRole="customer" sourceCardinality=1 target=Order targetRole="order" targetCardinality=0..* cardinality=0..* activeSince=1.0.0 deprecatedSince=null
                 """;
@@ -124,16 +146,16 @@ final class VedenemoScriptServiceTest {
 
         ModelRoot model = fixture.modelRegistry.find("Example_Model").orElseThrow();
         assertEquals("Example_Model", result.modelAzName());
-        assertEquals(8, result.commandCount());
+        assertEquals(10, result.commandCount());
         assertEquals(2, model.entities().size());
-        assertEquals(2, model.entities().getFirst().attributes().size());
+        assertEquals(4, model.entities().getFirst().attributes().size());
         assertEquals("TreeSpecies", model.entities().getFirst().attributes().getFirst().valueSetAzName());
         assertEquals(1, model.valueSets().size());
         assertEquals(2, model.associations().size());
         assertEquals(AssociationKind.RELATION, model.associations().get(1).kind());
         assertEquals("customer", model.associations().get(1).sourceRoleName());
         assertEquals("order", model.associations().get(1).targetRoleName());
-        assertEquals(8, fixture.commandJournal.listForModel("Example_Model").size());
+        assertEquals(10, fixture.commandJournal.listForModel("Example_Model").size());
     }
 
     @Test

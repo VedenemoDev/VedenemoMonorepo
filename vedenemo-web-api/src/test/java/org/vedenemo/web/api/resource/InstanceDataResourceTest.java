@@ -80,6 +80,10 @@ final class InstanceDataResourceTest {
         assertTrue(response.body().contains("\"azName\":\"Artist\""));
         assertTrue(response.body().contains("\"azName\":\"Name\",\"visName\":\"Name\",\"dataType\":\"TEXT\""));
         assertTrue(response.body().contains("\"azName\":\"Location\",\"visName\":\"Location\",\"dataType\":\"LOCATION\""));
+        assertTrue(response.body().contains("\"azName\":\"Path\",\"visName\":\"Path\",\"dataType\":\"LOCATION_LINE\""));
+        assertTrue(response.body().contains("\"azName\":\"Boundary\",\"visName\":\"Boundary\",\"dataType\":\"LOCATION_AREA\""));
+        assertTrue(response.body().contains("\"Path\":{\"locations\":[{\"latitude\":62.1234567,\"longitude\":30.1234567},{\"latitude\":62.2234567,\"longitude\":30.2234567}]}"));
+        assertTrue(response.body().contains("\"Boundary\":{\"boundary\":[{\"latitude\":62.1234567,\"longitude\":30.1234567},{\"latitude\":62.2234567,\"longitude\":30.2234567},{\"latitude\":62.1234567,\"longitude\":30.3234567}]}"));
         assertTrue(response.body().contains("\"azName\":\"Album_Artist\""));
         assertTrue(response.body().contains("\"create\":\"/data/{modelAzName}/roots/{instanceRootId}/_links/Album_Artist\""));
     }
@@ -421,6 +425,65 @@ final class InstanceDataResourceTest {
     }
 
     @Test
+    void createsAndQueriesLocationLineAndAreaValuesByExactEquality() throws Exception {
+        String rootId = createRoot(null);
+        String spatialId = responseId(post(rootPath(rootId, "/Artist"), """
+                {
+                  "Name":"Spatial Artist",
+                  "Path":{"locations":[
+                    {"latitude":62.1234567,"longitude":30.1234567},
+                    {"latitude":62.2234567,"longitude":30.2234567}
+                  ]},
+                  "Boundary":{"boundary":[
+                    {"latitude":62.1234567,"longitude":30.1234567},
+                    {"latitude":62.2234567,"longitude":30.2234567},
+                    {"latitude":62.1234567,"longitude":30.3234567}
+                  ]}
+                }
+                """));
+        String otherId = responseId(post(rootPath(rootId, "/Artist"), """
+                {
+                  "Name":"Other Spatial Artist",
+                  "Path":{"locations":[
+                    {"latitude":62.2234567,"longitude":30.2234567},
+                    {"latitude":62.1234567,"longitude":30.1234567}
+                  ]},
+                  "Boundary":{"boundary":[
+                    {"latitude":62.1234567,"longitude":30.1234567},
+                    {"latitude":62.2234567,"longitude":30.2234567},
+                    {"latitude":62.2234567,"longitude":30.3234567}
+                  ]}
+                }
+                """));
+
+        HttpResponse<String> read = get(rootPath(rootId, "/Artist/" + spatialId));
+        HttpResponse<String> equalityQuery = post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "equals": {
+                      "Path": {"locations":[
+                        {"latitude":62.1234567,"longitude":30.1234567},
+                        {"latitude":62.2234567,"longitude":30.2234567}
+                      ]},
+                      "Boundary": {"boundary":[
+                        {"latitude":62.1234567,"longitude":30.1234567},
+                        {"latitude":62.2234567,"longitude":30.2234567},
+                        {"latitude":62.1234567,"longitude":30.3234567}
+                      ]}
+                    }
+                  }
+                }
+                """);
+
+        assertEquals(200, read.statusCode());
+        assertTrue(read.body().contains("\"Path\":{\"locations\":[{\"latitude\":62.1234567,\"longitude\":30.1234567},{\"latitude\":62.2234567,\"longitude\":30.2234567}]}"));
+        assertTrue(read.body().contains("\"Boundary\":{\"boundary\":[{\"latitude\":62.1234567,\"longitude\":30.1234567},{\"latitude\":62.2234567,\"longitude\":30.2234567},{\"latitude\":62.1234567,\"longitude\":30.3234567}]}"));
+        assertEquals(200, equalityQuery.statusCode());
+        assertTrue(equalityQuery.body().contains("\"id\":\"" + spatialId + "\""));
+        assertTrue(!equalityQuery.body().contains("\"id\":\"" + otherId + "\""));
+    }
+
+    @Test
     void keepsEntityInstancesIsolatedByRoot() throws Exception {
         String firstRootId = createRoot("First archive");
         String secondRootId = createRoot("Second archive");
@@ -485,6 +548,18 @@ final class InstanceDataResourceTest {
         assertEquals(400, post(rootPath(rootId, "/Artist"), """
                 {"Location":{"latitude":"62.0","longitude":30.0}}
                 """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist"), """
+                {"Path":{"locations":[{"latitude":62.0,"longitude":30.0}]}}
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist"), """
+                {"Path":{"locations":[{"latitude":62.0,"longitude":30.0},{"latitude":"63.0","longitude":31.0}]}}
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist"), """
+                {"Boundary":{"boundary":[{"latitude":62.0,"longitude":30.0},{"latitude":63.0,"longitude":31.0}]}}
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist"), """
+                {"Boundary":{"boundary":[{"latitude":62.0,"longitude":30.0},{"latitude":63.0,"longitude":31.0},{"latitude":62.0,"longitude":30.0}]}}
+                """).statusCode());
         assertEquals(400, post(rootPath(rootId, "/Artist/_query"), """
                 {
                   "where": {
@@ -517,6 +592,24 @@ final class InstanceDataResourceTest {
                   "where": {
                     "comparisons": [
                       {"attributeAzName": "Location", "operator": "contains", "value": {"latitude":62.0,"longitude":30.0}}
+                    ]
+                  }
+                }
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "comparisons": [
+                      {"attributeAzName": "Path", "operator": ">", "value": {"locations":[{"latitude":62.0,"longitude":30.0},{"latitude":63.0,"longitude":31.0}]}}
+                    ]
+                  }
+                }
+                """).statusCode());
+        assertEquals(400, post(rootPath(rootId, "/Artist/_query"), """
+                {
+                  "where": {
+                    "comparisons": [
+                      {"attributeAzName": "Boundary", "operator": "contains", "value": {"boundary":[{"latitude":62.0,"longitude":30.0},{"latitude":63.0,"longitude":31.0},{"latitude":62.5,"longitude":30.5}]}}
                     ]
                   }
                 }
@@ -556,6 +649,8 @@ final class InstanceDataResourceTest {
         artist.addAttribute(new VAttribute("SetTime", "Set Time", DataType.TIME, modelRoot.version()));
         artist.addAttribute(new VAttribute("LastPlayedAt", "Last Played At", DataType.DATETIME, modelRoot.version()));
         artist.addAttribute(new VAttribute("Location", "Location", DataType.LOCATION, modelRoot.version()));
+        artist.addAttribute(new VAttribute("Path", "Path", DataType.LOCATION_LINE, modelRoot.version()));
+        artist.addAttribute(new VAttribute("Boundary", "Boundary", DataType.LOCATION_AREA, modelRoot.version()));
         VEntity album = modelRoot.addEntity(new VEntity("Album", "Album", modelRoot.version()));
         album.addAttribute(new VAttribute("Title", "Title", DataType.TEXT, modelRoot.version()));
         modelRoot.addAssociation(new OwnershipAssociation(

@@ -8,5 +8,7 @@ public enum DataType {
     DATE,
     TIME,
     DATETIME,
-    LOCATION
+    LOCATION,
+    LOCATION_LINE,
+    LOCATION_AREA
 }
