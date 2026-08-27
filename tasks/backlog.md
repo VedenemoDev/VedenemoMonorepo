@@ -1,5 +1,347 @@
 # Backlog
 
+## Add `LOCATION_LINE` and `LOCATION_AREA` Data Types
+
+Status: planning
+
+### Goal
+
+Extend Vedenemo's existing `LOCATION` support with two spatial data types:
+
+* `LOCATION_LINE` — an ordered sequence of locations representing a path or line.
+* `LOCATION_AREA` — an ordered sequence of locations representing the boundary of a geographic area.
+
+Both types are structured spatial values built on top of the already implemented `LOCATION` data type.
+
+The purpose is to allow models to represent spatial domain data such as routes, tracks, property boundaries, forest stand boundaries, and other geographic shapes without treating them as visualization-specific information.
+
+### Motivation
+
+A single `LOCATION` represents one geographic point:
+
+```text
+Tree
+    location : LOCATION
+```
+
+Some domain concepts naturally require multiple ordered locations.
+
+For example, a recorded route could be represented as:
+
+```text
+HikingRoute
+    path : LOCATION_LINE
+```
+
+A forest property could contain its actual geographic boundary:
+
+```text
+ForestProperty
+    boundary : LOCATION_AREA
+```
+
+The property boundary is part of the domain data itself. It may later be used for visualization, spatial analysis, filtering, area calculations, or other purposes.
+
+Using a generic `LOCATION[]` representation would lose important semantics: an ordered collection of locations could represent a line, an area boundary, or simply a collection of unrelated points. Dedicated spatial types make this distinction explicit in the model.
+
+### `LOCATION_LINE`
+
+`LOCATION_LINE` represents an ordered sequence of `LOCATION` values.
+
+Conceptually:
+
+```text
+LOCATION_LINE
+    locations : ordered LOCATION collection
+```
+
+The ordering of locations is significant. Consecutive locations define the segments of the line.
+
+Typical use cases include:
+
+* GPS tracks
+* Hiking or forestry routes
+* Roads or trails
+* Survey lines
+* Other geographic paths
+
+A `LOCATION_LINE` does not imply that its first and last locations are the same.
+
+### `LOCATION_AREA`
+
+`LOCATION_AREA` represents a geographic area whose outer boundary is defined by an ordered sequence of `LOCATION` values.
+
+Conceptually:
+
+```text
+LOCATION_AREA
+    boundary : ordered LOCATION collection
+```
+
+Typical use cases include:
+
+* Forest property boundaries
+* Forest stand boundaries
+* Survey areas
+* Administrative or user-defined geographic areas
+
+The implementation must define a consistent rule for polygon closure. Callers
+should submit the boundary locations once, without duplicating the first
+`LOCATION` as the final `LOCATION`. `LOCATION_AREA` semantics already imply a
+closed boundary.
+
+The initial Vedenemo HTTP and `.vdmp` representation should reject an
+explicitly duplicated final point. Later external GIS interchange formats may
+convert to an explicitly closed ring when a target format requires it.
+
+### Relationship to `LOCATION`
+
+`LOCATION_LINE` and `LOCATION_AREA` should reuse the existing semantics and representation of `LOCATION` rather than introducing separate latitude/longitude representations.
+
+Conceptually:
+
+```text
+LOCATION
+    ↓
+LOCATION_LINE
+    ordered collection of LOCATION
+
+LOCATION_AREA
+    closed boundary defined by an ordered collection of LOCATION
+```
+
+Changes made to the common semantics of `LOCATION` should therefore naturally apply to locations contained in lines and areas where applicable.
+
+### Value Semantics
+
+Like `LOCATION`, both new types should be treated as attribute values rather than model entities.
+
+For example:
+
+```text
+ForestProperty
+    name     : STRING
+    boundary : LOCATION_AREA
+```
+
+`boundary` is one value belonging to the `ForestProperty`. Individual boundary points do not have independent entity identity or lifecycle merely because the value is internally structured.
+
+Similarly:
+
+```text
+Route
+    name : STRING
+    path : LOCATION_LINE
+```
+
+The line itself is the attribute value.
+
+### Coordinate Semantics
+
+`LOCATION_LINE` and `LOCATION_AREA` must preserve the geographic coordinate semantics already established by `LOCATION`.
+
+The data types should describe real geographic geometry independently of any visualization coordinate system.
+
+For example, a visualization may later perform:
+
+```text
+LOCATION / LOCATION_LINE / LOCATION_AREA
+                ↓
+        geographic projection
+                ↓
+           screen [x, y]
+```
+
+Projection into SVG, Canvas, D3, or other rendering coordinates belongs to the visualization layer and must not become part of the stored spatial values.
+
+This allows the same spatial data to be used with different map projections and visualization techniques.
+
+### Validation
+
+`LOCATION_LINE` should validate at least that:
+
+* It contains at least two locations.
+* Every member is a valid `LOCATION`.
+* Location ordering is preserved.
+
+`LOCATION_AREA` should validate at least that:
+
+* It contains at least three distinct locations.
+* Every member is a valid `LOCATION`.
+* Location ordering is preserved.
+* The boundary has valid closed-area semantics without a repeated closing point
+  in submitted Vedenemo values.
+
+More advanced GIS validation, such as detecting self-intersecting polygons, should not be required for the initial implementation unless it can be provided without significantly increasing complexity.
+
+### Serialization
+
+Both types must have stable serialization and deserialization representations compatible with Vedenemo model instance persistence.
+
+For HTTP requests/responses and `.vdmp` JSON, the initial representation should
+be explicit about the spatial type:
+
+```json
+{
+  "locations": [
+    { "latitude": 60.1, "longitude": 24.9 },
+    { "latitude": 60.2, "longitude": 25.0 }
+  ]
+}
+```
+
+for `LOCATION_LINE`, and:
+
+```json
+{
+  "boundary": [
+    { "latitude": 60.1, "longitude": 24.9 },
+    { "latitude": 60.2, "longitude": 25.0 },
+    { "latitude": 60.1, "longitude": 25.1 }
+  ]
+}
+```
+
+for `LOCATION_AREA`.
+
+The representation should preserve:
+
+* All information contained by each `LOCATION`.
+* The exact ordering of locations.
+* Whether the value represents a `LOCATION_LINE` or `LOCATION_AREA`.
+
+The implementation should avoid unnecessarily coupling Vedenemo's internal representation to a particular external GIS format.
+
+Compatibility or conversion to formats such as GeoJSON or GPX can be added separately where useful.
+
+### Query Semantics
+
+`LOCATION_LINE` and `LOCATION_AREA` should support exact equality matching in
+the same places where `LOCATION` supports exact equality matching.
+
+Equality must be based on the normalized data type and the exact ordered
+location sequence. Reordered locations are not equal, even if they contain the
+same points.
+
+Ordered comparisons such as less-than and greater-than must reject these data
+types. String containment matching must also reject these data types.
+
+These fields are not expected to be common filter criteria in practice, so the
+initial query behavior should stay deliberately minimal.
+
+### ValueSet Compatibility
+
+`LOCATION_LINE` and `LOCATION_AREA` must not be supported as `ValueSet` types in
+the initial implementation.
+
+Unlike finite scalar domains such as species codes or status values, spatial
+lines and areas are not expected to have practical reusable finite value sets.
+Keeping them out of `ValueSet` support also avoids expanding `ValueSet`
+normalization to structured spatial values before a concrete need exists.
+
+### Visualization Support
+
+The core data types must remain independent of D3.js or any other visualization implementation.
+
+However, model consumers must be able to identify these types so that visualization components can provide appropriate behavior.
+
+For example:
+
+```text
+LOCATION
+    -> point / marker
+
+LOCATION_LINE
+    -> geographic line/path
+
+LOCATION_AREA
+    -> geographic polygon
+```
+
+A visualization may also use a `LOCATION_AREA` as the geographic extent or background boundary for another visualization.
+
+For example:
+
+```text
+ForestProperty.boundary : LOCATION_AREA
+Tree.location           : LOCATION
+```
+
+A map or hexbin visualization could project both into the same drawing coordinate system and use the property boundary to determine the displayed geographic extent.
+
+### Scope
+
+Initial implementation should include:
+
+* `LOCATION_LINE` as a built-in Vedenemo data type.
+* `LOCATION_AREA` as a built-in Vedenemo data type.
+* Pure-JDK dedicated value records for normalized core instance values.
+* Construction from existing `LOCATION` values.
+* Preservation of location ordering.
+* Basic structural validation.
+* Model attribute support.
+* Model instance value support.
+* Structured HTTP JSON input/output for instance values.
+* `.vdmp` dump export/import support for instance values.
+* `.vdos` model script support for declaring `dataType=LOCATION_LINE` and
+  `dataType=LOCATION_AREA`.
+* Exposure of the types to model consumers through the same mechanisms used for other Vedenemo data types.
+* Exact equality filtering/querying where existing equality filters support
+  `LOCATION`.
+
+### Out of Scope
+
+The initial implementation does not need to include:
+
+* Generic `ARRAY<T>` attribute support.
+* Multi-polygons.
+* Multiple disconnected lines in a single value.
+* Polygon holes/interior rings.
+* GIS coordinate transformations.
+* Map projections.
+* Spatial indexing.
+* Spatial database functionality.
+* Point-in-polygon queries.
+* Distance, line length, or area calculations.
+* ValueSet support for `LOCATION_LINE` or `LOCATION_AREA`.
+* GeoJSON or GPX import/export.
+* D3.js-specific rendering logic.
+* Dedicated map, line, polygon, or spatial overlay visualization.
+
+These capabilities can be introduced separately when concrete use cases require them.
+
+### Acceptance Criteria
+
+* [ ] `LOCATION_LINE` is available as a built-in attribute data type.
+* [ ] `LOCATION_AREA` is available as a built-in attribute data type.
+* [ ] Both types are based on ordered collections of existing `LOCATION` values.
+* [ ] `LOCATION_LINE` preserves the exact ordering of its locations.
+* [ ] `LOCATION_AREA` preserves the exact ordering of its boundary locations.
+* [ ] `LOCATION_LINE` rejects values with fewer than two locations.
+* [ ] `LOCATION_AREA` rejects values with fewer than three distinct locations.
+* [ ] `LOCATION_AREA` has closed-boundary semantics without requiring or
+  accepting a repeated final point in Vedenemo HTTP and `.vdmp` values.
+* [ ] Invalid structures that cannot represent a line or area are rejected.
+* [ ] Both types can be assigned to entity attributes like existing Vedenemo data types.
+* [ ] HTTP instance create/update requests accept `LOCATION_LINE` values as
+  objects with a `locations` array of `LOCATION` objects.
+* [ ] HTTP instance create/update requests accept `LOCATION_AREA` values as
+  objects with a `boundary` array of `LOCATION` objects.
+* [ ] HTTP instance responses return both types as structured objects without
+  loss of location data or ordering.
+* [ ] `.vdmp` dump export/import preserves both types without loss of location
+  data or ordering.
+* [ ] `.vdos` model scripts can declare attributes with
+  `dataType=LOCATION_LINE` and `dataType=LOCATION_AREA`.
+* [ ] Exact equality filtering/querying works for both new data types.
+* [ ] Ordered comparison and string containment operators reject both new data
+  types.
+* [ ] `ValueSet` creation rejects `LOCATION_LINE` and `LOCATION_AREA` types.
+* [ ] Model consumers can distinguish `LOCATION`, `LOCATION_LINE`, and `LOCATION_AREA`.
+* [ ] The implementation does not require generic array attribute support.
+* [ ] The implementation does not introduce visualization or map-projection dependencies into the core spatial data types.
+
+
 ## Add Model-Level `ValueSet` Constraint Support
 
 Status: executed

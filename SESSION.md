@@ -9668,3 +9668,57 @@ Current status and next steps:
 - README disclaimer preservation check passed.
 - Next step is to stage this session entry, create the detailed commit, and
   push `main` to `origin`.
+
+## 2026-08-27 23:32 EEST
+
+Session goal: analyze and refine the new backlog planning task for
+`LOCATION_LINE` and `LOCATION_AREA` data types before implementation.
+
+Files changed:
+
+- `SESSION.md`
+- `tasks/backlog.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `rg -n "LOCATION|Location|DataType|data type|vdmp|instance" vedenemo-model-api/src/main/java vedenemo-core/src/main/java vedenemo-web-api/src/main/java vedenemo-command-console/src/main/java vedenemo-cli/src/main/java tasks docs README.md`
+- `rg --files vedenemo-model-api/src/main/java vedenemo-core/src/main/java vedenemo-web-api/src/main/java vedenemo-command-console/src/main/java vedenemo-cli/src/main/java | sort`
+- `git status --short --branch`
+- `sed -n '1,160p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/instance/LocationValue.java`
+- `sed -n '1,180p' vedenemo-core/src/main/java/org/vedenemo/core/instance/InstanceValue.java`
+- `sed -n '1,260p' docs/model-instance-dump-format.md`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '260,560p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,280p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/instance/dump/ModelInstanceDumpService.java`
+- `sed -n '280,760p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '260,520p' vedenemo-core/src/main/java/org/vedenemo/core/instance/dump/ModelInstanceDumpService.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ValueSet.java`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '1,285p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md SESSION.md`
+- `git diff --check`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Read the required architecture, milestone, current task, session, backlog,
+  current `LOCATION` value, instance normalization, HTTP, `.vdmp`, `.vdos`, and
+  `ValueSet` implementation context.
+- Updated `tasks/backlog.md` with the agreed JSON shapes, minimum point counts,
+  area closure rule, equality-only query behavior, `ValueSet` exclusion, and
+  minimal UX/visualization scope.
+- Verification passed: `git diff --check`.
+- Next step is implementation when this backlog item is selected as the current
+  task.
