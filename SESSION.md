@@ -10072,3 +10072,106 @@ Current status and next steps:
 - Created commit `8869732` with a detailed message.
 - Next steps: amend this session-record update into the commit, push `main` to
   `origin`, and confirm the final clean/synced state.
+
+## 2026-08-29 21:53 EEST
+
+Session goal:
+
+- Create a loadable `.vdmp` test dataset for the `Metsapalsta` model using all
+  model attributes, real Finland coordinates, four differently sized forest
+  stands inside one 10-hectare parcel, varied tree-species emphasis, and sample
+  measurements for every tree species.
+
+Files changed:
+
+- `.vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg --files -g '*.vdmp' -g '*vdmp*'`
+- `rg -n "vdmp|instance|InstanceData|import.*data|data import|LOCATION_AREA|LOCATION" vedenemo-* docs README.md tasks .vedenemo -g '!**/target/**'`
+- `git status --short`
+- `rg -n "class ModelInstanceDumpService|record .*Dump|format\\\"|vedenemo-instance-dump|exportDump|importDump|LocationAreaValue|LocationValue|createEntityInstance|createAssociation" vedenemo-core/src/main/java vedenemo-core/src/test/java vedenemo-web-api/src/main/java vedenemo-cli/src/main/java README.md docs .vedenemo`
+- `rg --files vedenemo-core/src/main/java/org/vedenemo/core/instance vedenemo-core/src/test/java/org/vedenemo/core/instance vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource | sort`
+- `find . -name '*.vdmp' -not -path './**/target/**' -print`
+- `sed -n '1,260p' docs/model-instance-dump-format.md`
+- `sed -n '1,340p' vedenemo-core/src/main/java/org/vedenemo/core/instance/dump/ModelInstanceDumpService.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/instance/dump/ModelInstanceDump.java`
+- `sed -n '1,340p' vedenemo-core/src/test/java/org/vedenemo/core/instance/dump/ModelInstanceDumpServiceTest.java`
+- `sed -n '1,140p' .vedenemo/Metsapalsta.vdos`
+- `sed -n '1,240p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '240,620p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '220,300p' vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `rg -n "models/script|importScript|load.*vdos|/models" vedenemo-web-api/src/main/java vedenemo-cli/src/main/java scripts README.md docs/cli-reference.md`
+- `jq -e '.format == "vedenemo-instance-dump" and .formatVersion == 1 and (.entities | length == 4) and (.links | length == 38)' .vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`
+- `jq '[.entities[] | {entity: .entityAzName, records: (.records | length)}], (.links | length)' .vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`
+- `ls -l vedenemo-web-api/target/*.jar`
+- `bash -lc 'VEDENEMO_WEB_HOST=127.0.0.1 VEDENEMO_WEB_PORT=18123 java -jar vedenemo-web-api/target/vedenemo-web-api-0.1.0-SNAPSHOT.jar ...'`
+- `sed -n '1,200p' /tmp/vedenemo-metsapalsta-vdmp.log`
+- `sed -n '1,200p' /tmp/vedenemo-metsapalsta-vdos.out`
+- `ls -l /tmp/vedenemo-metsapalsta-*`
+- `ps -ef | rg 'vedenemo-web-api|18123'`
+- `git diff --check`
+- `jq '[.entities[] | select(.entityAzName == "Metsakuvio") | .records[].values.hehtaarit] | add' .vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`
+- `jq '.entities[] | {entity: .entityAzName, records: (.records | length)}' .vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `.vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`.
+- Dataset contains one 10.0-hectare `Metsapalsta`, four `Metsakuvio` records
+  sized 1.6, 2.1, 2.8, and 3.5 hectares, 11 per-stand `Puulaji` records, 23
+  `Mittaus` records, and 38 association links.
+- Parcel and stand `LOCATION_AREA` polygons use latitude/longitude coordinates
+  in Finland; each stand polygon is inside the parcel polygon, and measurement
+  `LOCATION` values sit inside their associated stand.
+- Verification passed: JSON shape checks with `jq`, stand-area sum check,
+  `git diff --check`, and an HTTP smoke import after loading
+  `.vedenemo/Metsapalsta.vdos`; import created all expected entities and links
+  with no warnings or failed inserts.
+
+## 2026-08-29 21:57 EEST
+
+Session goal:
+
+- Commit the completed Metsapalsta `.vdmp` test dataset with a detailed commit
+  message and push it to the remote.
+
+Files changed:
+
+- `.vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short`
+- `git diff --stat`
+- `git diff -- .vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`
+- `git diff -- SESSION.md`
+- `git branch --show-current`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `jq '[.entities[] | {entity: .entityAzName, records: (.records | length)}], {links: (.links | length), hectares: ([.entities[] | select(.entityAzName == "Metsakuvio") | .records[].values.hehtaarit] | add)}' .vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`
+- `git diff --check`
+- `git add .vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp SESSION.md`
+- `git status --short`
+- `git diff --cached --stat`
+- `git log -1 --oneline`
+- `git commit -m "Add Metsapalsta instance test dump" ...`
+
+Current status and next steps:
+
+- Confirmed the staged-intended changes are the new Metsapalsta instance dump
+  and the session record.
+- Rechecked the dump summary: 1 `Metsapalsta`, 4 `Metsakuvio`, 11 `Puulaji`,
+  23 `Mittaus`, 38 links, and 10 total stand hectares.
+- Created commit `381de9e` with a detailed message.
+- Next steps: amend this session-record update into the commit, push `main` to
+  `origin`, and confirm the final synced state.
