@@ -787,10 +787,10 @@ public final class InstanceDataResource {
         }
     }
 
-    private record AttributeDescriptionResponse(String azName, String visName, String dataType, String valueSetAzName) {
+    private record AttributeDescriptionResponse(String azName, String visName, String dataType, boolean required, String valueSetAzName) {
 
         private static AttributeDescriptionResponse from(VAttribute attribute) {
-            return new AttributeDescriptionResponse(attribute.azName(), attribute.visName(), attribute.type().name(), attribute.valueSetAzName());
+            return new AttributeDescriptionResponse(attribute.azName(), attribute.visName(), attribute.type().name(), attribute.required(), attribute.valueSetAzName());
         }
     }
 

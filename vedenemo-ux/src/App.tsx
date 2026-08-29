@@ -65,6 +65,7 @@ type AttributeDescription = {
   azName: string;
   visName: string;
   dataType: string;
+  required?: boolean;
   valueSetAzName?: string | null;
 };
 
@@ -2529,7 +2530,10 @@ function EditorPage() {
                 <div className="tree-empty">No attributes</div>
               ) : selectedEntity.attributes.map((attribute) => (
                 <div key={attribute.azName} className="query-field">
-                  <label htmlFor={`editor-${attribute.azName}`}>{attribute.visName}</label>
+                  <label htmlFor={`editor-${attribute.azName}`}>
+                    {attribute.visName}
+                    {attribute.required ? " *" : ""}
+                  </label>
                   {attribute.dataType === "DATA" ? (
                     <textarea
                       id={`editor-${attribute.azName}`}
@@ -2763,7 +2767,7 @@ function ModelInstanceApiPage() {
                     ) : entity.attributes.map((attribute) => (
                       <span key={attribute.azName}>
                         <strong>{attribute.visName}</strong>
-                        {attribute.azName} · {attribute.dataType}
+                        {attribute.azName} · {attribute.dataType} · {attribute.required ? "required" : "optional"}
                       </span>
                     ))}
                   </div>

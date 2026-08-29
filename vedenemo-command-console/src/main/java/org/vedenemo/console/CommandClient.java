@@ -14,6 +14,7 @@ public interface CommandClient {
             String attributeAzName,
             String attributeVisName,
             String dataType,
+            boolean required,
             String valueSetAzName
     ) throws IOException, InterruptedException;
 
@@ -24,7 +25,18 @@ public interface CommandClient {
             String attributeVisName,
             String dataType
     ) throws IOException, InterruptedException {
-        createAttribute(sessionId, entityAzName, attributeAzName, attributeVisName, dataType, null);
+        createAttribute(sessionId, entityAzName, attributeAzName, attributeVisName, dataType, false, null);
+    }
+
+    default void createAttribute(
+            UUID sessionId,
+            String entityAzName,
+            String attributeAzName,
+            String attributeVisName,
+            String dataType,
+            String valueSetAzName
+    ) throws IOException, InterruptedException {
+        createAttribute(sessionId, entityAzName, attributeAzName, attributeVisName, dataType, false, valueSetAzName);
     }
 
     void createValueSet(

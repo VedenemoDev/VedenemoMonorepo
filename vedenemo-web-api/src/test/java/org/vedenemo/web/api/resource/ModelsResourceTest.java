@@ -143,7 +143,7 @@ final class ModelsResourceTest {
 
         assertEquals(200, response.statusCode());
         assertEquals("""
-                [{"azName":"Email","visName":"Email","dataType":"TEXT","valueSetAzName":null,"activeSince":"1.0.0","deprecatedSince":null,"retiredSince":null},{"azName":"Website","visName":"Website","dataType":"URL","valueSetAzName":null,"activeSince":"1.0.0","deprecatedSince":null,"retiredSince":null}]\
+                [{"azName":"Email","visName":"Email","dataType":"TEXT","required":false,"valueSetAzName":null,"activeSince":"1.0.0","deprecatedSince":null,"retiredSince":null},{"azName":"Website","visName":"Website","dataType":"URL","required":false,"valueSetAzName":null,"activeSince":"1.0.0","deprecatedSince":null,"retiredSince":null}]\
                 """, response.body());
     }
 
@@ -200,7 +200,7 @@ final class ModelsResourceTest {
                 {"entityAzName":"Customer","entityVisName":"Customer"}
                 """);
         post("/sessions/" + sessionId + "/commands/create-attribute", """
-                {"entityAzName":"Customer","attributeAzName":"Email","attributeVisName":"Email","dataType":"TEXT"}
+                {"entityAzName":"Customer","attributeAzName":"Email","attributeVisName":"Email","dataType":"TEXT","required":true}
                 """);
 
         HttpResponse<String> response = get("/models/Example_Model/script");
@@ -208,7 +208,7 @@ final class ModelsResourceTest {
         assertEquals(200, response.statusCode());
         assertTrue(response.body().contains("vedenemo-script 1"));
         assertTrue(response.body().contains("create-entity model=Example_Model entity=Customer visName=\"Customer\" activeSince=1.0.0"));
-        assertTrue(response.body().contains("attribute entity=Customer azName=Email visName=\"Email\" dataType=TEXT activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
+        assertTrue(response.body().contains("attribute entity=Customer azName=Email visName=\"Email\" dataType=TEXT required=true activeSince=1.0.0 deprecatedSince=null retiredSince=null"));
     }
 
     @Test

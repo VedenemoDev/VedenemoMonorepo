@@ -14,6 +14,7 @@ public record CreateAttributeCommand(
         String attributeAzName,
         String attributeVisName,
         DataType dataType,
+        boolean required,
         String valueSetAzName
 ) implements Command {
 
@@ -24,7 +25,18 @@ public record CreateAttributeCommand(
             String attributeVisName,
             DataType dataType
     ) {
-        this(modelAzName, entityAzName, attributeAzName, attributeVisName, dataType, null);
+        this(modelAzName, entityAzName, attributeAzName, attributeVisName, dataType, false, null);
+    }
+
+    public CreateAttributeCommand(
+            String modelAzName,
+            String entityAzName,
+            String attributeAzName,
+            String attributeVisName,
+            DataType dataType,
+            String valueSetAzName
+    ) {
+        this(modelAzName, entityAzName, attributeAzName, attributeVisName, dataType, false, valueSetAzName);
     }
 
     public CreateAttributeCommand {

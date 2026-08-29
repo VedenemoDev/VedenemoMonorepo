@@ -142,7 +142,8 @@ Shared model API module. It currently contains:
   `URL`, `DATA`, `DATE`, `TIME`, `DATETIME`, `LOCATION`, `LOCATION_LINE`, and
   `LOCATION_AREA`
 - `VAttribute`, a model attribute with `azName`, `visName`, `DataType`,
-  optional model-local `ValueSet` reference, and lifecycle version metadata
+  required/optional metadata, optional model-local `ValueSet` reference, and
+  lifecycle version metadata
 - `ValueSet` and `ValueSetEntry`, model-level finite allowed-value sets for
   `TEXT`, `NUMERIC`, `DATE`, and `TIME` attributes; each entry has a stored
   technical value and a visual name
@@ -253,9 +254,10 @@ format. The format is UTF-8 text with:
 - one model metadata line
 - a `commands` section using stable command slugs such as `create-entity`,
   `create-attribute`, and `create-association`
-- a `snapshot` section containing the final entity/attribute tree, model-level
-  associations, and lifecycle version metadata including `activeSince`,
-  `deprecatedSince`, and optional `retiredSince`
+- a `snapshot` section containing the final entity/attribute tree, attribute
+  required/optional metadata, model-level associations, and lifecycle version
+  metadata including `activeSince`, `deprecatedSince`, and optional
+  `retiredSince`
 
 Association command and snapshot lines include common fields for association
 identity, kind, endpoints, cardinality, and lifecycle metadata. Relation lines
@@ -417,7 +419,8 @@ Current CLI behavior:
 - selects an entity with `entity [N | azName]`
 - clears only selected entity context with `entity detach`
 - lists attributes in the selected entity with `attributes`, including data
-  type, optional `ValueSet` reference, and lifecycle version fields
+  type, required/optional metadata, optional `ValueSet` reference, and lifecycle
+  version fields
 - creates attributes in the selected entity with `attr add`
 - creates model-level value sets with `vset add`
 - attaches a model-level value set to an attribute in the selected entity with
@@ -470,8 +473,9 @@ and exposes:
 - `GET /models/{modelAzName}/entities`, which lists entities in insertion order
   for one model
 - `GET /models/{modelAzName}/entities/{entityAzName}/attributes`, which lists
-  attributes in insertion order for one entity, including `DataType`, optional
-  `valueSetAzName`, and lifecycle version fields
+  attributes in insertion order for one entity, including `DataType`,
+  required/optional metadata, optional `valueSetAzName`, and lifecycle version
+  fields
 - `GET /models/{modelAzName}/value-sets`, which lists model-level `ValueSet`
   definitions and entries
 - `GET /models/{modelAzName}/associations`, which lists model-level
@@ -549,7 +553,7 @@ and exposes:
   the session's selected model through `CommandExecutor`
 - `POST /sessions/{uuid}/commands/create-attribute`, which creates a
   `VAttribute` in an entity in the session's selected model through
-  `CommandExecutor`
+  `CommandExecutor`; omitted `required` request metadata defaults to `false`
 - `POST /sessions/{uuid}/commands/create-value-set`, which creates a
   model-level `ValueSet` in the session's selected model through
   `CommandExecutor`

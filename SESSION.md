@@ -9895,3 +9895,180 @@ Current status and next steps:
   confirmed the required README disclaimer remains present.
 - Next step is to stage all current workspace changes, create the detailed
   feature commit, and push `main` to `origin`.
+
+## 2026-08-29 20:11 EEST
+
+Session goal:
+
+- Execute the Metsäpalsta `.vdos` task, including required/optional attribute
+  metadata support.
+
+Files changed:
+
+- `.vedenemo/Metsapalsta.vdos`
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/VAttribute.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CreateAttributeCommand.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/AttributeSummary.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/CommandClient.java`
+- `vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpCommandClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleCommandClient.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleModelClient.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `vedenemo-ux/src/App.tsx`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,120p' tasks/backlog.md`
+- `tail -n 120 SESSION.md`
+- `rg -n "association|owns|reference|relation|ValueSet|value set|dataType|attribute|vdos|create" README.md docs tasks vedenemo-core/src/main/java vedenemo-core/src/test/java vedenemo-model-api/src/main/java`
+- `sed -n '1,260p' docs/cli-reference.md`
+- `sed -n '1,320p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `rg --files .vedenemo scripts tasks docs | sort`
+- `git status --short`
+- `git diff -- tasks/backlog.md`
+- `sed -n '1,220p' .vedenemo/LevykokoelmaAssosiaatioilla.vdos`
+- `sed -n '220,520p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/Cardinality.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/AssociationKind.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VAttribute.java`
+- `sed -n '1,260p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/Association.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/OwnershipAssociation.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ReferenceAssociation.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/DataType.java`
+- `sed -n '1,220p' .vedenemo/FamilyUnitTreeCompositeWithDates.vdos`
+- `sed -n '1,180p' tasks/backlog.md`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/command/CreateAttributeCommand.java`
+- `rg -n "CreateAttributeCommand|valueSetAzName|required|optional|nullable|mandatory" vedenemo-model-api/src/main/java vedenemo-core/src/main/java vedenemo-web-api/src/main/java vedenemo-command-console/src/main/java vedenemo-cli/src/main/java vedenemo-ux/src README.md docs`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '1,280p' vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `sed -n '1,120p' vedenemo-core/src/main/java/org/vedenemo/core/command/DeleteAttributeCommand.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/command/ModelCommandJournal.java`
+- `sed -n '130,430p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `sed -n '180,260p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java`
+- `sed -n '760,820p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,130p' vedenemo-cli/src/main/java/org/vedenemo/cli/HttpCommandClient.java`
+- `sed -n '1,80p' vedenemo-command-console/src/main/java/org/vedenemo/console/CommandClient.java`
+- `sed -n '360,440p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '1280,1350p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '1,80p' vedenemo-command-console/src/main/java/org/vedenemo/console/AttributeSummary.java`
+- `sed -n '1,180p' vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `sed -n '1,190p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleCommandClient.java`
+- `sed -n '120,155p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleModelClient.java`
+- `sed -n '1,95p' vedenemo-ux/src/App.tsx`
+- `sed -n '520,790p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `rg -n "parseYesNo|yes|Required\\?|\\[y|\\[n" vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '860,940p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '940,1025p' vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java`
+- `sed -n '300,345p' vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java`
+- `sed -n '560,620p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '1165,1205p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `mvn -q -pl vedenemo-model-api,vedenemo-core,vedenemo-command-console,vedenemo-cli,vedenemo-web-api -am -DskipTests compile`
+- `mvn -q -pl vedenemo-command-console,vedenemo-cli -am clean compile -DskipTests`
+- `rg -n "AttributeSummary\\(|ATTRIBUTE_PATTERN|createAttribute\\(|new CreateAttributeCommand\\(|AttributeResponse\\(|AttributeDescriptionResponse\\(|valueSetAzName\\(\\)" vedenemo-* src README.md docs -g '!**/target/**'`
+- `sed -n '740,805p' vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `sed -n '1160,1205p' vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `sed -n '1,260p' vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java`
+- `sed -n '1,240p' vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java`
+- `tail -n 80 vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java`
+- `mvn -q -pl vedenemo-model-api,vedenemo-core,vedenemo-command-console,vedenemo-cli,vedenemo-web-api -am test`
+- `sed -n '430,515p' vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `sed -n '445,560p' vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `rg -n "attr add|Attribute data type|type TEXT active|createAttribute\\(" vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java`
+- `sed -n '558,580p' vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `rg -n "attribute|valueSetAzName|ValueSet|create-attribute|attr add|dataType|attributes" README.md docs/cli-reference.md docs/architecture_doc.md`
+- `sed -n '130,155p' docs/architecture_doc.md`
+- `sed -n '245,285p' docs/cli-reference.md`
+- `sed -n '200,220p' README.md`
+- `sed -n '270,305p' docs/cli-reference.md`
+- `sed -n '410,428p' README.md`
+- `sed -n '540,560p' docs/architecture_doc.md`
+- `mvn -q clean verify`
+- `npm run build`
+- `git diff --check`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `git diff --stat`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Required/optional attribute metadata is implemented across core model,
+  commands, `.vdos`, HTTP resources, CLI, browser console, and UX type/display
+  surfaces.
+- Added `.vedenemo/Metsapalsta.vdos` with the requested Finnish forestry model,
+  `NUMERIC` attributes, `LOCATION_AREA`, `PuulajiNimi` ValueSet, one ownership
+  association, and two reference associations.
+- Backward-compatible `.vdos` import for attribute lines without `required`
+  remains supported.
+- Verification passed: `mvn -q clean verify`, `cd vedenemo-ux && npm run build`,
+  `git diff --check`, and README disclaimer preservation check.
+- No next implementation step remains for this task.
+
+## 2026-08-29 20:35 EEST
+
+Session goal:
+
+- Commit the completed Metsapalsta/required-attribute implementation with a
+  detailed message and push it to the remote.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short`
+- `git diff --stat`
+- `git diff --name-only`
+- `git diff --cached --stat`
+- `git branch --show-current`
+- `git remote -v`
+- `git diff --check`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- .git/info/exclude`
+- `tail -n 80 SESSION.md`
+- `git add README.md SESSION.md docs/architecture_doc.md docs/cli-reference.md tasks/backlog.md tasks/current-task.md .vedenemo/Metsapalsta.vdos vedenemo-cli/src/main/java/org/vedenemo/cli/HttpCommandClient.java vedenemo-cli/src/main/java/org/vedenemo/cli/HttpModelClient.java vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java vedenemo-command-console/src/main/java/org/vedenemo/console/AttributeSummary.java vedenemo-command-console/src/main/java/org/vedenemo/console/CommandClient.java vedenemo-command-console/src/main/java/org/vedenemo/console/ConsoleSession.java vedenemo-command-console/src/test/java/org/vedenemo/console/ConsoleSessionTest.java vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java vedenemo-core/src/main/java/org/vedenemo/core/command/CreateAttributeCommand.java vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java vedenemo-core/src/test/java/org/vedenemo/core/command/CommandExecutorTest.java vedenemo-core/src/test/java/org/vedenemo/core/script/VedenemoScriptServiceTest.java vedenemo-model-api/src/main/java/org/vedenemo/core/model/VAttribute.java vedenemo-ux/src/App.tsx vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleCommandClient.java vedenemo-web-api/src/main/java/org/vedenemo/web/api/console/InProcessConsoleModelClient.java vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/ModelsResource.java vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java vedenemo-web-api/src/test/java/org/vedenemo/web/api/resource/ModelsResourceTest.java`
+- `git status --short`
+- `git diff --cached --stat`
+- `git log -1 --oneline`
+- `git commit -m "Add required attribute metadata and Metsapalsta model" ...`
+
+Current status and next steps:
+
+- Pre-commit checks confirmed no whitespace errors and the README disclaimer is
+  preserved.
+- Created commit `8869732` with a detailed message.
+- Next steps: amend this session-record update into the commit, push `main` to
+  `origin`, and confirm the final clean/synced state.

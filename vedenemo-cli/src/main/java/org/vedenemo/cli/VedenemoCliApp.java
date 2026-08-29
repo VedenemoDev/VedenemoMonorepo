@@ -601,8 +601,10 @@ public final class VedenemoCliApp {
         }
         String enteredDataType = reader.readLine("Attribute data type [TEXT]: ");
         String dataType = normalizeDataTypeInput(enteredDataType);
+        String enteredRequired = reader.readLine("Required? [n]: ");
+        boolean required = parseYesNo(enteredRequired);
         try {
-            commandClient.createAttribute(consoleSession.backendSessionId(), entityAzName.orElseThrow(), azName, visName, dataType);
+            commandClient.createAttribute(consoleSession.backendSessionId(), entityAzName.orElseThrow(), azName, visName, dataType, required, null);
             output.println("Attribute " + azName + " added.");
         } catch (IOException exception) {
             output.println("Attribute was not added: " + exception.getMessage() + ".");
@@ -1182,6 +1184,16 @@ public final class VedenemoCliApp {
             case "location_line", "location-line" -> "LOCATION_LINE";
             case "location_area", "location-area" -> "LOCATION_AREA";
             default -> value.trim();
+        };
+    }
+
+    private static boolean parseYesNo(String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        return switch (value.trim().toLowerCase()) {
+            case "y", "yes", "true", "required", "pakollinen", "k", "kylla" -> true;
+            default -> false;
         };
     }
 

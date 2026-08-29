@@ -75,6 +75,7 @@ public final class VedenemoScriptService {
                         .append(" azName=").append(attribute.azName())
                         .append(" visName=").append(quote(attribute.visName()))
                         .append(" dataType=").append(attribute.type().name())
+                        .append(" required=").append(attribute.required())
                         .append(valueSetField(attribute.valueSetAzName()))
                         .append(" activeSince=").append(attribute.activeSince())
                         .append(" deprecatedSince=").append(versionOrNull(attribute.deprecatedSince().orElse(null)))
@@ -133,6 +134,7 @@ public final class VedenemoScriptService {
                     + " attribute=" + createAttributeCommand.attributeAzName()
                     + " visName=" + quote(createAttributeCommand.attributeVisName())
                     + " dataType=" + createAttributeCommand.dataType().name()
+                    + " required=" + createAttributeCommand.required()
                     + valueSetField(createAttributeCommand.valueSetAzName())
                     + " activeSince=" + modelVersion;
         }
@@ -178,6 +180,7 @@ public final class VedenemoScriptService {
                     createAttributeCommand.attributeAzName(),
                     createAttributeCommand.attributeVisName(),
                     createAttributeCommand.dataType(),
+                    createAttributeCommand.required(),
                     createAttributeCommand.valueSetAzName()
             );
         }
@@ -229,6 +232,7 @@ public final class VedenemoScriptService {
                     modelRoot.version(),
                     null,
                     null,
+                    createAttributeCommand.required(),
                     requireCompatibleValueSet(modelRoot, createAttributeCommand.dataType(), createAttributeCommand.valueSetAzName())
             ));
             return;
@@ -315,6 +319,7 @@ public final class VedenemoScriptService {
                     required(values, "attribute", lineIndex),
                     required(values, "visName", lineIndex),
                     DataType.valueOf(required(values, "dataType", lineIndex)),
+                    parseOptionalBoolean(values.get("required"), false, lineIndex),
                     values.get("valueSet")
             );
             case "create-value-set" -> new CreateValueSetCommand(
@@ -361,6 +366,7 @@ public final class VedenemoScriptService {
                     required(values, "azName", lineIndex),
                     required(values, "visName", lineIndex),
                     DataType.valueOf(required(values, "dataType", lineIndex)),
+                    parseOptionalBoolean(values.get("required"), false, lineIndex),
                     values.get("valueSet"),
                     ModelVersion.parse(required(values, "activeSince", lineIndex)),
                     parseNullableVersion(required(values, "deprecatedSince", lineIndex)),
@@ -423,6 +429,7 @@ public final class VedenemoScriptService {
             VAttribute actual = findAttribute(entity, expected.azName());
             if (!actual.visName().equals(expected.visName())
                     || actual.type() != expected.dataType()
+                    || actual.required() != expected.required()
                     || !Objects.equals(actual.valueSetAzName(), expected.valueSetAzName())
                     || !actual.activeSince().equals(expected.activeSince())
                     || !actual.deprecatedSince().equals(Optional.ofNullable(expected.deprecatedSince()))
@@ -704,6 +711,19 @@ public final class VedenemoScriptService {
         return parseNullableVersion(value);
     }
 
+    private static boolean parseOptionalBoolean(String value, boolean defaultValue, int lineIndex) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        if ("true".equals(value)) {
+            return true;
+        }
+        if ("false".equals(value)) {
+            return false;
+        }
+        throw new IllegalArgumentException("boolean value is invalid on script line " + (lineIndex + 1));
+    }
+
     private static Cardinality parseOptionalCardinality(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -748,6 +768,7 @@ public final class VedenemoScriptService {
             String azName,
             String visName,
             DataType dataType,
+            boolean required,
             String valueSetAzName,
             ModelVersion activeSince,
             ModelVersion deprecatedSince,

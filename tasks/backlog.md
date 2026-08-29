@@ -2,7 +2,7 @@
 
 ## Luo Metsäpalsta Vedenemo-malli vdos-tiedosto
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -148,6 +148,26 @@ Attribuutit:
 - `Metsakuvio_sisaltaa_Puulaji` ja `Puulaji_on_otoksia_Mittaus` ovat
   `REFERENCE`-assosiaatioita kardinaliteetilla `0..*`.
 - `mvn clean verify` onnistuu.
+
+### Completion Notes
+
+- Lisätty pure-JDK `required`-metadata `VAttribute`-mallityyppiin.
+- Laajennettu `CreateAttributeCommand`, `CommandExecutor`, command journalin
+  säilyttämä komento, `.vdos`-vienti ja `.vdos`-tuonti säilyttämään attribuutin
+  pakollisuus.
+- Vanhojen `.vdos`-attribuuttirivien puuttuva `required`-kenttä tulkitaan
+  optionaaliseksi.
+- Laajennettu HTTP session/model/API-description -vastaukset, terminaali-CLI,
+  selainkonsoli ja frontendin tyyppipinta välittämään pakollisuusmetadata.
+- CLI- ja selainkonsolipromptit kysyvät `Required? [n]:`; tyhjä vastaus luo
+  optionaalisen attribuutin.
+- Lisätty `.vedenemo/Metsapalsta.vdos`, jossa on `Metsapalsta`, `Metsakuvio`,
+  `Puulaji` ja `Mittaus`, `PuulajiNimi`-ValueSet, yksi `OWNERSHIP`-assosiaatio
+  ja kaksi `REFERENCE`-assosiaatiota.
+- Päivitetty README, CLI reference ja nykyisen toteutuksen arkkitehtuuridoc.
+- Instanssidatan create/update-validointi pakollisten attribuuttien perusteella
+  jäi tarkoituksella tämän tehtävän ulkopuolelle.
+- Verifiointi: `mvn -q clean verify` ja `cd vedenemo-ux && npm run build`.
 
 
 ## Add `LOCATION_LINE` and `LOCATION_AREA` Data Types

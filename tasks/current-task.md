@@ -1,102 +1,170 @@
 # Current Task
 
-## Add `LOCATION_LINE` and `LOCATION_AREA` Data Types
+## Luo Metsäpalsta Vedenemo-malli vdos-tiedosto
 
 Status: executed.
 
 ### Goal
 
-Extend Vedenemo's existing `LOCATION` support with two structured spatial data
-types:
+Tämä suunnitelma on poikkeuksellisesti suomeksi, koska aihepiiri ja tietomalli
+ovat suomeksi ja suomalaisessa kontekstissa.
 
-- `LOCATION_LINE`, an ordered sequence of `LOCATION` values representing a path
-  or line.
-- `LOCATION_AREA`, an ordered sequence of `LOCATION` values representing the
-  closed outer boundary of a geographic area.
+Luo uusi `.vedenemo/Metsapalsta.vdos`-mallitiedosto, jonka juuri-entityn
+`visName` on `Metsäpalsta`. Ennen tiedoston luontia lisää Vedenemoon
+attribuuttien pakollisuusmetadata, jotta malli voi ilmaista, mitkä attribuutit
+ovat pakollisia ja mitkä optionaalisia. Tämä metadata voi myöhemmin ohjata UX:n
+lomakkeita ja validointia.
 
-Both types are domain instance values, not visualization metadata and not model
-entities.
+`visName` -> `azName` -muunnossääntö tätä mallia varten:
+
+- ASCII-kirjaimet `a-zA-Z` säilyvät ennallaan.
+- `ä` korvataan `a`-kirjaimella.
+- `ö` korvataan `o`-kirjaimella.
+- Muut merkit, jotka eivät kelpaa `azName`-nimeen, korvataan alaviivalla.
+- Suunnitelmassa `NUMBER` on korjattu Vedenemon toteutettua tyyppiä vastaavaksi
+  muodoksi `NUMERIC`.
+
+### Model
+
+Mallin tekninen nimi on `Metsapalsta` ja näkyvä nimi on `Metsäpalsta`.
+
+#### Metsäpalsta
+
+Attribuutit:
+
+- `nimi` / `nimi`: `TEXT`, pakollinen.
+- `tunnus` / `tunnus`: `TEXT`, optionaalinen.
+- `alue` / `alue`: `LOCATION_AREA`, optionaalinen.
+- `hehtaarit` / `hehtaarit`: `NUMERIC`, optionaalinen.
+
+Assosiaatiot:
+
+- `Metsapalsta_koostuu_Metsakuvio`, `visName="koostuu"`, `OWNERSHIP`,
+  lähde `Metsapalsta`, kohde `Metsakuvio`, kardinaliteetti `1..*`.
+
+#### Metsäkuvio
+
+Attribuutit:
+
+- `tunnus` / `tunnus`: `TEXT`, pakollinen.
+- `alue` / `alue`: `LOCATION_AREA`, optionaalinen.
+- `hehtaarit` / `hehtaarit`: `NUMERIC`, optionaalinen.
+
+Assosiaatiot:
+
+- `Metsakuvio_sisaltaa_Puulaji`, `visName="sisältää"`, `REFERENCE`,
+  lähde `Metsakuvio`, kohde `Puulaji`, kardinaliteetti `0..*`.
+
+#### Puulaji
+
+Attribuutit:
+
+- `nimi` / `nimi`: `TEXT`, pakollinen, `valueSet=PuulajiNimi`.
+
+ValueSet:
+
+- `PuulajiNimi`: `TEXT`
+- `MANTY` / `Mänty`
+- `KOIVU` / `Koivu`
+- `KUUSI` / `Kuusi`
+- `LEPPA` / `Leppä`
+
+Assosiaatiot:
+
+- `Puulaji_on_otoksia_Mittaus`, `visName="on otoksia"`, `REFERENCE`,
+  lähde `Puulaji`, kohde `Mittaus`, kardinaliteetti `0..*`.
+
+#### Mittaus
+
+Attribuutit:
+
+- `halkaisija_cm` / `halkaisija_cm`: `NUMERIC`, pakollinen.
+- `mittauskorkeus_m` / `mittauskorkeus_m`: `NUMERIC`, optionaalinen.
+- `lokaatio` / `lokaatio`: `LOCATION`, optionaalinen.
+
+### Implementation Plan
+
+1. Lisää attribuuttimalliin pakollisuusmetadata pure-JDK
+   `vedenemo-model-api` -tasolla.
+2. Laajenna `CreateAttributeCommand`, `CommandExecutor`, undo-polku ja
+   `VedenemoScriptService` säilyttämään pakollisuus `.vdos`-komennoissa ja
+   snapshot-riveillä.
+3. Laajenna HTTP DTO:t, mallilistauksen vastaukset, selainkonsolin
+   in-process-komentopolku ja terminaali-CLI:n HTTP-komentopolku välittämään
+   pakollisuusmetadata.
+4. Laajenna CLI- ja selainkonsolipromptit kysymään attribuutin pakollisuus
+   konservatiivisella oletuksella `false`, jotta vanha authoring-polku pysyy
+   kevyenä.
+5. Laajenna mallikuluttajien kuvaukset ja frontendin tyyppikäsittely näyttämään
+   tai välittämään pakollisuusmetadata ilman instanssidatan validointimuutosta
+   tässä tehtävässä.
+6. Lisää `.vedenemo/Metsapalsta.vdos` käyttäen yllä määriteltyjä entiteettejä,
+   attribuutteja, `PuulajiNimi`-ValueSetiä ja assosiaatioita.
+7. Päivitä käyttäjädokumentaatio konkreettisesti toteutuneista muutoksista:
+   `README.md`, `docs/cli-reference.md`, `docs/architecture_doc.md` ja
+   tarvittaessa `.vdos`-esimerkit.
 
 ### Scope
 
-- Add `LOCATION_LINE` and `LOCATION_AREA` as built-in `DataType` values.
-- Add pure-JDK normalized core instance value records for line and area values.
-- Reuse existing `LOCATION` coordinate semantics for each contained point.
-- Preserve exact point ordering.
-- Validate that `LOCATION_LINE` contains at least two locations.
-- Validate that `LOCATION_AREA` contains at least three distinct locations.
-- Treat `LOCATION_AREA` as semantically closed without requiring or accepting a
-  repeated final point.
-- Support model attributes, `.vdos` model scripts, HTTP instance
-  create/update/read responses, `.vdmp` export/import/precheck, and model
-  consumer API descriptions.
-- Support exact equality matching only.
-- Keep ordered comparisons, string containment, generic array support, and
-  `ValueSet` support out of scope for these spatial types.
+- Attribuutin pakollisuusmetadata mallissa, komennoissa, HTTP-vastauksissa,
+  CLI:ssä, selainkonsolissa, `.vdos`-tuonnissa ja `.vdos`-viennissä.
+- `Metsapalsta.vdos`-malli yllä olevalla rakenteella.
+- Taaksepäin yhteensopiva `.vdos`-tuonti vanhoille attribuuttiriveille, joissa
+  pakollisuuskenttä puuttuu; puuttuva arvo tulkitaan optionaaliseksi.
+- Testit pakollisuusmetadatan säilymiselle ja `Metsapalsta.vdos`-tuonnille.
 
 ### Out Of Scope
 
-- Generic `ARRAY<T>` attribute support.
-- Multi-polygons, disconnected lines, polygon holes, or interior rings.
-- GIS projections, coordinate transformations, spatial indexing, spatial
-  database behavior, point-in-polygon queries, distance calculation, line
-  length calculation, or area calculation.
-- GeoJSON or GPX import/export.
-- Dedicated map, line, polygon, or spatial overlay visualization.
-- `ValueSet` support for `LOCATION_LINE` or `LOCATION_AREA`.
+- Instanssidatan create/update-validointi pakollisten attribuuttien perusteella.
+- `.vdmp`-tuonnin pakollisuusvalidointi.
+- Pakollisuuden muuttaminen jälkikäteen erillisellä komennolla.
+- Attribuuttien oletusarvot.
+- Uudet kardinaliteettisemantiikat assosiaatioille.
+- Map- tai paikkatietovisualisointi `LOCATION` / `LOCATION_AREA` -arvoille.
 
 ### Acceptance Criteria
 
-- `LOCATION_LINE` is available as a built-in attribute data type.
-- `LOCATION_AREA` is available as a built-in attribute data type.
-- Both types are based on ordered collections of existing `LOCATION` values.
-- `LOCATION_LINE` preserves the exact ordering of its locations.
-- `LOCATION_AREA` preserves the exact ordering of its boundary locations.
-- `LOCATION_LINE` rejects values with fewer than two locations.
-- `LOCATION_AREA` rejects values with fewer than three distinct locations.
-- `LOCATION_AREA` has closed-boundary semantics without requiring or accepting a
-  repeated final point in Vedenemo HTTP and `.vdmp` values.
-- Invalid structures that cannot represent a line or area are rejected.
-- Both types can be assigned to entity attributes like existing Vedenemo data
-  types.
-- HTTP instance create/update requests accept `LOCATION_LINE` values as objects
-  with a `locations` array of `LOCATION` objects.
-- HTTP instance create/update requests accept `LOCATION_AREA` values as objects
-  with a `boundary` array of `LOCATION` objects.
-- HTTP instance responses return both types as structured objects without loss
-  of location data or ordering.
-- `.vdmp` dump export/import preserves both types without loss of location data
-  or ordering.
-- `.vdos` model scripts can declare attributes with
-  `dataType=LOCATION_LINE` and `dataType=LOCATION_AREA`.
-- Exact equality filtering/querying works for both new data types.
-- Ordered comparison and string containment operators reject both new data
-  types.
-- `ValueSet` creation rejects `LOCATION_LINE` and `LOCATION_AREA` types.
-- Model consumers can distinguish `LOCATION`, `LOCATION_LINE`, and
-  `LOCATION_AREA`.
-- The implementation does not require generic array attribute support.
-- The implementation does not introduce visualization or map-projection
-  dependencies into the core spatial data types.
+- `VAttribute` tai vastaava mallityyppi erottaa pakolliset ja optionaaliset
+  attribuutit.
+- Uusi attribuutti on oletuksena optionaalinen, jos kutsuja ei anna
+  pakollisuustietoa.
+- Pakollisuustieto säilyy `CreateAttributeCommand`-komennossa, command
+  journalissa, `.vdos`-viennissä ja `.vdos`-tuonnissa.
+- Vanhojen `.vdos`-tiedostojen attribuuttirivit ilman pakollisuuskenttää
+  tuodaan edelleen onnistuneesti.
+- HTTP model/session -rajapinnat palauttavat attribuuttien pakollisuustiedon.
+- CLI ja selainkonsoli pystyvät luomaan sekä pakollisia että optionaalisia
+  attribuutteja.
+- `.vedenemo/Metsapalsta.vdos` löytyy repositoriosta.
+- `Metsapalsta.vdos` importoituu onnistuneesti paikalliseen backend-prosessiin.
+- `Metsapalsta`-mallissa on entiteetit `Metsapalsta`, `Metsakuvio`, `Puulaji`
+  ja `Mittaus`.
+- `Metsapalsta`-mallin NUMERIC-, TEXT-, LOCATION- ja LOCATION_AREA-attribuutit
+  vastaavat suunnitelmaa.
+- `Puulaji.nimi` viittaa `PuulajiNimi`-ValueSetiin, jonka arvot ovat `MANTY`,
+  `KOIVU`, `KUUSI` ja `LEPPA`.
+- `Metsapalsta_koostuu_Metsakuvio` on `OWNERSHIP`-assosiaatio
+  kardinaliteetilla `1..*`.
+- `Metsakuvio_sisaltaa_Puulaji` ja `Puulaji_on_otoksia_Mittaus` ovat
+  `REFERENCE`-assosiaatioita kardinaliteetilla `0..*`.
+- `mvn clean verify` onnistuu.
 
 ### Completion Notes
 
-- Added `DataType.LOCATION_LINE` and `DataType.LOCATION_AREA`.
-- Added pure-JDK `LocationLineValue` and `LocationAreaValue` records.
-- Added instance normalization, equality matching, invalid structure rejection,
-  and unsupported comparison rejection for the new spatial types.
-- Added `.vdmp` export/import/precheck support for structured line and area
-  values.
-- Added `.vdos` model script declaration support through the existing
-  `DataType` command/snapshot flow.
-- Exposed structured HTTP request/response examples and model consumer
-  metadata for the new types.
-- Added terminal CLI, browser console, and HTTP session command datatype aliases
-  for `location_line` / `location-line` and `location_area` / `location-area`.
-- Updated frontend API-description handling so generated examples are
-  structured objects and spatial query operators are equality-only.
-- Updated README, CLI reference, model-instance dump format documentation,
-  current implementation architecture docs, and backlog history.
-- Verification passed with `mvn -q clean verify`,
-  `cd vedenemo-ux && npm run build`, `git diff --check`, and README disclaimer
-  preservation check.
+- Lisätty pure-JDK `required`-metadata `VAttribute`-mallityyppiin.
+- Laajennettu `CreateAttributeCommand`, `CommandExecutor`, command journalin
+  säilyttämä komento, `.vdos`-vienti ja `.vdos`-tuonti säilyttämään attribuutin
+  pakollisuus.
+- Vanhojen `.vdos`-attribuuttirivien puuttuva `required`-kenttä tulkitaan
+  optionaaliseksi.
+- Laajennettu HTTP session/model/API-description -vastaukset, terminaali-CLI,
+  selainkonsoli ja frontendin tyyppipinta välittämään pakollisuusmetadata.
+- CLI- ja selainkonsolipromptit kysyvät `Required? [n]:`; tyhjä vastaus luo
+  optionaalisen attribuutin.
+- Lisätty `.vedenemo/Metsapalsta.vdos`, jossa on `Metsapalsta`, `Metsakuvio`,
+  `Puulaji` ja `Mittaus`, `PuulajiNimi`-ValueSet, yksi `OWNERSHIP`-assosiaatio
+  ja kaksi `REFERENCE`-assosiaatiota.
+- Päivitetty README, CLI reference ja nykyisen toteutuksen arkkitehtuuridoc.
+- Instanssidatan create/update-validointi pakollisten attribuuttien perusteella
+  jäi tarkoituksella tämän tehtävän ulkopuolelle.
+- Verifiointi: `mvn -q clean verify` ja `cd vedenemo-ux && npm run build`.

@@ -206,8 +206,11 @@ Successful cleanup returns HTTP `204`.
 The `/data` API stores process-local runtime records for loaded models. Entity
 instance fields are JSON object properties keyed by modeled attribute `azName`
 and validated against the selected entity's `DataType` and optional model-level
-`ValueSet` constraint. Association links are created through dedicated `_links`
-endpoints using source and target instance ids.
+`ValueSet` constraint. Attribute metadata also records whether an attribute is
+required or optional for model consumers, though instance create/update
+validation does not yet enforce required attributes. Association links are
+created through dedicated `_links` endpoints using source and target instance
+ids.
 
 Supported data types include `TEXT`, `NUMERIC`, `URL`, `DATA`, `DATE`, `TIME`,
 `DATETIME`, `LOCATION`, `LOCATION_LINE`, and `LOCATION_AREA`. Date and time
@@ -414,13 +417,13 @@ model azName=Example_Model visName="Example Model" version=1.0.0
 
 commands
 create-entity model=Example_Model entity=Customer visName="Customer" activeSince=1.0.0
-create-attribute model=Example_Model entity=Customer attribute=Email visName="Email" dataType=TEXT activeSince=1.0.0
-create-attribute model=Example_Model entity=Customer attribute=Boundary visName="Boundary" dataType=LOCATION_AREA activeSince=1.0.0
+create-attribute model=Example_Model entity=Customer attribute=Email visName="Email" dataType=TEXT required=true activeSince=1.0.0
+create-attribute model=Example_Model entity=Customer attribute=Boundary visName="Boundary" dataType=LOCATION_AREA required=false activeSince=1.0.0
 
 snapshot
 entity azName=Customer visName="Customer" activeSince=1.0.0 deprecatedSince=null retiredSince=null
-attribute entity=Customer azName=Email visName="Email" dataType=TEXT activeSince=1.0.0 deprecatedSince=null retiredSince=null
-attribute entity=Customer azName=Boundary visName="Boundary" dataType=LOCATION_AREA activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Customer azName=Email visName="Email" dataType=TEXT required=true activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Customer azName=Boundary visName="Boundary" dataType=LOCATION_AREA required=false activeSince=1.0.0 deprecatedSince=null retiredSince=null
 ```
 
 On import, command lines are replayed and the resulting model is validated

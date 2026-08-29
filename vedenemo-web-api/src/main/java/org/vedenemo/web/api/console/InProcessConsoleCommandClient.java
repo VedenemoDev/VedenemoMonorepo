@@ -48,6 +48,7 @@ final class InProcessConsoleCommandClient implements CommandClient {
             String attributeAzName,
             String attributeVisName,
             String dataType,
+            boolean required,
             String valueSetAzName
     ) throws IOException {
         CommandExecutor executor = executor(sessionId);
@@ -58,6 +59,7 @@ final class InProcessConsoleCommandClient implements CommandClient {
                 attributeAzName,
                 attributeVisName,
                 parseDataType(dataType),
+                required,
                 valueSetAzName
         ));
         modelChangeBroadcaster.broadcastModelChanged(modelAzName);

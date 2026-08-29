@@ -150,6 +150,7 @@ public final class CommandExecutor {
                 modelRoot.version(),
                 null,
                 null,
+                command.required(),
                 requireCompatibleValueSet(modelRoot, command.dataType(), command.valueSetAzName())
         ));
     }

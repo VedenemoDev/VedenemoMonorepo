@@ -173,6 +173,7 @@ public final class SessionResource {
                         request.attributeAzName(),
                         request.attributeVisName(),
                         dataType,
+                        request.required(),
                         request.valueSetAzName()
                 ));
                 modelChangeBroadcaster.broadcastModelChanged(selectedModelAzName.orElseThrow());
@@ -184,6 +185,7 @@ public final class SessionResource {
                     request.attributeAzName(),
                     request.attributeVisName(),
                     dataType.name(),
+                    request.required(),
                     request.valueSetAzName()
             ));
         });
@@ -364,6 +366,7 @@ public final class SessionResource {
             String attributeAzName,
             String attributeVisName,
             String dataType,
+            boolean required,
             String valueSetAzName
     ) {
     }
@@ -394,7 +397,7 @@ public final class SessionResource {
     private record SetAttributeValueSetRequest(String entityAzName, String attributeAzName, String valueSetAzName) {
     }
 
-    private record AttributeResponse(String azName, String visName, String dataType, String valueSetAzName) {
+    private record AttributeResponse(String azName, String visName, String dataType, boolean required, String valueSetAzName) {
     }
 
     private record ValueSetResponse(String azName, String dataType, List<ValueSetEntryRequest> entries) {

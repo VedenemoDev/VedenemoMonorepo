@@ -135,6 +135,7 @@ final class InProcessConsoleModelClient implements ModelClient {
                         attribute.azName(),
                         attribute.visName(),
                         attribute.type().name(),
+                        attribute.required(),
                         attribute.valueSetAzName(),
                         attribute.activeSince().toString(),
                         attribute.deprecatedSince().map(Object::toString).orElse(null),

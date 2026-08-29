@@ -115,8 +115,26 @@ final class CommandExecutorTest {
         assertEquals("Email", entity.attributes().getFirst().azName());
         assertEquals("Email", entity.attributes().getFirst().visName());
         assertEquals(DataType.TEXT, entity.attributes().getFirst().type());
+        assertEquals(false, entity.attributes().getFirst().required());
         assertEquals(fixture.modelRoot.version(), entity.attributes().getFirst().activeSince());
         assertEquals(2, fixture.session.commandHistory().size());
+    }
+
+    @Test
+    void createAttributeCommandCanAddRequiredAttribute() {
+        Fixture fixture = fixtureWithSelectedModelAndEntity();
+
+        fixture.executor.execute(new CreateAttributeCommand(
+                "Example_Model",
+                "Customer",
+                "Email",
+                "Email",
+                DataType.TEXT,
+                true,
+                null
+        ));
+
+        assertTrue(fixture.modelRoot.entities().getFirst().attributes().getFirst().required());
     }
 
     @Test

@@ -447,7 +447,7 @@ final class VedenemoCliAppTest {
 
         Result result = run(sessionClient, modelClient, new TestCommandClient(), "attach Example_Model\nentity Customer\nattributes\nexit\n");
 
-        assertTrue(result.output.contains("1. Email (Email) type TEXT active since 1.0.0"));
+        assertTrue(result.output.contains("1. Email (Email) type TEXT optional active since 1.0.0"));
     }
 
     @Test
@@ -458,16 +458,18 @@ final class VedenemoCliAppTest {
         modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
         modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
 
-        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nEmail Address\n\nurl\nexit\n");
+        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nEmail Address\n\nurl\ny\nexit\n");
 
         assertEquals(sessionClient.sessionId, commandClient.createAttributeSessionId);
         assertEquals("Customer", commandClient.createdAttributeEntityAzName);
         assertEquals("Email_Address", commandClient.createdAttributeAzName);
         assertEquals("Email Address", commandClient.createdAttributeVisName);
         assertEquals("URL", commandClient.createdAttributeDataType);
+        assertTrue(commandClient.createdAttributeRequired);
         assertTrue(result.output.contains("Attribute visible name: "));
         assertTrue(result.output.contains("Attribute azName [Email_Address]: "));
         assertTrue(result.output.contains("Attribute data type [TEXT]: "));
+        assertTrue(result.output.contains("Required? [n]: "));
         assertTrue(result.output.contains("Attribute Email_Address added."));
     }
 
@@ -479,7 +481,7 @@ final class VedenemoCliAppTest {
         modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
         modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
 
-        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nAttribute 2\n\n\nexit\n");
+        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nAttribute 2\n\n\n\nexit\n");
 
         assertEquals("Attribute_2", commandClient.createdAttributeAzName);
         assertTrue(result.output.contains("Attribute azName [Attribute_2]: "));
@@ -493,7 +495,7 @@ final class VedenemoCliAppTest {
         modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
         modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
 
-        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nAddress Line 1\n\n\nexit\n");
+        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nAddress Line 1\n\n\n\nexit\n");
 
         assertEquals("Address_Line_1", commandClient.createdAttributeAzName);
         assertTrue(result.output.contains("Attribute azName [Address_Line_1]: "));
@@ -507,7 +509,7 @@ final class VedenemoCliAppTest {
         modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
         modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
 
-        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\n2 Attribute\n\n\nexit\n");
+        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\n2 Attribute\n\n\n\nexit\n");
 
         assertEquals("Attribute", commandClient.createdAttributeAzName);
         assertTrue(result.output.contains("Attribute azName [Attribute]: "));
@@ -521,7 +523,7 @@ final class VedenemoCliAppTest {
         modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
         modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
 
-        run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nEmail\n\n\nexit\n");
+        run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nEmail\n\n\n\nexit\n");
 
         assertEquals("TEXT", commandClient.createdAttributeDataType);
     }
@@ -534,7 +536,7 @@ final class VedenemoCliAppTest {
         modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
         modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
 
-        run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nUpdated At\n\ndatetime\nexit\n");
+        run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nUpdated At\n\ndatetime\n\nexit\n");
 
         assertEquals("DATETIME", commandClient.createdAttributeDataType);
     }
@@ -547,7 +549,7 @@ final class VedenemoCliAppTest {
         modelClient.models.add(new ModelSummary("Example_Model", "Example Model", "1.0.0"));
         modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
 
-        run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nPath\n\nlocation_area\nexit\n");
+        run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nPath\n\nlocation_area\n\nexit\n");
 
         assertEquals("LOCATION_AREA", commandClient.createdAttributeDataType);
     }
@@ -561,7 +563,7 @@ final class VedenemoCliAppTest {
         modelClient.entities.add(new EntitySummary("Customer", "Customer", "1.0.0", null));
         commandClient.createAttributeFailure = new IOException("attribute add failed with HTTP status 400: duplicate");
 
-        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nEmail\nEmail\ntext\nexit\n");
+        Result result = run(sessionClient, modelClient, commandClient, "attach Example_Model\nentity Customer\nattr add\nEmail\nEmail\ntext\n\nexit\n");
 
         assertTrue(result.output.contains("Attribute was not added: attribute add failed with HTTP status 400: duplicate."));
         assertTrue(result.output.contains("VedenemoCli[Example_Model/Customer]>"));
@@ -1140,6 +1142,7 @@ final class VedenemoCliAppTest {
         private String createdAttributeAzName;
         private String createdAttributeVisName;
         private String createdAttributeDataType;
+        private boolean createdAttributeRequired;
         private String createdAssociationKind;
         private String createdAssociationAzName;
         private String createdAssociationVisName;
@@ -1179,6 +1182,7 @@ final class VedenemoCliAppTest {
                 String attributeAzName,
                 String attributeVisName,
                 String dataType,
+                boolean required,
                 String valueSetAzName
         ) throws IOException {
             if (createAttributeFailure != null) {
@@ -1189,6 +1193,7 @@ final class VedenemoCliAppTest {
             createdAttributeAzName = attributeAzName;
             createdAttributeVisName = attributeVisName;
             createdAttributeDataType = dataType;
+            createdAttributeRequired = required;
         }
 
         @Override

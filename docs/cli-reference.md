@@ -251,14 +251,15 @@ VedenemoCli[Example_Model]>
 
 ### `attributes`
 
-Lists attributes in the selected entity. Output includes data type, optional
-`ValueSet` reference, and lifecycle version fields.
+Lists attributes in the selected entity. Output includes data type,
+required/optional metadata, optional `ValueSet` reference, and lifecycle version
+fields.
 
 Example:
 
 ```text
 VedenemoCli[Example_Model/Customer]>attributes
-1. Email (Email) type TEXT active since 1.0.0
+1. Email (Email) type TEXT required active since 1.0.0
 ```
 
 If no entity is selected, the CLI prints:
@@ -271,10 +272,12 @@ Select an entity before listing attributes.
 
 Adds a new attribute to the selected entity through the backend command API.
 
-The CLI asks for a visible name, suggests an ASCII `azName`, and asks for a data
-type. Suggestions preserve digits after the first ASCII letter, so
+The CLI asks for a visible name, suggests an ASCII `azName`, asks for a data
+type, and asks whether the attribute is required. Suggestions preserve digits
+after the first ASCII letter, so
 `Attribute 2` suggests `Attribute_2`. Press Enter at the data type prompt to
-use `TEXT`. Data type input accepts case-insensitive aliases such as `text`,
+use `TEXT`, and press Enter at the required prompt to create an optional
+attribute. Data type input accepts case-insensitive aliases such as `text`,
 `number`, `url`, `data`, `date`, `time`, `datetime`, `location`,
 `location_line`, `location-line`, `location_area`, and `location-area`.
 
@@ -285,6 +288,7 @@ VedenemoCli[Example_Model/Customer]>attr add
 Attribute visible name: Email Address 2
 Attribute azName [Email_Address_2]:
 Attribute data type [TEXT]: url
+Required? [n]: y
 Attribute Email_Address_2 added.
 VedenemoCli[Example_Model/Customer]>
 ```

@@ -449,12 +449,15 @@ final class ConsoleSessionTest {
         assertEquals("Attribute azName [Email_Address]: ", session.prompt());
         session.execute("");
         assertEquals("Attribute data type [TEXT]: ", session.prompt());
-        ConsoleCommandResult result = session.execute("url");
+        session.execute("url");
+        assertEquals("Required? [n]: ", session.prompt());
+        ConsoleCommandResult result = session.execute("y");
 
         assertEquals(List.of("Attribute Email_Address added."), result.outputLines());
         assertEquals("Customer", commandClient.createdAttributeEntityAzName);
         assertEquals("Email_Address", commandClient.createdAttributeAzName);
         assertEquals("URL", commandClient.createdAttributeDataType);
+        assertTrue(commandClient.createdAttributeRequired);
         assertEquals("VedenemoCli[Example_Model/Customer]>", session.prompt());
     }
 
@@ -479,6 +482,7 @@ final class ConsoleSessionTest {
         session.execute("Updated At");
         session.execute("");
         session.execute("datetime");
+        session.execute("");
 
         assertEquals("DATETIME", commandClient.createdAttributeDataType);
     }
@@ -504,6 +508,7 @@ final class ConsoleSessionTest {
         session.execute("Path");
         session.execute("");
         session.execute("location-line");
+        session.execute("");
 
         assertEquals("LOCATION_LINE", commandClient.createdAttributeDataType);
     }
@@ -753,6 +758,7 @@ final class ConsoleSessionTest {
         private String createdAttributeEntityAzName;
         private String createdAttributeAzName;
         private String createdAttributeDataType;
+        private boolean createdAttributeRequired;
         private String createdAssociationKind;
         private String createdAssociationAzName;
         private String createdAssociationSourceEntityAzName;
@@ -775,11 +781,13 @@ final class ConsoleSessionTest {
                 String attributeAzName,
                 String attributeVisName,
                 String dataType,
+                boolean required,
                 String valueSetAzName
         ) {
             createdAttributeEntityAzName = entityAzName;
             createdAttributeAzName = attributeAzName;
             createdAttributeDataType = dataType;
+            createdAttributeRequired = required;
         }
 
         @Override

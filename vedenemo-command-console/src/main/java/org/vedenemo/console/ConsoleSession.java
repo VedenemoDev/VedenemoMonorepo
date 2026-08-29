@@ -414,6 +414,7 @@ public final class ConsoleSession {
                     + attribute.azName()
                     + ") type "
                     + attribute.dataType()
+                    + requiredSuffix(attribute.required())
                     + valueSetSuffix(attribute.valueSetAzName())
                     + " active since "
                     + attribute.activeSince()
@@ -915,6 +916,10 @@ public final class ConsoleSession {
         return " valueSet " + valueSetAzName;
     }
 
+    private static String requiredSuffix(boolean required) {
+        return required ? " required" : " optional";
+    }
+
     private static String relationEndSuffix(AssociationSummary association) {
         if (!"RELATION".equals(association.kind())) {
             return "";
@@ -958,6 +963,16 @@ public final class ConsoleSession {
             case "location_line", "location-line" -> "LOCATION_LINE";
             case "location_area", "location-area" -> "LOCATION_AREA";
             default -> value.trim();
+        };
+    }
+
+    private static boolean parseYesNo(String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        return switch (value.trim().toLowerCase()) {
+            case "y", "yes", "true", "required", "pakollinen", "k", "kylla" -> true;
+            default -> false;
         };
     }
 
@@ -1294,13 +1309,15 @@ public final class ConsoleSession {
         private String visName;
         private String suggestion;
         private String azName;
+        private String dataType;
 
         @Override
         public String prompt() {
             return switch (step) {
                 case 0 -> "Attribute visible name: ";
                 case 1 -> "Attribute azName [" + suggestion + "]: ";
-                default -> "Attribute data type [TEXT]: ";
+                case 2 -> "Attribute data type [TEXT]: ";
+                default -> "Required? [n]: ";
             };
         }
 
@@ -1328,8 +1345,13 @@ public final class ConsoleSession {
                 step = 2;
                 return ConsoleCommandResult.ok(List.of());
             }
-            String dataType = normalizeDataTypeInput(input);
-            commandClient.createAttribute(backendSessionId, attachedEntityAzName, azName, visName, dataType);
+            if (step == 2) {
+                dataType = normalizeDataTypeInput(input);
+                step = 3;
+                return ConsoleCommandResult.ok(List.of());
+            }
+            boolean required = parseYesNo(input);
+            commandClient.createAttribute(backendSessionId, attachedEntityAzName, azName, visName, dataType, required, null);
             complete = true;
             return ConsoleCommandResult.ok(List.of("Attribute " + azName + " added."));
         }

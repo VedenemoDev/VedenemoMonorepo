@@ -1,0 +1,45 @@
+vedenemo-script 1
+
+model azName=Metsapalsta visName="Metsäpalsta" version=1.0.0
+
+commands
+create-entity model=Metsapalsta entity=Metsapalsta visName="Metsäpalsta" activeSince=1.0.0
+create-attribute model=Metsapalsta entity=Metsapalsta attribute=nimi visName="nimi" dataType=TEXT required=true activeSince=1.0.0
+create-attribute model=Metsapalsta entity=Metsapalsta attribute=tunnus visName="tunnus" dataType=TEXT required=false activeSince=1.0.0
+create-attribute model=Metsapalsta entity=Metsapalsta attribute=alue visName="alue" dataType=LOCATION_AREA required=false activeSince=1.0.0
+create-attribute model=Metsapalsta entity=Metsapalsta attribute=hehtaarit visName="hehtaarit" dataType=NUMERIC required=false activeSince=1.0.0
+create-entity model=Metsapalsta entity=Metsakuvio visName="Metsäkuvio" activeSince=1.0.0
+create-attribute model=Metsapalsta entity=Metsakuvio attribute=tunnus visName="tunnus" dataType=TEXT required=true activeSince=1.0.0
+create-attribute model=Metsapalsta entity=Metsakuvio attribute=alue visName="alue" dataType=LOCATION_AREA required=false activeSince=1.0.0
+create-attribute model=Metsapalsta entity=Metsakuvio attribute=hehtaarit visName="hehtaarit" dataType=NUMERIC required=false activeSince=1.0.0
+create-entity model=Metsapalsta entity=Puulaji visName="Puulaji" activeSince=1.0.0
+create-value-set model=Metsapalsta valueSet=PuulajiNimi dataType=TEXT entry1="MANTY" entry1VisName="Mänty" entry2="KOIVU" entry2VisName="Koivu" entry3="KUUSI" entry3VisName="Kuusi" entry4="LEPPA" entry4VisName="Leppä" activeSince=1.0.0
+create-attribute model=Metsapalsta entity=Puulaji attribute=nimi visName="nimi" dataType=TEXT required=true valueSet=PuulajiNimi activeSince=1.0.0
+create-entity model=Metsapalsta entity=Mittaus visName="Mittaus" activeSince=1.0.0
+create-attribute model=Metsapalsta entity=Mittaus attribute=halkaisija_cm visName="halkaisija_cm" dataType=NUMERIC required=true activeSince=1.0.0
+create-attribute model=Metsapalsta entity=Mittaus attribute=mittauskorkeus_m visName="mittauskorkeus_m" dataType=NUMERIC required=false activeSince=1.0.0
+create-attribute model=Metsapalsta entity=Mittaus attribute=lokaatio visName="lokaatio" dataType=LOCATION required=false activeSince=1.0.0
+create-association model=Metsapalsta kind=OWNERSHIP association=Metsapalsta_koostuu_Metsakuvio visName="koostuu" source=Metsapalsta target=Metsakuvio cardinality=1..* activeSince=1.0.0
+create-association model=Metsapalsta kind=REFERENCE association=Metsakuvio_sisaltaa_Puulaji visName="sisältää" source=Metsakuvio target=Puulaji cardinality=0..* activeSince=1.0.0
+create-association model=Metsapalsta kind=REFERENCE association=Puulaji_on_otoksia_Mittaus visName="on otoksia" source=Puulaji target=Mittaus cardinality=0..* activeSince=1.0.0
+
+snapshot
+value-set azName=PuulajiNimi dataType=TEXT entry1="MANTY" entry1VisName="Mänty" entry2="KOIVU" entry2VisName="Koivu" entry3="KUUSI" entry3VisName="Kuusi" entry4="LEPPA" entry4VisName="Leppä"
+entity azName=Metsapalsta visName="Metsäpalsta" activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Metsapalsta azName=nimi visName="nimi" dataType=TEXT required=true activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Metsapalsta azName=tunnus visName="tunnus" dataType=TEXT required=false activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Metsapalsta azName=alue visName="alue" dataType=LOCATION_AREA required=false activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Metsapalsta azName=hehtaarit visName="hehtaarit" dataType=NUMERIC required=false activeSince=1.0.0 deprecatedSince=null retiredSince=null
+entity azName=Metsakuvio visName="Metsäkuvio" activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Metsakuvio azName=tunnus visName="tunnus" dataType=TEXT required=true activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Metsakuvio azName=alue visName="alue" dataType=LOCATION_AREA required=false activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Metsakuvio azName=hehtaarit visName="hehtaarit" dataType=NUMERIC required=false activeSince=1.0.0 deprecatedSince=null retiredSince=null
+entity azName=Puulaji visName="Puulaji" activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Puulaji azName=nimi visName="nimi" dataType=TEXT required=true valueSet=PuulajiNimi activeSince=1.0.0 deprecatedSince=null retiredSince=null
+entity azName=Mittaus visName="Mittaus" activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Mittaus azName=halkaisija_cm visName="halkaisija_cm" dataType=NUMERIC required=true activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Mittaus azName=mittauskorkeus_m visName="mittauskorkeus_m" dataType=NUMERIC required=false activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Mittaus azName=lokaatio visName="lokaatio" dataType=LOCATION required=false activeSince=1.0.0 deprecatedSince=null retiredSince=null
+association azName=Metsapalsta_koostuu_Metsakuvio visName="koostuu" kind=OWNERSHIP source=Metsapalsta target=Metsakuvio cardinality=1..* activeSince=1.0.0 deprecatedSince=null retiredSince=null
+association azName=Metsakuvio_sisaltaa_Puulaji visName="sisältää" kind=REFERENCE source=Metsakuvio target=Puulaji cardinality=0..* activeSince=1.0.0 deprecatedSince=null retiredSince=null
+association azName=Puulaji_on_otoksia_Mittaus visName="on otoksia" kind=REFERENCE source=Puulaji target=Mittaus cardinality=0..* activeSince=1.0.0 deprecatedSince=null retiredSince=null

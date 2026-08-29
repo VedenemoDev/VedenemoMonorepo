@@ -54,17 +54,19 @@ public final class HttpCommandClient implements CommandClient {
             String attributeAzName,
             String attributeVisName,
             String dataType,
+            boolean required,
             String valueSetAzName
     ) throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder(apiBaseUrl.resolve("/sessions/" + sessionId + "/commands/create-attribute"))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString("""
-                        {"entityAzName":"%s","attributeAzName":"%s","attributeVisName":"%s","dataType":"%s","valueSetAzName":%s}\
+                        {"entityAzName":"%s","attributeAzName":"%s","attributeVisName":"%s","dataType":"%s","required":%s,"valueSetAzName":%s}\
                         """.formatted(
                         escapeJson(entityAzName),
                         escapeJson(attributeAzName),
                         escapeJson(attributeVisName),
                         escapeJson(dataType),
+                        required,
                         jsonStringOrNull(valueSetAzName)
                 )))
                 .build();
