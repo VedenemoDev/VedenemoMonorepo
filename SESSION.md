@@ -10175,3 +10175,117 @@ Current status and next steps:
 - Created commit `381de9e` with a detailed message.
 - Next steps: amend this session-record update into the commit, push `main` to
   `origin`, and confirm the final synced state.
+
+## 2026-08-30 08:05 EEST
+
+Session goal:
+
+- Keep the existing Metsapalsta `.vdmp` dataset and add a new
+  `.vedenemo/Metsapalsta2.vdmp` dataset with substantially more `Mittaus`
+  datapoints while preserving the same model and other base data.
+
+Files changed:
+
+- `.vedenemo/Metsapalsta2.vdmp`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg --files .vedenemo -g '*.vdmp'`
+- `jq '{format, formatVersion, modelAzName, entities: [.entities[] | {entity: .entityAzName, records: (.records | length)}], links: (.links | length)}' .vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`
+- `jq '.entities[] | select(.entityAzName=="Mittaus")' .vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`
+- `jq '.links[] | select(.associationAzName=="Puulaji_on_otoksia_Mittaus")' .vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`
+- `jq '.entities[] | select(.entityAzName=="Puulaji")' .vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`
+- `node - <<'NODE' ...`
+- `jq -e '.format == "vedenemo-instance-dump" and .formatVersion == 1 and (.entities[] | select(.entityAzName == "Mittaus") | .records | length) == 110 and ([.links[] | select(.associationAzName == "Puulaji_on_otoksia_Mittaus")] | length) == 110' .vedenemo/Metsapalsta2.vdmp`
+- `jq '{root: .root.visName, entities: [.entities[] | {entity: .entityAzName, records: (.records | length)}], links: (.links | length), measurementLinks: ([.links[] | select(.associationAzName == "Puulaji_on_otoksia_Mittaus")] | length)}' .vedenemo/Metsapalsta2.vdmp`
+- `git diff --check -- .vedenemo/Metsapalsta2.vdmp`
+- `bash -lc 'VEDENEMO_WEB_HOST=127.0.0.1 VEDENEMO_WEB_PORT=18124 java -jar vedenemo-web-api/target/vedenemo-web-api-0.1.0-SNAPSHOT.jar ...'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `.vedenemo/Metsapalsta2.vdmp`.
+- The new dump keeps the same `Metsapalsta`, `Metsakuvio`, and `Puulaji`
+  records as the existing dataset, but replaces the measurement set with 110
+  deterministic `Mittaus` datapoints, 10 for each `Puulaji` record.
+- Verification passed: JSON shape checks, whitespace check, and HTTP import
+  smoke after loading `.vedenemo/Metsapalsta.vdos`; import created 1
+  `Metsapalsta`, 4 `Metsakuvio`, 11 `Puulaji`, 110 `Mittaus`, and 125 links
+  with no warnings or failed inserts.
+
+## 2026-09-01 22:06 EEST
+
+Session goal:
+
+- Add a backlog planning task for normal terminal `VedenemoCli`
+  non-interactive startup flags to load `.vdos` model files and `.vdmp`
+  model-instance dump files.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,180p' tasks/backlog.md`
+- `tail -n 100 SESSION.md`
+- `rg -n "mload|dload|VedenemoCli|args|main\\(" vedenemo-cli/src/main/java vedenemo-cli/src/test/java docs/cli-reference.md README.md`
+- `git status --short`
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check -- tasks/backlog.md`
+
+Current status and next steps:
+
+- Added the newest backlog item, `Add non-interactive terminal CLI load
+  commands`.
+- The task covers `VedenemoCli --mload <path_name_to_file.vdos>` and
+  `VedenemoCli --dload <path_name_to_file.vdmp>`, keeps the browser UX virtual
+  CLI explicitly out of scope, and records open questions for the eventual
+  implementation.
+- No production code was changed in this session.
+
+## 2026-09-01 22:10 EEST
+
+Session goal:
+
+- Resolve the open questions in the non-interactive terminal CLI load backlog
+  task.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,95p' tasks/backlog.md`
+- `tail -n 60 SESSION.md`
+- `git status --short`
+- `sed -n '1,115p' tasks/backlog.md`
+- `git diff --check -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Updated the backlog task decisions: standalone `--dload` requires the model
+  to already be loaded, combined `--mload ... --dload ...` is supported,
+  duplicate `--mload` model `azName` conflicts fail, older dump versions fail
+  by default, and `--force` allows only older-dump-to-newer-model imports.
+- Browser UX virtual CLI remains explicitly out of scope.
+- No production code was changed in this session.
