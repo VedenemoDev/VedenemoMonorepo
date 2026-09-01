@@ -1,7 +1,10 @@
 # Vedenemo CLI Reference
 
-`VedenemoCli` is an HTTP-backed interactive command-line client. It creates a
-backend session when it starts and removes that session when `exit` is used.
+`VedenemoCli` is an HTTP-backed command-line client. With no startup load flags,
+it creates a backend session when it starts, opens an interactive prompt, and
+removes that session when `exit` is used. With startup load flags, it creates a
+backend session, performs the requested load operation, cleans up, and exits
+without opening the prompt.
 
 ## Start The CLI
 
@@ -32,6 +35,46 @@ Example with a custom backend port:
 VEDENEMO_API_BASE_URL=http://127.0.0.1:18080 \
   java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli
 ```
+
+## Non-Interactive Load Flags
+
+The normal terminal CLI supports one-shot load operations for local files:
+
+```bash
+java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli \
+  --mload path/to/model.vdos
+
+java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli \
+  --dload path/to/data.vdmp
+
+java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli \
+  --mload path/to/model.vdos --dload path/to/data.vdmp
+```
+
+`--mload` reads a UTF-8 `.vdos` file, imports it through the backend, attaches
+the CLI session to the imported model, prints the loaded model and command
+count, and exits. If the backend reports a duplicate model `azName`, the
+non-interactive command fails with a non-zero exit code instead of prompting for
+a replacement name.
+
+`--dload` reads a UTF-8 JSON `.vdmp` file, reads the target model `azName` from
+the dump metadata, verifies that the model is already loaded in the backend,
+runs the backend precheck, imports the dump into a new model-instance root, and
+exits. If `--mload` and `--dload` are supplied together, the model is loaded
+first and the dump is imported into that loaded model in the same process.
+
+Older dump versions fail by default when the loaded model is newer. Add
+`--force` to allow that older-dump-to-newer-model import:
+
+```bash
+java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli \
+  --dload path/to/data.vdmp --force
+```
+
+`--force` does not override failed backend prechecks. A dump whose model version
+is newer than the loaded model still fails. Usage errors exit with code `2`;
+load, file, backend, or precheck failures exit with code `1`; successful
+one-shot loads exit with code `0`.
 
 ## Prompt
 
@@ -577,6 +620,12 @@ The CLI runs a backend precheck first. Newer dumps are rejected before import;
 older dumps require yes/no confirmation. A successful load reports created
 record/link counts, skipped duplicate links, warnings, and failed insert
 diagnostics.
+
+For non-interactive use, run `VedenemoCli --dload <path>` instead. In that mode
+the CLI reads the target model `azName` from the dump metadata and requires the
+model to already be loaded unless the same invocation also supplies `--mload`.
+Use `--force` to allow older-dump-to-newer-model imports without an interactive
+confirmation prompt.
 
 ## Browser Console Snapshot Commands
 

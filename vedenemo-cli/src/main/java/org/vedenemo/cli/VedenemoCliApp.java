@@ -33,11 +33,20 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class VedenemoCliApp {
 
     private static final String SNAPSHOT_DIRECTORY = ".vedenemo";
     private static final String DUMP_EXTENSION = ".vdmp";
+    private static final int EXIT_OK = 0;
+    private static final int EXIT_OPERATION_FAILED = 1;
+    private static final int EXIT_USAGE = 2;
+    private static final Pattern DUMP_MODEL_AZ_NAME_PATTERN = Pattern.compile(
+            "\"model\"\\s*:\\s*\\{[^}]*\"azName\"\\s*:\\s*\"([^\"]+)\"",
+            Pattern.DOTALL
+    );
 
     private final SessionClient sessionClient;
     private final ModelClient modelClient;
@@ -80,6 +89,17 @@ public final class VedenemoCliApp {
     }
 
     public int run() {
+        return run(new String[0]);
+    }
+
+    public int run(String[] args) {
+        NonInteractiveOptions options = NonInteractiveOptions.parse(args);
+        if (options.errorMessage() != null) {
+            output.println(options.errorMessage());
+            printNonInteractiveUsage();
+            return EXIT_USAGE;
+        }
+        boolean nonInteractive = options.hasWork();
         AtomicReference<UUID> activeSessionId = new AtomicReference<>();
         AtomicBoolean cleanedUp = new AtomicBoolean(false);
         try {
@@ -89,17 +109,148 @@ public final class VedenemoCliApp {
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> cleanup(activeSessionId, cleanedUp)));
             }
             output.println("Session with UUID " + sessionId + " is created / attached to.");
+            if (nonInteractive) {
+                int exitCode = runNonInteractive(sessionId, options);
+                cleanup(activeSessionId, cleanedUp);
+                return exitCode;
+            }
             runPromptLoop(sessionId);
             cleanup(activeSessionId, cleanedUp);
-            return 0;
+            return EXIT_OK;
         } catch (IOException | InterruptedException exception) {
             if (exception instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
             output.println("Vedenemo CLI failed: " + exception.getMessage());
             cleanup(activeSessionId, cleanedUp);
-            return 1;
+            return EXIT_OPERATION_FAILED;
         }
+    }
+
+    private int runNonInteractive(UUID sessionId, NonInteractiveOptions options) throws IOException, InterruptedException {
+        ConsoleSession consoleSession = new ConsoleSession(
+                sessionId,
+                modelClient,
+                sessionClient,
+                commandClient,
+                ConsoleCapabilities.terminal()
+        );
+        String loadedModelAzName = null;
+        if (options.modelLoadPath() != null) {
+            Optional<String> importedModelAzName = loadModelNonInteractive(consoleSession, options.modelLoadPath());
+            if (importedModelAzName.isEmpty()) {
+                return EXIT_OPERATION_FAILED;
+            }
+            loadedModelAzName = importedModelAzName.orElseThrow();
+        }
+        if (options.dumpLoadPath() != null) {
+            if (!loadDumpNonInteractive(consoleSession, options.dumpLoadPath(), options.force(), loadedModelAzName)) {
+                return EXIT_OPERATION_FAILED;
+            }
+        }
+        return EXIT_OK;
+    }
+
+    private Optional<String> loadModelNonInteractive(ConsoleSession consoleSession, Path source) throws IOException, InterruptedException {
+        Path resolvedSource = resolvePathWithExtension(source.toString());
+        if (!Files.exists(resolvedSource)) {
+            output.println("Model load failed: file not found: " + resolvedSource + ".");
+            return Optional.empty();
+        }
+        String script;
+        try {
+            script = Files.readString(resolvedSource, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            output.println("Model load failed: " + exception.getMessage());
+            return Optional.empty();
+        }
+        ModelImportResult result;
+        try {
+            result = modelClient.importScript(script, null);
+        } catch (ModelAlreadyExistsException exception) {
+            output.println("Model load failed: duplicate model azName. " + exception.getMessage());
+            return Optional.empty();
+        } catch (IOException exception) {
+            output.println(exception.getMessage());
+            return Optional.empty();
+        }
+        consoleSession.attachInitialModel(result.modelAzName());
+        consoleSession.refreshModels();
+        output.println("Loaded model " + result.modelAzName() + " from " + resolvedSource + " with " + result.commandCount() + " commands.");
+        return Optional.of(result.modelAzName());
+    }
+
+    private boolean loadDumpNonInteractive(
+            ConsoleSession consoleSession,
+            Path source,
+            boolean force,
+            String loadedModelAzName
+    ) throws IOException, InterruptedException {
+        Path resolvedSource = resolveDumpLoadPath(source.toString());
+        if (!Files.exists(resolvedSource)) {
+            output.println("Dump load failed: file not found: " + resolvedSource + ".");
+            return false;
+        }
+        String dumpContent;
+        try {
+            dumpContent = Files.readString(resolvedSource, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            output.println("Dump load failed: " + exception.getMessage());
+            return false;
+        }
+        Optional<String> dumpModelAzName = extractDumpModelAzName(dumpContent);
+        if (dumpModelAzName.isEmpty()) {
+            output.println("Dump load failed: could not read model.azName from " + resolvedSource + ".");
+            return false;
+        }
+        String modelAzName = loadedModelAzName == null ? dumpModelAzName.orElseThrow() : loadedModelAzName;
+        if (loadedModelAzName == null) {
+            boolean modelIsLoaded = modelClient.listModels().stream()
+                    .anyMatch(model -> model.azName().equals(modelAzName));
+            if (!modelIsLoaded) {
+                output.println("Dump load failed: model " + modelAzName + " is not loaded. Load the model first with --mload or through the backend.");
+                return false;
+            }
+            consoleSession.attachInitialModel(modelAzName);
+        }
+        DumpPrecheckResult precheck;
+        try {
+            precheck = modelClient.precheckDump(modelAzName, dumpContent);
+        } catch (IOException exception) {
+            output.println(exception.getMessage());
+            return false;
+        }
+        precheck.warnings().forEach(warning -> output.println("Warning: " + warning));
+        precheck.diagnostics().forEach(diagnostic -> output.println("Diagnostic: " + diagnostic));
+        if (!precheck.importable()) {
+            output.println("Dump load failed: precheck rejected " + resolvedSource + ".");
+            return false;
+        }
+        if (precheck.confirmationRequired() && !force) {
+            output.println("Dump load failed: dump model version is older than the loaded model version. Re-run with --force to load it.");
+            return false;
+        }
+        try {
+            DumpImportResult result = modelClient.importDump(modelAzName, dumpContent, precheck.confirmationRequired() && force);
+            output.println("Loaded data dump from " + resolvedSource + " into model-instance root " + result.root().instanceRootId() + ".");
+            printDumpImportResult(result);
+            return true;
+        } catch (IOException exception) {
+            output.println(exception.getMessage());
+            return false;
+        }
+    }
+
+    private static Optional<String> extractDumpModelAzName(String dumpContent) {
+        Matcher matcher = DUMP_MODEL_AZ_NAME_PATTERN.matcher(dumpContent);
+        return matcher.find() ? Optional.of(matcher.group(1)) : Optional.empty();
+    }
+
+    private void printNonInteractiveUsage() {
+        output.println("Usage:");
+        output.println("  VedenemoCli --mload <path_name_to_file.vdos>");
+        output.println("  VedenemoCli --dload <path_name_to_file.vdmp> [--force]");
+        output.println("  VedenemoCli --mload <path_name_to_file.vdos> --dload <path_name_to_file.vdmp> [--force]");
     }
 
     private void runPromptLoop(UUID sessionId) throws IOException, InterruptedException {
@@ -948,16 +1099,20 @@ public final class VedenemoCliApp {
         try {
             DumpImportResult result = modelClient.importDump(modelAzName.orElseThrow(), dumpContent, confirmed);
             output.println("Loaded data dump from " + source + " into model-instance root " + result.root().instanceRootId() + ".");
-            result.createdEntityCounts().forEach((entity, count) -> output.println("Created " + count + " " + entity + " records."));
-            output.println("Created " + result.createdAssociationLinkCount() + " association links.");
-            if (result.skippedDuplicateLinkCount() > 0) {
-                output.println("Skipped " + result.skippedDuplicateLinkCount() + " duplicate association links.");
-            }
-            result.warnings().forEach(warning -> output.println("Warning: " + warning));
-            result.failedInserts().forEach(failure -> output.println("Failed insert: " + failure));
+            printDumpImportResult(result);
         } catch (IOException exception) {
             output.println(exception.getMessage());
         }
+    }
+
+    private void printDumpImportResult(DumpImportResult result) {
+        result.createdEntityCounts().forEach((entity, count) -> output.println("Created " + count + " " + entity + " records."));
+        output.println("Created " + result.createdAssociationLinkCount() + " association links.");
+        if (result.skippedDuplicateLinkCount() > 0) {
+            output.println("Skipped " + result.skippedDuplicateLinkCount() + " duplicate association links.");
+        }
+        result.warnings().forEach(warning -> output.println("Warning: " + warning));
+        result.failedInserts().forEach(failure -> output.println("Failed insert: " + failure));
     }
 
     private Optional<Path> resolveLoadSource(String argument) {
@@ -1133,6 +1288,58 @@ public final class VedenemoCliApp {
             return List.of();
         }
         return List.of(value.trim().split("\\s+"));
+    }
+
+    private record NonInteractiveOptions(
+            Path modelLoadPath,
+            Path dumpLoadPath,
+            boolean force,
+            String errorMessage
+    ) {
+        private static NonInteractiveOptions parse(String[] args) {
+            if (args == null || args.length == 0) {
+                return new NonInteractiveOptions(null, null, false, null);
+            }
+            Path modelLoadPath = null;
+            Path dumpLoadPath = null;
+            boolean force = false;
+            for (int index = 0; index < args.length; index++) {
+                String argument = args[index];
+                if ("--mload".equals(argument)) {
+                    if (modelLoadPath != null) {
+                        return error("Usage error: --mload may be provided only once.");
+                    }
+                    if (index + 1 >= args.length || args[index + 1].startsWith("--")) {
+                        return error("Usage error: --mload requires a path to a .vdos file.");
+                    }
+                    modelLoadPath = Path.of(args[++index]);
+                } else if ("--dload".equals(argument)) {
+                    if (dumpLoadPath != null) {
+                        return error("Usage error: --dload may be provided only once.");
+                    }
+                    if (index + 1 >= args.length || args[index + 1].startsWith("--")) {
+                        return error("Usage error: --dload requires a path to a .vdmp file.");
+                    }
+                    dumpLoadPath = Path.of(args[++index]);
+                } else if ("--force".equals(argument)) {
+                    force = true;
+                } else {
+                    return error("Usage error: unknown argument " + argument + ".");
+                }
+            }
+            if (force && dumpLoadPath == null) {
+                return error("Usage error: --force can only be used with --dload.");
+            }
+            return new NonInteractiveOptions(modelLoadPath, dumpLoadPath, force, null);
+        }
+
+        private static NonInteractiveOptions error(String message) {
+            return new NonInteractiveOptions(null, null, false, message);
+        }
+
+        private boolean hasWork() {
+            return modelLoadPath != null || dumpLoadPath != null;
+        }
     }
 
     private static String suggestAzName(String visName) {

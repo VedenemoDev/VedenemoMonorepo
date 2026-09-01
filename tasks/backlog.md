@@ -2,7 +2,7 @@
 
 ## Add non-interactive terminal CLI load commands
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -87,6 +87,23 @@ scope because it is accessible only inside the browser UX.
   diagnostics.
 - Existing interactive commands and tests still pass.
 - `mvn clean verify` succeeds.
+
+### Completion Notes
+
+- Added normal terminal CLI startup-argument support for `--mload <path>`,
+  `--dload <path>`, combined `--mload <path> --dload <path>`, and `--force`.
+- Reused the existing HTTP-backed CLI clients and local file handling; no
+  browser UX virtual CLI changes were made.
+- Non-interactive model loads fail on duplicate model `azName` conflicts.
+- Standalone dump loads require the dump's `model.azName` to already be loaded
+  in the backend.
+- Combined model-and-dump loading imports the model first and then imports the
+  dump into that model.
+- `--force` confirms only the existing older-dump-to-newer-model path; failed
+  prechecks still fail.
+- Added CLI unit tests and updated README, CLI reference, and current
+  implementation architecture documentation.
+- Verification passed with backend tests and local CLI smoke checks.
 
 ## Luo Metsäpalsta Vedenemo-malli vdos-tiedosto
 

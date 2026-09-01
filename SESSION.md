@@ -10289,3 +10289,115 @@ Current status and next steps:
   by default, and `--force` allows only older-dump-to-newer-model imports.
 - Browser UX virtual CLI remains explicitly out of scope.
 - No production code was changed in this session.
+
+## 2026-09-01 22:28 EEST
+
+Session goal:
+
+- Execute the current task for normal terminal `VedenemoCli` non-interactive
+  `--mload` and `--dload` support, run tests and verification, and mark the
+  backlog history item executed.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/cli-reference.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCli.java`
+- `vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,180p' docs/roadmap/current-milestone.md`
+- `sed -n '1,130p' tasks/backlog.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '1,260p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCli.java`
+- `sed -n '1,260p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '760,980p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '1,140p' vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `sed -n '980,1220p' vedenemo-cli/src/main/java/org/vedenemo/cli/VedenemoCliApp.java`
+- `sed -n '780,1040p' vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `sed -n '1040,1320p' vedenemo-cli/src/test/java/org/vedenemo/cli/VedenemoCliAppTest.java`
+- `sed -n '1,220p' vedenemo-command-console/src/main/java/org/vedenemo/console/ModelClient.java`
+- `rg -n "record DumpPrecheckResult|record DumpImportResult|record ModelImportResult|class HttpModelClient|precheckDump|importDump" vedenemo-cli/src/main/java vedenemo-command-console/src/main/java vedenemo-web-api/src/main/java vedenemo-cli/src/test/java`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `mvn -q -pl vedenemo-cli -am test`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `git diff --check`
+- `mvn -q clean verify`
+- `bash -lc 'VEDENEMO_WEB_HOST=127.0.0.1 VEDENEMO_WEB_PORT=18125 java -jar vedenemo-web-api/target/vedenemo-web-api-0.1.0-SNAPSHOT.jar ...'`
+- `bash -lc 'VEDENEMO_WEB_HOST=127.0.0.1 VEDENEMO_WEB_PORT=18127 java -jar vedenemo-web-api/target/vedenemo-web-api-0.1.0-SNAPSHOT.jar ...'`
+- `git status --short`
+- `git diff --stat`
+- `git ls-files -- .vedenemo/Metsapalsta2.vdmp`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented `VedenemoCli --mload <path>`, `--dload <path>`, combined
+  `--mload <path> --dload <path>`, and `--force` for non-interactive terminal
+  CLI use.
+- Kept existing interactive `mload` and `dload` behavior intact.
+- Standalone `--dload` reads the target model `azName` from `.vdmp` metadata
+  and requires that model to already be loaded in the backend.
+- Non-interactive `--mload` fails on duplicate model `azName` conflicts without
+  prompting for a rename.
+- `--force` only confirms the existing older-dump-to-newer-model path; failed
+  backend prechecks remain failures.
+- Marked the backlog item executed while keeping it in `tasks/backlog.md` as
+  history, and set `tasks/current-task.md` to the executed CLI task.
+- Verification passed: CLI module tests, full `mvn -q clean verify`, whitespace
+  check, README disclaimer check, combined CLI smoke, and standalone `--mload`
+  then `--dload` smoke against a local backend.
+
+## 2026-09-01 22:34 EEST
+
+Session goal:
+
+- Add a bash script under `scripts` that loads `.vedenemo/Metsapalsta.vdos` and
+  `.vedenemo/Metsapalsta2.vdmp` with one non-interactive terminal CLI command.
+
+Files changed:
+
+- `scripts/LoadMetsapalsta2ModelData.bash`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,180p' docs/roadmap/current-milestone.md`
+- `sed -n '1,140p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `find scripts -maxdepth 1 -type f -print | sort`
+- `sed -n '1,180p' scripts/LoadFamilyTreeModelData.bash`
+- `sed -n '1,180p' scripts/LoadLevykokoelmaSimpleModelData.bash`
+- `git status --short`
+- `ls -l scripts/*.bash`
+- `sed -n '1,80p' scripts/LoadMetsapalsta2ModelData.bash`
+- `chmod +x scripts/LoadMetsapalsta2ModelData.bash`
+- `bash -n scripts/LoadMetsapalsta2ModelData.bash`
+- `git diff --check -- scripts/LoadMetsapalsta2ModelData.bash`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `scripts/LoadMetsapalsta2ModelData.bash`.
+- The script invokes `org.vedenemo.cli.VedenemoCli --mload
+  .vedenemo/Metsapalsta.vdos --dload .vedenemo/Metsapalsta2.vdmp` using
+  absolute repository-local paths.
+- Set the script executable bit to match existing `.bash` helper scripts.
+- Per request, did not run the script. Static verification only:
+  `bash -n scripts/LoadMetsapalsta2ModelData.bash` and `git diff --check --
+  scripts/LoadMetsapalsta2ModelData.bash`.
+- No backlog change was made for this script-only request.

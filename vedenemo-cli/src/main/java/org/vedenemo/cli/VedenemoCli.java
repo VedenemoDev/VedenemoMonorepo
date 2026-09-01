@@ -17,7 +17,7 @@ public final class VedenemoCli {
                 System.in,
                 System.out,
                 true
-        ).run();
+        ).run(args);
         if (exitCode != 0) {
             System.exit(exitCode);
         }

@@ -3,6 +3,8 @@ package org.vedenemo.cli;
 import org.vedenemo.console.AssociationSummary;
 import org.vedenemo.console.AttributeSummary;
 import org.vedenemo.console.CommandClient;
+import org.vedenemo.console.DumpImportResult;
+import org.vedenemo.console.DumpPrecheckResult;
 import org.vedenemo.console.EntitySummary;
 import org.vedenemo.console.ModelClient;
 import org.vedenemo.console.ModelImportResult;
@@ -24,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -967,6 +970,187 @@ final class VedenemoCliAppTest {
         assertTrue(result.output.contains("New model azName for import, or blank to cancel: "));
     }
 
+    @Test
+    void nonInteractiveModelLoadImportsAttachesAndExitsWithoutPrompt() throws Exception {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        Files.writeString(tempDirectory.resolve("example.vdos"), "vedenemo-script 1\n", StandardCharsets.UTF_8);
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                new TestCommandClient(),
+                new String[]{"--mload", "example.vdos"},
+                tempDirectory
+        );
+
+        assertEquals(0, result.exitCode);
+        assertEquals("vedenemo-script 1\n", modelClient.importedScript);
+        assertEquals("Imported_Model", sessionClient.selectedModelAzName);
+        assertEquals(sessionClient.sessionId, sessionClient.endedSessionId);
+        assertTrue(result.output.contains("Loaded model Imported_Model from " + tempDirectory.resolve("example.vdos")));
+        assertTrue(!result.output.contains("VedenemoCli>"));
+    }
+
+    @Test
+    void nonInteractiveModelLoadDuplicateFailsWithoutRenamePrompt() throws Exception {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.importFailuresBeforeSuccess = 1;
+        Files.writeString(tempDirectory.resolve("example.vdos"), "script", StandardCharsets.UTF_8);
+
+        Result result = run(
+                new TestSessionClient(UUID.randomUUID()),
+                modelClient,
+                new TestCommandClient(),
+                new String[]{"--mload", "example.vdos"},
+                tempDirectory
+        );
+
+        assertEquals(1, result.exitCode);
+        assertEquals(null, modelClient.importedOverride);
+        assertTrue(result.output.contains("Model load failed: duplicate model azName."));
+        assertTrue(!result.output.contains("New model azName"));
+    }
+
+    @Test
+    void nonInteractiveDumpLoadUsesDumpModelAzNameWhenModelIsAlreadyLoaded() throws Exception {
+        TestSessionClient sessionClient = new TestSessionClient(UUID.randomUUID());
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Imported_Model", "Imported Model", "1.0.0"));
+        Path dump = tempDirectory.resolve("data.vdmp");
+        Files.writeString(dump, dumpContent("Imported_Model"), StandardCharsets.UTF_8);
+
+        Result result = run(
+                sessionClient,
+                modelClient,
+                new TestCommandClient(),
+                new String[]{"--dload", "data.vdmp"},
+                tempDirectory
+        );
+
+        assertEquals(0, result.exitCode);
+        assertEquals("Imported_Model", modelClient.precheckedDumpModelAzName);
+        assertEquals("Imported_Model", modelClient.importedDumpModelAzName);
+        assertEquals("Imported_Model", sessionClient.selectedModelAzName);
+        assertTrue(result.output.contains("Loaded data dump from " + dump));
+        assertTrue(result.output.contains("Created 2 Sample records."));
+        assertTrue(!result.output.contains("VedenemoCli>"));
+    }
+
+    @Test
+    void nonInteractiveDumpLoadFailsWhenModelIsNotLoaded() throws Exception {
+        Path dump = tempDirectory.resolve("data.vdmp");
+        Files.writeString(dump, dumpContent("Missing_Model"), StandardCharsets.UTF_8);
+
+        Result result = run(
+                new TestSessionClient(UUID.randomUUID()),
+                new TestModelClient(),
+                new TestCommandClient(),
+                new String[]{"--dload", "data.vdmp"},
+                tempDirectory
+        );
+
+        assertEquals(1, result.exitCode);
+        assertTrue(result.output.contains("Dump load failed: model Missing_Model is not loaded."));
+    }
+
+    @Test
+    void nonInteractiveCombinedModelAndDumpLoadRunsModelFirst() throws Exception {
+        TestModelClient modelClient = new TestModelClient();
+        Files.writeString(tempDirectory.resolve("example.vdos"), "script", StandardCharsets.UTF_8);
+        Files.writeString(tempDirectory.resolve("data.vdmp"), dumpContent("Imported_Model"), StandardCharsets.UTF_8);
+
+        Result result = run(
+                new TestSessionClient(UUID.randomUUID()),
+                modelClient,
+                new TestCommandClient(),
+                new String[]{"--mload", "example.vdos", "--dload", "data.vdmp"},
+                tempDirectory
+        );
+
+        assertEquals(0, result.exitCode);
+        assertEquals("script", modelClient.importedScript);
+        assertEquals("Imported_Model", modelClient.precheckedDumpModelAzName);
+        assertEquals("Imported_Model", modelClient.importedDumpModelAzName);
+    }
+
+    @Test
+    void nonInteractiveDumpLoadOlderVersionRequiresForce() throws Exception {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Imported_Model", "Imported Model", "1.1.0"));
+        modelClient.precheckResult = new DumpPrecheckResult(true, true, List.of(), List.of("dump version 1.0.0 is older"));
+        Files.writeString(tempDirectory.resolve("data.vdmp"), dumpContent("Imported_Model"), StandardCharsets.UTF_8);
+
+        Result result = run(
+                new TestSessionClient(UUID.randomUUID()),
+                modelClient,
+                new TestCommandClient(),
+                new String[]{"--dload", "data.vdmp"},
+                tempDirectory
+        );
+
+        assertEquals(1, result.exitCode);
+        assertEquals(null, modelClient.importedDumpContent);
+        assertTrue(result.output.contains("Diagnostic: dump version 1.0.0 is older"));
+        assertTrue(result.output.contains("Re-run with --force"));
+    }
+
+    @Test
+    void nonInteractiveDumpLoadOlderVersionSucceedsWithForce() throws Exception {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Imported_Model", "Imported Model", "1.1.0"));
+        modelClient.precheckResult = new DumpPrecheckResult(true, true, List.of(), List.of("dump version 1.0.0 is older"));
+        Files.writeString(tempDirectory.resolve("data.vdmp"), dumpContent("Imported_Model"), StandardCharsets.UTF_8);
+
+        Result result = run(
+                new TestSessionClient(UUID.randomUUID()),
+                modelClient,
+                new TestCommandClient(),
+                new String[]{"--dload", "data.vdmp", "--force"},
+                tempDirectory
+        );
+
+        assertEquals(0, result.exitCode);
+        assertTrue(modelClient.importedDumpConfirmVersionMismatch);
+        assertTrue(result.output.contains("Loaded data dump from "));
+    }
+
+    @Test
+    void nonInteractiveDumpLoadRejectedByPrecheckFailsEvenWithForce() throws Exception {
+        TestModelClient modelClient = new TestModelClient();
+        modelClient.models.add(new ModelSummary("Imported_Model", "Imported Model", "1.0.0"));
+        modelClient.precheckResult = new DumpPrecheckResult(false, false, List.of(), List.of("dump version is newer"));
+        Files.writeString(tempDirectory.resolve("data.vdmp"), dumpContent("Imported_Model"), StandardCharsets.UTF_8);
+
+        Result result = run(
+                new TestSessionClient(UUID.randomUUID()),
+                modelClient,
+                new TestCommandClient(),
+                new String[]{"--dload", "data.vdmp", "--force"},
+                tempDirectory
+        );
+
+        assertEquals(1, result.exitCode);
+        assertEquals(null, modelClient.importedDumpContent);
+        assertTrue(result.output.contains("Diagnostic: dump version is newer"));
+        assertTrue(result.output.contains("Dump load failed: precheck rejected"));
+    }
+
+    @Test
+    void nonInteractiveUnknownArgumentReturnsUsageExitCode() {
+        Result result = run(
+                new TestSessionClient(UUID.randomUUID()),
+                new TestModelClient(),
+                new TestCommandClient(),
+                new String[]{"--unknown"},
+                tempDirectory
+        );
+
+        assertEquals(2, result.exitCode);
+        assertTrue(result.output.contains("Usage error: unknown argument --unknown."));
+        assertTrue(result.output.contains("VedenemoCli --mload <path_name_to_file.vdos>"));
+    }
+
     private static Result run(TestSessionClient sessionClient, TestModelClient modelClient, CommandClient commandClient, String input) {
         return run(sessionClient, modelClient, commandClient, input, Path.of("").toAbsolutePath());
     }
@@ -989,6 +1173,46 @@ final class VedenemoCliAppTest {
                 workingDirectory
         );
         return new Result(app.run(), output.toString(StandardCharsets.UTF_8));
+    }
+
+    private static Result run(
+            TestSessionClient sessionClient,
+            TestModelClient modelClient,
+            CommandClient commandClient,
+            String[] args,
+            Path workingDirectory
+    ) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        VedenemoCliApp app = new VedenemoCliApp(
+                sessionClient,
+                modelClient,
+                commandClient,
+                new ByteArrayInputStream(new byte[0]),
+                new PrintStream(output, true, StandardCharsets.UTF_8),
+                false,
+                workingDirectory
+        );
+        return new Result(app.run(args), output.toString(StandardCharsets.UTF_8));
+    }
+
+    private static String dumpContent(String modelAzName) {
+        return """
+                {
+                  "format": "vedenemo-instance-dump",
+                  "formatVersion": 1,
+                  "model": {
+                    "azName": "%s",
+                    "visName": "%s",
+                    "version": "1.0.0"
+                  },
+                  "root": {
+                    "sourceInstanceRootId": "00000000-0000-0000-0000-000000000001",
+                    "visName": "Root"
+                  },
+                  "entities": [],
+                  "links": []
+                }
+                """.formatted(modelAzName, modelAzName);
     }
 
     private record Result(int exitCode, String output) {
@@ -1041,6 +1265,12 @@ final class VedenemoCliAppTest {
         private String importedScript;
         private String importedOverride;
         private int importFailuresBeforeSuccess;
+        private DumpPrecheckResult precheckResult = new DumpPrecheckResult(true, false, List.of(), List.of());
+        private String precheckedDumpModelAzName;
+        private String precheckedDumpContent;
+        private String importedDumpModelAzName;
+        private String importedDumpContent;
+        private boolean importedDumpConfirmVersionMismatch;
 
         @Override
         public void ping() {
@@ -1130,6 +1360,28 @@ final class VedenemoCliAppTest {
         public String exportDump(String modelAzName, String instanceRootId) {
             exportedDumpRootId = instanceRootId;
             return "{\"format\":\"vedenemo-instance-dump\"}";
+        }
+
+        @Override
+        public DumpPrecheckResult precheckDump(String modelAzName, String dumpContent) {
+            precheckedDumpModelAzName = modelAzName;
+            precheckedDumpContent = dumpContent;
+            return precheckResult;
+        }
+
+        @Override
+        public DumpImportResult importDump(String modelAzName, String dumpContent, boolean confirmVersionMismatch) {
+            importedDumpModelAzName = modelAzName;
+            importedDumpContent = dumpContent;
+            importedDumpConfirmVersionMismatch = confirmVersionMismatch;
+            return new DumpImportResult(
+                    new ModelInstanceRootSummary(UUID.randomUUID().toString(), modelAzName, "1.0.0", "Imported root"),
+                    Map.of("Sample", 2),
+                    3,
+                    0,
+                    List.of(),
+                    List.of()
+            );
         }
     }
 

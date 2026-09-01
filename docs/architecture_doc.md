@@ -391,10 +391,11 @@ Dependencies:
 
 Minimal command-line entry point. It reads the backend base URL from
 `VEDENEMO_API_BASE_URL`, defaulting to `http://127.0.0.1:8080`, creates a
-backend session through `POST /sessions/start`, and enters an interactive prompt
-loop. Common CLI-like command DTOs and command-session behavior are supplied by
-`vedenemo-command-console`; terminal input/output and local `.vdos` file access
-remain in `vedenemo-cli`.
+backend session through `POST /sessions/start`, and either enters an interactive
+prompt loop or performs a non-interactive one-shot load operation from startup
+flags. Common CLI-like command DTOs and command-session behavior are supplied by
+`vedenemo-command-console`; terminal input/output and local `.vdos`/`.vdmp` file
+access remain in `vedenemo-cli`.
 
 Current CLI behavior:
 
@@ -453,6 +454,10 @@ Current CLI behavior:
 - supports `dload <path | dump-number>`, which reads a UTF-8 JSON `.vdmp` file,
   prechecks it through the backend, optionally confirms older-dump-to-newer-model
   loading, and imports it into a new model-instance root
+- supports non-interactive startup flags `--mload <path>`, `--dload <path>`,
+  combined `--mload <path> --dload <path>`, and `--force` for confirmed
+  older-dump-to-newer-model `.vdmp` imports; duplicate model names and failed
+  dump prechecks exit non-zero without interactive prompts
 - supports `exit`
 - calls `DELETE /sessions/{uuid}` during normal exit and through a best-effort
   shutdown hook

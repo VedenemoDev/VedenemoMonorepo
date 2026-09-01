@@ -276,6 +276,26 @@ VEDENEMO_API_BASE_URL=http://127.0.0.1:18080 \
   java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli
 ```
 
+The normal terminal CLI also supports non-interactive one-shot load operations:
+
+```bash
+java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli \
+  --mload .vedenemo/Metsapalsta.vdos
+
+java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli \
+  --dload .vedenemo/Metsapalsta2.vdmp
+
+java -cp vedenemo-cli/target/classes org.vedenemo.cli.VedenemoCli \
+  --mload .vedenemo/Metsapalsta.vdos --dload .vedenemo/Metsapalsta2.vdmp
+```
+
+Standalone `--dload` reads the target model `azName` from the `.vdmp` file and
+requires that model to already be loaded in the backend. If the dump model
+version is older than the loaded model version, `--dload` fails by default; add
+`--force` to allow that older-dump-to-newer-model import. Newer dumps are still
+rejected by the backend precheck even with `--force`. Non-interactive `--mload`
+fails on duplicate model `azName` conflicts instead of prompting for a rename.
+
 Inside the CLI, `ping` checks backend connectivity through `GET /models/ping`:
 
 ```text
