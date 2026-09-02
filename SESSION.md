@@ -10446,3 +10446,32 @@ Current status and next steps:
 - `Metsapalsta2.vdmp` links `Metsapalsta -> Metsakuvio -> Puulaji -> Mittaus`,
   making both area-based classification and point-density alternatives
   plausible.
+
+## 2026-09-02 23:11 EEST
+
+Session goal:
+
+- Add the Metsapalsta hexbin map visualization planning item to the backlog.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,140p' tasks/backlog.md`
+- `tail -n 120 SESSION.md`
+- `git diff --check -- tasks/backlog.md SESSION.md`
+- `sed -n '1,150p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `Brainstorm Metsapalsta hexbin map visualization alternatives` as the
+  newest backlog item.
+- The item covers area polygon, area hex tiling, point-density hexbin, and
+  hybrid alternatives.
+- The item explicitly includes `LOCATION_AREA`, ValueSet-backed classification
+  through `PuulajiNimi`, and Binding wizard ideas.
+- Static whitespace verification passed with `git diff --check -- tasks/backlog.md SESSION.md`.

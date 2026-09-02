@@ -1,5 +1,136 @@
 # Backlog
 
+## Brainstorm Metsapalsta hexbin map visualization alternatives
+
+Status: planned
+
+### Goal
+
+Brainstorm and plan visualization alternatives for rendering
+`.vedenemo/Metsapalsta.vdos` model data and `.vedenemo/Metsapalsta2.vdmp`
+model-instance data with a D3-backed hexbin map style visualization inspired by
+<https://d3-graph-gallery.com/hexbinmap.html>.
+
+The planning target is a browser UX visualization wizard path similar to the
+existing runtime-only Binding wizard used by other visualizations. The
+visualization should use `LOCATION_AREA` spatial data and support
+classification through `ValueSet` metadata, especially the `PuulajiNimi`
+ValueSet used by `Puulaji.nimi`.
+
+### Context
+
+The `Metsapalsta` model already includes:
+
+- `Metsapalsta.alue`: `LOCATION_AREA`.
+- `Metsakuvio.alue`: `LOCATION_AREA`.
+- `Metsakuvio.hehtaarit`: `NUMERIC`.
+- `Puulaji.nimi`: `TEXT` constrained by the `PuulajiNimi` ValueSet.
+- `Mittaus.lokaatio`: `LOCATION`.
+- `Mittaus.halkaisija_cm`: `NUMERIC`.
+- Associations from `Metsapalsta` to `Metsakuvio`, from `Metsakuvio` to
+  `Puulaji`, and from `Puulaji` to `Mittaus`.
+
+This makes multiple spatial visualization strategies possible:
+
+- area-based rendering from `LOCATION_AREA` boundaries;
+- classification coloring through a selected ValueSet-backed attribute;
+- metric aggregation from direct numeric attributes or linked measurement
+  records;
+- point-density hexbin rendering from linked `LOCATION` measurement records.
+
+### Visualization Alternatives To Consider
+
+1. Polygon-first area map.
+
+   Render selected `LOCATION_AREA` values as projected polygons. Color each
+   area by a selected classification value, such as `Puulaji.nimi`, or by a
+   numeric metric, such as `Metsakuvio.hehtaarit`.
+
+2. Hex-tiled area map.
+
+   Generate a local hex grid over the selected parent extent, such as
+   `Metsapalsta.alue`, and assign hex cells to child areas, such as
+   `Metsakuvio.alue`. Color cells by the selected ValueSet classification or
+   metric aggregation.
+
+3. Point-density hexbin map.
+
+   Use linked point records, such as `Mittaus.lokaatio`, as D3 hexbin input.
+   Aggregate count, average `halkaisija_cm`, or classification by the linked
+   `Puulaji.nimi` ValueSet value.
+
+4. Hybrid area-and-measurement map.
+
+   Render `LOCATION_AREA` boundaries as context and overlay a hexbin layer from
+   linked `LOCATION` measurement records. This should probably follow after one
+   simpler area-first implementation exists.
+
+### Binding Wizard Ideas
+
+The Binding wizard should stay runtime-only and frontend-only. A possible
+binding shape:
+
+- map extent entity and `LOCATION_AREA` attribute, for example
+  `Metsapalsta.alue`;
+- area entity and `LOCATION_AREA` attribute, for example `Metsakuvio.alue`;
+- optional area label template, for example `{tunnus}`;
+- classification traversal from area entity to classification entity, for
+  example `Metsakuvio_sisaltaa_Puulaji`;
+- classification attribute constrained by a `ValueSet`, for example
+  `Puulaji.nimi` using `PuulajiNimi`;
+- classification selection mode, such as all classes, one class, dominant
+  class, or multi-class legend;
+- optional metric attribute, for example `Metsakuvio.hehtaarit`;
+- optional point traversal and point `LOCATION` attribute for later density
+  mode, for example `Puulaji_on_otoksia_Mittaus` and `Mittaus.lokaatio`;
+- optional point metric, for example `Mittaus.halkaisija_cm`.
+
+The wizard should offer only eligible model elements:
+
+- area selectors list attributes whose data type is `LOCATION_AREA`;
+- point selectors list attributes whose data type is `LOCATION`;
+- classification selectors prefer attributes that reference a `ValueSet`;
+- numeric metric selectors list attributes whose data type is `NUMERIC`;
+- association selectors follow the same root-scoped link-fetching model used by
+  existing tree visualizations.
+
+### Architectural Constraints
+
+- Keep D3, projection, hex generation, color scales, legends, and wizard state
+  in `vedenemo-ux`.
+- Keep visualization bindings runtime-only unless a separate task explicitly
+  introduces persistent visualization configuration.
+- Do not add visualization behavior to `vedenemo-core`.
+- Do not introduce map-projection or D3 dependencies into pure backend modules.
+- Reuse existing root-scoped data and association-link API flows where
+  practical.
+- Add backend endpoints only if the existing root-scoped instance and link
+  endpoints are insufficient.
+
+### Open Questions
+
+- Should the first implementation render actual polygons, hex-tiled areas, or
+  point-density hexbins?
+- Should a `Metsakuvio` with multiple linked `Puulaji` values display multiple
+  classes, a selected class, or a dominant class?
+- If a hex cell intersects multiple `LOCATION_AREA` boundaries, should the UX
+  use centroid containment, largest overlap, or first matching area?
+- Should the first version require `Metsapalsta.alue` as an explicit extent, or
+  derive extent from all selected child areas?
+- Should metric aggregation be limited to direct area attributes first, with
+  linked `Mittaus` aggregation deferred?
+- Which D3 helper should be used for the first version: `d3-hexbin` for point
+  density, or custom/local hex grid generation for area tiling?
+
+### Acceptance Criteria
+
+- The planned visualization path is documented as a concrete backlog item.
+- The plan distinguishes area polygon, area hex tiling, point-density hexbin,
+  and hybrid alternatives.
+- The plan explicitly uses `LOCATION_AREA` and ValueSet-backed classification.
+- The plan preserves the existing visualization architecture boundaries.
+- No production implementation is required by this planning item.
+
 ## Add non-interactive terminal CLI load commands
 
 Status: executed
