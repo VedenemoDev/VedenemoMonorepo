@@ -10401,3 +10401,48 @@ Current status and next steps:
   `bash -n scripts/LoadMetsapalsta2ModelData.bash` and `git diff --check --
   scripts/LoadMetsapalsta2ModelData.bash`.
 - No backlog change was made for this script-only request.
+
+## 2026-09-02 22:56 EEST
+
+Session goal:
+
+- Brainstorm the next planning backlog item for a Metsapalsta hexbin map
+  visualization using `.vedenemo/Metsapalsta.vdos` and
+  `.vedenemo/Metsapalsta2.vdmp`.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 160 SESSION.md`
+- `rg --files -g '*Metsapalsta*' -g '*.vdos' -g '*.vdmp' -g '*.vmp'`
+- `find .vedenemo -maxdepth 1 -type f -print`
+- `sed -n '1,220p' .vedenemo/Metsapalsta.vdos`
+- `sed -n '1,220p' .vedenemo/Metsapalsta2.vdmp`
+- `rg -n "ValueSet|LOCATION_AREA|Location|visual|binding|PlantUML|d3|classification" vedenemo-ux vedenemo-web-api vedenemo-core vedenemo-model-api docs tasks .vedenemo`
+- `sed -n '220,520p' .vedenemo/Metsapalsta2.vdmp`
+- `sed -n '1,220p' docs/visualizations.md`
+- `find vedenemo-ux/src -maxdepth 3 -type f -print | sort`
+- `rg -n '"associations"|associationAzName|sourceDumpId|targetDumpId' .vedenemo/Metsapalsta2.vdmp`
+- `rg -n "visualizeWizard|Tidy tree|Radial tree|Tree of life|binding|Visualization" vedenemo-ux/src/App.tsx`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short`
+
+Current status and next steps:
+
+- No backlog item was written yet; this was an opinion/planning discussion.
+- The D3 hexbin map reference separates geospatial-object hex maps from
+  coordinate-density hexbins.
+- `Metsapalsta.vdos` already provides `LOCATION_AREA` attributes for
+  `Metsapalsta` and `Metsakuvio`, plus `PuulajiNimi` ValueSet classification.
+- `Metsapalsta2.vdmp` links `Metsapalsta -> Metsakuvio -> Puulaji -> Mittaus`,
+  making both area-based classification and point-density alternatives
+  plausible.
