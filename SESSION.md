@@ -10792,3 +10792,89 @@ Current status and next steps:
 - Static verification passed with `bash -n
   scripts/LoadMetsapalsta3ModelData.bash` and `git diff --check --
   scripts/LoadMetsapalsta3ModelData.bash`.
+
+## 2026-09-06 19:40 EEST
+
+Session goal:
+
+- Check whether `.vedenemo/Metsapalsta3.vdmp` `Metsakuvio` polygons are fully
+  contained in the `Metsapalsta` polygon and cover it without overlaps or gaps.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '1,280p' .vedenemo/Metsapalsta3.vdmp`
+- `python3 -c 'import shapely; print(shapely.__version__)'`
+- pure-Python geometry diagnostic for polygon areas, containment, sampled
+  overlaps, and sampled uncovered area
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- The current `Metsapalsta3.vdmp` area polygons are not topologically clean.
+- Three sampled/vertex containment issues were found where subregion vertices
+  fall outside the parent polygon.
+- A fine-grid diagnostic estimated about 76.96% of the parent polygon covered
+  by at least one `Metsakuvio`, about 23.04% uncovered, and about 1.63%
+  covered by more than one `Metsakuvio`.
+- The sampled overlap was between `kuvio-01` and `kuvio-02`.
+
+## 2026-09-06 19:46 EEST
+
+Session goal:
+
+- Fix `.vedenemo/Metsapalsta3.vdmp` so the four lively `Metsakuvio` polygons
+  are contained in and exactly partition the `Metsapalsta` polygon without
+  overlaps or missing areas.
+
+Files changed:
+
+- `.vedenemo/Metsapalsta3.vdmp`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,280p' .vedenemo/Metsapalsta3.vdmp`
+- `jq empty .vedenemo/Metsapalsta3.vdmp`
+- `git diff -- .vedenemo/Metsapalsta3.vdmp`
+- `rg -n "LOCATION_AREA|attribute type mismatch|LinkedHashMap|boundary" vedenemo-*`
+- pure-Python topology diagnostic for polygon areas, containment, sampled
+  overlaps, and sampled uncovered area
+- local backend/CLI smoke test through
+  `scripts/LoadMetsapalsta3ModelData.bash`
+- `git diff --check -- .vedenemo/Metsapalsta3.vdmp`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Replaced the four `Metsakuvio.alue` polygons with irregular compartments
+  whose internal borders are reused exactly by adjacent compartments.
+- Kept the existing irregular `Metsapalsta.alue` parent outline.
+- Removed explicit repeated closing points from the `Metsakuvio` boundaries
+  because `LOCATION_AREA` closes polygons implicitly and rejects repeated final
+  points.
+- JSON validation passed.
+- Topology diagnostic passed: subregion area sum equals parent area exactly in
+  the coordinate-plane calculation, no subregion vertices are outside the
+  parent, and fine-grid sampling found 0 uncovered cells and 0 overlap cells.
+- Loader smoke test passed through `scripts/LoadMetsapalsta3ModelData.bash`:
+  loaded 1 `Metsapalsta`, 4 `Metsakuvio`, 11 `Puulaji`, 110 `Mittaus`, and 125
+  association links.

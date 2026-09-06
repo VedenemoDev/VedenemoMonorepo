@@ -99,40 +99,36 @@
             "alue": {
               "boundary": [
                 {
-                  "latitude": 61.84494,
-                  "longitude": 24.2882
+                  "latitude": 61.84492,
+                  "longitude": 24.28818
                 },
                 {
-                  "latitude": 61.84518,
-                  "longitude": 24.28802
+                  "latitude": 61.84521,
+                  "longitude": 24.28792
                 },
                 {
-                  "latitude": 61.84574,
-                  "longitude": 24.28808
+                  "latitude": 61.84628,
+                  "longitude": 24.28778
                 },
                 {
-                  "latitude": 61.84602,
-                  "longitude": 24.28842
+                  "latitude": 61.84612,
+                  "longitude": 24.28855
                 },
                 {
-                  "latitude": 61.84606,
-                  "longitude": 24.28934
+                  "latitude": 61.84642,
+                  "longitude": 24.28928
                 },
                 {
-                  "latitude": 61.84584,
-                  "longitude": 24.29036
+                  "latitude": 61.84672,
+                  "longitude": 24.29068
                 },
                 {
-                  "latitude": 61.84545,
-                  "longitude": 24.29076
+                  "latitude": 61.84546,
+                  "longitude": 24.29094
                 },
                 {
-                  "latitude": 61.84502,
-                  "longitude": 24.29054
-                },
-                {
-                  "latitude": 61.84488,
-                  "longitude": 24.28944
+                  "latitude": 61.84486,
+                  "longitude": 24.29032
                 }
               ]
             },
@@ -146,36 +142,36 @@
             "alue": {
               "boundary": [
                 {
-                  "latitude": 61.84588,
-                  "longitude": 24.28828
+                  "latitude": 61.84628,
+                  "longitude": 24.28778
                 },
                 {
-                  "latitude": 61.84634,
-                  "longitude": 24.28796
+                  "latitude": 61.84744,
+                  "longitude": 24.28784
                 },
                 {
-                  "latitude": 61.84708,
-                  "longitude": 24.28808
+                  "latitude": 61.84734,
+                  "longitude": 24.28862
                 },
                 {
-                  "latitude": 61.84728,
-                  "longitude": 24.28878
+                  "latitude": 61.84768,
+                  "longitude": 24.28935
                 },
                 {
-                  "latitude": 61.84718,
-                  "longitude": 24.28962
+                  "latitude": 61.84794,
+                  "longitude": 24.29098
                 },
                 {
-                  "latitude": 61.84686,
-                  "longitude": 24.29058
+                  "latitude": 61.84672,
+                  "longitude": 24.29068
                 },
                 {
-                  "latitude": 61.84618,
-                  "longitude": 24.29074
+                  "latitude": 61.84642,
+                  "longitude": 24.28928
                 },
                 {
-                  "latitude": 61.84582,
-                  "longitude": 24.29004
+                  "latitude": 61.84612,
+                  "longitude": 24.28855
                 }
               ]
             },
@@ -189,36 +185,36 @@
             "alue": {
               "boundary": [
                 {
-                  "latitude": 61.84724,
-                  "longitude": 24.28818
+                  "latitude": 61.84744,
+                  "longitude": 24.28784
                 },
                 {
-                  "latitude": 61.84772,
-                  "longitude": 24.28792
+                  "latitude": 61.84872,
+                  "longitude": 24.28772
                 },
                 {
-                  "latitude": 61.84846,
-                  "longitude": 24.28804
+                  "latitude": 61.84864,
+                  "longitude": 24.28846
                 },
                 {
-                  "latitude": 61.84888,
-                  "longitude": 24.28856
+                  "latitude": 61.84905,
+                  "longitude": 24.28922
                 },
                 {
-                  "latitude": 61.84882,
-                  "longitude": 24.28938
+                  "latitude": 61.84918,
+                  "longitude": 24.29075
                 },
                 {
-                  "latitude": 61.84856,
-                  "longitude": 24.29046
+                  "latitude": 61.84794,
+                  "longitude": 24.29098
                 },
                 {
-                  "latitude": 61.84772,
-                  "longitude": 24.29064
+                  "latitude": 61.84768,
+                  "longitude": 24.28935
                 },
                 {
                   "latitude": 61.84734,
-                  "longitude": 24.28988
+                  "longitude": 24.28862
                 }
               ]
             },
@@ -232,40 +228,40 @@
             "alue": {
               "boundary": [
                 {
-                  "latitude": 61.84892,
-                  "longitude": 24.2882
+                  "latitude": 61.84872,
+                  "longitude": 24.28772
                 },
                 {
-                  "latitude": 61.84944,
-                  "longitude": 24.28798
+                  "latitude": 61.84988,
+                  "longitude": 24.28795
                 },
                 {
-                  "latitude": 61.85028,
-                  "longitude": 24.28802
+                  "latitude": 61.85093,
+                  "longitude": 24.28824
                 },
                 {
-                  "latitude": 61.85084,
-                  "longitude": 24.28834
+                  "latitude": 61.85112,
+                  "longitude": 24.28903
                 },
                 {
-                  "latitude": 61.85102,
+                  "latitude": 61.85086,
+                  "longitude": 24.29046
+                },
+                {
+                  "latitude": 61.85034,
+                  "longitude": 24.29093
+                },
+                {
+                  "latitude": 61.84918,
+                  "longitude": 24.29075
+                },
+                {
+                  "latitude": 61.84905,
                   "longitude": 24.28922
                 },
                 {
-                  "latitude": 61.85078,
-                  "longitude": 24.29028
-                },
-                {
-                  "latitude": 61.85028,
-                  "longitude": 24.29066
-                },
-                {
-                  "latitude": 61.8494,
-                  "longitude": 24.29052
-                },
-                {
-                  "latitude": 61.84894,
-                  "longitude": 24.2897
+                  "latitude": 61.84864,
+                  "longitude": 24.28846
                 }
               ]
             },
