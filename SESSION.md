@@ -10926,3 +10926,41 @@ Current status and next steps:
 - The likely next implementation slice should reuse existing root-scoped
   instance and association-link APIs and keep D3, pattern fills, color choices,
   and legend rendering in `vedenemo-ux`.
+
+## 2026-09-06 20:36 EEST
+
+Session goal:
+
+- Refine the Hexbin-map subregion overlay backlog plan so it clearly explains
+  how many associated data regions are styled after selecting one association.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `sed -n '1,160p' tasks/backlog.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '20,120p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `git diff --check -- tasks/backlog.md SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added explicit backlog wording that the selected subregion association is a
+  traversal path resolving to zero, one, or many linked subregion instances.
+- Added a `Subregion Style Assignment` section requiring an initial
+  `Automatic per subregion` mode, deterministic pattern/color assignment,
+  linked subregion count preview, and style reuse notice when combinations are
+  exhausted.
+- Listed later style modes for grouping by subregion attribute, manual
+  runtime-only style overrides, and related classification styling.

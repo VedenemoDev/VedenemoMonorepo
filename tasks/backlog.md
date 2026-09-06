@@ -38,12 +38,49 @@ patterns, legend rendering, and wizard state should remain frontend-only in
    `Metsapalsta.alue`.
 3. Select one outgoing association from the main region entity to a subregion
    entity that has at least one `LOCATION_AREA` attribute, for example
-   `Metsapalsta_sisaltaa_Metsakuvio`.
+   `Metsapalsta_sisaltaa_Metsakuvio`. This association is the traversal path,
+   not a single visual overlay: at render time it resolves from the selected
+   main region instance to zero, one, or many associated subregion instances.
 4. Select the subregion `LOCATION_AREA` attribute, for example
    `Metsakuvio.alue`.
-5. Enter a subregion legend label template using the existing placeholder
+5. Select how the associated subregion instances receive visual styles.
+6. Enter a subregion legend label template using the existing placeholder
    convention, for example `{tunnus}`, `Kuvio {tunnus}`, or
    `{tunnus} ({hehtaarit} ha)`.
+
+### Subregion Style Assignment
+
+The first implementation should make the number of associated subregions an
+explicit part of the visualization binding. After the user selects the
+subregion association and area attribute, the UX should load or preview the
+linked subregion count for the selected root instance and explain how many
+overlay regions will be styled.
+
+Initial style mode:
+
+- `Automatic per subregion`: every associated subregion instance gets its own
+  deterministic pattern/color assignment.
+
+The automatic assignment should be stable for a given root and association:
+
+- sort or otherwise stabilize the linked subregion instances before assigning
+  styles;
+- assign style by rendered subregion index or stable instance id;
+- combine pattern type and stroke/fill color so the available visual
+  combinations are greater than the number of base pattern shapes;
+- when the number of subregions exceeds the distinct pattern/color
+  combinations, cycle styles deterministically and show a concise notice that
+  some styles are reused.
+
+Later style modes can be added without changing the overlay concept:
+
+- `By subregion attribute`: group or color regions by a selected attribute on
+  the subregion entity.
+- `Manual style table`: allow the user to override each rendered subregion's
+  pattern and color in a runtime-only table.
+- `By related classification`: style subregions through a second association,
+  such as `Metsakuvio` to `Puulaji`, after the simpler per-subregion overlay
+  path works.
 
 ### Rendering Plan
 
