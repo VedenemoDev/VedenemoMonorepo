@@ -1,5 +1,126 @@
 # Backlog
 
+## Plan skeletal Hexbin-map wizard root selection path
+
+Status: planned
+
+### Goal
+
+Plan the first baby step for a browser UX visualization wizard using
+<https://observablehq.com/@d3/hexbin-map> as the D3 reference point.
+
+The first step should introduce a skeletal `Hexbin-map` wizard path that becomes
+available only for a loaded model that has at least one entity with a
+`LOCATION_AREA` attribute. The wizard should allow the user to select one
+eligible model-instance element as the visualization root, select one eligible
+`LOCATION_AREA` attribute from that element's entity, and press `Visualize` to
+draw the selected area boundaries as the initial map layer.
+
+### Context
+
+The broader `Brainstorm Metsapalsta hexbin map visualization alternatives`
+backlog item remains a future-reference brainstorm. This narrower item should
+not attempt to settle all area tiling, density, classification, metric, or
+association traversal questions.
+
+The Observable `Hexbin map` example uses D3 hexagonal binning over projected
+point coordinates. For this first Vedenemo baby step, the wizard should start
+from existing `LOCATION_AREA` boundary data. Hexbin-specific aggregation or
+tiling can follow after the UX has a reliable eligible-root and boundary-render
+path.
+
+### Proposed Skeletal Flow
+
+1. The visualizations view checks whether the selected model contains at least
+   one entity with a `LOCATION_AREA` attribute.
+2. If none exist, `Hexbin-map` is not offered as an available wizard option.
+3. If at least one exists, `Hexbin-map` appears as a wizard option.
+4. The wizard lists model-instance elements whose entity has at least one
+   `LOCATION_AREA` attribute, but disables elements whose relevant
+   `LOCATION_AREA` attributes have no usable data and shows a concise reason.
+5. After a single root item is selected, the wizard lists only that root item's
+   `LOCATION_AREA` attributes, disabling attributes with no usable boundary
+   data and showing a concise reason.
+6. The `Visualize` button remains disabled until both the root item and
+   attribute are selected.
+7. Pressing `Visualize` draws the selected attribute's `LOCATION_AREA` data as
+   map borders in the existing browser visualization area.
+
+### Scope
+
+- Add UX-only planning for wizard availability, root selection, attribute
+  selection, disabled/enabled button state, and a minimal border render.
+- Keep the first render focused on boundaries from the selected `LOCATION_AREA`
+  value.
+- Use the current Metsapalsta dump shape as the first supported
+  `LOCATION_AREA` input format.
+- Render the first visualization as plain SVG boundaries before introducing
+  actual hexbin cells.
+- Reuse existing loaded-model, root-scoped data, and visualization state flows
+  where practical.
+- Keep wizard selections runtime-only.
+- Keep D3 and any map/hexbin rendering code in `vedenemo-ux`.
+
+### Out Of Scope
+
+- Persistent visualization configuration.
+- Backend model-rule changes.
+- New `.vdos` or `.vdmp` syntax.
+- Classification coloring.
+- Numeric metrics.
+- Association traversal from the selected root to child areas.
+- Point-density hexbins from `LOCATION` attributes.
+- Hex-cell generation, clipping, or intersection logic.
+- Projection support beyond what is required to draw the selected boundary
+  data in the first skeletal UX path.
+- Additional `LOCATION_AREA` input formats; these should be planned with later
+  data-edit UX work.
+
+### Eligibility Rules
+
+- Wizard availability is model-level: available only when any entity in the
+  model has at least one `LOCATION_AREA` attribute.
+- Root item eligibility is data-level: selectable root items must be
+  model-instance elements whose entity has at least one `LOCATION_AREA`
+  attribute. Items with no usable area data remain visible but disabled with a
+  reason such as `No LOCATION_AREA data`.
+- Attribute eligibility is root-scoped: after a root item is selected, offer
+  that item's `LOCATION_AREA` attributes. Empty, missing, or unparsable values
+  remain visible but disabled with a reason such as `No LOCATION_AREA data`.
+- The first supported `LOCATION_AREA` parser should target the current
+  Metsapalsta dump shape.
+
+### Acceptance Criteria
+
+- The planned skeletal `Hexbin-map` wizard path is documented as a backlog
+  item.
+- The plan keeps the older Metsapalsta alternatives item as a brainstorm item
+  for later reference.
+- The wizard is available only for models containing at least one
+  `LOCATION_AREA` attribute.
+- The root selector supports choosing only one valid root item at a time.
+- The root selector shows model-instance elements with `LOCATION_AREA` entity
+  attributes and disables those with no usable data.
+- The attribute selector shows `LOCATION_AREA` attributes for the selected root
+  item and disables those with no usable data.
+- `Visualize` is enabled only after both selections are valid.
+- Pressing `Visualize` is planned to draw the selected `LOCATION_AREA` borders
+  as the initial plain SVG map output.
+- No production implementation is required by this planning item.
+
+### Decisions
+
+- Use the current Metsapalsta dump shape as the first `LOCATION_AREA` input.
+- Defer support for additional `LOCATION_AREA` formats until later data-edit UX
+  planning.
+- Show unusable root items or attributes disabled with a concise no-data reason.
+- Plain SVG boundary rendering is acceptable for the first baby step.
+
+### Open Questions
+
+- Should a root item with multiple valid `LOCATION_AREA` attributes draw exactly
+  one selected attribute, or allow a later multi-select mode?
+
 ## Brainstorm Metsapalsta hexbin map visualization alternatives
 
 Status: planned

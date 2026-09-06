@@ -10358,6 +10358,84 @@ Current status and next steps:
   check, README disclaimer check, combined CLI smoke, and standalone `--mload`
   then `--dload` smoke against a local backend.
 
+## 2026-09-06 15:57 EEST
+
+Session goal:
+
+- Add a planning backlog item for the first skeletal Hexbin-map wizard path and
+  keep the existing Metsapalsta hexbin alternatives item as future-reference
+  brainstorm material.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 160 SESSION.md`
+- `sed -n '1,220p' tasks/backlog.md`
+- Opened <https://observablehq.com/@d3/hexbin-map> and searched for related
+  D3 hexbin-map context.
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check -- tasks/backlog.md SESSION.md`
+- `sed -n '1,130p' tasks/backlog.md`
+- `sed -n '10345,10420p' SESSION.md`
+- `git status --short`
+
+Current status and next steps:
+
+- Added `Plan skeletal Hexbin-map wizard root selection path` as the newest
+  backlog item.
+- Kept `Brainstorm Metsapalsta hexbin map visualization alternatives` as the
+  broader future-reference brainstorm item.
+- Scoped the new plan to UX-only wizard availability, eligible single-root
+  selection, eligible `LOCATION_AREA` attribute selection, disabled/enabled
+  `Visualize` behavior, and initial boundary rendering.
+- Left implementation, classification, metrics, association traversal,
+  point-density hexbins, and hex-cell tiling out of scope for this baby step.
+- Open questions remain around the exact `LOCATION_AREA` serialized shape,
+  selector handling for invalid data, and whether the first render should be
+  plain SVG boundaries before true hexbin rendering.
+
+## 2026-09-06 16:11 EEST
+
+Session goal:
+
+- Record clarified decisions for the skeletal Hexbin-map wizard planning item.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,125p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check -- tasks/backlog.md SESSION.md`
+- `git status --short`
+
+Current status and next steps:
+
+- Updated the backlog plan to use the current Metsapalsta dump shape as the
+  first supported `LOCATION_AREA` input format.
+- Planned unusable root items and attributes to remain visible but disabled
+  with a concise no-data reason.
+- Recorded that the first render can be plain SVG boundary rendering before
+  introducing actual hexbin cells.
+- Deferred support for additional `LOCATION_AREA` formats until later data-edit
+  UX planning.
+- Remaining open question: whether a root item with multiple valid
+  `LOCATION_AREA` attributes should support only one selected attribute or a
+  later multi-select mode.
+
 ## 2026-09-01 22:34 EEST
 
 Session goal:
