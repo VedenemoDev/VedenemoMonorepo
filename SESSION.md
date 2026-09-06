@@ -10463,6 +10463,133 @@ Current status and next steps:
 - Recorded that later Metsapalsta plus linked Metsakuvio visualization should
   be modeled as child or overlay layer selection rather than root multi-select.
 
+## 2026-09-06 16:57 EEST
+
+Session goal:
+
+- Execute the skeletal Hexbin-map wizard plan as the current task, verify it,
+  and keep the executed backlog item as history.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 140 SESSION.md`
+- `sed -n '1,170p' tasks/backlog.md`
+- `find vedenemo-ux/src -maxdepth 3 -type f -print`
+- `sed -n '1,260p' vedenemo-ux/src/App.tsx`
+- `sed -n '260,620p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,220p' vedenemo-ux/package.json`
+- `rg -n "Visualization|visualization|wizard|binding|CHART_TYPES|TIDY_TREE|render|RootMatch|VisualizationData" vedenemo-ux/src/App.tsx`
+- `sed -n '620,1040p' vedenemo-ux/src/App.tsx`
+- `sed -n '1040,1480p' vedenemo-ux/src/App.tsx`
+- `rg -n "LOCATION_AREA|area|Metsapalsta|values" .vedenemo/Metsapalsta2.vdmp .vedenemo/Metsapalsta.vdos vedenemo-web-api/src/main/java vedenemo-model-api/src/main/java`
+- `sed -n '3000,3490p' vedenemo-ux/src/App.tsx`
+- `sed -n '3490,4255p' vedenemo-ux/src/App.tsx`
+- `rg -n "function .*Renderer|TidyTreeRenderer|RadialTreeRenderer|TreeOfLifeRenderer|visualization-canvas|visualize|binding" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `sed -n '760,800p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '4250,4475p' vedenemo-ux/src/App.tsx`
+- `sed -n '580,1045p' vedenemo-ux/src/styles.css`
+- `sed -n '1540,1715p' vedenemo-ux/src/styles.css`
+- `sed -n '1,110p' .vedenemo/Metsapalsta2.vdmp`
+- `sed -n '1,220p' vedenemo-ux/tsconfig.json`
+- `sed -n '1,220p' vedenemo-ux/tsconfig.app.json` (file missing)
+- `sed -n '4475,5085p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,140p' vedenemo-ux/src/styles.css`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `rg -n "visual|wizard|D3|PlantUML|frontend|UX" docs/architecture_doc.md docs/visualizations.md README.md tasks/current-task.md`
+- `sed -n '1,220p' docs/visualizations.md`
+- `sed -n '1,260p' docs/architecture_doc.md`
+- `npm run build` in `vedenemo-ux` (first run failed on one missing
+  `hexbinMap` state field)
+- `rg -n "setVisualizationData\\(\\{" vedenemo-ux/src/App.tsx`
+- `sed -n '3598,3620p' vedenemo-ux/src/App.tsx`
+- `npm run build` in `vedenemo-ux`
+- `sed -n '390,420p' README.md`
+- `sed -n '690,715p' docs/architecture_doc.md`
+- `sed -n '750,765p' docs/architecture_doc.md`
+- `sed -n '988,1015p' docs/architecture_doc.md`
+- `npm run build` in `vedenemo-ux`
+- `mvn -q clean verify`
+- `git diff --check`
+- `git diff --stat`
+- `rg -n "general-purpose software|suitability|solely responsible|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `git status --short`
+- `find vedenemo-ux/public -maxdepth 2 -type f -print`
+- `sed -n '1,80p' vedenemo-ux/public/config.json`
+- `git diff -- vedenemo-ux/src/App.tsx | sed -n '1,240p'`
+- Metsapalsta Hexbin-map API smoke against local backend; first sandboxed run
+  failed with `java.net.SocketException: Operation not permitted`, rerun with
+  escalation succeeded.
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented `Hexbin-map` as a frontend-only visualization wizard chart type.
+- Added eligibility based on at least one model entity with a `LOCATION_AREA`
+  attribute.
+- Added root-scoped candidate loading for entities with `LOCATION_AREA`
+  attributes.
+- Added a dedicated Hexbin-map binding panel with one root item and one
+  selected `LOCATION_AREA` attribute.
+- Candidate root items and attributes with empty, missing, or unparsable area
+  values remain visible but disabled with `No LOCATION_AREA data`.
+- Added parsing for the current Metsapalsta dump shape:
+  `{ boundary: [{ latitude, longitude }] }`.
+- Added plain SVG boundary rendering via D3 in `vedenemo-ux`.
+- Updated `README.md`, `docs/visualizations.md`,
+  `docs/architecture_doc.md`, `tasks/current-task.md`, and marked the backlog
+  item executed while leaving it in `tasks/backlog.md`.
+- Verification passed: `npm run build`, `mvn -q clean verify`,
+  `git diff --check`, README disclaimer check, and Metsapalsta local API smoke
+  for `LOCATION_AREA` metadata plus boundary data.
+- Vite still reports the existing large-chunk warning during build.
+
+## 2026-09-06 17:15 EEST
+
+Session goal:
+
+- Commit the executed skeletal Hexbin-map wizard task and push it to the
+  remote repository.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short`
+- `pgrep -af "vite --host 127.0.0.1 --port 5173|npm run dev"`
+- `git diff --stat`
+- `ps -eo pid,ppid,cmd | rg "node .*vite|vite --host 127.0.0.1 --port 5173"`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git branch --show-current`
+- `git remote -v`
+- `git add README.md SESSION.md docs/architecture_doc.md docs/visualizations.md tasks/backlog.md tasks/current-task.md vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `git commit -m "Add skeletal Hexbin-map visualization wizard" ...`
+- `git push origin main`
+
+Current status and next steps:
+
+- Verified that no Vite dev server process remained active.
+- Prepared to commit the Hexbin-map UX implementation, docs, task files, and
+  session record on `main`, then push to `origin`.
+
 ## 2026-09-01 22:34 EEST
 
 Session goal:

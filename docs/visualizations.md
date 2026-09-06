@@ -5,8 +5,8 @@ model instance data in the browser UX. It lets a user map model elements to a
 chart-specific binding and render the selected model-instance root without
 persisting the chart configuration.
 
-The implemented chart types are D3-backed `Tidy tree`, `Radial tree`, and
-`Tree of life`.
+The implemented chart types are D3-backed `Tidy tree`, `Radial tree`,
+`Tree of life`, and `Hexbin-map`.
 
 ## Scope
 
@@ -70,10 +70,12 @@ The wizard has three steps.
 ### Chart Type
 
 The chart type step lists available chart types. `Tidy tree`, `Radial tree`,
-and `Tree of life` are currently implemented.
+`Tree of life`, and `Hexbin-map` are currently implemented.
 
 The wizard disables invalid chart types and shows the reason. For all tree
 charts, the selected model must have at least one association between entities.
+For `Hexbin-map`, the selected model must have at least one entity with a
+`LOCATION_AREA` attribute.
 
 ### Binding
 
@@ -106,6 +108,31 @@ typed punctuation or other hint values.
 The binding prevents cyclic entity paths. An entity can appear only once in the
 selected tree path.
 
+For `Hexbin-map`, the binding includes:
+
+- one model-instance root item whose entity has at least one `LOCATION_AREA`
+  attribute
+- one `LOCATION_AREA` attribute on that selected root item
+
+The root item selector shows root-scoped entity instances whose entity has a
+`LOCATION_AREA` attribute. Items with no usable area value stay visible but are
+disabled with a `No LOCATION_AREA data` reason. The attribute selector shows
+the selected item entity's `LOCATION_AREA` attributes and disables empty,
+missing, or unparsable values with the same reason.
+
+The first supported `LOCATION_AREA` value shape is the current Metsapalsta dump
+shape:
+
+```json
+{
+  "boundary": [
+    { "latitude": 61.845, "longitude": 24.288 },
+    { "latitude": 61.851, "longitude": 24.288 },
+    { "latitude": 61.851, "longitude": 24.29085 }
+  ]
+}
+```
+
 ### Visualization
 
 The visualization step fetches real root-scoped instance data:
@@ -122,7 +149,9 @@ links and radial node placement. `Tree of life` uses the same hierarchy and
 binding data with a D3 radial cluster layout, visible nodes and labels for
 internal binding levels, angular radial link segments, leaf labels on a common
 outer rim, and faint label-extension links. Branch length is not modeled or
-used.
+used. `Hexbin-map` fetches the selected root item and renders the chosen
+`LOCATION_AREA` boundary as a plain SVG area outline. It does not yet generate
+hexbin cells.
 
 Use `Refresh` to reload backend data without losing the current runtime binding.
 
@@ -171,17 +200,21 @@ intact while still rendering a one-direction family tree projection.
 
 ## Current Limits
 
-- `Tidy tree`, `Radial tree`, and `Tree of life` are the implemented chart
-  types.
+- `Tidy tree`, `Radial tree`, `Tree of life`, and `Hexbin-map` are the
+  implemented chart types.
 - Visualization bindings are runtime-only and are not stored.
 - The flow is intended as a proof of concept, not a general-purpose chart
   designer.
 - The visualization reads process-local backend data. It does not add durable
   persistence.
-- The chart currently uses entity paths and association links; it does not
+- Tree charts currently use entity paths and association links; they do not
   infer hierarchy automatically without a user-selected binding.
 - `Tree of life` currently uses constant-depth cluster layout only; branch
   length is intentionally skipped.
+- `Hexbin-map` currently renders only one selected root item and one selected
+  `LOCATION_AREA` attribute. Metsapalsta plus linked Metsakuvio overlay layers,
+  extra area formats, classification, metrics, point-density hexbins, and real
+  hex-cell tiling are not implemented.
 
 ## Related Docs
 

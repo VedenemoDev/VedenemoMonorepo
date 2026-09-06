@@ -407,9 +407,11 @@ with the full id as a tooltip. Use the root node's menu `Rename...` action to
 update the backend-stored root alias.
 Use the root node's menu `Visualize...` action to open the runtime
 visualization wizard in a new browser tab. The implemented D3-backed
-visualizations are `Tidy tree`, `Radial tree`, and `Tree of life`; all three
-bind model entities, association traversal direction, and label templates to a
-scrollable SVG tree. See
+visualizations are `Tidy tree`, `Radial tree`, `Tree of life`, and
+`Hexbin-map`. The tree charts bind model entities, association traversal
+direction, and label templates to a scrollable SVG tree. `Hexbin-map` is
+available for models with `LOCATION_AREA` attributes and renders one selected
+root item's current area boundary as plain SVG. See
 [docs/visualizations.md](docs/visualizations.md) for the full visualization
 workflow and current limits.
 The console output scrolls to the latest line as commands run. The full-page

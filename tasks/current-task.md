@@ -1,103 +1,100 @@
 # Current Task
 
-## Add non-interactive terminal CLI load commands
+## Add skeletal Hexbin-map wizard root selection path
 
 Status: executed
 
 ### Goal
 
-Add normal terminal `VedenemoCli` support for non-interactive one-shot loading
-of model definition and model-instance data files.
+Implement the first baby step for a browser UX `Hexbin-map` visualization
+wizard path using <https://observablehq.com/@d3/hexbin-map> as the D3 reference
+point.
 
-The intended use cases are:
-
-- `--mload <path_name_to_file.vdos>` loads a `.vdos` model file and exits.
-- `--dload <path_name_to_file.vdmp>` loads a `.vdmp` model-instance dump file
-  and exits.
-- `--mload <path_name_to_file.vdos> --dload <path_name_to_file.vdmp>` loads
-  the model first, then imports the dump into that loaded model, and exits.
-
-This is terminal CLI functionality only. The browser UX virtual CLI is out of
-scope because it is accessible only inside the browser UX.
+The wizard path should be available for a loaded model only when the model has
+at least one entity with a `LOCATION_AREA` attribute. It should let the user
+select one valid root-scoped model-instance element, select one valid
+`LOCATION_AREA` attribute from that element, and press `Visualize` to render
+the selected boundary as a plain SVG map outline.
 
 ### Scope
 
-- Parse startup arguments in the normal terminal CLI entry point.
-- Keep the existing interactive `mload` and `dload` commands working unchanged.
-- Reuse the existing HTTP-backed CLI clients and load flows where practical, so
-  the terminal CLI remains a thin HTTP/file-I/O client.
-- Support explicit filesystem paths supplied as command parameters.
-- Return deterministic process exit codes for successful loads, CLI usage
-  errors, file read errors, backend/API errors, and import/precheck failures.
-- Print concise terminal output suitable for scripts while preserving useful
-  human diagnostics.
-- Support `--force` for `.vdmp` imports where the dump model version is older
-  than the currently loaded model version.
-- Add terminal CLI tests for both successful and failing non-interactive paths.
-- Update `README.md`, `docs/cli-reference.md`, and current implementation
-  architecture documentation.
+- Add the `Hexbin-map` chart type to the existing browser visualization wizard.
+- Keep the implementation in `vedenemo-ux`.
+- Keep D3 usage frontend-only.
+- Detect model-level chart eligibility from root-scoped API metadata.
+- Load root-scoped candidate instances for entities that have `LOCATION_AREA`
+  attributes.
+- Keep root selection single.
+- Keep attribute selection single.
+- Use the current Metsapalsta dump shape as the first supported
+  `LOCATION_AREA` input:
+
+```json
+{
+  "boundary": [
+    { "latitude": 61.845, "longitude": 24.288 },
+    { "latitude": 61.851, "longitude": 24.288 },
+    { "latitude": 61.851, "longitude": 24.29085 }
+  ]
+}
+```
+
+- Show root items and attributes with empty, missing, or unparsable
+  `LOCATION_AREA` data as disabled with a concise `No LOCATION_AREA data`
+  reason.
+- Render the selected `LOCATION_AREA` boundary as plain SVG before introducing
+  actual hexbin cells.
+- Update README, visualization documentation, current implementation
+  architecture documentation, and backlog status.
 
 ### Out Of Scope
 
-- Browser UX virtual CLI changes.
-- New backend endpoints or new import semantics unless existing endpoints are
-  insufficient.
-- Cloud snapshot or cloud dump selection by number/key for these startup flags.
-- Interactive prompts during one-shot operation.
-- Loading a `.vdmp` dump whose model version is newer than the currently loaded
-  model, even when `--force` is supplied.
-- Automatic rename or replacement handling for duplicate `.vdos` model
-  `azName` conflicts.
-- Changes to `.vdos` or `.vdmp` file formats.
+- Backend model-rule changes.
+- New backend endpoints.
+- New `.vdos` or `.vdmp` syntax.
+- Persistent visualization configuration.
+- Additional `LOCATION_AREA` input formats.
+- Data-edit UX support for spatial values.
+- Association traversal from the selected root to child areas.
+- Metsapalsta plus linked Metsakuvio overlay layers.
+- Classification coloring.
+- Numeric metrics.
+- Point-density hexbins from `LOCATION` attributes.
+- Hex-cell generation, clipping, or intersection logic.
 
 ### Acceptance Criteria
 
-- Running `VedenemoCli --mload path/to/model.vdos` loads the model through the
-  existing HTTP API and exits without opening the interactive prompt.
-- Running `VedenemoCli --dload path/to/data.vdmp` imports the dump into a new
-  model-instance root through the existing HTTP API and exits without opening
-  the interactive prompt.
-- Running `VedenemoCli --mload path/to/model.vdos --dload path/to/data.vdmp`
-  loads the model and then imports the dump in the same process without opening
-  the interactive prompt.
-- `--dload` without a loaded target model fails with an actionable diagnostic.
-- Duplicate `.vdos` model `azName` conflicts fail non-interactively with an
-  actionable diagnostic.
-- Older `.vdmp` dump versions fail by default, but succeed with `--force` when
-  the currently loaded model version is newer and the existing import precheck
-  otherwise permits the load.
-- Newer `.vdmp` dump versions fail even when `--force` is supplied.
-- Successful one-shot commands exit with code `0`.
-- Usage and load failures exit with non-zero codes and include actionable
-  diagnostics.
-- Existing interactive commands and tests still pass.
-- `mvn clean verify` succeeds.
+- `Hexbin-map` appears as a visualization chart type for models that have at
+  least one `LOCATION_AREA` attribute.
+- `Hexbin-map` is disabled with a reason for models that do not have
+  `LOCATION_AREA` attributes.
+- The Hexbin-map binding panel lists root-scoped instances whose entity has a
+  `LOCATION_AREA` attribute.
+- Root items with no usable `LOCATION_AREA` value remain visible but disabled
+  with `No LOCATION_AREA data`.
+- After selecting a root item, the attribute selector lists that entity's
+  `LOCATION_AREA` attributes.
+- Attributes with empty, missing, or unparsable `LOCATION_AREA` values remain
+  visible but disabled with `No LOCATION_AREA data`.
+- `Visualize` is enabled only after one valid root item and one valid
+  `LOCATION_AREA` attribute are selected.
+- Pressing `Visualize` fetches the selected root item and renders the selected
+  boundary as a plain SVG map outline.
+- Existing tree visualizations continue to build.
+- Frontend build succeeds.
+- Backend Maven verification succeeds.
 
 ### Completion Notes
 
-- Added `VedenemoCli.run(String[] args)` and wired the terminal entry point to
-  pass startup arguments through to the application.
-- Added non-interactive parsing for `--mload <path>`, `--dload <path>`, and
-  optional `--force`.
-- `--mload` imports the `.vdos` file through the existing HTTP model import
-  client, attaches the CLI session to the loaded model, and exits without
-  opening the interactive prompt.
-- Non-interactive `--mload` fails on duplicate model `azName` conflicts instead
-  of prompting for a replacement name.
-- Standalone `--dload` reads the target model `azName` from `.vdmp` metadata,
-  verifies that the model is already loaded in the backend, prechecks the dump,
-  imports it into a new model-instance root, and exits without opening the
-  interactive prompt.
-- Combined `--mload <model.vdos> --dload <data.vdmp>` loads the model first and
-  then imports the dump into that loaded model in the same process.
-- `--force` is accepted only with `--dload` and only confirms the existing
-  older-dump-to-newer-model precheck path. Failed prechecks, including newer
-  dump versions, still fail.
-- Usage errors exit with code `2`; load, file, backend, and precheck failures
-  exit with code `1`; successful one-shot loads exit with code `0`.
-- Updated README, CLI reference, and current implementation architecture
-  documentation.
-- Verification passed: `mvn -q -pl vedenemo-cli -am test`, `mvn -q clean
-  verify`, `git diff --check`, README disclaimer check, combined
-  `--mload`/`--dload` CLI smoke, and separate `--mload` then standalone
-  `--dload` CLI smoke against a local backend.
+- Added `Hexbin-map` to the frontend chart-type registry.
+- Added `LOCATION_AREA` chart eligibility and root-scoped candidate loading.
+- Added a dedicated Hexbin-map binding panel with single root and single
+  attribute selection.
+- Added disabled no-data behavior for unusable root items and attributes.
+- Added a parser for the current Metsapalsta `LOCATION_AREA` dump shape.
+- Added a D3-backed SVG renderer that projects the selected latitude/longitude
+  boundary into a fitted plain SVG outline.
+- Kept D3/map code in `vedenemo-ux`; no backend or core dependencies were
+  added.
+- Marked the backlog item executed while keeping it in `tasks/backlog.md` as
+  history.

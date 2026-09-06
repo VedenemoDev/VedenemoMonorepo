@@ -702,8 +702,7 @@ Current user-facing behavior:
 - exposes `/visualizeWizard` from the model-instance root node menu as a
   runtime-only visualization wizard; it uses `modelAzName` and `instanceRootId`
   URL parameters, loads root-scoped `_api` metadata plus root metadata, and lets
-  the user bind model entities, association traversal direction, and label
-  templates to chart-specific visual concepts
+  the user bind model instance data to chart-specific visual concepts
 - includes a frontend chart-type registry for visualization chart extensions;
   the registered D3-backed `Tidy tree`, `Radial tree`, and `Tree of life`
   charts share
@@ -713,6 +712,12 @@ Current user-facing behavior:
   association traversal, support either a synthetic chart root or a single
   entity-instance root selected with query-style scalar and relationship
   criteria, support optional query-style filtering for the first entity level
+  and render scrollable SVG trees
+- includes a D3-backed `Hexbin-map` visualization wizard path for models with
+  `LOCATION_AREA` attributes; the path loads candidate root-scoped instances,
+  shows no-data candidates disabled, lets the user select one root item and one
+  current-shape `LOCATION_AREA` attribute, and renders the boundary as a plain
+  SVG map outline
   under a synthetic root, fetch entity instances plus association links, skip
   already visited instance ids on the current render path, and render a
   scrollable SVG tree with a refresh control; `Tree of life` currently uses
@@ -758,8 +763,8 @@ Frontend adapter responsibilities:
   generated PlantUML source to SVG in the browser. The heavy renderer chunk is
   loaded only when a diagram is rendered.
 - D3 is a frontend-only dependency used by `/visualizeWizard` for the Tidy
-  tree, Radial tree, and Tree of life proof-of-concept renderers. No D3
-  dependency is introduced into backend or core modules.
+  tree, Radial tree, Tree of life, and Hexbin-map proof-of-concept renderers.
+  No D3 dependency is introduced into backend or core modules.
 
 ## Runtime Flows
 
@@ -992,7 +997,7 @@ sequenceDiagram
     participant UX as vedenemo-ux /visualizeWizard
     participant Config as /config.json
     participant API as vedenemo-web-api
-    participant D3 as D3 tree renderer
+    participant D3 as D3 SVG renderer
 
     UX->>Config: fetch runtime config
     Config-->>UX: apiBaseUrl
@@ -1001,16 +1006,24 @@ sequenceDiagram
     UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}
     API-->>UX: model-instance root metadata
     UX->>UX: select chart type and create runtime model-element binding
-    opt selected entity-instance chart root
+    opt selected tree entity-instance chart root
         UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query
         API-->>UX: root-selection match count and selected root when unique
     end
-    UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query
-    API-->>UX: entity instances for each selected binding level
-    UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}
-    API-->>UX: association links for each selected binding edge
-    UX->>UX: transform instances and links into chart tree data
-    UX->>D3: render scrollable SVG tree
+    alt tree chart selected
+        UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query
+        API-->>UX: entity instances for each selected binding level
+        UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}
+        API-->>UX: association links for each selected binding edge
+        UX->>UX: transform instances and links into chart tree data
+        UX->>D3: render scrollable SVG tree
+    else Hexbin-map selected
+        UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query
+        API-->>UX: candidate root items with LOCATION_AREA values
+        UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}
+        API-->>UX: selected root item values
+        UX->>D3: render selected LOCATION_AREA boundary as plain SVG map
+    end
 ```
 
 ### UX Runtime Data Editing

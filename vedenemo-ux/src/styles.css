@@ -1032,6 +1032,49 @@ body {
   background: #f9fafb;
 }
 
+.hexbin-map-svg {
+  display: block;
+  min-width: 48rem;
+  width: 100%;
+  height: auto;
+  background: #f9fafb;
+}
+
+.hexbin-map-background {
+  fill: #f8fafc;
+}
+
+.hexbin-map-boundary-fill {
+  fill: #dbeafe;
+  fill-opacity: 0.55;
+  stroke: none;
+}
+
+.hexbin-map-boundary {
+  fill: none;
+  stroke: #1f2937;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.hexbin-map-points circle {
+  fill: #2563eb;
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+
+.hexbin-map-title {
+  fill: #111827;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.hexbin-map-detail {
+  fill: #475569;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
 .tidy-tree-links path {
   fill: none;
   stroke: #94a3b8;

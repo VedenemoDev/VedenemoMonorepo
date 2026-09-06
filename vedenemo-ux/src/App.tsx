@@ -271,6 +271,7 @@ type VisualizationDataState = {
   status: ModelInstanceLoadState;
   message: string;
   tree: TidyTreeNode | null;
+  hexbinMap: HexbinMapData | null;
   loadedAt?: string;
 };
 
@@ -279,6 +280,43 @@ type RootMatchState = {
   message: string;
   count?: number;
   instance?: EntityInstanceResponse;
+};
+
+type LocationPoint = {
+  latitude: number;
+  longitude: number;
+};
+
+type HexbinMapBinding = {
+  rootEntityAzName: string;
+  rootInstanceId: string;
+  areaAttributeAzName: string;
+};
+
+type HexbinAreaAttributeOption = {
+  attribute: AttributeDescription;
+  boundary: LocationPoint[] | null;
+  disabledReason?: string;
+};
+
+type HexbinMapRootOption = {
+  entity: EntityDescription;
+  instance: EntityInstanceResponse;
+  label: string;
+  attributes: HexbinAreaAttributeOption[];
+  disabledReason?: string;
+};
+
+type HexbinMapRootOptionsState = {
+  status: ModelInstanceLoadState;
+  message: string;
+  options: HexbinMapRootOption[];
+};
+
+type HexbinMapData = {
+  title: string;
+  detail: string;
+  boundary: LocationPoint[];
 };
 
 const PLANTUML_TARGET_ID = "plantuml-diagram";
@@ -292,6 +330,8 @@ const MAX_CONSOLE_PANE_VIEWPORT_RATIO = 0.75;
 const TIDY_TREE_CHART_ID = "tidy-tree";
 const RADIAL_TREE_CHART_ID = "radial-tree";
 const TREE_OF_LIFE_CHART_ID = "tree-of-life";
+const HEXBIN_MAP_CHART_ID = "hexbin-map";
+const NO_LOCATION_AREA_DATA_REASON = "No LOCATION_AREA data";
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   const response = await fetch("/config.json", { cache: "no-store" });
@@ -568,6 +608,12 @@ const CHART_TYPES: ChartTypeDefinition[] = [
     summary: "Radial cluster tree with leaf labels on a common rim.",
     evaluateEligibility: evaluateTidyTreeEligibility,
   },
+  {
+    id: HEXBIN_MAP_CHART_ID,
+    name: "Hexbin-map",
+    summary: "Plain SVG boundary map from one LOCATION_AREA root attribute.",
+    evaluateEligibility: evaluateHexbinMapEligibility,
+  },
 ];
 
 function readConnectedModelAzName(): string {
@@ -816,6 +862,173 @@ function evaluateTidyTreeEligibility(apiDescription: ApiDescriptionResponse): Ch
     };
   }
   return { selectable: true };
+}
+
+function evaluateHexbinMapEligibility(apiDescription: ApiDescriptionResponse): ChartEligibility {
+  const hasLocationAreaEntity = apiDescription.entities.some((entity) => locationAreaAttributes(entity).length > 0);
+  if (!hasLocationAreaEntity) {
+    return {
+      selectable: false,
+      reason: "Hexbin-map needs at least one entity with a LOCATION_AREA attribute.",
+    };
+  }
+  return { selectable: true };
+}
+
+function locationAreaAttributes(entity: EntityDescription): AttributeDescription[] {
+  return entity.attributes.filter((attribute) => attribute.dataType === "LOCATION_AREA");
+}
+
+function emptyHexbinMapBinding(): HexbinMapBinding {
+  return {
+    rootEntityAzName: "",
+    rootInstanceId: "",
+    areaAttributeAzName: "",
+  };
+}
+
+function parseLocationAreaBoundary(value: unknown): LocationPoint[] | null {
+  if (typeof value !== "object" || value === null || !("boundary" in value)) {
+    return null;
+  }
+  const boundary = (value as { boundary?: unknown }).boundary;
+  if (!Array.isArray(boundary) || boundary.length < 3) {
+    return null;
+  }
+  const points = boundary.map((candidate): LocationPoint | null => {
+    if (typeof candidate !== "object" || candidate === null) {
+      return null;
+    }
+    const latitude = (candidate as { latitude?: unknown }).latitude;
+    const longitude = (candidate as { longitude?: unknown }).longitude;
+    if (typeof latitude !== "number" || typeof longitude !== "number" || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      return null;
+    }
+    return { latitude, longitude };
+  });
+  if (points.some((point) => point === null)) {
+    return null;
+  }
+  return points as LocationPoint[];
+}
+
+function instanceOptionLabel(entity: EntityDescription, instance: EntityInstanceResponse): string {
+  const labelAttribute = entity.attributes.find((attribute) => attribute.dataType !== "LOCATION_AREA") ?? entity.attributes[0] ?? null;
+  const labelValue = labelAttribute === null ? "" : formatAttributeValue(labelAttribute, instance.values[labelAttribute.azName]).trim();
+  return labelValue ? `${entity.visName}: ${labelValue}` : `${entity.visName}: ${instance.id}`;
+}
+
+async function loadHexbinMapRootOptions(
+  apiBaseUrl: string,
+  modelAzName: string,
+  instanceRootId: string,
+  apiDescription: ApiDescriptionResponse,
+): Promise<HexbinMapRootOption[]> {
+  const locationAreaEntities = apiDescription.entities.filter((entity) => locationAreaAttributes(entity).length > 0);
+  const groups = await Promise.all(locationAreaEntities.map(async (entity) => {
+    const instances = await queryEntityInstances(apiBaseUrl, modelAzName, instanceRootId, entity.azName, {});
+    return { entity, instances };
+  }));
+
+  return groups.flatMap(({ entity, instances }) => instances.map((instance) => {
+    const attributes = locationAreaAttributes(entity).map((attribute) => {
+      const boundary = parseLocationAreaBoundary(instance.values[attribute.azName]);
+      return {
+        attribute,
+        boundary,
+        disabledReason: boundary === null ? NO_LOCATION_AREA_DATA_REASON : undefined,
+      };
+    });
+    const hasUsableAttribute = attributes.some((attribute) => attribute.boundary !== null);
+    return {
+      entity,
+      instance,
+      label: instanceOptionLabel(entity, instance),
+      attributes,
+      disabledReason: hasUsableAttribute ? undefined : NO_LOCATION_AREA_DATA_REASON,
+    };
+  }));
+}
+
+function rootOptionValue(option: HexbinMapRootOption): string {
+  return `${option.entity.azName}::${option.instance.id}`;
+}
+
+function findHexbinRootOption(options: HexbinMapRootOption[], binding: HexbinMapBinding): HexbinMapRootOption | null {
+  return options.find((option) => (
+    sameAzName(option.entity.azName, binding.rootEntityAzName)
+    && option.instance.id === binding.rootInstanceId
+  )) ?? null;
+}
+
+function firstValidHexbinMapBinding(options: HexbinMapRootOption[]): HexbinMapBinding {
+  const rootOption = options.find((option) => option.disabledReason === undefined) ?? null;
+  const attributeOption = rootOption?.attributes.find((attribute) => attribute.boundary !== null) ?? null;
+  if (rootOption === null || attributeOption === null) {
+    return emptyHexbinMapBinding();
+  }
+  return {
+    rootEntityAzName: rootOption.entity.azName,
+    rootInstanceId: rootOption.instance.id,
+    areaAttributeAzName: attributeOption.attribute.azName,
+  };
+}
+
+function hexbinMapBindingValidationMessage(
+  rootOptionsState: HexbinMapRootOptionsState,
+  binding: HexbinMapBinding,
+): string | null {
+  if (rootOptionsState.status === "loading") {
+    return "Loading Hexbin-map root items.";
+  }
+  if (rootOptionsState.status === "error") {
+    return rootOptionsState.message;
+  }
+  if (rootOptionsState.options.length === 0) {
+    return "No Hexbin-map root items are available.";
+  }
+  const rootOption = findHexbinRootOption(rootOptionsState.options, binding);
+  if (rootOption === null) {
+    return "Select one root item.";
+  }
+  if (rootOption.disabledReason !== undefined) {
+    return rootOption.disabledReason;
+  }
+  const attributeOption = rootOption.attributes.find((candidate) => candidate.attribute.azName === binding.areaAttributeAzName) ?? null;
+  if (attributeOption === null) {
+    return "Select a LOCATION_AREA attribute.";
+  }
+  if (attributeOption.boundary === null) {
+    return attributeOption.disabledReason ?? NO_LOCATION_AREA_DATA_REASON;
+  }
+  return null;
+}
+
+async function buildHexbinMapData(
+  apiBaseUrl: string,
+  modelAzName: string,
+  instanceRootId: string,
+  rootOptions: HexbinMapRootOption[],
+  binding: HexbinMapBinding,
+): Promise<HexbinMapData> {
+  const rootOption = findHexbinRootOption(rootOptions, binding);
+  if (rootOption === null) {
+    throw new Error("Select one root item.");
+  }
+  const attribute = rootOption.entity.attributes.find((candidate) => candidate.azName === binding.areaAttributeAzName) ?? null;
+  if (attribute === null || attribute.dataType !== "LOCATION_AREA") {
+    throw new Error("Select a LOCATION_AREA attribute.");
+  }
+  const instance = await fetchEntityInstance(apiBaseUrl, modelAzName, instanceRootId, rootOption.entity.azName, rootOption.instance.id);
+  const boundary = parseLocationAreaBoundary(instance.values[attribute.azName]);
+  if (boundary === null) {
+    throw new Error(NO_LOCATION_AREA_DATA_REASON);
+  }
+  return {
+    title: instanceOptionLabel(rootOption.entity, instance),
+    detail: `${attribute.visName} (${attribute.azName})`,
+    boundary,
+  };
 }
 
 function defaultLabelTemplate(entity: EntityDescription | null): string {
@@ -3025,6 +3238,12 @@ function VisualizationWizardPage() {
     rootSelection: defaultRootSelection(null, null),
     levels: [],
   });
+  const [hexbinMapBinding, setHexbinMapBinding] = useState<HexbinMapBinding>(emptyHexbinMapBinding());
+  const [hexbinMapRootOptionsState, setHexbinMapRootOptionsState] = useState<HexbinMapRootOptionsState>({
+    status: "idle",
+    message: "Hexbin-map root items not loaded",
+    options: [],
+  });
   const [rootMatchState, setRootMatchState] = useState<RootMatchState>({
     status: "idle",
     message: "Manual chart root",
@@ -3037,6 +3256,7 @@ function VisualizationWizardPage() {
     status: "idle",
     message: "Visualization data not loaded",
     tree: null,
+    hexbinMap: null,
   });
 
   useEffect(() => {
@@ -3170,6 +3390,68 @@ function VisualizationWizardPage() {
   }, [apiBaseUrl, apiDescription, binding, instanceRootId, modelAzName]);
 
   useEffect(() => {
+    if (!apiBaseUrl || apiDescription === null || !modelAzName || !instanceRootId) {
+      setHexbinMapRootOptionsState({
+        status: "idle",
+        message: "Hexbin-map root items unavailable",
+        options: [],
+      });
+      setHexbinMapBinding(emptyHexbinMapBinding());
+      return;
+    }
+    if (!evaluateHexbinMapEligibility(apiDescription).selectable) {
+      setHexbinMapRootOptionsState({
+        status: "idle",
+        message: "Hexbin-map needs LOCATION_AREA model attributes",
+        options: [],
+      });
+      setHexbinMapBinding(emptyHexbinMapBinding());
+      return;
+    }
+
+    let cancelled = false;
+    setHexbinMapRootOptionsState((current) => ({
+      status: "loading",
+      message: "Loading Hexbin-map root items...",
+      options: current.options,
+    }));
+    loadHexbinMapRootOptions(apiBaseUrl, modelAzName, instanceRootId, apiDescription)
+      .then((options) => {
+        if (cancelled) {
+          return;
+        }
+        setHexbinMapRootOptionsState({
+          status: "ok",
+          message: `${options.length} root item${options.length === 1 ? "" : "s"} loaded`,
+          options,
+        });
+        setHexbinMapBinding((current) => {
+          const rootOption = findHexbinRootOption(options, current);
+          const attributeOption = rootOption?.attributes.find((candidate) => candidate.attribute.azName === current.areaAttributeAzName) ?? null;
+          if (rootOption !== null && rootOption.disabledReason === undefined && attributeOption?.boundary !== null && attributeOption !== null) {
+            return current;
+          }
+          return firstValidHexbinMapBinding(options);
+        });
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+        setHexbinMapRootOptionsState({
+          status: "error",
+          message: error instanceof Error ? error.message : "Hexbin-map root items failed to load",
+          options: [],
+        });
+        setHexbinMapBinding(emptyHexbinMapBinding());
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBaseUrl, apiDescription, instanceRootId, modelAzName]);
+
+  useEffect(() => {
     const levelOneFilter = binding.levels[0]?.filter ?? null;
     if (binding.rootSelection.mode !== "manual" || levelOneFilter === null || !levelOneFilter.enabled) {
       setLevelOneFilterMatchState({
@@ -3238,15 +3520,24 @@ function VisualizationWizardPage() {
   const selectedChartType = CHART_TYPES.find((chartType) => chartType.id === selectedChartTypeId) ?? CHART_TYPES[0];
   const selectedChartEligibility = chartOptions.find((option) => option.chartType.id === selectedChartType.id)?.eligibility ?? { selectable: false, reason: "Chart type unavailable." };
   const bindingMessage = bindingValidationMessage(apiDescription, binding, rootMatchState, levelOneFilterMatchState);
+  const isHexbinMapSelected = selectedChartType.id === HEXBIN_MAP_CHART_ID;
+  const hexbinMapBindingMessage = hexbinMapBindingValidationMessage(hexbinMapRootOptionsState, hexbinMapBinding);
+  const selectedBindingMessage = isHexbinMapSelected ? hexbinMapBindingMessage : bindingMessage;
   const canContinueToBinding = status === "ok" && selectedChartEligibility.selectable;
-  const canRenderVisualization = canContinueToBinding && bindingMessage === null;
+  const canRenderVisualization = canContinueToBinding && selectedBindingMessage === null;
 
   function clearVisualizationData() {
     setVisualizationData({
       status: "idle",
       message: "Visualization data not loaded",
       tree: null,
+      hexbinMap: null,
     });
+  }
+
+  function updateHexbinMapBinding(nextBinding: HexbinMapBinding) {
+    setHexbinMapBinding(nextBinding);
+    clearVisualizationData();
   }
 
   function updateRootSelection(nextRootSelection: TidyTreeRootSelection) {
@@ -3321,15 +3612,19 @@ function VisualizationWizardPage() {
         status: "error",
         message: "Visualization context is incomplete",
         tree: null,
+        hexbinMap: null,
       });
       return;
     }
-    const validationError = bindingValidationMessage(apiDescription, binding);
+    const validationError = isHexbinMapSelected
+      ? hexbinMapBindingValidationMessage(hexbinMapRootOptionsState, hexbinMapBinding)
+      : bindingValidationMessage(apiDescription, binding);
     if (validationError !== null) {
       setVisualizationData({
         status: "error",
         message: validationError,
         tree: null,
+        hexbinMap: null,
       });
       return;
     }
@@ -3338,13 +3633,33 @@ function VisualizationWizardPage() {
       status: "loading",
       message: "Loading visualization data...",
       tree: visualizationData.tree,
+      hexbinMap: visualizationData.hexbinMap,
     });
     try {
+      if (isHexbinMapSelected) {
+        const hexbinMap = await buildHexbinMapData(
+          apiBaseUrl,
+          apiDescription.modelAzName,
+          instanceRootId,
+          hexbinMapRootOptionsState.options,
+          hexbinMapBinding,
+        );
+        setVisualizationData({
+          status: "ok",
+          message: `${hexbinMap.boundary.length} boundary point${hexbinMap.boundary.length === 1 ? "" : "s"} rendered`,
+          tree: null,
+          hexbinMap,
+          loadedAt: new Date().toLocaleTimeString(),
+        });
+        return;
+      }
+
       const tree = await buildTidyTreeData(apiBaseUrl, apiDescription.modelAzName, instanceRootId, apiDescription, binding);
       setVisualizationData({
         status: "ok",
         message: `${tree.children.length} top-level node${tree.children.length === 1 ? "" : "s"} rendered`,
         tree,
+        hexbinMap: null,
         loadedAt: new Date().toLocaleTimeString(),
       });
     } catch (error) {
@@ -3352,6 +3667,7 @@ function VisualizationWizardPage() {
         status: "error",
         message: error instanceof Error ? error.message : "Visualization data load failed",
         tree: null,
+        hexbinMap: null,
       });
     }
   }
@@ -3409,6 +3725,7 @@ function VisualizationWizardPage() {
                   onClick={() => {
                     if (eligibility.selectable) {
                       setSelectedChartTypeId(chartType.id);
+                      clearVisualizationData();
                     }
                   }}
                   disabled={!eligibility.selectable}
@@ -3427,7 +3744,20 @@ function VisualizationWizardPage() {
           </section>
         )}
 
-        {step === "binding" && (
+        {step === "binding" && isHexbinMapSelected && (
+          <HexbinMapBindingPanel
+            rootOptionsState={hexbinMapRootOptionsState}
+            binding={hexbinMapBinding}
+            validationMessage={hexbinMapBindingMessage}
+            onBindingChange={updateHexbinMapBinding}
+            onVisualize={() => {
+              setStep("visualization");
+              void loadVisualizationData();
+            }}
+          />
+        )}
+
+        {step === "binding" && !isHexbinMapSelected && (
           <TidyTreeBindingPanel
             apiDescription={apiDescription}
             binding={binding}
@@ -3468,7 +3798,13 @@ function VisualizationWizardPage() {
               </div>
             </div>
             <div className="visualization-canvas" aria-label={`${selectedChartType.name} visualization`}>
-              {visualizationData.tree === null ? (
+              {isHexbinMapSelected ? (
+                visualizationData.hexbinMap === null ? (
+                  <div className="tree-empty">{visualizationData.status === "loading" ? "Loading map..." : "No visualization data"}</div>
+                ) : (
+                  <HexbinMapRenderer data={visualizationData.hexbinMap} />
+                )
+              ) : visualizationData.tree === null ? (
                 <div className="tree-empty">{visualizationData.status === "loading" ? "Loading tree..." : "No visualization data"}</div>
               ) : selectedChartType.id === TREE_OF_LIFE_CHART_ID ? (
                 <TreeOfLifeRenderer tree={visualizationData.tree} />
@@ -3482,6 +3818,92 @@ function VisualizationWizardPage() {
         )}
       </section>
     </main>
+  );
+}
+
+function HexbinMapBindingPanel({
+  rootOptionsState,
+  binding,
+  validationMessage,
+  onBindingChange,
+  onVisualize,
+}: {
+  rootOptionsState: HexbinMapRootOptionsState;
+  binding: HexbinMapBinding;
+  validationMessage: string | null;
+  onBindingChange: (value: HexbinMapBinding) => void;
+  onVisualize: () => void;
+}) {
+  const selectedRootOption = findHexbinRootOption(rootOptionsState.options, binding);
+  const selectedRootValue = selectedRootOption === null ? "" : rootOptionValue(selectedRootOption);
+
+  function selectRoot(rootValue: string) {
+    const nextRootOption = rootOptionsState.options.find((option) => rootOptionValue(option) === rootValue) ?? null;
+    if (nextRootOption === null || nextRootOption.disabledReason !== undefined) {
+      onBindingChange(emptyHexbinMapBinding());
+      return;
+    }
+    const firstAttribute = nextRootOption.attributes.find((attribute) => attribute.boundary !== null) ?? null;
+    onBindingChange({
+      rootEntityAzName: nextRootOption.entity.azName,
+      rootInstanceId: nextRootOption.instance.id,
+      areaAttributeAzName: firstAttribute?.attribute.azName ?? "",
+    });
+  }
+
+  return (
+    <section className="visualize-panel" aria-labelledby="visualize-hexbin-binding">
+      <h2 id="visualize-hexbin-binding">Hexbin-map Binding</h2>
+      <div className="binding-grid binding-grid-two">
+        <label className="query-field">
+          <span>Root item</span>
+          <select
+            value={selectedRootValue}
+            onChange={(event) => selectRoot(event.target.value)}
+            disabled={rootOptionsState.status === "loading"}
+          >
+            {selectedRootOption === null && (
+              <option value="">
+                {rootOptionsState.options.length === 0 ? "No LOCATION_AREA root items" : "Select a root item"}
+              </option>
+            )}
+            {rootOptionsState.options.map((option) => (
+              <option key={rootOptionValue(option)} value={rootOptionValue(option)} disabled={option.disabledReason !== undefined}>
+                {option.label}{option.disabledReason === undefined ? "" : ` - ${option.disabledReason}`}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="query-field">
+          <span>Boundary attribute</span>
+          <select
+            value={binding.areaAttributeAzName}
+            onChange={(event) => onBindingChange({ ...binding, areaAttributeAzName: event.target.value })}
+            disabled={selectedRootOption === null || selectedRootOption.disabledReason !== undefined}
+          >
+            {selectedRootOption === null ? (
+              <option value="">Select a root item</option>
+            ) : selectedRootOption.attributes.map((option) => (
+              <option key={option.attribute.azName} value={option.attribute.azName} disabled={option.disabledReason !== undefined}>
+                {option.attribute.visName} ({option.attribute.azName}){option.disabledReason === undefined ? "" : ` - ${option.disabledReason}`}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <footer className={`binding-root-match binding-root-match-${rootOptionsState.status}`}>
+        {rootOptionsState.message}
+      </footer>
+
+      {validationMessage && <span className="dialog-error">{validationMessage}</span>}
+
+      <div className="visualize-actions">
+        <button type="button" onClick={onVisualize} disabled={validationMessage !== null}>
+          Visualize
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -4245,6 +4667,91 @@ function TidyTreeBindingPanel({
       </div>
     </section>
   );
+}
+
+function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    const svgElement = svgRef.current;
+    if (svgElement === null) {
+      return;
+    }
+
+    const width = 960;
+    const height = 640;
+    const padding = 48;
+    const longitudes = data.boundary.map((point) => point.longitude);
+    const latitudes = data.boundary.map((point) => point.latitude);
+    const longitudeExtent = d3.extent(longitudes);
+    const latitudeExtent = d3.extent(latitudes);
+    const minLongitude = longitudeExtent[0] ?? 0;
+    const maxLongitude = longitudeExtent[1] ?? minLongitude;
+    const minLatitude = latitudeExtent[0] ?? 0;
+    const maxLatitude = latitudeExtent[1] ?? minLatitude;
+    const longitudeSpan = Math.max(maxLongitude - minLongitude, 0.000001);
+    const latitudeSpan = Math.max(maxLatitude - minLatitude, 0.000001);
+    const scale = Math.min((width - padding * 2) / longitudeSpan, (height - padding * 2) / latitudeSpan);
+    const mapWidth = longitudeSpan * scale;
+    const mapHeight = latitudeSpan * scale;
+    const offsetX = (width - mapWidth) / 2;
+    const offsetY = (height - mapHeight) / 2;
+    const projectedBoundary = data.boundary.map((point) => [
+      offsetX + (point.longitude - minLongitude) * scale,
+      offsetY + (maxLatitude - point.latitude) * scale,
+    ] as [number, number]);
+    const closedBoundary = projectedBoundary.length > 0
+      ? [...projectedBoundary, projectedBoundary[0]]
+      : projectedBoundary;
+    const line = d3.line<[number, number]>()
+      .x((point) => point[0])
+      .y((point) => point[1]);
+
+    const svg = d3.select(svgElement);
+    svg.selectAll("*").remove();
+    svg
+      .attr("viewBox", `0 0 ${width} ${height}`)
+      .attr("width", width)
+      .attr("height", height);
+
+    svg.append("rect")
+      .attr("class", "hexbin-map-background")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", width)
+      .attr("height", height);
+
+    svg.append("path")
+      .attr("class", "hexbin-map-boundary-fill")
+      .attr("d", line(closedBoundary));
+
+    svg.append("path")
+      .attr("class", "hexbin-map-boundary")
+      .attr("d", line(closedBoundary));
+
+    svg.append("g")
+      .attr("class", "hexbin-map-points")
+      .selectAll("circle")
+      .data(projectedBoundary)
+      .join("circle")
+      .attr("cx", (point) => point[0])
+      .attr("cy", (point) => point[1])
+      .attr("r", 3);
+
+    svg.append("text")
+      .attr("class", "hexbin-map-title")
+      .attr("x", padding)
+      .attr("y", 34)
+      .text(data.title);
+
+    svg.append("text")
+      .attr("class", "hexbin-map-detail")
+      .attr("x", padding)
+      .attr("y", 56)
+      .text(data.detail);
+  }, [data]);
+
+  return <svg ref={svgRef} className="hexbin-map-svg" role="img" aria-label="Hexbin-map boundary" />;
 }
 
 function TidyTreeRenderer({ tree }: { tree: TidyTreeNode }) {

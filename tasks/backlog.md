@@ -2,7 +2,7 @@
 
 ## Plan skeletal Hexbin-map wizard root selection path
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -92,8 +92,7 @@ path.
 
 ### Acceptance Criteria
 
-- The planned skeletal `Hexbin-map` wizard path is documented as a backlog
-  item.
+- The skeletal `Hexbin-map` wizard path is implemented and documented.
 - The plan keeps the older Metsapalsta alternatives item as a brainstorm item
   for later reference.
 - The wizard is available only for models containing at least one
@@ -104,9 +103,8 @@ path.
 - The attribute selector shows `LOCATION_AREA` attributes for the selected root
   item and disables those with no usable data.
 - `Visualize` is enabled only after both selections are valid.
-- Pressing `Visualize` is planned to draw the selected `LOCATION_AREA` borders
+- Pressing `Visualize` draws the selected `LOCATION_AREA` borders
   as the initial plain SVG map output.
-- No production implementation is required by this planning item.
 
 ### Decisions
 
@@ -120,6 +118,23 @@ path.
 - Later multi-area visualization, such as rendering a whole `Metsapalsta` area
   with linked `Metsakuvio` areas inside it, should be modeled as child or
   overlay layer selection rather than root multi-select.
+
+### Completion Notes
+
+- Added `Hexbin-map` to the frontend visualization chart registry.
+- Added UX-only model eligibility for models with at least one `LOCATION_AREA`
+  attribute.
+- Added a Hexbin-map binding panel that loads root-scoped candidate instances,
+  shows no-data root items and attributes disabled with `No LOCATION_AREA data`,
+  and requires one valid root item plus one valid `LOCATION_AREA` attribute.
+- Added parsing for the current Metsapalsta dump shape:
+  `{ "boundary": [{ "latitude": number, "longitude": number }] }`.
+- Added a D3-backed plain SVG boundary renderer for the selected
+  `LOCATION_AREA` value.
+- Kept visualization bindings runtime-only and kept all D3/map code in
+  `vedenemo-ux`.
+- Updated README, visualization documentation, current implementation
+  architecture documentation, and current task status.
 
 ## Brainstorm Metsapalsta hexbin map visualization alternatives
 
