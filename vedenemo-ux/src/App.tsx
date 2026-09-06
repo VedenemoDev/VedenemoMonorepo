@@ -327,7 +327,7 @@ type HexbinMapOverlayPreviewState = {
 type HexbinMapStyle = {
   color: string;
   fillColor: string;
-  pattern: "solid" | "diagonal" | "reverse-diagonal" | "crosshatch" | "dots" | "horizontal";
+  pattern: "solid" | "diagonal" | "reverse-diagonal" | "crosshatch" | "dots" | "horizontal" | "vertical";
 };
 
 type HexbinMapSubregion = {
@@ -358,9 +358,9 @@ const RADIAL_TREE_CHART_ID = "radial-tree";
 const TREE_OF_LIFE_CHART_ID = "tree-of-life";
 const HEXBIN_MAP_CHART_ID = "hexbin-map";
 const NO_LOCATION_AREA_DATA_REASON = "No LOCATION_AREA data";
-const HEXBIN_MAP_STYLE_COMBINATIONS = 36;
-const HEXBIN_MAP_STYLE_PATTERNS: HexbinMapStyle["pattern"][] = ["solid", "diagonal", "reverse-diagonal", "crosshatch", "dots", "horizontal"];
-const HEXBIN_MAP_STYLE_COLORS = ["#2563eb", "#16a34a", "#dc2626", "#7c3aed", "#ca8a04", "#0891b2"];
+const HEXBIN_MAP_STYLE_PATTERNS: HexbinMapStyle["pattern"][] = ["solid", "diagonal", "reverse-diagonal", "crosshatch", "dots", "horizontal", "vertical"];
+const HEXBIN_MAP_STYLE_COLORS = ["#2563eb", "#16a34a", "#dc2626", "#9333ea", "#d97706", "#0f766e", "#475569", "#eab308"];
+const HEXBIN_MAP_STYLE_COMBINATIONS = HEXBIN_MAP_STYLE_PATTERNS.length * HEXBIN_MAP_STYLE_COLORS.length;
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   const response = await fetch("/config.json", { cache: "no-store" });
@@ -5067,6 +5067,12 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       if (subregion.style.pattern === "horizontal") {
         pattern.append("path")
           .attr("d", "M0,3 L10,3 M0,8 L10,8")
+          .attr("stroke", subregion.style.color)
+          .attr("stroke-width", 2);
+      }
+      if (subregion.style.pattern === "vertical") {
+        pattern.append("path")
+          .attr("d", "M3,0 L3,10 M8,0 L8,10")
           .attr("stroke", subregion.style.color)
           .attr("stroke-width", 2);
       }

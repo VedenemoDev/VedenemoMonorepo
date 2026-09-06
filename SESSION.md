@@ -11061,3 +11061,139 @@ Current status and next steps:
   sitting on the legend background border.
 - `npm run build` passed from `vedenemo-ux`; Vite still reports only the
   existing large chunk-size warning.
+
+## 2026-09-06 22:49 EEST
+
+Session goal:
+
+- Inspect how Hexbin-map subregion overlay fill patterns are assigned.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg -n "subregion|pattern|style|legend|Hexbin|hexbin" vedenemo-ux/src/App.tsx`
+- `rg -n "hexbin|subregion|overlay|pattern" vedenemo-ux/src/styles.css README.md docs/visualizations.md docs/architecture_doc.md`
+- `sed -n '286,370p' vedenemo-ux/src/App.tsx`
+- `sed -n '1028,1130p' vedenemo-ux/src/App.tsx`
+- `sed -n '1130,1185p' vedenemo-ux/src/App.tsx`
+- `sed -n '5038,5093p' vedenemo-ux/src/App.tsx`
+- `sed -n '5144,5184p' vedenemo-ux/src/App.tsx`
+- `nl -ba vedenemo-ux/src/App.tsx | sed -n '286,365p'`
+- `nl -ba vedenemo-ux/src/App.tsx | sed -n '1030,1128p'`
+- `nl -ba vedenemo-ux/src/App.tsx | sed -n '1160,1175p'`
+- `nl -ba vedenemo-ux/src/App.tsx | sed -n '5044,5092p'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Confirmed Hexbin-map overlay styles are assigned from a fixed deterministic
+  set of six patterns and six colors, for 36 unique pattern/color
+  combinations before reuse.
+- No implementation changes were made.
+
+## 2026-09-06 23:11 EEST
+
+Session goal:
+
+- Make Hexbin-map subregion overlay styles more visually distinct and increase
+  the number of automatic combinations.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `git status --short`
+- `npm run build` from `vedenemo-ux`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Replaced the similar cyan overlay color with more separated palette entries
+  and expanded the color list from six to eight colors.
+- Added a vertical-line overlay fill pattern.
+- Changed the style-combination count to derive from the pattern and color
+  arrays, increasing unique automatic combinations from 36 to 56 before reuse.
+- `npm run build` passed from `vedenemo-ux`; Vite still reports only the
+  existing large chunk-size warning.
+
+## 2026-09-06 23:18 EEST
+
+Session goal:
+
+- Further separate Hexbin-map overlay colors that were still visually close.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `git status --short`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Replaced the pink-family overlay color with dark teal and the lime overlay
+  color with yellow, leaving eight colors and 56 automatic pattern/color
+  combinations.
+- `npm run build` passed from `vedenemo-ux`; Vite still reports only the
+  existing large chunk-size warning.
+
+## 2026-09-06 23:24 EEST
+
+Session goal:
+
+- Commit and push the Hexbin-map overlay palette and pattern improvements.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx SESSION.md`
+- `git branch --show-current`
+- `git diff --check`
+
+Current status and next steps:
+
+- Verified the pending diff is limited to the Hexbin-map overlay style changes
+  and session records.
+- Whitespace check passed.
+- Next step is to stage, commit, and push the changes to the `main` branch
+  remote.
