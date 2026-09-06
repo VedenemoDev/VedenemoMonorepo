@@ -1,0 +1,2191 @@
+{
+  "format": "vedenemo-instance-dump",
+  "formatVersion": 1,
+  "savedAt": "2026-08-30T00:00:00Z",
+  "model": {
+    "azName": "Metsapalsta",
+    "visName": "Metsäpalsta",
+    "version": "1.0.0"
+  },
+  "root": {
+    "sourceInstanceRootId": "00000000-0000-0000-0000-000000001003",
+    "visName": "Hyytiälän testipalsta 3"
+  },
+  "entities": [
+    {
+      "entityAzName": "Metsapalsta",
+      "records": [
+        {
+          "dumpId": "palsta-hyy-001",
+          "values": {
+            "nimi": "Hyytiälän testipalsta",
+            "tunnus": "HYY-2026-001",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 61.84492,
+                  "longitude": 24.28818
+                },
+                {
+                  "latitude": 61.84521,
+                  "longitude": 24.28792
+                },
+                {
+                  "latitude": 61.84628,
+                  "longitude": 24.28778
+                },
+                {
+                  "latitude": 61.84744,
+                  "longitude": 24.28784
+                },
+                {
+                  "latitude": 61.84872,
+                  "longitude": 24.28772
+                },
+                {
+                  "latitude": 61.84988,
+                  "longitude": 24.28795
+                },
+                {
+                  "latitude": 61.85093,
+                  "longitude": 24.28824
+                },
+                {
+                  "latitude": 61.85112,
+                  "longitude": 24.28903
+                },
+                {
+                  "latitude": 61.85086,
+                  "longitude": 24.29046
+                },
+                {
+                  "latitude": 61.85034,
+                  "longitude": 24.29093
+                },
+                {
+                  "latitude": 61.84918,
+                  "longitude": 24.29075
+                },
+                {
+                  "latitude": 61.84794,
+                  "longitude": 24.29098
+                },
+                {
+                  "latitude": 61.84672,
+                  "longitude": 24.29068
+                },
+                {
+                  "latitude": 61.84546,
+                  "longitude": 24.29094
+                },
+                {
+                  "latitude": 61.84486,
+                  "longitude": 24.29032
+                }
+              ]
+            },
+            "hehtaarit": 10
+          }
+        }
+      ]
+    },
+    {
+      "entityAzName": "Metsakuvio",
+      "records": [
+        {
+          "dumpId": "kuvio-01",
+          "values": {
+            "tunnus": "KUVIO-01-MANTY",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 61.84494,
+                  "longitude": 24.2882
+                },
+                {
+                  "latitude": 61.84518,
+                  "longitude": 24.28802
+                },
+                {
+                  "latitude": 61.84574,
+                  "longitude": 24.28808
+                },
+                {
+                  "latitude": 61.84602,
+                  "longitude": 24.28842
+                },
+                {
+                  "latitude": 61.84606,
+                  "longitude": 24.28934
+                },
+                {
+                  "latitude": 61.84584,
+                  "longitude": 24.29036
+                },
+                {
+                  "latitude": 61.84545,
+                  "longitude": 24.29076
+                },
+                {
+                  "latitude": 61.84502,
+                  "longitude": 24.29054
+                },
+                {
+                  "latitude": 61.84488,
+                  "longitude": 24.28944
+                }
+              ]
+            },
+            "hehtaarit": 1.6
+          }
+        },
+        {
+          "dumpId": "kuvio-02",
+          "values": {
+            "tunnus": "KUVIO-02-KUUSI",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 61.84588,
+                  "longitude": 24.28828
+                },
+                {
+                  "latitude": 61.84634,
+                  "longitude": 24.28796
+                },
+                {
+                  "latitude": 61.84708,
+                  "longitude": 24.28808
+                },
+                {
+                  "latitude": 61.84728,
+                  "longitude": 24.28878
+                },
+                {
+                  "latitude": 61.84718,
+                  "longitude": 24.28962
+                },
+                {
+                  "latitude": 61.84686,
+                  "longitude": 24.29058
+                },
+                {
+                  "latitude": 61.84618,
+                  "longitude": 24.29074
+                },
+                {
+                  "latitude": 61.84582,
+                  "longitude": 24.29004
+                }
+              ]
+            },
+            "hehtaarit": 2.1
+          }
+        },
+        {
+          "dumpId": "kuvio-03",
+          "values": {
+            "tunnus": "KUVIO-03-KOIVU",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 61.84724,
+                  "longitude": 24.28818
+                },
+                {
+                  "latitude": 61.84772,
+                  "longitude": 24.28792
+                },
+                {
+                  "latitude": 61.84846,
+                  "longitude": 24.28804
+                },
+                {
+                  "latitude": 61.84888,
+                  "longitude": 24.28856
+                },
+                {
+                  "latitude": 61.84882,
+                  "longitude": 24.28938
+                },
+                {
+                  "latitude": 61.84856,
+                  "longitude": 24.29046
+                },
+                {
+                  "latitude": 61.84772,
+                  "longitude": 24.29064
+                },
+                {
+                  "latitude": 61.84734,
+                  "longitude": 24.28988
+                }
+              ]
+            },
+            "hehtaarit": 2.8
+          }
+        },
+        {
+          "dumpId": "kuvio-04",
+          "values": {
+            "tunnus": "KUVIO-04-SEKAMETSA",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 61.84892,
+                  "longitude": 24.2882
+                },
+                {
+                  "latitude": 61.84944,
+                  "longitude": 24.28798
+                },
+                {
+                  "latitude": 61.85028,
+                  "longitude": 24.28802
+                },
+                {
+                  "latitude": 61.85084,
+                  "longitude": 24.28834
+                },
+                {
+                  "latitude": 61.85102,
+                  "longitude": 24.28922
+                },
+                {
+                  "latitude": 61.85078,
+                  "longitude": 24.29028
+                },
+                {
+                  "latitude": 61.85028,
+                  "longitude": 24.29066
+                },
+                {
+                  "latitude": 61.8494,
+                  "longitude": 24.29052
+                },
+                {
+                  "latitude": 61.84894,
+                  "longitude": 24.2897
+                }
+              ]
+            },
+            "hehtaarit": 3.5
+          }
+        }
+      ]
+    },
+    {
+      "entityAzName": "Puulaji",
+      "records": [
+        {
+          "dumpId": "puulaji-k01-manty",
+          "values": {
+            "nimi": "MANTY"
+          }
+        },
+        {
+          "dumpId": "puulaji-k01-koivu",
+          "values": {
+            "nimi": "KOIVU"
+          }
+        },
+        {
+          "dumpId": "puulaji-k02-kuusi",
+          "values": {
+            "nimi": "KUUSI"
+          }
+        },
+        {
+          "dumpId": "puulaji-k02-leppa",
+          "values": {
+            "nimi": "LEPPA"
+          }
+        },
+        {
+          "dumpId": "puulaji-k03-koivu",
+          "values": {
+            "nimi": "KOIVU"
+          }
+        },
+        {
+          "dumpId": "puulaji-k03-manty",
+          "values": {
+            "nimi": "MANTY"
+          }
+        },
+        {
+          "dumpId": "puulaji-k03-leppa",
+          "values": {
+            "nimi": "LEPPA"
+          }
+        },
+        {
+          "dumpId": "puulaji-k04-kuusi",
+          "values": {
+            "nimi": "KUUSI"
+          }
+        },
+        {
+          "dumpId": "puulaji-k04-manty",
+          "values": {
+            "nimi": "MANTY"
+          }
+        },
+        {
+          "dumpId": "puulaji-k04-koivu",
+          "values": {
+            "nimi": "KOIVU"
+          }
+        },
+        {
+          "dumpId": "puulaji-k04-leppa",
+          "values": {
+            "nimi": "LEPPA"
+          }
+        }
+      ]
+    },
+    {
+      "entityAzName": "Mittaus",
+      "records": [
+        {
+          "dumpId": "mittaus-k01-manty-01",
+          "values": {
+            "halkaisija_cm": 29.2,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.845265,
+              "longitude": 24.288941
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-manty-02",
+          "values": {
+            "halkaisija_cm": 32.7,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.845411,
+              "longitude": 24.289559
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-manty-03",
+          "values": {
+            "halkaisija_cm": 30.7,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.845557,
+              "longitude": 24.290178
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-manty-04",
+          "values": {
+            "halkaisija_cm": 36.8,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.845704,
+              "longitude": 24.288618
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-manty-05",
+          "values": {
+            "halkaisija_cm": 34.1,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.845136,
+              "longitude": 24.289237
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-manty-06",
+          "values": {
+            "halkaisija_cm": 38,
+            "mittauskorkeus_m": 1.2,
+            "lokaatio": {
+              "latitude": 61.845282,
+              "longitude": 24.289855
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-manty-07",
+          "values": {
+            "halkaisija_cm": 35.6,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.845428,
+              "longitude": 24.290474
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-manty-08",
+          "values": {
+            "halkaisija_cm": 41.8,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.845575,
+              "longitude": 24.288914
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-manty-09",
+          "values": {
+            "halkaisija_cm": 41,
+            "mittauskorkeus_m": 1.5,
+            "lokaatio": {
+              "latitude": 61.845721,
+              "longitude": 24.289533
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-manty-10",
+          "values": {
+            "halkaisija_cm": 40.7,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.845153,
+              "longitude": 24.290151
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-koivu-01",
+          "values": {
+            "halkaisija_cm": 18.8,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.845325,
+              "longitude": 24.289237
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-koivu-02",
+          "values": {
+            "halkaisija_cm": 21.4,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.845471,
+              "longitude": 24.289855
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-koivu-03",
+          "values": {
+            "halkaisija_cm": 19.8,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.845618,
+              "longitude": 24.290474
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-koivu-04",
+          "values": {
+            "halkaisija_cm": 23.9,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.845764,
+              "longitude": 24.288914
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-koivu-05",
+          "values": {
+            "halkaisija_cm": 21.5,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.845196,
+              "longitude": 24.289533
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-koivu-06",
+          "values": {
+            "halkaisija_cm": 24.9,
+            "mittauskorkeus_m": 1.2,
+            "lokaatio": {
+              "latitude": 61.845342,
+              "longitude": 24.290151
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-koivu-07",
+          "values": {
+            "halkaisija_cm": 24.9,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.845489,
+              "longitude": 24.288591
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-koivu-08",
+          "values": {
+            "halkaisija_cm": 24,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.845635,
+              "longitude": 24.28921
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-koivu-09",
+          "values": {
+            "halkaisija_cm": 28.4,
+            "mittauskorkeus_m": 1.5,
+            "lokaatio": {
+              "latitude": 61.845781,
+              "longitude": 24.289828
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k01-koivu-10",
+          "values": {
+            "halkaisija_cm": 26.8,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.845213,
+              "longitude": 24.290447
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-kuusi-01",
+          "values": {
+            "halkaisija_cm": 26.4,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.846465,
+              "longitude": 24.289533
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-kuusi-02",
+          "values": {
+            "halkaisija_cm": 26.2,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.846658,
+              "longitude": 24.290151
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-kuusi-03",
+          "values": {
+            "halkaisija_cm": 31.3,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.846852,
+              "longitude": 24.288591
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-kuusi-04",
+          "values": {
+            "halkaisija_cm": 31.2,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.847046,
+              "longitude": 24.28921
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-kuusi-05",
+          "values": {
+            "halkaisija_cm": 30.4,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.846294,
+              "longitude": 24.289828
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-kuusi-06",
+          "values": {
+            "halkaisija_cm": 35.5,
+            "mittauskorkeus_m": 1.2,
+            "lokaatio": {
+              "latitude": 61.846487,
+              "longitude": 24.290447
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-kuusi-07",
+          "values": {
+            "halkaisija_cm": 31.4,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.846681,
+              "longitude": 24.288887
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-kuusi-08",
+          "values": {
+            "halkaisija_cm": 36.7,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.846875,
+              "longitude": 24.289506
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-kuusi-09",
+          "values": {
+            "halkaisija_cm": 36.7,
+            "mittauskorkeus_m": 1.5,
+            "lokaatio": {
+              "latitude": 61.846123,
+              "longitude": 24.290124
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-kuusi-10",
+          "values": {
+            "halkaisija_cm": 36.2,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.846316,
+              "longitude": 24.288564
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-leppa-01",
+          "values": {
+            "halkaisija_cm": 15,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.846544,
+              "longitude": 24.289828
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-leppa-02",
+          "values": {
+            "halkaisija_cm": 16.7,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.846738,
+              "longitude": 24.290447
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-leppa-03",
+          "values": {
+            "halkaisija_cm": 15.8,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.846932,
+              "longitude": 24.288887
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-leppa-04",
+          "values": {
+            "halkaisija_cm": 18.6,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.84618,
+              "longitude": 24.289506
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-leppa-05",
+          "values": {
+            "halkaisija_cm": 17,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.846373,
+              "longitude": 24.290124
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-leppa-06",
+          "values": {
+            "halkaisija_cm": 19.2,
+            "mittauskorkeus_m": 1.2,
+            "lokaatio": {
+              "latitude": 61.846567,
+              "longitude": 24.288564
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-leppa-07",
+          "values": {
+            "halkaisija_cm": 20.4,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.846761,
+              "longitude": 24.289183
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-leppa-08",
+          "values": {
+            "halkaisija_cm": 18.9,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.846955,
+              "longitude": 24.289802
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-leppa-09",
+          "values": {
+            "halkaisija_cm": 21.1,
+            "mittauskorkeus_m": 1.5,
+            "lokaatio": {
+              "latitude": 61.846202,
+              "longitude": 24.29042
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k02-leppa-10",
+          "values": {
+            "halkaisija_cm": 21,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.846396,
+              "longitude": 24.28886
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-koivu-01",
+          "values": {
+            "halkaisija_cm": 19.3,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.848107,
+              "longitude": 24.290124
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-koivu-02",
+          "values": {
+            "halkaisija_cm": 21.9,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.848372,
+              "longitude": 24.288564
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-koivu-03",
+          "values": {
+            "halkaisija_cm": 20.3,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.848637,
+              "longitude": 24.289183
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-koivu-04",
+          "values": {
+            "halkaisija_cm": 24.4,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.847608,
+              "longitude": 24.289802
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-koivu-05",
+          "values": {
+            "halkaisija_cm": 22,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.847873,
+              "longitude": 24.29042
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-koivu-06",
+          "values": {
+            "halkaisija_cm": 25.4,
+            "mittauskorkeus_m": 1.2,
+            "lokaatio": {
+              "latitude": 61.848138,
+              "longitude": 24.28886
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-koivu-07",
+          "values": {
+            "halkaisija_cm": 25.4,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.848403,
+              "longitude": 24.289479
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-koivu-08",
+          "values": {
+            "halkaisija_cm": 24.5,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.848668,
+              "longitude": 24.290097
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-koivu-09",
+          "values": {
+            "halkaisija_cm": 28.9,
+            "mittauskorkeus_m": 1.5,
+            "lokaatio": {
+              "latitude": 61.847639,
+              "longitude": 24.288537
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-koivu-10",
+          "values": {
+            "halkaisija_cm": 27.3,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.847904,
+              "longitude": 24.289156
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-manty-01",
+          "values": {
+            "halkaisija_cm": 30.1,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.848216,
+              "longitude": 24.29042
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-manty-02",
+          "values": {
+            "halkaisija_cm": 33.6,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.848481,
+              "longitude": 24.28886
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-manty-03",
+          "values": {
+            "halkaisija_cm": 31.6,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.847452,
+              "longitude": 24.289479
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-manty-04",
+          "values": {
+            "halkaisija_cm": 37.6,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.847717,
+              "longitude": 24.290097
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-manty-05",
+          "values": {
+            "halkaisija_cm": 34.9,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.847982,
+              "longitude": 24.288537
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-manty-06",
+          "values": {
+            "halkaisija_cm": 38.9,
+            "mittauskorkeus_m": 1.2,
+            "lokaatio": {
+              "latitude": 61.848247,
+              "longitude": 24.289156
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-manty-07",
+          "values": {
+            "halkaisija_cm": 36.5,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.848512,
+              "longitude": 24.289775
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-manty-08",
+          "values": {
+            "halkaisija_cm": 42.6,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.847483,
+              "longitude": 24.290393
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-manty-09",
+          "values": {
+            "halkaisija_cm": 41.9,
+            "mittauskorkeus_m": 1.5,
+            "lokaatio": {
+              "latitude": 61.847748,
+              "longitude": 24.288833
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-manty-10",
+          "values": {
+            "halkaisija_cm": 41.5,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.848013,
+              "longitude": 24.289452
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-leppa-01",
+          "values": {
+            "halkaisija_cm": 15.5,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.848325,
+              "longitude": 24.288537
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-leppa-02",
+          "values": {
+            "halkaisija_cm": 17.2,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.84859,
+              "longitude": 24.289156
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-leppa-03",
+          "values": {
+            "halkaisija_cm": 16.3,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.847561,
+              "longitude": 24.289775
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-leppa-04",
+          "values": {
+            "halkaisija_cm": 19.1,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.847826,
+              "longitude": 24.290393
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-leppa-05",
+          "values": {
+            "halkaisija_cm": 17.5,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.848091,
+              "longitude": 24.288833
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-leppa-06",
+          "values": {
+            "halkaisija_cm": 19.7,
+            "mittauskorkeus_m": 1.2,
+            "lokaatio": {
+              "latitude": 61.848356,
+              "longitude": 24.289452
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-leppa-07",
+          "values": {
+            "halkaisija_cm": 20.9,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.848622,
+              "longitude": 24.290071
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-leppa-08",
+          "values": {
+            "halkaisija_cm": 19.4,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.847592,
+              "longitude": 24.28851
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-leppa-09",
+          "values": {
+            "halkaisija_cm": 21.6,
+            "mittauskorkeus_m": 1.5,
+            "lokaatio": {
+              "latitude": 61.847857,
+              "longitude": 24.289129
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k03-leppa-10",
+          "values": {
+            "halkaisija_cm": 21.5,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.848122,
+              "longitude": 24.289748
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-kuusi-01",
+          "values": {
+            "halkaisija_cm": 27.3,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.850425,
+              "longitude": 24.288833
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-kuusi-02",
+          "values": {
+            "halkaisija_cm": 27.1,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.849118,
+              "longitude": 24.289452
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-kuusi-03",
+          "values": {
+            "halkaisija_cm": 32.2,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.849455,
+              "longitude": 24.290071
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-kuusi-04",
+          "values": {
+            "halkaisija_cm": 32.1,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.849792,
+              "longitude": 24.28851
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-kuusi-05",
+          "values": {
+            "halkaisija_cm": 31.3,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.850128,
+              "longitude": 24.289129
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-kuusi-06",
+          "values": {
+            "halkaisija_cm": 36.4,
+            "mittauskorkeus_m": 1.2,
+            "lokaatio": {
+              "latitude": 61.850465,
+              "longitude": 24.289748
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-kuusi-07",
+          "values": {
+            "halkaisija_cm": 32.3,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.849158,
+              "longitude": 24.290366
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-kuusi-08",
+          "values": {
+            "halkaisija_cm": 37.6,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.849495,
+              "longitude": 24.288806
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-kuusi-09",
+          "values": {
+            "halkaisija_cm": 37.6,
+            "mittauskorkeus_m": 1.5,
+            "lokaatio": {
+              "latitude": 61.849831,
+              "longitude": 24.289425
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-kuusi-10",
+          "values": {
+            "halkaisija_cm": 37.1,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.850168,
+              "longitude": 24.290044
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-manty-01",
+          "values": {
+            "halkaisija_cm": 30.6,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.850564,
+              "longitude": 24.289129
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-manty-02",
+          "values": {
+            "halkaisija_cm": 34.1,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.849257,
+              "longitude": 24.289748
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-manty-03",
+          "values": {
+            "halkaisija_cm": 32.1,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.849594,
+              "longitude": 24.290366
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-manty-04",
+          "values": {
+            "halkaisija_cm": 38.2,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.84993,
+              "longitude": 24.288806
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-manty-05",
+          "values": {
+            "halkaisija_cm": 35.5,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.850267,
+              "longitude": 24.289425
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-manty-06",
+          "values": {
+            "halkaisija_cm": 39.4,
+            "mittauskorkeus_m": 1.2,
+            "lokaatio": {
+              "latitude": 61.850603,
+              "longitude": 24.290044
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-manty-07",
+          "values": {
+            "halkaisija_cm": 37,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.849297,
+              "longitude": 24.288484
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-manty-08",
+          "values": {
+            "halkaisija_cm": 43.2,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.849633,
+              "longitude": 24.289102
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-manty-09",
+          "values": {
+            "halkaisija_cm": 42.4,
+            "mittauskorkeus_m": 1.5,
+            "lokaatio": {
+              "latitude": 61.84997,
+              "longitude": 24.289721
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-manty-10",
+          "values": {
+            "halkaisija_cm": 42.1,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.850306,
+              "longitude": 24.29034
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-koivu-01",
+          "values": {
+            "halkaisija_cm": 20.2,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.850702,
+              "longitude": 24.289425
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-koivu-02",
+          "values": {
+            "halkaisija_cm": 22.7,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.849396,
+              "longitude": 24.290044
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-koivu-03",
+          "values": {
+            "halkaisija_cm": 21.2,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.849732,
+              "longitude": 24.288484
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-koivu-04",
+          "values": {
+            "halkaisija_cm": 25.2,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.850069,
+              "longitude": 24.289102
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-koivu-05",
+          "values": {
+            "halkaisija_cm": 22.9,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.850405,
+              "longitude": 24.289721
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-koivu-06",
+          "values": {
+            "halkaisija_cm": 26.2,
+            "mittauskorkeus_m": 1.2,
+            "lokaatio": {
+              "latitude": 61.850742,
+              "longitude": 24.29034
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-koivu-07",
+          "values": {
+            "halkaisija_cm": 26.3,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.849435,
+              "longitude": 24.288779
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-koivu-08",
+          "values": {
+            "halkaisija_cm": 25.3,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.849772,
+              "longitude": 24.289398
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-koivu-09",
+          "values": {
+            "halkaisija_cm": 29.8,
+            "mittauskorkeus_m": 1.5,
+            "lokaatio": {
+              "latitude": 61.850108,
+              "longitude": 24.290017
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-koivu-10",
+          "values": {
+            "halkaisija_cm": 28.1,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.850445,
+              "longitude": 24.288457
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-leppa-01",
+          "values": {
+            "halkaisija_cm": 16.2,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.849198,
+              "longitude": 24.289721
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-leppa-02",
+          "values": {
+            "halkaisija_cm": 17.9,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.849534,
+              "longitude": 24.29034
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-leppa-03",
+          "values": {
+            "halkaisija_cm": 17,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.849871,
+              "longitude": 24.288779
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-leppa-04",
+          "values": {
+            "halkaisija_cm": 19.8,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.850207,
+              "longitude": 24.289398
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-leppa-05",
+          "values": {
+            "halkaisija_cm": 18.2,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.850544,
+              "longitude": 24.290017
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-leppa-06",
+          "values": {
+            "halkaisija_cm": 20.4,
+            "mittauskorkeus_m": 1.2,
+            "lokaatio": {
+              "latitude": 61.849237,
+              "longitude": 24.288457
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-leppa-07",
+          "values": {
+            "halkaisija_cm": 21.6,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.849574,
+              "longitude": 24.289075
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-leppa-08",
+          "values": {
+            "halkaisija_cm": 20.1,
+            "mittauskorkeus_m": 1.1,
+            "lokaatio": {
+              "latitude": 61.84991,
+              "longitude": 24.289694
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-leppa-09",
+          "values": {
+            "halkaisija_cm": 22.3,
+            "mittauskorkeus_m": 1.5,
+            "lokaatio": {
+              "latitude": 61.850247,
+              "longitude": 24.290313
+            }
+          }
+        },
+        {
+          "dumpId": "mittaus-k04-leppa-10",
+          "values": {
+            "halkaisija_cm": 22.2,
+            "mittauskorkeus_m": 1.3,
+            "lokaatio": {
+              "latitude": 61.850584,
+              "longitude": 24.288753
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "associationAzName": "Metsapalsta_koostuu_Metsakuvio",
+      "sourceDumpId": "palsta-hyy-001",
+      "targetDumpId": "kuvio-01"
+    },
+    {
+      "associationAzName": "Metsapalsta_koostuu_Metsakuvio",
+      "sourceDumpId": "palsta-hyy-001",
+      "targetDumpId": "kuvio-02"
+    },
+    {
+      "associationAzName": "Metsapalsta_koostuu_Metsakuvio",
+      "sourceDumpId": "palsta-hyy-001",
+      "targetDumpId": "kuvio-03"
+    },
+    {
+      "associationAzName": "Metsapalsta_koostuu_Metsakuvio",
+      "sourceDumpId": "palsta-hyy-001",
+      "targetDumpId": "kuvio-04"
+    },
+    {
+      "associationAzName": "Metsakuvio_sisaltaa_Puulaji",
+      "sourceDumpId": "kuvio-01",
+      "targetDumpId": "puulaji-k01-manty"
+    },
+    {
+      "associationAzName": "Metsakuvio_sisaltaa_Puulaji",
+      "sourceDumpId": "kuvio-01",
+      "targetDumpId": "puulaji-k01-koivu"
+    },
+    {
+      "associationAzName": "Metsakuvio_sisaltaa_Puulaji",
+      "sourceDumpId": "kuvio-02",
+      "targetDumpId": "puulaji-k02-kuusi"
+    },
+    {
+      "associationAzName": "Metsakuvio_sisaltaa_Puulaji",
+      "sourceDumpId": "kuvio-02",
+      "targetDumpId": "puulaji-k02-leppa"
+    },
+    {
+      "associationAzName": "Metsakuvio_sisaltaa_Puulaji",
+      "sourceDumpId": "kuvio-03",
+      "targetDumpId": "puulaji-k03-koivu"
+    },
+    {
+      "associationAzName": "Metsakuvio_sisaltaa_Puulaji",
+      "sourceDumpId": "kuvio-03",
+      "targetDumpId": "puulaji-k03-manty"
+    },
+    {
+      "associationAzName": "Metsakuvio_sisaltaa_Puulaji",
+      "sourceDumpId": "kuvio-03",
+      "targetDumpId": "puulaji-k03-leppa"
+    },
+    {
+      "associationAzName": "Metsakuvio_sisaltaa_Puulaji",
+      "sourceDumpId": "kuvio-04",
+      "targetDumpId": "puulaji-k04-kuusi"
+    },
+    {
+      "associationAzName": "Metsakuvio_sisaltaa_Puulaji",
+      "sourceDumpId": "kuvio-04",
+      "targetDumpId": "puulaji-k04-manty"
+    },
+    {
+      "associationAzName": "Metsakuvio_sisaltaa_Puulaji",
+      "sourceDumpId": "kuvio-04",
+      "targetDumpId": "puulaji-k04-koivu"
+    },
+    {
+      "associationAzName": "Metsakuvio_sisaltaa_Puulaji",
+      "sourceDumpId": "kuvio-04",
+      "targetDumpId": "puulaji-k04-leppa"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-manty",
+      "targetDumpId": "mittaus-k01-manty-01"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-manty",
+      "targetDumpId": "mittaus-k01-manty-02"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-manty",
+      "targetDumpId": "mittaus-k01-manty-03"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-manty",
+      "targetDumpId": "mittaus-k01-manty-04"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-manty",
+      "targetDumpId": "mittaus-k01-manty-05"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-manty",
+      "targetDumpId": "mittaus-k01-manty-06"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-manty",
+      "targetDumpId": "mittaus-k01-manty-07"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-manty",
+      "targetDumpId": "mittaus-k01-manty-08"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-manty",
+      "targetDumpId": "mittaus-k01-manty-09"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-manty",
+      "targetDumpId": "mittaus-k01-manty-10"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-koivu",
+      "targetDumpId": "mittaus-k01-koivu-01"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-koivu",
+      "targetDumpId": "mittaus-k01-koivu-02"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-koivu",
+      "targetDumpId": "mittaus-k01-koivu-03"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-koivu",
+      "targetDumpId": "mittaus-k01-koivu-04"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-koivu",
+      "targetDumpId": "mittaus-k01-koivu-05"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-koivu",
+      "targetDumpId": "mittaus-k01-koivu-06"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-koivu",
+      "targetDumpId": "mittaus-k01-koivu-07"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-koivu",
+      "targetDumpId": "mittaus-k01-koivu-08"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-koivu",
+      "targetDumpId": "mittaus-k01-koivu-09"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k01-koivu",
+      "targetDumpId": "mittaus-k01-koivu-10"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-kuusi",
+      "targetDumpId": "mittaus-k02-kuusi-01"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-kuusi",
+      "targetDumpId": "mittaus-k02-kuusi-02"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-kuusi",
+      "targetDumpId": "mittaus-k02-kuusi-03"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-kuusi",
+      "targetDumpId": "mittaus-k02-kuusi-04"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-kuusi",
+      "targetDumpId": "mittaus-k02-kuusi-05"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-kuusi",
+      "targetDumpId": "mittaus-k02-kuusi-06"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-kuusi",
+      "targetDumpId": "mittaus-k02-kuusi-07"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-kuusi",
+      "targetDumpId": "mittaus-k02-kuusi-08"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-kuusi",
+      "targetDumpId": "mittaus-k02-kuusi-09"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-kuusi",
+      "targetDumpId": "mittaus-k02-kuusi-10"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-leppa",
+      "targetDumpId": "mittaus-k02-leppa-01"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-leppa",
+      "targetDumpId": "mittaus-k02-leppa-02"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-leppa",
+      "targetDumpId": "mittaus-k02-leppa-03"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-leppa",
+      "targetDumpId": "mittaus-k02-leppa-04"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-leppa",
+      "targetDumpId": "mittaus-k02-leppa-05"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-leppa",
+      "targetDumpId": "mittaus-k02-leppa-06"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-leppa",
+      "targetDumpId": "mittaus-k02-leppa-07"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-leppa",
+      "targetDumpId": "mittaus-k02-leppa-08"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-leppa",
+      "targetDumpId": "mittaus-k02-leppa-09"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k02-leppa",
+      "targetDumpId": "mittaus-k02-leppa-10"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-koivu",
+      "targetDumpId": "mittaus-k03-koivu-01"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-koivu",
+      "targetDumpId": "mittaus-k03-koivu-02"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-koivu",
+      "targetDumpId": "mittaus-k03-koivu-03"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-koivu",
+      "targetDumpId": "mittaus-k03-koivu-04"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-koivu",
+      "targetDumpId": "mittaus-k03-koivu-05"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-koivu",
+      "targetDumpId": "mittaus-k03-koivu-06"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-koivu",
+      "targetDumpId": "mittaus-k03-koivu-07"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-koivu",
+      "targetDumpId": "mittaus-k03-koivu-08"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-koivu",
+      "targetDumpId": "mittaus-k03-koivu-09"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-koivu",
+      "targetDumpId": "mittaus-k03-koivu-10"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-manty",
+      "targetDumpId": "mittaus-k03-manty-01"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-manty",
+      "targetDumpId": "mittaus-k03-manty-02"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-manty",
+      "targetDumpId": "mittaus-k03-manty-03"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-manty",
+      "targetDumpId": "mittaus-k03-manty-04"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-manty",
+      "targetDumpId": "mittaus-k03-manty-05"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-manty",
+      "targetDumpId": "mittaus-k03-manty-06"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-manty",
+      "targetDumpId": "mittaus-k03-manty-07"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-manty",
+      "targetDumpId": "mittaus-k03-manty-08"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-manty",
+      "targetDumpId": "mittaus-k03-manty-09"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-manty",
+      "targetDumpId": "mittaus-k03-manty-10"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-leppa",
+      "targetDumpId": "mittaus-k03-leppa-01"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-leppa",
+      "targetDumpId": "mittaus-k03-leppa-02"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-leppa",
+      "targetDumpId": "mittaus-k03-leppa-03"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-leppa",
+      "targetDumpId": "mittaus-k03-leppa-04"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-leppa",
+      "targetDumpId": "mittaus-k03-leppa-05"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-leppa",
+      "targetDumpId": "mittaus-k03-leppa-06"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-leppa",
+      "targetDumpId": "mittaus-k03-leppa-07"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-leppa",
+      "targetDumpId": "mittaus-k03-leppa-08"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-leppa",
+      "targetDumpId": "mittaus-k03-leppa-09"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k03-leppa",
+      "targetDumpId": "mittaus-k03-leppa-10"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-kuusi",
+      "targetDumpId": "mittaus-k04-kuusi-01"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-kuusi",
+      "targetDumpId": "mittaus-k04-kuusi-02"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-kuusi",
+      "targetDumpId": "mittaus-k04-kuusi-03"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-kuusi",
+      "targetDumpId": "mittaus-k04-kuusi-04"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-kuusi",
+      "targetDumpId": "mittaus-k04-kuusi-05"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-kuusi",
+      "targetDumpId": "mittaus-k04-kuusi-06"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-kuusi",
+      "targetDumpId": "mittaus-k04-kuusi-07"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-kuusi",
+      "targetDumpId": "mittaus-k04-kuusi-08"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-kuusi",
+      "targetDumpId": "mittaus-k04-kuusi-09"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-kuusi",
+      "targetDumpId": "mittaus-k04-kuusi-10"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-manty",
+      "targetDumpId": "mittaus-k04-manty-01"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-manty",
+      "targetDumpId": "mittaus-k04-manty-02"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-manty",
+      "targetDumpId": "mittaus-k04-manty-03"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-manty",
+      "targetDumpId": "mittaus-k04-manty-04"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-manty",
+      "targetDumpId": "mittaus-k04-manty-05"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-manty",
+      "targetDumpId": "mittaus-k04-manty-06"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-manty",
+      "targetDumpId": "mittaus-k04-manty-07"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-manty",
+      "targetDumpId": "mittaus-k04-manty-08"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-manty",
+      "targetDumpId": "mittaus-k04-manty-09"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-manty",
+      "targetDumpId": "mittaus-k04-manty-10"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-koivu",
+      "targetDumpId": "mittaus-k04-koivu-01"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-koivu",
+      "targetDumpId": "mittaus-k04-koivu-02"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-koivu",
+      "targetDumpId": "mittaus-k04-koivu-03"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-koivu",
+      "targetDumpId": "mittaus-k04-koivu-04"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-koivu",
+      "targetDumpId": "mittaus-k04-koivu-05"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-koivu",
+      "targetDumpId": "mittaus-k04-koivu-06"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-koivu",
+      "targetDumpId": "mittaus-k04-koivu-07"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-koivu",
+      "targetDumpId": "mittaus-k04-koivu-08"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-koivu",
+      "targetDumpId": "mittaus-k04-koivu-09"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-koivu",
+      "targetDumpId": "mittaus-k04-koivu-10"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-leppa",
+      "targetDumpId": "mittaus-k04-leppa-01"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-leppa",
+      "targetDumpId": "mittaus-k04-leppa-02"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-leppa",
+      "targetDumpId": "mittaus-k04-leppa-03"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-leppa",
+      "targetDumpId": "mittaus-k04-leppa-04"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-leppa",
+      "targetDumpId": "mittaus-k04-leppa-05"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-leppa",
+      "targetDumpId": "mittaus-k04-leppa-06"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-leppa",
+      "targetDumpId": "mittaus-k04-leppa-07"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-leppa",
+      "targetDumpId": "mittaus-k04-leppa-08"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-leppa",
+      "targetDumpId": "mittaus-k04-leppa-09"
+    },
+    {
+      "associationAzName": "Puulaji_on_otoksia_Mittaus",
+      "sourceDumpId": "puulaji-k04-leppa",
+      "targetDumpId": "mittaus-k04-leppa-10"
+    }
+  ]
+}

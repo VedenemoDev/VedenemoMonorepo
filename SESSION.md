@@ -10706,4 +10706,89 @@ Current status and next steps:
   hybrid alternatives.
 - The item explicitly includes `LOCATION_AREA`, ValueSet-backed classification
   through `PuulajiNimi`, and Binding wizard ideas.
-- Static whitespace verification passed with `git diff --check -- tasks/backlog.md SESSION.md`.
+
+## 2026-09-06 18:44 EEST
+
+Session goal:
+
+- Create `.vedenemo/Metsapalsta3.vdmp` from the existing Metsapalsta2 dump with
+  more realistic non-rectangular `LOCATION_AREA` boundaries while preserving the
+  other example data.
+
+Files changed:
+
+- `.vedenemo/Metsapalsta3.vdmp`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `find .vedenemo -maxdepth 1 -type f -print`
+- `sed -n '1,260p' .vedenemo/Metsapalsta2.vdmp`
+- `sed -n '1,260p' .vedenemo/Metsapalsta.vdos`
+- `rg -n 'latitude|longitude|associations' .vedenemo/Metsapalsta2.vdmp`
+- `cp .vedenemo/Metsapalsta2.vdmp .vedenemo/Metsapalsta3.vdmp`
+- `jq empty .vedenemo/Metsapalsta3.vdmp`
+- `git diff --no-index -- .vedenemo/Metsapalsta2.vdmp .vedenemo/Metsapalsta3.vdmp`
+- local backend/CLI smoke test loading `.vedenemo/Metsapalsta.vdos` and
+  `.vedenemo/Metsapalsta3.vdmp`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `.vedenemo/Metsapalsta3.vdmp`.
+- Preserved model metadata, entity records, measurement points, tree species,
+  hectares, and association links from `Metsapalsta2.vdmp`.
+- Changed the root ID/name to distinguish the new sample dump.
+- Replaced only the `Metsapalsta.alue` and four `Metsakuvio.alue` boundaries
+  with irregular multi-point polygons.
+- JSON validation passed.
+- Backend/CLI smoke test passed: loaded 1 `Metsapalsta`, 4 `Metsakuvio`, 11
+  `Puulaji`, 110 `Mittaus`, and 125 association links.
+- Static whitespace verification passed with `git diff --check -- SESSION.md`.
+
+## 2026-09-06 18:54 EEST
+
+Session goal:
+
+- Add a bash script under `scripts` that loads `.vedenemo/Metsapalsta.vdos` and
+  `.vedenemo/Metsapalsta3.vdmp` with one non-interactive terminal CLI command.
+
+Files changed:
+
+- `scripts/LoadMetsapalsta3ModelData.bash`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '1,120p' scripts/LoadMetsapalsta2ModelData.bash`
+- `git status --short`
+- `chmod +x scripts/LoadMetsapalsta3ModelData.bash`
+- `bash -n scripts/LoadMetsapalsta3ModelData.bash`
+- `git diff --check -- scripts/LoadMetsapalsta3ModelData.bash`
+- `ls -l scripts/LoadMetsapalsta2ModelData.bash scripts/LoadMetsapalsta3ModelData.bash`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `scripts/LoadMetsapalsta3ModelData.bash`.
+- The script invokes `org.vedenemo.cli.VedenemoCli --mload
+  .vedenemo/Metsapalsta.vdos --dload .vedenemo/Metsapalsta3.vdmp` using
+  absolute repository-local paths.
+- Set the script executable bit to match existing `.bash` helper scripts.
+- Static verification passed with `bash -n
+  scripts/LoadMetsapalsta3ModelData.bash` and `git diff --check --
+  scripts/LoadMetsapalsta3ModelData.bash`.
