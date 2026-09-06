@@ -115,11 +115,11 @@ path.
   planning.
 - Show unusable root items or attributes disabled with a concise no-data reason.
 - Plain SVG boundary rendering is acceptable for the first baby step.
-
-### Open Questions
-
-- Should a root item with multiple valid `LOCATION_AREA` attributes draw exactly
-  one selected attribute, or allow a later multi-select mode?
+- The skeletal wizard selects exactly one valid `LOCATION_AREA` attribute from
+  one root item.
+- Later multi-area visualization, such as rendering a whole `Metsapalsta` area
+  with linked `Metsakuvio` areas inside it, should be modeled as child or
+  overlay layer selection rather than root multi-select.
 
 ## Brainstorm Metsapalsta hexbin map visualization alternatives
 

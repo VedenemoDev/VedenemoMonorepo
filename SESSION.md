@@ -10436,6 +10436,33 @@ Current status and next steps:
   `LOCATION_AREA` attributes should support only one selected attribute or a
   later multi-select mode.
 
+## 2026-09-06 16:22 EEST
+
+Session goal:
+
+- Resolve the remaining open question in the skeletal Hexbin-map wizard backlog
+  item.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '70,120p' tasks/backlog.md`
+- `sed -n '120,145p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --check -- tasks/backlog.md SESSION.md`
+- `git status --short`
+
+Current status and next steps:
+
+- Resolved the wizard's multi-attribute question in favor of one root item and
+  one selected `LOCATION_AREA` attribute for the skeletal path.
+- Recorded that later Metsapalsta plus linked Metsakuvio visualization should
+  be modeled as child or overlay layer selection rather than root multi-select.
+
 ## 2026-09-01 22:34 EEST
 
 Session goal:
