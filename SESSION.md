@@ -11028,3 +11028,36 @@ Current status and next steps:
   current task, and backlog status.
 - `npm run build` passed from `vedenemo-ux`; Vite still reports only the
   existing large chunk-size warning.
+
+## 2026-09-06 22:06 EEST
+
+Session goal:
+
+- Fix tight bottom spacing in the Hexbin-map subregion legend.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,180p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '5120,5188p' vedenemo-ux/src/App.tsx`
+- `npm run build` from `vedenemo-ux`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Replaced the tight Hexbin-map legend height calculation with explicit legend
+  width, title position, entry top offset, row spacing, and bottom padding.
+- The bottom legend entry now has padding below the swatch/text instead of
+  sitting on the legend background border.
+- `npm run build` passed from `vedenemo-ux`; Vite still reports only the
+  existing large chunk-size warning.

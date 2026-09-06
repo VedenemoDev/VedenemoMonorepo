@@ -5145,24 +5145,30 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     }
 
     if (data.subregions.length > 0) {
+      const legendWidth = 268;
+      const legendTitleY = 25;
+      const legendEntryTop = 48;
+      const legendEntrySpacing = 30;
+      const legendBottomPadding = 18;
+      const legendHeight = legendEntryTop + Math.max(0, data.subregions.length - 1) * legendEntrySpacing + 18 + legendBottomPadding;
       const legend = svg.append("g")
         .attr("class", "hexbin-map-legend")
-        .attr("transform", `translate(${width - 300}, ${padding})`);
+        .attr("transform", `translate(${width - legendWidth - padding}, ${padding})`);
       legend.append("rect")
         .attr("class", "hexbin-map-legend-background")
-        .attr("width", 252)
-        .attr("height", Math.min(440, 34 + data.subregions.length * 26));
+        .attr("width", legendWidth)
+        .attr("height", legendHeight);
       legend.append("text")
         .attr("class", "hexbin-map-legend-title")
         .attr("x", 14)
-        .attr("y", 23)
+        .attr("y", legendTitleY)
         .text("Subregions");
       const entries = legend.append("g")
-        .attr("transform", "translate(14, 42)")
+        .attr("transform", `translate(14, ${legendEntryTop})`)
         .selectAll("g")
         .data(data.subregions)
         .join("g")
-        .attr("transform", (_subregion, index) => `translate(0, ${index * 26})`);
+        .attr("transform", (_subregion, index) => `translate(0, ${index * legendEntrySpacing})`);
       entries.append("rect")
         .attr("width", 18)
         .attr("height", 18)
