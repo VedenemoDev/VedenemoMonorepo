@@ -1,51 +1,39 @@
 # Current Task
 
-## Add skeletal Hexbin-map wizard root selection path
+## Add Hexbin-map subregion overlay layers
 
 Status: executed
 
 ### Goal
 
-Implement the first baby step for a browser UX `Hexbin-map` visualization
-wizard path using <https://observablehq.com/@d3/hexbin-map> as the D3 reference
-point.
+Extend the browser UX `Hexbin-map` visualization so a selected main
+`LOCATION_AREA` region can render linked subregion `LOCATION_AREA` instances as
+overlay polygons with deterministic pattern/color styles and a matching legend.
 
-The wizard path should be available for a loaded model only when the model has
-at least one entity with a `LOCATION_AREA` attribute. It should let the user
-select one valid root-scoped model-instance element, select one valid
-`LOCATION_AREA` attribute from that element, and press `Visualize` to render
-the selected boundary as a plain SVG map outline.
+The concrete motivating case is `Metsapalsta3.vdmp`: render `Metsapalsta.alue`
+as the parent boundary and associated `Metsakuvio.alue` values as distinct
+subregion overlays.
 
 ### Scope
 
-- Add the `Hexbin-map` chart type to the existing browser visualization wizard.
 - Keep the implementation in `vedenemo-ux`.
-- Keep D3 usage frontend-only.
-- Detect model-level chart eligibility from root-scoped API metadata.
-- Load root-scoped candidate instances for entities that have `LOCATION_AREA`
-  attributes.
-- Keep root selection single.
-- Keep attribute selection single.
-- Use the current Metsapalsta dump shape as the first supported
-  `LOCATION_AREA` input:
-
-```json
-{
-  "boundary": [
-    { "latitude": 61.845, "longitude": 24.288 },
-    { "latitude": 61.851, "longitude": 24.288 },
-    { "latitude": 61.851, "longitude": 24.29085 }
-  ]
-}
-```
-
-- Show root items and attributes with empty, missing, or unparsable
-  `LOCATION_AREA` data as disabled with a concise `No LOCATION_AREA data`
-  reason.
-- Render the selected `LOCATION_AREA` boundary as plain SVG before introducing
-  actual hexbin cells.
+- Reuse existing root-scoped instance query, entity-instance fetch, and
+  association-link endpoints.
+- Keep D3, SVG patterns, overlay styling, legend rendering, and wizard state
+  frontend-only.
+- Extend the existing `Hexbin-map` binding with one optional subregion overlay
+  association.
+- Offer only overlay associations whose related entity has at least one
+  `LOCATION_AREA` attribute.
+- Offer only `LOCATION_AREA` attributes for the selected subregion entity.
+- Add automatic per-subregion style assignment with deterministic pattern/color
+  combinations.
+- Add a runtime-only legend label template using `{attribute}` placeholders and
+  `{id}`.
+- Keep existing single-boundary rendering usable when no overlay association is
+  selected.
 - Update README, visualization documentation, current implementation
-  architecture documentation, and backlog status.
+  architecture documentation, backlog status, and session record.
 
 ### Out Of Scope
 
@@ -53,48 +41,49 @@ the selected boundary as a plain SVG map outline.
 - New backend endpoints.
 - New `.vdos` or `.vdmp` syntax.
 - Persistent visualization configuration.
-- Additional `LOCATION_AREA` input formats.
-- Data-edit UX support for spatial values.
-- Association traversal from the selected root to child areas.
-- Metsapalsta plus linked Metsakuvio overlay layers.
-- Classification coloring.
+- Manual per-subregion style table.
+- Attribute-grouped or classification-based subregion styling.
+- Linked `Puulaji` classification coloring.
 - Numeric metrics.
 - Point-density hexbins from `LOCATION` attributes.
-- Hex-cell generation, clipping, or intersection logic.
+- Actual hex-cell generation, clipping, or intersection logic.
+- Additional `LOCATION_AREA` input formats.
 
 ### Acceptance Criteria
 
-- `Hexbin-map` appears as a visualization chart type for models that have at
-  least one `LOCATION_AREA` attribute.
-- `Hexbin-map` is disabled with a reason for models that do not have
-  `LOCATION_AREA` attributes.
-- The Hexbin-map binding panel lists root-scoped instances whose entity has a
-  `LOCATION_AREA` attribute.
-- Root items with no usable `LOCATION_AREA` value remain visible but disabled
-  with `No LOCATION_AREA data`.
-- After selecting a root item, the attribute selector lists that entity's
-  `LOCATION_AREA` attributes.
-- Attributes with empty, missing, or unparsable `LOCATION_AREA` values remain
-  visible but disabled with `No LOCATION_AREA data`.
-- `Visualize` is enabled only after one valid root item and one valid
-  `LOCATION_AREA` attribute are selected.
-- Pressing `Visualize` fetches the selected root item and renders the selected
-  boundary as a plain SVG map outline.
+- `Hexbin-map` can render one selected main `LOCATION_AREA` boundary together
+  with all valid linked subregion `LOCATION_AREA` boundaries.
+- The binding panel offers eligible subregion associations and subregion area
+  attributes only.
+- The Metsapalsta case can select `Metsapalsta.alue` as the extent and
+  `Metsakuvio.alue` as the overlay layer.
+- Each rendered subregion has a distinct deterministic pattern/color style and
+  a matching border, until available combinations are exhausted.
+- The UX previews how many linked subregions are renderable and how many lack
+  usable `LOCATION_AREA` data.
+- A legend appears with style swatches matching the map overlays.
+- The legend text uses a user-editable template with `{attribute}` references
+  and `{id}` support.
+- Invalid legend placeholders prevent rendering with a clear validation
+  message.
+- Existing single-boundary Hexbin-map rendering remains usable when no overlay
+  association is selected.
 - Existing tree visualizations continue to build.
 - Frontend build succeeds.
-- Backend Maven verification succeeds.
 
 ### Completion Notes
 
-- Added `Hexbin-map` to the frontend chart-type registry.
-- Added `LOCATION_AREA` chart eligibility and root-scoped candidate loading.
-- Added a dedicated Hexbin-map binding panel with single root and single
-  attribute selection.
-- Added disabled no-data behavior for unusable root items and attributes.
-- Added a parser for the current Metsapalsta `LOCATION_AREA` dump shape.
-- Added a D3-backed SVG renderer that projects the selected latitude/longitude
-  boundary into a fitted plain SVG outline.
-- Kept D3/map code in `vedenemo-ux`; no backend or core dependencies were
-  added.
-- Marked the backlog item executed while keeping it in `tasks/backlog.md` as
-  history.
+- Extended `Hexbin-map` binding state with optional overlay association,
+  subregion boundary attribute, automatic style mode, and legend label
+  template.
+- Added eligible overlay traversal discovery for associated entities that have
+  `LOCATION_AREA` attributes.
+- Added linked subregion preview loading through existing association-link and
+  entity-instance APIs.
+- Added deterministic automatic per-subregion style assignment by sorted linked
+  instance id.
+- Added D3/SVG rendering for patterned subregion polygons, matching borders,
+  parent boundary redraw, overlay notices, and legend swatches.
+- Preserved no-overlay single-boundary rendering.
+- Updated README, visualization documentation, and current implementation
+  architecture documentation.

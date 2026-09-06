@@ -2,7 +2,7 @@
 
 ## Add Hexbin-map subregion overlay layers
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -162,6 +162,25 @@ Later style modes can be added without changing the overlay concept:
   richer manual style selection later.
 - Treat this as a generic extent-plus-overlay visualization pattern rather
   than a Metsapalsta-specific feature.
+
+### Completion Notes
+
+- Extended the UX-only `Hexbin-map` binding with one optional subregion
+  association, subregion `LOCATION_AREA` attribute, automatic per-subregion
+  style mode, and legend label template.
+- Added overlay traversal filtering for associations whose related entity has
+  at least one `LOCATION_AREA` attribute.
+- Added linked subregion preview loading through existing root-scoped
+  association-link and entity-instance endpoints.
+- Added deterministic style assignment by sorted linked subregion instance id,
+  using pattern/color combinations and a style-reuse notice when combinations
+  are exhausted.
+- Added patterned SVG overlay polygons, matching borders, parent boundary
+  redraw, overlay notices, and legend swatches.
+- Preserved existing single-boundary rendering when no overlay association is
+  selected.
+- Updated README, visualization documentation, current implementation
+  architecture documentation, and current task status.
 
 ## Plan skeletal Hexbin-map wizard root selection path
 

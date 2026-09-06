@@ -1057,6 +1057,11 @@ body {
   stroke-width: 2.5;
 }
 
+.hexbin-map-subregions path {
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 .hexbin-map-points circle {
   fill: #2563eb;
   stroke: #fff;
@@ -1072,6 +1077,30 @@ body {
 .hexbin-map-detail {
   fill: #475569;
   font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.hexbin-map-notice {
+  fill: #92400e;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.hexbin-map-legend-background {
+  fill: rgba(255, 255, 255, 0.9);
+  stroke: #cbd5e1;
+  stroke-width: 1;
+}
+
+.hexbin-map-legend-title {
+  fill: #111827;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.hexbin-map-legend text:not(.hexbin-map-legend-title) {
+  fill: #334155;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 

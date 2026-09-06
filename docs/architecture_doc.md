@@ -716,8 +716,10 @@ Current user-facing behavior:
 - includes a D3-backed `Hexbin-map` visualization wizard path for models with
   `LOCATION_AREA` attributes; the path loads candidate root-scoped instances,
   shows no-data candidates disabled, lets the user select one root item and one
-  current-shape `LOCATION_AREA` attribute, and renders the boundary as a plain
-  SVG map outline
+  current-shape `LOCATION_AREA` attribute, optionally follows one eligible
+  association to linked subregion instances with `LOCATION_AREA` data, assigns
+  deterministic automatic pattern/color overlay styles, and renders the
+  boundary plus a matching subregion legend as a plain SVG map
   under a synthetic root, fetch entity instances plus association links, skip
   already visited instance ids on the current render path, and render a
   scrollable SVG tree with a refresh control; `Tree of life` currently uses
@@ -1020,9 +1022,15 @@ sequenceDiagram
     else Hexbin-map selected
         UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/_query
         API-->>UX: candidate root items with LOCATION_AREA values
+        opt Subregion overlay selected
+            UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}
+            API-->>UX: links from selected root item to subregion instances
+            UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/{subregionEntityAzName}/{instanceId}
+            API-->>UX: linked subregion LOCATION_AREA values
+        end
         UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}
         API-->>UX: selected root item values
-        UX->>D3: render selected LOCATION_AREA boundary as plain SVG map
+        UX->>D3: render selected LOCATION_AREA boundary and optional subregion overlays as plain SVG map
     end
 ```
 

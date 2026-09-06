@@ -113,12 +113,27 @@ For `Hexbin-map`, the binding includes:
 - one model-instance root item whose entity has at least one `LOCATION_AREA`
   attribute
 - one `LOCATION_AREA` attribute on that selected root item
+- optionally, one association from the selected root item to linked subregion
+  instances whose entity has at least one `LOCATION_AREA` attribute
+- optionally, one subregion `LOCATION_AREA` attribute
+- an automatic per-subregion style mode
+- a subregion legend label template using the same `{attribute}` placeholder
+  convention, with `{id}` available as the backend instance id
 
 The root item selector shows root-scoped entity instances whose entity has a
 `LOCATION_AREA` attribute. Items with no usable area value stay visible but are
 disabled with a `No LOCATION_AREA data` reason. The attribute selector shows
 the selected item entity's `LOCATION_AREA` attributes and disables empty,
 missing, or unparsable values with the same reason.
+
+The optional subregion overlay selector shows associations whose related entity
+has at least one `LOCATION_AREA` attribute. Selecting an overlay association
+and subregion boundary attribute loads a preview count for the selected root:
+how many linked subregions are renderable and how many have missing or invalid
+area data. The first style mode is automatic per subregion. It sorts linked
+subregion instances by id, assigns deterministic pattern/color combinations,
+and reports when the available combinations are exhausted and styles are
+reused.
 
 The first supported `LOCATION_AREA` value shape is the current Metsapalsta dump
 shape:
@@ -150,8 +165,10 @@ binding data with a D3 radial cluster layout, visible nodes and labels for
 internal binding levels, angular radial link segments, leaf labels on a common
 outer rim, and faint label-extension links. Branch length is not modeled or
 used. `Hexbin-map` fetches the selected root item and renders the chosen
-`LOCATION_AREA` boundary as a plain SVG area outline. It does not yet generate
-hexbin cells.
+`LOCATION_AREA` boundary as a plain SVG area outline. When an overlay
+association is selected, it fetches the association links, resolves the linked
+subregion instances, renders valid subregion boundaries as patterned polygons,
+and adds a matching legend. It does not yet generate hexbin cells.
 
 Use `Refresh` to reload backend data without losing the current runtime binding.
 
@@ -211,10 +228,10 @@ intact while still rendering a one-direction family tree projection.
   infer hierarchy automatically without a user-selected binding.
 - `Tree of life` currently uses constant-depth cluster layout only; branch
   length is intentionally skipped.
-- `Hexbin-map` currently renders only one selected root item and one selected
-  `LOCATION_AREA` attribute. Metsapalsta plus linked Metsakuvio overlay layers,
-  extra area formats, classification, metrics, point-density hexbins, and real
-  hex-cell tiling are not implemented.
+- `Hexbin-map` supports one optional subregion overlay layer with automatic
+  per-subregion pattern/color assignment. Extra area formats, manual style
+  tables, classification, metrics, point-density hexbins, and real hex-cell
+  tiling are not implemented.
 
 ## Related Docs
 

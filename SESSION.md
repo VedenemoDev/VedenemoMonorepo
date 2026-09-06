@@ -10964,3 +10964,67 @@ Current status and next steps:
   exhausted.
 - Listed later style modes for grouping by subregion attribute, manual
   runtime-only style overrides, and related classification styling.
+
+## 2026-09-06 20:49 EEST
+
+Session goal:
+
+- Implement the planned `Hexbin-map` subregion overlay layer for linked
+  `LOCATION_AREA` regions.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short`
+- `sed -n '1,180p' tasks/backlog.md`
+- `sed -n '320,420p' vedenemo-ux/src/App.tsx`
+- `sed -n '120,220p' vedenemo-ux/src/App.tsx`
+- `sed -n '40,120p' vedenemo-ux/src/App.tsx`
+- `sed -n '420,620p' vedenemo-ux/src/App.tsx`
+- `sed -n '1035,1260p' vedenemo-ux/src/App.tsx`
+- `sed -n '1930,2030p' vedenemo-ux/src/App.tsx`
+- `rg -n "function traversalOptionsFor|function traversalOptionValue|function relatedInstanceIdForLink|function traversalLabel|function findEntity|sameAzName" vedenemo-ux/src/App.tsx`
+- `sed -n '790,840p' vedenemo-ux/src/App.tsx`
+- `sed -n '1260,1335p' vedenemo-ux/src/App.tsx`
+- `sed -n '4300,4625p' vedenemo-ux/src/App.tsx`
+- `sed -n '3226,3675p' vedenemo-ux/src/App.tsx`
+- `sed -n '1030,1090p' vedenemo-ux/src/styles.css`
+- `sed -n '760,820p' vedenemo-ux/src/styles.css`
+- `rg -n "hexbinMapBindingValidationMessage|renderableCount" vedenemo-ux/src/App.tsx`
+- `npm run build` from `vedenemo-ux`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `rg -n "Hexbin-map|LOCATION_AREA|subregion|overlay|legend" README.md docs/visualizations.md docs/architecture_doc.md tasks/current-task.md tasks/backlog.md`
+- `sed -n '700,730p' docs/architecture_doc.md`
+- `sed -n '1015,1032p' docs/architecture_doc.md`
+- `sed -n '400,420p' README.md`
+- `sed -n '105,160p' docs/visualizations.md`
+- `sed -n '196,218p' docs/visualizations.md`
+- `rg -n "currently renders only one|overlay layers.*not implemented|Metsapalsta plus linked Metsakuvio overlay layers|Plain SVG boundary map from one" README.md docs/visualizations.md docs/architecture_doc.md tasks/current-task.md tasks/backlog.md vedenemo-ux/src/App.tsx`
+- `sed -n '1,110p' tasks/current-task.md`
+- `sed -n '400,418p' README.md`
+- `git diff --stat`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented an optional `Hexbin-map` subregion overlay binding in
+  `vedenemo-ux` using the existing association-link and entity-instance APIs.
+- Added automatic deterministic per-subregion pattern/color assignment, linked
+  subregion preview counts, invalid-area skipping notices, patterned SVG
+  polygons, matching borders, and legend swatches from a user label template.
+- Preserved single-boundary rendering when no overlay association is selected.
+- Updated README, visualization documentation, architecture documentation,
+  current task, and backlog status.
+- `npm run build` passed from `vedenemo-ux`; Vite still reports only the
+  existing large chunk-size warning.

@@ -291,6 +291,10 @@ type HexbinMapBinding = {
   rootEntityAzName: string;
   rootInstanceId: string;
   areaAttributeAzName: string;
+  overlayTraversalValue: string;
+  overlayAreaAttributeAzName: string;
+  overlayLabelTemplate: string;
+  overlayStyleMode: "automatic";
 };
 
 type HexbinAreaAttributeOption = {
@@ -313,10 +317,32 @@ type HexbinMapRootOptionsState = {
   options: HexbinMapRootOption[];
 };
 
+type HexbinMapOverlayPreviewState = {
+  status: ModelInstanceLoadState;
+  message: string;
+  linkedCount?: number;
+  renderableCount?: number;
+};
+
+type HexbinMapStyle = {
+  color: string;
+  fillColor: string;
+  pattern: "solid" | "diagonal" | "reverse-diagonal" | "crosshatch" | "dots" | "horizontal";
+};
+
+type HexbinMapSubregion = {
+  id: string;
+  label: string;
+  boundary: LocationPoint[];
+  style: HexbinMapStyle;
+};
+
 type HexbinMapData = {
   title: string;
   detail: string;
   boundary: LocationPoint[];
+  subregions: HexbinMapSubregion[];
+  overlayNotice?: string;
 };
 
 const PLANTUML_TARGET_ID = "plantuml-diagram";
@@ -332,6 +358,9 @@ const RADIAL_TREE_CHART_ID = "radial-tree";
 const TREE_OF_LIFE_CHART_ID = "tree-of-life";
 const HEXBIN_MAP_CHART_ID = "hexbin-map";
 const NO_LOCATION_AREA_DATA_REASON = "No LOCATION_AREA data";
+const HEXBIN_MAP_STYLE_COMBINATIONS = 36;
+const HEXBIN_MAP_STYLE_PATTERNS: HexbinMapStyle["pattern"][] = ["solid", "diagonal", "reverse-diagonal", "crosshatch", "dots", "horizontal"];
+const HEXBIN_MAP_STYLE_COLORS = ["#2563eb", "#16a34a", "#dc2626", "#7c3aed", "#ca8a04", "#0891b2"];
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   const response = await fetch("/config.json", { cache: "no-store" });
@@ -611,7 +640,7 @@ const CHART_TYPES: ChartTypeDefinition[] = [
   {
     id: HEXBIN_MAP_CHART_ID,
     name: "Hexbin-map",
-    summary: "Plain SVG boundary map from one LOCATION_AREA root attribute.",
+    summary: "Plain SVG LOCATION_AREA map with optional subregion overlays.",
     evaluateEligibility: evaluateHexbinMapEligibility,
   },
 ];
@@ -884,6 +913,10 @@ function emptyHexbinMapBinding(): HexbinMapBinding {
     rootEntityAzName: "",
     rootInstanceId: "",
     areaAttributeAzName: "",
+    overlayTraversalValue: "",
+    overlayAreaAttributeAzName: "",
+    overlayLabelTemplate: "{id}",
+    overlayStyleMode: "automatic",
   };
 }
 
@@ -971,11 +1004,46 @@ function firstValidHexbinMapBinding(options: HexbinMapRootOption[]): HexbinMapBi
     rootEntityAzName: rootOption.entity.azName,
     rootInstanceId: rootOption.instance.id,
     areaAttributeAzName: attributeOption.attribute.azName,
+    overlayTraversalValue: "",
+    overlayAreaAttributeAzName: "",
+    overlayLabelTemplate: "{id}",
+    overlayStyleMode: "automatic",
+  };
+}
+
+function hexbinMapOverlayTraversalOptions(
+  apiDescription: ApiDescriptionResponse | null,
+  rootOption: HexbinMapRootOption | null,
+): TraversalOption[] {
+  if (rootOption === null) {
+    return [];
+  }
+  return traversalOptionsFor(rootOption.entity, apiDescription)
+    .filter((option) => locationAreaAttributes(option.relatedEntity).length > 0);
+}
+
+function selectedHexbinMapOverlayTraversal(
+  apiDescription: ApiDescriptionResponse | null,
+  rootOption: HexbinMapRootOption | null,
+  binding: HexbinMapBinding,
+): TraversalOption | null {
+  return hexbinMapOverlayTraversalOptions(apiDescription, rootOption)
+    .find((option) => traversalOptionValue(option) === binding.overlayTraversalValue) ?? null;
+}
+
+function hexbinMapStyleForIndex(index: number): HexbinMapStyle {
+  const pattern = HEXBIN_MAP_STYLE_PATTERNS[index % HEXBIN_MAP_STYLE_PATTERNS.length];
+  const color = HEXBIN_MAP_STYLE_COLORS[Math.floor(index / HEXBIN_MAP_STYLE_PATTERNS.length) % HEXBIN_MAP_STYLE_COLORS.length];
+  return {
+    color,
+    fillColor: "#ffffff",
+    pattern,
   };
 }
 
 function hexbinMapBindingValidationMessage(
   rootOptionsState: HexbinMapRootOptionsState,
+  apiDescription: ApiDescriptionResponse | null,
   binding: HexbinMapBinding,
 ): string | null {
   if (rootOptionsState.status === "loading") {
@@ -1001,13 +1069,71 @@ function hexbinMapBindingValidationMessage(
   if (attributeOption.boundary === null) {
     return attributeOption.disabledReason ?? NO_LOCATION_AREA_DATA_REASON;
   }
+  if (binding.overlayTraversalValue) {
+    const traversal = selectedHexbinMapOverlayTraversal(apiDescription, rootOption, binding);
+    if (traversal === null) {
+      return "Select a valid subregion association.";
+    }
+    const overlayAttribute = traversal.relatedEntity.attributes.find((candidate) => candidate.azName === binding.overlayAreaAttributeAzName) ?? null;
+    if (overlayAttribute === null || overlayAttribute.dataType !== "LOCATION_AREA") {
+      return "Select a subregion LOCATION_AREA attribute.";
+    }
+    const labelTemplateError = validateLabelTemplate(traversal.relatedEntity, binding.overlayLabelTemplate);
+    if (labelTemplateError !== null) {
+      return `Subregion legend: ${labelTemplateError}`;
+    }
+  }
   return null;
+}
+
+async function resolveHexbinMapSubregions(
+  apiBaseUrl: string,
+  modelAzName: string,
+  instanceRootId: string,
+  rootInstanceId: string,
+  traversal: TraversalOption,
+  areaAttributeAzName: string,
+  labelTemplate: string,
+): Promise<{
+  linkedCount: number;
+  skippedCount: number;
+  subregions: HexbinMapSubregion[];
+}> {
+  const links = await fetchAssociationLinks(apiBaseUrl, modelAzName, instanceRootId, traversal.association.azName);
+  const linkedIds = [...new Set(links
+    .map((link) => relatedInstanceIdForLink(rootInstanceId, link, traversal.direction))
+    .filter((relatedId): relatedId is string => relatedId !== null))]
+    .sort((left, right) => left.localeCompare(right));
+
+  const instances = await Promise.all(linkedIds.map((relatedId) => (
+    fetchEntityInstance(apiBaseUrl, modelAzName, instanceRootId, traversal.relatedEntity.azName, relatedId)
+  )));
+  const subregions: HexbinMapSubregion[] = [];
+  for (const instance of instances) {
+    const boundary = parseLocationAreaBoundary(instance.values[areaAttributeAzName]);
+    if (boundary === null) {
+      continue;
+    }
+    subregions.push({
+      id: instance.id,
+      label: renderLabelTemplate(traversal.relatedEntity, instance, labelTemplate),
+      boundary,
+      style: hexbinMapStyleForIndex(subregions.length),
+    });
+  }
+
+  return {
+    linkedCount: linkedIds.length,
+    skippedCount: linkedIds.length - subregions.length,
+    subregions,
+  };
 }
 
 async function buildHexbinMapData(
   apiBaseUrl: string,
   modelAzName: string,
   instanceRootId: string,
+  apiDescription: ApiDescriptionResponse,
   rootOptions: HexbinMapRootOption[],
   binding: HexbinMapBinding,
 ): Promise<HexbinMapData> {
@@ -1024,10 +1150,37 @@ async function buildHexbinMapData(
   if (boundary === null) {
     throw new Error(NO_LOCATION_AREA_DATA_REASON);
   }
+  let subregions: HexbinMapSubregion[] = [];
+  let overlayNotice: string | undefined;
+  const traversal = selectedHexbinMapOverlayTraversal(apiDescription, rootOption, binding);
+  if (binding.overlayTraversalValue && traversal !== null) {
+    const resolved = await resolveHexbinMapSubregions(
+      apiBaseUrl,
+      modelAzName,
+      instanceRootId,
+      instance.id,
+      traversal,
+      binding.overlayAreaAttributeAzName,
+      binding.overlayLabelTemplate,
+    );
+    subregions = resolved.subregions;
+    const notices = [];
+    if (resolved.skippedCount > 0) {
+      notices.push(`${resolved.skippedCount} linked subregion${resolved.skippedCount === 1 ? "" : "s"} skipped because LOCATION_AREA data is missing or invalid`);
+    }
+    if (subregions.length > HEXBIN_MAP_STYLE_COMBINATIONS) {
+      notices.push("some subregion styles are reused");
+    }
+    overlayNotice = notices.length === 0 ? undefined : notices.join("; ");
+  }
   return {
     title: instanceOptionLabel(rootOption.entity, instance),
-    detail: `${attribute.visName} (${attribute.azName})`,
+    detail: subregions.length === 0
+      ? `${attribute.visName} (${attribute.azName})`
+      : `${attribute.visName} (${attribute.azName}) with ${subregions.length} subregion overlay${subregions.length === 1 ? "" : "s"}`,
     boundary,
+    subregions,
+    overlayNotice,
   };
 }
 
@@ -3244,6 +3397,10 @@ function VisualizationWizardPage() {
     message: "Hexbin-map root items not loaded",
     options: [],
   });
+  const [hexbinMapOverlayPreviewState, setHexbinMapOverlayPreviewState] = useState<HexbinMapOverlayPreviewState>({
+    status: "idle",
+    message: "No subregion overlay selected",
+  });
   const [rootMatchState, setRootMatchState] = useState<RootMatchState>({
     status: "idle",
     message: "Manual chart root",
@@ -3452,6 +3609,72 @@ function VisualizationWizardPage() {
   }, [apiBaseUrl, apiDescription, instanceRootId, modelAzName]);
 
   useEffect(() => {
+    const rootOption = findHexbinRootOption(hexbinMapRootOptionsState.options, hexbinMapBinding);
+    const traversal = selectedHexbinMapOverlayTraversal(apiDescription, rootOption, hexbinMapBinding);
+    const overlayAttribute = traversal?.relatedEntity.attributes.find((candidate) => candidate.azName === hexbinMapBinding.overlayAreaAttributeAzName) ?? null;
+    if (!apiBaseUrl || apiDescription === null || !modelAzName || !instanceRootId || rootOption === null || traversal === null || overlayAttribute === null) {
+      setHexbinMapOverlayPreviewState({
+        status: "idle",
+        message: hexbinMapBinding.overlayTraversalValue ? "Subregion overlay selection is incomplete" : "No subregion overlay selected",
+      });
+      return;
+    }
+    const labelTemplateError = validateLabelTemplate(traversal.relatedEntity, hexbinMapBinding.overlayLabelTemplate);
+    if (labelTemplateError !== null) {
+      setHexbinMapOverlayPreviewState({
+        status: "idle",
+        message: `Subregion legend: ${labelTemplateError}`,
+      });
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      setHexbinMapOverlayPreviewState({
+        status: "loading",
+        message: "Loading subregion overlay preview...",
+      });
+      resolveHexbinMapSubregions(
+        apiBaseUrl,
+        modelAzName,
+        instanceRootId,
+        rootOption.instance.id,
+        traversal,
+        overlayAttribute.azName,
+        hexbinMapBinding.overlayLabelTemplate,
+      )
+        .then((resolved) => {
+          if (cancelled) {
+            return;
+          }
+          const skipped = resolved.skippedCount === 0
+            ? ""
+            : `, ${resolved.skippedCount} without usable LOCATION_AREA data`;
+          setHexbinMapOverlayPreviewState({
+            status: "ok",
+            message: `${resolved.subregions.length} of ${resolved.linkedCount} linked subregion${resolved.linkedCount === 1 ? "" : "s"} renderable${skipped}`,
+            linkedCount: resolved.linkedCount,
+            renderableCount: resolved.subregions.length,
+          });
+        })
+        .catch((error) => {
+          if (cancelled) {
+            return;
+          }
+          setHexbinMapOverlayPreviewState({
+            status: "error",
+            message: error instanceof Error ? error.message : "Subregion overlay preview failed",
+          });
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [apiBaseUrl, apiDescription, hexbinMapBinding, hexbinMapRootOptionsState.options, instanceRootId, modelAzName]);
+
+  useEffect(() => {
     const levelOneFilter = binding.levels[0]?.filter ?? null;
     if (binding.rootSelection.mode !== "manual" || levelOneFilter === null || !levelOneFilter.enabled) {
       setLevelOneFilterMatchState({
@@ -3521,7 +3744,7 @@ function VisualizationWizardPage() {
   const selectedChartEligibility = chartOptions.find((option) => option.chartType.id === selectedChartType.id)?.eligibility ?? { selectable: false, reason: "Chart type unavailable." };
   const bindingMessage = bindingValidationMessage(apiDescription, binding, rootMatchState, levelOneFilterMatchState);
   const isHexbinMapSelected = selectedChartType.id === HEXBIN_MAP_CHART_ID;
-  const hexbinMapBindingMessage = hexbinMapBindingValidationMessage(hexbinMapRootOptionsState, hexbinMapBinding);
+  const hexbinMapBindingMessage = hexbinMapBindingValidationMessage(hexbinMapRootOptionsState, apiDescription, hexbinMapBinding);
   const selectedBindingMessage = isHexbinMapSelected ? hexbinMapBindingMessage : bindingMessage;
   const canContinueToBinding = status === "ok" && selectedChartEligibility.selectable;
   const canRenderVisualization = canContinueToBinding && selectedBindingMessage === null;
@@ -3617,7 +3840,7 @@ function VisualizationWizardPage() {
       return;
     }
     const validationError = isHexbinMapSelected
-      ? hexbinMapBindingValidationMessage(hexbinMapRootOptionsState, hexbinMapBinding)
+      ? hexbinMapBindingValidationMessage(hexbinMapRootOptionsState, apiDescription, hexbinMapBinding)
       : bindingValidationMessage(apiDescription, binding);
     if (validationError !== null) {
       setVisualizationData({
@@ -3641,12 +3864,15 @@ function VisualizationWizardPage() {
           apiBaseUrl,
           apiDescription.modelAzName,
           instanceRootId,
+          apiDescription,
           hexbinMapRootOptionsState.options,
           hexbinMapBinding,
         );
         setVisualizationData({
           status: "ok",
-          message: `${hexbinMap.boundary.length} boundary point${hexbinMap.boundary.length === 1 ? "" : "s"} rendered`,
+          message: hexbinMap.subregions.length === 0
+            ? `${hexbinMap.boundary.length} boundary point${hexbinMap.boundary.length === 1 ? "" : "s"} rendered`
+            : `${hexbinMap.subregions.length} subregion overlay${hexbinMap.subregions.length === 1 ? "" : "s"} rendered`,
           tree: null,
           hexbinMap,
           loadedAt: new Date().toLocaleTimeString(),
@@ -3746,7 +3972,9 @@ function VisualizationWizardPage() {
 
         {step === "binding" && isHexbinMapSelected && (
           <HexbinMapBindingPanel
+            apiDescription={apiDescription}
             rootOptionsState={hexbinMapRootOptionsState}
+            overlayPreviewState={hexbinMapOverlayPreviewState}
             binding={hexbinMapBinding}
             validationMessage={hexbinMapBindingMessage}
             onBindingChange={updateHexbinMapBinding}
@@ -3822,13 +4050,17 @@ function VisualizationWizardPage() {
 }
 
 function HexbinMapBindingPanel({
+  apiDescription,
   rootOptionsState,
+  overlayPreviewState,
   binding,
   validationMessage,
   onBindingChange,
   onVisualize,
 }: {
+  apiDescription: ApiDescriptionResponse | null;
   rootOptionsState: HexbinMapRootOptionsState;
+  overlayPreviewState: HexbinMapOverlayPreviewState;
   binding: HexbinMapBinding;
   validationMessage: string | null;
   onBindingChange: (value: HexbinMapBinding) => void;
@@ -3836,6 +4068,9 @@ function HexbinMapBindingPanel({
 }) {
   const selectedRootOption = findHexbinRootOption(rootOptionsState.options, binding);
   const selectedRootValue = selectedRootOption === null ? "" : rootOptionValue(selectedRootOption);
+  const overlayTraversalOptions = hexbinMapOverlayTraversalOptions(apiDescription, selectedRootOption);
+  const selectedOverlayTraversal = selectedHexbinMapOverlayTraversal(apiDescription, selectedRootOption, binding);
+  const overlayAreaAttributes = selectedOverlayTraversal === null ? [] : locationAreaAttributes(selectedOverlayTraversal.relatedEntity);
 
   function selectRoot(rootValue: string) {
     const nextRootOption = rootOptionsState.options.find((option) => rootOptionValue(option) === rootValue) ?? null;
@@ -3848,6 +4083,22 @@ function HexbinMapBindingPanel({
       rootEntityAzName: nextRootOption.entity.azName,
       rootInstanceId: nextRootOption.instance.id,
       areaAttributeAzName: firstAttribute?.attribute.azName ?? "",
+      overlayTraversalValue: "",
+      overlayAreaAttributeAzName: "",
+      overlayLabelTemplate: "{id}",
+      overlayStyleMode: "automatic",
+    });
+  }
+
+  function selectOverlayTraversal(traversalValue: string) {
+    const nextTraversal = overlayTraversalOptions.find((option) => traversalOptionValue(option) === traversalValue) ?? null;
+    const nextAttribute = nextTraversal === null ? null : locationAreaAttributes(nextTraversal.relatedEntity)[0] ?? null;
+    onBindingChange({
+      ...binding,
+      overlayTraversalValue: traversalValue,
+      overlayAreaAttributeAzName: nextAttribute?.azName ?? "",
+      overlayLabelTemplate: nextTraversal === null ? "{id}" : defaultLabelTemplate(nextTraversal.relatedEntity),
+      overlayStyleMode: "automatic",
     });
   }
 
@@ -3891,6 +4142,78 @@ function HexbinMapBindingPanel({
           </select>
         </label>
       </div>
+
+      <section className="hexbin-overlay-binding" aria-labelledby="visualize-hexbin-overlay">
+        <header>
+          <h3 id="visualize-hexbin-overlay">Subregion Overlay</h3>
+          <span>Optional layer from linked LOCATION_AREA instances</span>
+        </header>
+        <div className="binding-grid binding-grid-two">
+          <label className="query-field query-field-wide">
+            <span>Subregion association</span>
+            <select
+              value={binding.overlayTraversalValue}
+              onChange={(event) => selectOverlayTraversal(event.target.value)}
+              disabled={selectedRootOption === null || selectedRootOption.disabledReason !== undefined}
+            >
+              <option value="">No overlay</option>
+              {overlayTraversalOptions.map((option) => (
+                <option key={traversalOptionValue(option)} value={traversalOptionValue(option)}>
+                  {traversalLabel(option)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="query-field">
+            <span>Subregion boundary</span>
+            <select
+              value={binding.overlayAreaAttributeAzName}
+              onChange={(event) => onBindingChange({ ...binding, overlayAreaAttributeAzName: event.target.value })}
+              disabled={selectedOverlayTraversal === null}
+            >
+              {selectedOverlayTraversal === null ? (
+                <option value="">Select an overlay association</option>
+              ) : overlayAreaAttributes.map((attribute) => (
+                <option key={attribute.azName} value={attribute.azName}>
+                  {attribute.visName} ({attribute.azName})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="query-field">
+            <span>Style assignment</span>
+            <select value={binding.overlayStyleMode} disabled={selectedOverlayTraversal === null}>
+              <option value="automatic">Automatic per subregion</option>
+            </select>
+          </label>
+          <label className="query-field">
+            <span>Legend label</span>
+            <input
+              value={binding.overlayLabelTemplate}
+              placeholder="{id}"
+              onChange={(event) => onBindingChange({ ...binding, overlayLabelTemplate: event.target.value })}
+              disabled={selectedOverlayTraversal === null}
+            />
+          </label>
+        </div>
+        {selectedOverlayTraversal !== null && (
+          <div className="binding-template-hints" aria-label="Subregion legend label template hints">
+            {[...selectedOverlayTraversal.relatedEntity.attributes.map((attribute) => `{${attribute.azName}}`), "{id}"].map((hint) => (
+              <button
+                key={hint}
+                type="button"
+                onClick={() => onBindingChange({ ...binding, overlayLabelTemplate: `${binding.overlayLabelTemplate}${hint}` })}
+                title={`Append ${hint}`}
+              >
+                <code>{hint}</code>
+              </button>
+            ))}
+          </div>
+        )}
+        <footer className={`binding-root-match binding-root-match-${overlayPreviewState.status}`}>
+          {overlayPreviewState.message}
+        </footer>
+      </section>
 
       <footer className={`binding-root-match binding-root-match-${rootOptionsState.status}`}>
         {rootOptionsState.message}
@@ -4681,8 +5004,10 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     const width = 960;
     const height = 640;
     const padding = 48;
-    const longitudes = data.boundary.map((point) => point.longitude);
-    const latitudes = data.boundary.map((point) => point.latitude);
+    const allBoundaries = [data.boundary, ...data.subregions.map((subregion) => subregion.boundary)];
+    const allPoints = allBoundaries.flat();
+    const longitudes = allPoints.map((point) => point.longitude);
+    const latitudes = allPoints.map((point) => point.latitude);
     const longitudeExtent = d3.extent(longitudes);
     const latitudeExtent = d3.extent(latitudes);
     const minLongitude = longitudeExtent[0] ?? 0;
@@ -4696,13 +5021,15 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     const mapHeight = latitudeSpan * scale;
     const offsetX = (width - mapWidth) / 2;
     const offsetY = (height - mapHeight) / 2;
-    const projectedBoundary = data.boundary.map((point) => [
+    const projectBoundary = (boundary: LocationPoint[]) => boundary.map((point) => [
       offsetX + (point.longitude - minLongitude) * scale,
       offsetY + (maxLatitude - point.latitude) * scale,
     ] as [number, number]);
-    const closedBoundary = projectedBoundary.length > 0
-      ? [...projectedBoundary, projectedBoundary[0]]
-      : projectedBoundary;
+    const closeBoundary = (boundary: [number, number][]) => boundary.length > 0
+      ? [...boundary, boundary[0]]
+      : boundary;
+    const projectedBoundary = projectBoundary(data.boundary);
+    const closedBoundary = closeBoundary(projectedBoundary);
     const line = d3.line<[number, number]>()
       .x((point) => point[0])
       .y((point) => point[1]);
@@ -4714,6 +5041,56 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .attr("width", width)
       .attr("height", height);
 
+    const defs = svg.append("defs");
+    data.subregions.forEach((subregion, index) => {
+      const pattern = defs.append("pattern")
+        .attr("id", `hexbin-pattern-${index}`)
+        .attr("patternUnits", "userSpaceOnUse")
+        .attr("width", 10)
+        .attr("height", 10);
+      pattern.append("rect")
+        .attr("width", 10)
+        .attr("height", 10)
+        .attr("fill", subregion.style.fillColor);
+      if (subregion.style.pattern === "diagonal" || subregion.style.pattern === "crosshatch") {
+        pattern.append("path")
+          .attr("d", "M-2,10 L10,-2 M0,12 L12,0")
+          .attr("stroke", subregion.style.color)
+          .attr("stroke-width", 2);
+      }
+      if (subregion.style.pattern === "reverse-diagonal" || subregion.style.pattern === "crosshatch") {
+        pattern.append("path")
+          .attr("d", "M-2,0 L10,12 M0,-2 L12,10")
+          .attr("stroke", subregion.style.color)
+          .attr("stroke-width", 2);
+      }
+      if (subregion.style.pattern === "horizontal") {
+        pattern.append("path")
+          .attr("d", "M0,3 L10,3 M0,8 L10,8")
+          .attr("stroke", subregion.style.color)
+          .attr("stroke-width", 2);
+      }
+      if (subregion.style.pattern === "dots") {
+        pattern.append("circle")
+          .attr("cx", 3)
+          .attr("cy", 3)
+          .attr("r", 1.8)
+          .attr("fill", subregion.style.color);
+        pattern.append("circle")
+          .attr("cx", 8)
+          .attr("cy", 8)
+          .attr("r", 1.8)
+          .attr("fill", subregion.style.color);
+      }
+      if (subregion.style.pattern === "solid") {
+        pattern.append("rect")
+          .attr("width", 10)
+          .attr("height", 10)
+          .attr("fill", subregion.style.color)
+          .attr("opacity", 0.22);
+      }
+    });
+
     svg.append("rect")
       .attr("class", "hexbin-map-background")
       .attr("x", 0)
@@ -4724,6 +5101,15 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     svg.append("path")
       .attr("class", "hexbin-map-boundary-fill")
       .attr("d", line(closedBoundary));
+
+    svg.append("g")
+      .attr("class", "hexbin-map-subregions")
+      .selectAll("path")
+      .data(data.subregions)
+      .join("path")
+      .attr("d", (subregion) => line(closeBoundary(projectBoundary(subregion.boundary))))
+      .attr("fill", (_subregion, index) => `url(#hexbin-pattern-${index})`)
+      .attr("stroke", (subregion) => subregion.style.color);
 
     svg.append("path")
       .attr("class", "hexbin-map-boundary")
@@ -4749,6 +5135,45 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .attr("x", padding)
       .attr("y", 56)
       .text(data.detail);
+
+    if (data.overlayNotice) {
+      svg.append("text")
+        .attr("class", "hexbin-map-notice")
+        .attr("x", padding)
+        .attr("y", 78)
+        .text(data.overlayNotice);
+    }
+
+    if (data.subregions.length > 0) {
+      const legend = svg.append("g")
+        .attr("class", "hexbin-map-legend")
+        .attr("transform", `translate(${width - 300}, ${padding})`);
+      legend.append("rect")
+        .attr("class", "hexbin-map-legend-background")
+        .attr("width", 252)
+        .attr("height", Math.min(440, 34 + data.subregions.length * 26));
+      legend.append("text")
+        .attr("class", "hexbin-map-legend-title")
+        .attr("x", 14)
+        .attr("y", 23)
+        .text("Subregions");
+      const entries = legend.append("g")
+        .attr("transform", "translate(14, 42)")
+        .selectAll("g")
+        .data(data.subregions)
+        .join("g")
+        .attr("transform", (_subregion, index) => `translate(0, ${index * 26})`);
+      entries.append("rect")
+        .attr("width", 18)
+        .attr("height", 18)
+        .attr("rx", 2)
+        .attr("fill", (_subregion, index) => `url(#hexbin-pattern-${index})`)
+        .attr("stroke", (subregion) => subregion.style.color);
+      entries.append("text")
+        .attr("x", 26)
+        .attr("y", 14)
+        .text((subregion) => subregion.label);
+    }
   }, [data]);
 
   return <svg ref={svgRef} className="hexbin-map-svg" role="img" aria-label="Hexbin-map boundary" />;

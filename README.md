@@ -411,7 +411,10 @@ visualizations are `Tidy tree`, `Radial tree`, `Tree of life`, and
 `Hexbin-map`. The tree charts bind model entities, association traversal
 direction, and label templates to a scrollable SVG tree. `Hexbin-map` is
 available for models with `LOCATION_AREA` attributes and renders one selected
-root item's current area boundary as plain SVG. See
+root item's current area boundary as plain SVG. It can optionally follow one
+eligible association to linked subregion instances, render their
+`LOCATION_AREA` boundaries as deterministic patterned overlays, and show a
+matching legend from a user-entered label template. See
 [docs/visualizations.md](docs/visualizations.md) for the full visualization
 workflow and current limits.
 The console output scrolls to the latest line as commands run. The full-page
