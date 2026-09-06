@@ -75,6 +75,7 @@ repository or multiple repositories.
 
 Files changed:
 
+- `tasks/backlog.md`
 - `SESSION.md`
 
 Commands run:
@@ -10878,3 +10879,50 @@ Current status and next steps:
 - Loader smoke test passed through `scripts/LoadMetsapalsta3ModelData.bash`:
   loaded 1 `Metsapalsta`, 4 `Metsakuvio`, 11 `Puulaji`, 110 `Mittaus`, and 125
   association links.
+
+## 2026-09-06 20:17 EEST
+
+Session goal:
+
+- Plan the next Hexbin-map increment for rendering root `LOCATION_AREA`
+  boundaries together with linked subregion `LOCATION_AREA` overlays, patterned
+  fills, matching borders, and a configurable legend.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg -n "LOCATION_AREA|LOCATIONS_AREA|Metsapalsta3|legend|stripe|overlay|region|subregion|sub region" .vedenemo vedenemo-* docs tasks -g '!**/target/**' -g '!**/node_modules/**'`
+- `rg -n "Hexbin|hexbin|LOCATION_AREA|No LOCATION_AREA|Visualization|legend|attribute" vedenemo-ux/src -g '!**/node_modules/**'`
+- `rg --files vedenemo-ux/src`
+- `sed -n '90,180p' docs/visualizations.md`
+- `sed -n '140,260p' tasks/backlog.md`
+- `sed -n '280,340p' vedenemo-ux/src/App.tsx`
+- `sed -n '867,1035p' vedenemo-ux/src/App.tsx`
+- `sed -n '3824,3908p' vedenemo-ux/src/App.tsx`
+- `sed -n '4672,4760p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,180p' tasks/backlog.md`
+- `tail -n 80 SESSION.md`
+- `git diff -- tasks/backlog.md SESSION.md`
+- `git diff --check -- tasks/backlog.md SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added the planned `Add Hexbin-map subregion overlay layers` backlog item at
+  the top of `tasks/backlog.md`; no product code changed.
+- The existing Hexbin-map path is UX-only and already has isolated binding,
+  data-building, parser, and renderer functions that can be extended for
+  linked subregion overlays.
+- The likely next implementation slice should reuse existing root-scoped
+  instance and association-link APIs and keep D3, pattern fills, color choices,
+  and legend rendering in `vedenemo-ux`.

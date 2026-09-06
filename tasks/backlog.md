@@ -1,5 +1,131 @@
 # Backlog
 
+## Add Hexbin-map subregion overlay layers
+
+Status: planned
+
+### Goal
+
+Extend the browser UX `Hexbin-map` visualization so a selected main
+`LOCATION_AREA` region can render its linked subregion `LOCATION_AREA`
+instances as overlay polygons with distinct fill patterns, matching borders,
+and a legend.
+
+The motivating concrete case is `Metsapalsta3.vdmp`: render the selected
+`Metsapalsta.alue` parent outline and all associated `Metsakuvio.alue`
+subregions. The implementation should stay generic enough for any model where
+a selected extent entity is associated to child entities that also contain
+`LOCATION_AREA` attributes.
+
+### Context
+
+The current `Hexbin-map` wizard is intentionally skeletal: it selects one
+root-scoped instance and one `LOCATION_AREA` attribute, then renders that
+boundary as a plain SVG outline. `Metsapalsta3.vdmp` now has usable
+`LOCATION_AREA` data both for the overall `Metsapalsta` region and for its
+linked `Metsakuvio` subregions, making subregion overlays the next practical
+increment.
+
+The existing root-scoped instance query and association-link API flows should
+be sufficient for a first version. D3, projection, overlay styling, SVG
+patterns, legend rendering, and wizard state should remain frontend-only in
+`vedenemo-ux`.
+
+### Proposed Binding Flow
+
+1. Select the main region instance as today, for example one `Metsapalsta`.
+2. Select the main region `LOCATION_AREA` extent attribute, for example
+   `Metsapalsta.alue`.
+3. Select one outgoing association from the main region entity to a subregion
+   entity that has at least one `LOCATION_AREA` attribute, for example
+   `Metsapalsta_sisaltaa_Metsakuvio`.
+4. Select the subregion `LOCATION_AREA` attribute, for example
+   `Metsakuvio.alue`.
+5. Enter a subregion legend label template using the existing placeholder
+   convention, for example `{tunnus}`, `Kuvio {tunnus}`, or
+   `{tunnus} ({hehtaarit} ha)`.
+
+### Rendering Plan
+
+- Render the main region boundary as a clear outer border.
+- Render each linked subregion as an overlay polygon inside the same projected
+  coordinate space.
+- Assign each subregion a distinct style from a deterministic palette.
+- Use SVG pattern fills for visual separation, for example diagonal stripe,
+  reverse diagonal stripe, crosshatch, dots, horizontal stripe, and light solid
+  fill.
+- Use the same color for each subregion border and its pattern marks.
+- Render a legend with one entry per rendered subregion using the user-entered
+  label template and a matching style swatch.
+- Keep polygon overlays above the parent fill and keep the parent border
+  visible after subregions are drawn.
+
+### Generic Rules
+
+- Offer only associations whose related entity has at least one
+  `LOCATION_AREA` attribute.
+- Offer only `LOCATION_AREA` attributes for the selected subregion entity.
+- Keep subregion instances with missing, empty, or unparsable
+  `LOCATION_AREA` values visible in the binding data model but do not render
+  them as valid overlays.
+- Validate legend label templates against the selected subregion entity's
+  attributes, with `{id}` as the backend instance id fallback.
+- Keep styling deterministic so re-rendering the same subregions gives the same
+  visual assignment.
+
+### Scope
+
+- Update only `vedenemo-ux` for the first implementation unless existing APIs
+  prove insufficient.
+- Reuse existing root-scoped instance and association-link endpoints.
+- Keep visualization bindings runtime-only.
+- Extend the existing `LOCATION_AREA` parser only as needed for the current
+  dump value shape.
+- Add UX documentation and current-task status when implemented.
+
+### Out Of Scope
+
+- Persistent visualization configuration.
+- Backend model-rule changes.
+- New `.vdos` or `.vdmp` syntax.
+- Actual hex-cell generation or clipping.
+- Spatial topology validation in the UX.
+- User-managed per-subregion style persistence.
+- Metric aggregation.
+- Linked `Puulaji` classification coloring.
+- Point-density hexbins from `Mittaus.lokaatio`.
+- Backend geometry libraries or third-party map dependencies outside
+  `vedenemo-ux`.
+
+### Acceptance Criteria
+
+- `Hexbin-map` can render one selected main `LOCATION_AREA` boundary together
+  with all valid linked subregion `LOCATION_AREA` boundaries.
+- The binding panel offers eligible subregion associations and subregion area
+  attributes only.
+- The Metsapalsta case can select `Metsapalsta.alue` as the extent and
+  `Metsakuvio.alue` as the overlay layer.
+- Each rendered subregion has a distinct pattern/color style and a matching
+  border.
+- A legend appears with style swatches matching the map overlays.
+- The legend text uses a user-editable template with `{attribute}` references
+  and `{id}` support.
+- Invalid legend placeholders prevent rendering with a clear validation
+  message.
+- Existing single-boundary Hexbin-map rendering remains usable when no overlay
+  association is selected.
+- Existing tree visualizations continue to build.
+- Frontend build succeeds.
+
+### Decisions
+
+- Implement polygon overlays before true hexbin cells because this directly
+  solves the current Metsapalsta subregion problem.
+- Keep the first style editor minimal: deterministic built-in styles first,
+  richer manual style selection later.
+- Treat this as a generic extent-plus-overlay visualization pattern rather
+  than a Metsapalsta-specific feature.
+
 ## Plan skeletal Hexbin-map wizard root selection path
 
 Status: executed
