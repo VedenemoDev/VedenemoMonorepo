@@ -80,8 +80,8 @@ subregion borders visually above the main region border.
 - Treated reversed point order as the same shared segment and ignored explicit
   duplicated polygon closing points for segment detection.
 - Rendered shared borders in a dedicated SVG overlay layer above ordinary
-  subregion polygons with two thin parallel strokes, one per neighboring
-  subregion color.
+  subregion polygons with each neighboring color offset toward that
+  subregion's own interior side.
 - Kept ordinary non-shared subregion edges unchanged and preserved existing
   no-overlay plus automatic/manual style assignment modes.
 - Documented that the first implementation does not split partial overlaps or

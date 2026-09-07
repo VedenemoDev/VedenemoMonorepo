@@ -53,8 +53,8 @@ letting one subregion's stroke visually dominate the other.
 - Treated reversed point order as the same shared segment and ignored explicit
   duplicated polygon closing points for segment detection.
 - Rendered shared borders in a dedicated SVG overlay layer above ordinary
-  subregion polygons with two thin parallel strokes, one per neighboring
-  subregion color.
+  subregion polygons with each neighboring color offset toward that
+  subregion's own interior side.
 - Preserved ordinary subregion rendering for non-shared edges and all existing
   Hexbin-map style assignment modes.
 - The first implementation intentionally does not split partial overlaps or

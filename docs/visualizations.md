@@ -186,9 +186,10 @@ subregion polygons so linked subregion border colors remain visible when they
 overlap the main region boundary. When two subregion polygons share the same
 exact source-coordinate boundary segment, including reversed point order, the
 renderer draws a shared-border overlay with two thin parallel strokes so both
-neighboring subregion colors remain visible. The shared-border pass does not
-split partial overlaps or conflate near-identical/tolerance-based segments. It
-does not yet generate hexbin cells.
+neighboring subregion colors remain visible. Each shared-border stroke is
+offset toward its matched subregion's own polygon interior. The shared-border
+pass does not split partial overlaps or conflate near-identical/tolerance-based
+segments. It does not yet generate hexbin cells.
 
 Use `Refresh` to reload backend data without losing the current runtime binding.
 

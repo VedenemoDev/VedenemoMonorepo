@@ -355,12 +355,6 @@ type HexbinMapSubregion = {
   style: HexbinMapStyle;
 };
 
-type HexbinMapSharedBorderSegment = {
-  start: LocationPoint;
-  end: LocationPoint;
-  colors: [string, string];
-};
-
 type HexbinMapSegmentOccurrence = {
   subregionIndex: number;
   start: LocationPoint;
@@ -1125,7 +1119,7 @@ function hexbinMapOpenBoundary(boundary: LocationPoint[]): LocationPoint[] {
   return boundary;
 }
 
-function sharedHexbinMapBorderSegments(subregions: HexbinMapSubregion[]): HexbinMapSharedBorderSegment[] {
+function sharedHexbinMapBorderOccurrences(subregions: HexbinMapSubregion[]): HexbinMapSegmentOccurrence[] {
   const segments = new Map<string, HexbinMapSegmentOccurrence[]>();
   subregions.forEach((subregion, subregionIndex) => {
     const boundary = hexbinMapOpenBoundary(subregion.boundary);
@@ -1155,12 +1149,7 @@ function sharedHexbinMapBorderSegments(subregions: HexbinMapSubregion[]): Hexbin
     if (uniqueOccurrences.length < 2) {
       return [];
     }
-    const [first, second] = uniqueOccurrences;
-    return [{
-      start: first.start,
-      end: first.end,
-      colors: [first.color, second.color],
-    }];
+    return uniqueOccurrences;
   });
 }
 
@@ -5323,9 +5312,25 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     const projectedBoundary = projectBoundary(data.boundary);
     const closedBoundary = closeBoundary(projectedBoundary);
     const sharedBorderStrokeOffset = 1.8;
-    const sharedBorderStrokes = sharedHexbinMapBorderSegments(data.subregions).flatMap((segment) => {
-      const start = projectPoint(segment.start);
-      const end = projectPoint(segment.end);
+    const projectedSubregions = data.subregions.map((subregion) => ({
+      subregion,
+      boundary: projectBoundary(subregion.boundary),
+      openBoundary: projectBoundary(hexbinMapOpenBoundary(subregion.boundary)),
+    }));
+    const polygonSignedArea = (boundary: [number, number][]) => {
+      if (boundary.length < 3) {
+        return 0;
+      }
+      return d3.pairs(closeBoundary(boundary))
+        .reduce((sum, [start, end]) => sum + start[0] * end[1] - end[0] * start[1], 0) / 2;
+    };
+    const sharedBorderStrokes = sharedHexbinMapBorderOccurrences(data.subregions).flatMap((occurrence) => {
+      const subregion = projectedSubregions[occurrence.subregionIndex];
+      if (subregion === undefined) {
+        return [];
+      }
+      const start = projectPoint(occurrence.start);
+      const end = projectPoint(occurrence.end);
       const dx = end[0] - start[0];
       const dy = end[1] - start[1];
       const length = Math.hypot(dx, dy);
@@ -5334,16 +5339,14 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       }
       const normalX = (-dy / length) * sharedBorderStrokeOffset;
       const normalY = (dx / length) * sharedBorderStrokeOffset;
-      return segment.colors.map((color, colorIndex) => {
-        const direction = colorIndex === 0 ? -1 : 1;
-        return {
-          color,
-          x1: start[0] + normalX * direction,
-          y1: start[1] + normalY * direction,
-          x2: end[0] + normalX * direction,
-          y2: end[1] + normalY * direction,
-        };
-      });
+      const direction = polygonSignedArea(subregion.openBoundary) >= 0 ? 1 : -1;
+      return [{
+        color: occurrence.color,
+        x1: start[0] + normalX * direction,
+        y1: start[1] + normalY * direction,
+        x2: end[0] + normalX * direction,
+        y2: end[1] + normalY * direction,
+      }];
     });
     const line = d3.line<[number, number]>()
       .x((point) => point[0])
@@ -5430,11 +5433,11 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     svg.append("g")
       .attr("class", "hexbin-map-subregions")
       .selectAll("path")
-      .data(data.subregions)
+      .data(projectedSubregions)
       .join("path")
-      .attr("d", (subregion) => line(closeBoundary(projectBoundary(subregion.boundary))))
-      .attr("fill", (subregion, index) => subregion.style.fillMode === "none" ? "transparent" : `url(#hexbin-pattern-${index})`)
-      .attr("stroke", (subregion) => subregion.style.color);
+      .attr("d", (projectedSubregion) => line(closeBoundary(projectedSubregion.boundary)))
+      .attr("fill", (projectedSubregion, index) => projectedSubregion.subregion.style.fillMode === "none" ? "transparent" : `url(#hexbin-pattern-${index})`)
+      .attr("stroke", (projectedSubregion) => projectedSubregion.subregion.style.color);
 
     svg.append("g")
       .attr("class", "hexbin-map-shared-borders")

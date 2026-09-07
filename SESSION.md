@@ -11473,3 +11473,51 @@ Current status and next steps:
 - `mvn -B clean verify` passed; Maven reports existing shade module-info and
   overlapping resource/class warnings during web API packaging.
 - `git diff --check` passed.
+
+## 2026-09-08 00:05 EEST
+
+Session goal:
+
+- Fix the `Hexbin-map` shared-border overlay so each dual-color stroke stays
+  on its own subregion side instead of appearing on the neighboring subregion.
+
+Files changed:
+
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short`
+- `sed -n '330,380p' vedenemo-ux/src/App.tsx`
+- `sed -n '1088,1165p' vedenemo-ux/src/App.tsx`
+- `sed -n '5300,5355p' vedenemo-ux/src/App.tsx`
+- `npm run build` from `vedenemo-ux`
+- `git diff --check`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `git diff -- docs/visualizations.md tasks/current-task.md tasks/backlog.md`
+
+Current status and next steps:
+
+- Replaced arbitrary paired shared-border offsetting with per-subregion shared
+  edge occurrences.
+- The renderer now projects each matched subregion boundary, computes its
+  polygon signed area, and offsets that subregion's shared-border stroke toward
+  that polygon's interior side.
+- Updated visualization and task documentation to record that each shared
+  border color is offset toward its matched subregion's own interior.
+- `npm run build` from `vedenemo-ux` passed; Vite reports the existing
+  large-chunk warning.
+- `git diff --check` passed.
