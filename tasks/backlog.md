@@ -184,7 +184,7 @@ Later style modes can be added without changing the overlay concept:
 
 ## Add Hexbin-map subregion style assignment modes
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -274,6 +274,19 @@ subregions.
 - Existing automatic filled overlay rendering remains usable.
 - Existing no-overlay single-boundary Hexbin-map rendering remains usable.
 - Frontend build succeeds.
+
+### Completion Notes
+
+- Replaced the single automatic Hexbin-map overlay style mode with four
+  runtime style modes: automatic pattern/color, automatic border color, manual
+  border color, and manual fill pattern/color.
+- Added manual assignment rows for renderable linked subregions, keyed by
+  stable subregion instance id and labeled through the existing legend template.
+- Added validation that blocks manual rendering until every renderable
+  subregion has the required color and, for filled manual mode, pattern.
+- Updated SVG map and legend rendering so border-only modes use transparent
+  fills while preserving matching subregion strokes.
+- Preserved existing no-overlay and automatic filled overlay behavior.
 
 ## Plan skeletal Hexbin-map wizard root selection path
 

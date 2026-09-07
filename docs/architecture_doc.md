@@ -718,7 +718,7 @@ Current user-facing behavior:
   shows no-data candidates disabled, lets the user select one root item and one
   current-shape `LOCATION_AREA` attribute, optionally follows one eligible
   association to linked subregion instances with `LOCATION_AREA` data, assigns
-  deterministic automatic pattern/color overlay styles, and renders the
+  runtime automatic or manual subregion overlay styles, and renders the
   boundary plus a matching subregion legend as a plain SVG map
   under a synthetic root, fetch entity instances plus association links, skip
   already visited instance ids on the current render path, and render a
@@ -1027,6 +1027,7 @@ sequenceDiagram
             API-->>UX: links from selected root item to subregion instances
             UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/{subregionEntityAzName}/{instanceId}
             API-->>UX: linked subregion LOCATION_AREA values
+            UX->>UX: assign automatic styles or validate manual style selections
         end
         UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}
         API-->>UX: selected root item values

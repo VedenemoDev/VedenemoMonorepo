@@ -11235,3 +11235,77 @@ Current status and next steps:
   Hexbin-map binding modes.
 - No implementation changes were made; next step is to implement the planned
   UX feature when selected as current work.
+
+## 2026-09-07 22:12 EEST
+
+Session goal:
+
+- Implement the Hexbin-map subregion style assignment modes as the current
+  task and mark the backlog item executed.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 140 SESSION.md`
+- `git status --short`
+- `rg -n "Hexbin|hexbin|subregion|Style|style|pattern|legend" vedenemo-ux/src/App.tsx`
+- `rg -n "Hexbin|hexbin|subregion|style assignment|pattern" README.md docs tasks/backlog.md`
+- `sed -n '260,380p' vedenemo-ux/src/App.tsx`
+- `sed -n '880,1195p' vedenemo-ux/src/App.tsx`
+- `sed -n '3380,3685p' vedenemo-ux/src/App.tsx`
+- `sed -n '3740,3905p' vedenemo-ux/src/App.tsx`
+- `sed -n '4050,4215p' vedenemo-ux/src/App.tsx`
+- `sed -n '4988,5195p' vedenemo-ux/src/App.tsx`
+- `sed -n '4215,4270p' vedenemo-ux/src/App.tsx`
+- `rg -n "binding-grid|hexbin-overlay|binding-template|hexbin-map" vedenemo-ux/src/styles.css`
+- `sed -n '395,430p' README.md`
+- `sed -n '105,140p' docs/visualizations.md`
+- `sed -n '224,238p' docs/visualizations.md`
+- `sed -n '760,990p' vedenemo-ux/src/styles.css`
+- `sed -n '1028,1110p' vedenemo-ux/src/styles.css`
+- `sed -n '1,120p' vedenemo-ux/src/App.tsx`
+- `npm run build` from `vedenemo-ux`
+- `mvn -B clean verify`
+- `rg -n "overlayStyleMode|automatic\\\"|manualOverlayStyles|Hexbin-map supports|manual style" vedenemo-ux/src/App.tsx docs/visualizations.md README.md tasks/current-task.md tasks/backlog.md`
+- `git diff --check`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `sed -n '700,730p' docs/architecture_doc.md`
+- `sed -n '1014,1038p' docs/architecture_doc.md`
+- `sed -n '185,278p' tasks/backlog.md`
+- `rg -n "general-purpose software|no representation|warranty|Apache License" README.md`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `git diff -- README.md docs/visualizations.md docs/architecture_doc.md tasks/current-task.md tasks/backlog.md`
+- `tail -n 8 tasks/current-task.md`
+- `npm run build` from `vedenemo-ux`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added automatic pattern/color, automatic border-color, manual border-color,
+  and manual pattern/color style modes to the Hexbin-map binding phase.
+- Added manual subregion style assignment rows keyed by linked subregion
+  instance id and validated required manual selections before rendering.
+- Updated the SVG renderer so border-only modes use transparent fills while
+  keeping matching strokes and legend swatches.
+- Updated README, visualization documentation, current implementation
+  architecture documentation, current task, and backlog history.
+- `npm run build` from `vedenemo-ux` passed; Vite reports the existing
+  large-chunk warning.
+- `mvn -B clean verify` passed.

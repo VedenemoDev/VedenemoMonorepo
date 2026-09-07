@@ -294,7 +294,17 @@ type HexbinMapBinding = {
   overlayTraversalValue: string;
   overlayAreaAttributeAzName: string;
   overlayLabelTemplate: string;
-  overlayStyleMode: "automatic";
+  overlayStyleMode: HexbinMapStyleMode;
+  manualOverlayStyles: Record<string, HexbinMapManualStyleAssignment>;
+};
+
+type HexbinMapStyleMode = "automaticPatternColor" | "automaticBorderColor" | "manualBorderColor" | "manualPatternColor";
+
+type HexbinMapPattern = "solid" | "diagonal" | "reverse-diagonal" | "crosshatch" | "dots" | "horizontal" | "vertical";
+
+type HexbinMapManualStyleAssignment = {
+  color: string;
+  pattern: HexbinMapPattern | "";
 };
 
 type HexbinAreaAttributeOption = {
@@ -322,12 +332,20 @@ type HexbinMapOverlayPreviewState = {
   message: string;
   linkedCount?: number;
   renderableCount?: number;
+  subregions?: HexbinMapResolvedSubregion[];
 };
 
 type HexbinMapStyle = {
   color: string;
   fillColor: string;
-  pattern: "solid" | "diagonal" | "reverse-diagonal" | "crosshatch" | "dots" | "horizontal" | "vertical";
+  pattern: HexbinMapPattern;
+  fillMode: "pattern" | "none";
+};
+
+type HexbinMapResolvedSubregion = {
+  id: string;
+  label: string;
+  boundary: LocationPoint[];
 };
 
 type HexbinMapSubregion = {
@@ -358,8 +376,27 @@ const RADIAL_TREE_CHART_ID = "radial-tree";
 const TREE_OF_LIFE_CHART_ID = "tree-of-life";
 const HEXBIN_MAP_CHART_ID = "hexbin-map";
 const NO_LOCATION_AREA_DATA_REASON = "No LOCATION_AREA data";
-const HEXBIN_MAP_STYLE_PATTERNS: HexbinMapStyle["pattern"][] = ["solid", "diagonal", "reverse-diagonal", "crosshatch", "dots", "horizontal", "vertical"];
+const HEXBIN_MAP_STYLE_PATTERNS: HexbinMapPattern[] = ["solid", "diagonal", "reverse-diagonal", "crosshatch", "dots", "horizontal", "vertical"];
+const HEXBIN_MAP_PATTERN_LABELS: Record<HexbinMapPattern, string> = {
+  solid: "Solid",
+  diagonal: "Diagonal stripe",
+  "reverse-diagonal": "Reverse diagonal stripe",
+  crosshatch: "Crosshatch",
+  dots: "Dots",
+  horizontal: "Horizontal stripe",
+  vertical: "Vertical stripe",
+};
 const HEXBIN_MAP_STYLE_COLORS = ["#2563eb", "#16a34a", "#dc2626", "#9333ea", "#d97706", "#0f766e", "#475569", "#eab308"];
+const HEXBIN_MAP_STYLE_COLOR_LABELS: Record<string, string> = {
+  "#2563eb": "Blue",
+  "#16a34a": "Green",
+  "#dc2626": "Red",
+  "#9333ea": "Purple",
+  "#d97706": "Orange",
+  "#0f766e": "Teal",
+  "#475569": "Slate",
+  "#eab308": "Yellow",
+};
 const HEXBIN_MAP_STYLE_COMBINATIONS = HEXBIN_MAP_STYLE_PATTERNS.length * HEXBIN_MAP_STYLE_COLORS.length;
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
@@ -916,7 +953,8 @@ function emptyHexbinMapBinding(): HexbinMapBinding {
     overlayTraversalValue: "",
     overlayAreaAttributeAzName: "",
     overlayLabelTemplate: "{id}",
-    overlayStyleMode: "automatic",
+    overlayStyleMode: "automaticPatternColor",
+    manualOverlayStyles: {},
   };
 }
 
@@ -1007,7 +1045,8 @@ function firstValidHexbinMapBinding(options: HexbinMapRootOption[]): HexbinMapBi
     overlayTraversalValue: "",
     overlayAreaAttributeAzName: "",
     overlayLabelTemplate: "{id}",
-    overlayStyleMode: "automatic",
+    overlayStyleMode: "automaticPatternColor",
+    manualOverlayStyles: {},
   };
 }
 
@@ -1031,13 +1070,24 @@ function selectedHexbinMapOverlayTraversal(
     .find((option) => traversalOptionValue(option) === binding.overlayTraversalValue) ?? null;
 }
 
-function hexbinMapStyleForIndex(index: number): HexbinMapStyle {
+function hexbinMapPatternColorStyleForIndex(index: number): HexbinMapStyle {
   const pattern = HEXBIN_MAP_STYLE_PATTERNS[index % HEXBIN_MAP_STYLE_PATTERNS.length];
   const color = HEXBIN_MAP_STYLE_COLORS[Math.floor(index / HEXBIN_MAP_STYLE_PATTERNS.length) % HEXBIN_MAP_STYLE_COLORS.length];
   return {
     color,
     fillColor: "#ffffff",
     pattern,
+    fillMode: "pattern",
+  };
+}
+
+function hexbinMapBorderColorStyleForIndex(index: number): HexbinMapStyle {
+  const color = HEXBIN_MAP_STYLE_COLORS[index % HEXBIN_MAP_STYLE_COLORS.length];
+  return {
+    color,
+    fillColor: "#ffffff",
+    pattern: "solid",
+    fillMode: "none",
   };
 }
 
@@ -1045,6 +1095,7 @@ function hexbinMapBindingValidationMessage(
   rootOptionsState: HexbinMapRootOptionsState,
   apiDescription: ApiDescriptionResponse | null,
   binding: HexbinMapBinding,
+  overlayPreviewState?: HexbinMapOverlayPreviewState,
 ): string | null {
   if (rootOptionsState.status === "loading") {
     return "Loading Hexbin-map root items.";
@@ -1082,8 +1133,72 @@ function hexbinMapBindingValidationMessage(
     if (labelTemplateError !== null) {
       return `Subregion legend: ${labelTemplateError}`;
     }
+    if (binding.overlayStyleMode === "manualBorderColor" || binding.overlayStyleMode === "manualPatternColor") {
+      if (overlayPreviewState === undefined || overlayPreviewState.status === "loading") {
+        return "Loading subregion manual style rows.";
+      }
+      if (overlayPreviewState.status === "error") {
+        return overlayPreviewState.message;
+      }
+      const previewSubregions = overlayPreviewState.subregions ?? [];
+      if (overlayPreviewState.status !== "ok") {
+        return "Load subregion overlay preview before assigning manual styles.";
+      }
+      for (const subregion of previewSubregions) {
+        const style = binding.manualOverlayStyles[subregion.id];
+        if (style === undefined || !HEXBIN_MAP_STYLE_COLORS.includes(style.color)) {
+          return `Select a manual color for ${subregion.label}.`;
+        }
+        if (binding.overlayStyleMode === "manualPatternColor" && !HEXBIN_MAP_STYLE_PATTERNS.includes(style.pattern as HexbinMapPattern)) {
+          return `Select a manual fill pattern for ${subregion.label}.`;
+        }
+      }
+    }
   }
   return null;
+}
+
+function styledHexbinMapSubregions(
+  resolvedSubregions: HexbinMapResolvedSubregion[],
+  binding: HexbinMapBinding,
+): HexbinMapSubregion[] {
+  return resolvedSubregions.map((subregion, index) => {
+    let style: HexbinMapStyle;
+    if (binding.overlayStyleMode === "automaticBorderColor") {
+      style = hexbinMapBorderColorStyleForIndex(index);
+    } else if (binding.overlayStyleMode === "manualBorderColor") {
+      const manualStyle = binding.manualOverlayStyles[subregion.id];
+      if (manualStyle === undefined || !HEXBIN_MAP_STYLE_COLORS.includes(manualStyle.color)) {
+        throw new Error(`Select a manual color for ${subregion.label}.`);
+      }
+      style = {
+        color: manualStyle.color,
+        fillColor: "#ffffff",
+        pattern: "solid",
+        fillMode: "none",
+      };
+    } else if (binding.overlayStyleMode === "manualPatternColor") {
+      const manualStyle = binding.manualOverlayStyles[subregion.id];
+      if (manualStyle === undefined || !HEXBIN_MAP_STYLE_COLORS.includes(manualStyle.color)) {
+        throw new Error(`Select a manual color for ${subregion.label}.`);
+      }
+      if (!HEXBIN_MAP_STYLE_PATTERNS.includes(manualStyle.pattern as HexbinMapPattern)) {
+        throw new Error(`Select a manual fill pattern for ${subregion.label}.`);
+      }
+      style = {
+        color: manualStyle.color,
+        fillColor: "#ffffff",
+        pattern: manualStyle.pattern as HexbinMapPattern,
+        fillMode: "pattern",
+      };
+    } else {
+      style = hexbinMapPatternColorStyleForIndex(index);
+    }
+    return {
+      ...subregion,
+      style,
+    };
+  });
 }
 
 async function resolveHexbinMapSubregions(
@@ -1097,7 +1212,7 @@ async function resolveHexbinMapSubregions(
 ): Promise<{
   linkedCount: number;
   skippedCount: number;
-  subregions: HexbinMapSubregion[];
+  subregions: HexbinMapResolvedSubregion[];
 }> {
   const links = await fetchAssociationLinks(apiBaseUrl, modelAzName, instanceRootId, traversal.association.azName);
   const linkedIds = [...new Set(links
@@ -1108,7 +1223,7 @@ async function resolveHexbinMapSubregions(
   const instances = await Promise.all(linkedIds.map((relatedId) => (
     fetchEntityInstance(apiBaseUrl, modelAzName, instanceRootId, traversal.relatedEntity.azName, relatedId)
   )));
-  const subregions: HexbinMapSubregion[] = [];
+  const subregions: HexbinMapResolvedSubregion[] = [];
   for (const instance of instances) {
     const boundary = parseLocationAreaBoundary(instance.values[areaAttributeAzName]);
     if (boundary === null) {
@@ -1118,7 +1233,6 @@ async function resolveHexbinMapSubregions(
       id: instance.id,
       label: renderLabelTemplate(traversal.relatedEntity, instance, labelTemplate),
       boundary,
-      style: hexbinMapStyleForIndex(subregions.length),
     });
   }
 
@@ -1163,13 +1277,16 @@ async function buildHexbinMapData(
       binding.overlayAreaAttributeAzName,
       binding.overlayLabelTemplate,
     );
-    subregions = resolved.subregions;
+    subregions = styledHexbinMapSubregions(resolved.subregions, binding);
     const notices = [];
     if (resolved.skippedCount > 0) {
       notices.push(`${resolved.skippedCount} linked subregion${resolved.skippedCount === 1 ? "" : "s"} skipped because LOCATION_AREA data is missing or invalid`);
     }
-    if (subregions.length > HEXBIN_MAP_STYLE_COMBINATIONS) {
+    if (binding.overlayStyleMode === "automaticPatternColor" && subregions.length > HEXBIN_MAP_STYLE_COMBINATIONS) {
       notices.push("some subregion styles are reused");
+    }
+    if (binding.overlayStyleMode === "automaticBorderColor" && subregions.length > HEXBIN_MAP_STYLE_COLORS.length) {
+      notices.push("some subregion border colors are reused");
     }
     overlayNotice = notices.length === 0 ? undefined : notices.join("; ");
   }
@@ -3655,6 +3772,7 @@ function VisualizationWizardPage() {
             message: `${resolved.subregions.length} of ${resolved.linkedCount} linked subregion${resolved.linkedCount === 1 ? "" : "s"} renderable${skipped}`,
             linkedCount: resolved.linkedCount,
             renderableCount: resolved.subregions.length,
+            subregions: resolved.subregions,
           });
         })
         .catch((error) => {
@@ -3672,7 +3790,19 @@ function VisualizationWizardPage() {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [apiBaseUrl, apiDescription, hexbinMapBinding, hexbinMapRootOptionsState.options, instanceRootId, modelAzName]);
+  }, [
+    apiBaseUrl,
+    apiDescription,
+    hexbinMapBinding.areaAttributeAzName,
+    hexbinMapBinding.overlayAreaAttributeAzName,
+    hexbinMapBinding.overlayLabelTemplate,
+    hexbinMapBinding.overlayTraversalValue,
+    hexbinMapBinding.rootEntityAzName,
+    hexbinMapBinding.rootInstanceId,
+    hexbinMapRootOptionsState.options,
+    instanceRootId,
+    modelAzName,
+  ]);
 
   useEffect(() => {
     const levelOneFilter = binding.levels[0]?.filter ?? null;
@@ -3744,7 +3874,7 @@ function VisualizationWizardPage() {
   const selectedChartEligibility = chartOptions.find((option) => option.chartType.id === selectedChartType.id)?.eligibility ?? { selectable: false, reason: "Chart type unavailable." };
   const bindingMessage = bindingValidationMessage(apiDescription, binding, rootMatchState, levelOneFilterMatchState);
   const isHexbinMapSelected = selectedChartType.id === HEXBIN_MAP_CHART_ID;
-  const hexbinMapBindingMessage = hexbinMapBindingValidationMessage(hexbinMapRootOptionsState, apiDescription, hexbinMapBinding);
+  const hexbinMapBindingMessage = hexbinMapBindingValidationMessage(hexbinMapRootOptionsState, apiDescription, hexbinMapBinding, hexbinMapOverlayPreviewState);
   const selectedBindingMessage = isHexbinMapSelected ? hexbinMapBindingMessage : bindingMessage;
   const canContinueToBinding = status === "ok" && selectedChartEligibility.selectable;
   const canRenderVisualization = canContinueToBinding && selectedBindingMessage === null;
@@ -3840,7 +3970,7 @@ function VisualizationWizardPage() {
       return;
     }
     const validationError = isHexbinMapSelected
-      ? hexbinMapBindingValidationMessage(hexbinMapRootOptionsState, apiDescription, hexbinMapBinding)
+      ? hexbinMapBindingValidationMessage(hexbinMapRootOptionsState, apiDescription, hexbinMapBinding, hexbinMapOverlayPreviewState)
       : bindingValidationMessage(apiDescription, binding);
     if (validationError !== null) {
       setVisualizationData({
@@ -4086,7 +4216,8 @@ function HexbinMapBindingPanel({
       overlayTraversalValue: "",
       overlayAreaAttributeAzName: "",
       overlayLabelTemplate: "{id}",
-      overlayStyleMode: "automatic",
+      overlayStyleMode: "automaticPatternColor",
+      manualOverlayStyles: {},
     });
   }
 
@@ -4098,9 +4229,34 @@ function HexbinMapBindingPanel({
       overlayTraversalValue: traversalValue,
       overlayAreaAttributeAzName: nextAttribute?.azName ?? "",
       overlayLabelTemplate: nextTraversal === null ? "{id}" : defaultLabelTemplate(nextTraversal.relatedEntity),
-      overlayStyleMode: "automatic",
+      overlayStyleMode: "automaticPatternColor",
+      manualOverlayStyles: {},
     });
   }
+
+  function selectOverlayStyleMode(overlayStyleMode: HexbinMapStyleMode) {
+    onBindingChange({
+      ...binding,
+      overlayStyleMode,
+      manualOverlayStyles: overlayStyleMode === "manualBorderColor" || overlayStyleMode === "manualPatternColor"
+        ? binding.manualOverlayStyles
+        : {},
+    });
+  }
+
+  function updateManualOverlayStyle(subregionId: string, nextStyle: HexbinMapManualStyleAssignment) {
+    onBindingChange({
+      ...binding,
+      manualOverlayStyles: {
+        ...binding.manualOverlayStyles,
+        [subregionId]: nextStyle,
+      },
+    });
+  }
+
+  const manualStyleSubregions = overlayPreviewState.status === "ok" ? overlayPreviewState.subregions ?? [] : [];
+  const showsManualStyles = selectedOverlayTraversal !== null
+    && (binding.overlayStyleMode === "manualBorderColor" || binding.overlayStyleMode === "manualPatternColor");
 
   return (
     <section className="visualize-panel" aria-labelledby="visualize-hexbin-binding">
@@ -4182,8 +4338,15 @@ function HexbinMapBindingPanel({
           </label>
           <label className="query-field">
             <span>Style assignment</span>
-            <select value={binding.overlayStyleMode} disabled={selectedOverlayTraversal === null}>
-              <option value="automatic">Automatic per subregion</option>
+            <select
+              value={binding.overlayStyleMode}
+              onChange={(event) => selectOverlayStyleMode(event.target.value as HexbinMapStyleMode)}
+              disabled={selectedOverlayTraversal === null}
+            >
+              <option value="automaticPatternColor">Automatic pattern and color per subregion</option>
+              <option value="automaticBorderColor">Automatic border color per subregion</option>
+              <option value="manualBorderColor">Manual border color per subregion</option>
+              <option value="manualPatternColor">Manual fill pattern and color per subregion</option>
             </select>
           </label>
           <label className="query-field">
@@ -4213,6 +4376,61 @@ function HexbinMapBindingPanel({
         <footer className={`binding-root-match binding-root-match-${overlayPreviewState.status}`}>
           {overlayPreviewState.message}
         </footer>
+        {showsManualStyles && (
+          <div className="hexbin-manual-styles" aria-label="Manual subregion styles">
+            <div className="hexbin-manual-styles-header">
+              <span>Subregion</span>
+              <span>Color</span>
+              {binding.overlayStyleMode === "manualPatternColor" && <span>Fill pattern</span>}
+            </div>
+            {manualStyleSubregions.length === 0 ? (
+              <p>No renderable subregions available for manual style assignment.</p>
+            ) : manualStyleSubregions.map((subregion) => {
+              const manualStyle = binding.manualOverlayStyles[subregion.id] ?? { color: "", pattern: "" };
+              return (
+                <div className="hexbin-manual-style-row" key={subregion.id}>
+                  <span title={subregion.id}>{subregion.label}</span>
+                  <label className="query-field">
+                    <span className="sr-only">Color for {subregion.label}</span>
+                    <select
+                      value={manualStyle.color}
+                      onChange={(event) => updateManualOverlayStyle(subregion.id, {
+                        ...manualStyle,
+                        color: event.target.value,
+                      })}
+                    >
+                      <option value="">Select color</option>
+                      {HEXBIN_MAP_STYLE_COLORS.map((color) => (
+                        <option key={color} value={color}>
+                          {HEXBIN_MAP_STYLE_COLOR_LABELS[color] ?? color}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {binding.overlayStyleMode === "manualPatternColor" && (
+                    <label className="query-field">
+                      <span className="sr-only">Fill pattern for {subregion.label}</span>
+                      <select
+                        value={manualStyle.pattern}
+                        onChange={(event) => updateManualOverlayStyle(subregion.id, {
+                          ...manualStyle,
+                          pattern: event.target.value as HexbinMapPattern | "",
+                        })}
+                      >
+                        <option value="">Select pattern</option>
+                        {HEXBIN_MAP_STYLE_PATTERNS.map((pattern) => (
+                          <option key={pattern} value={pattern}>
+                            {HEXBIN_MAP_PATTERN_LABELS[pattern]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <footer className={`binding-root-match binding-root-match-${rootOptionsState.status}`}>
@@ -5114,7 +5332,7 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .data(data.subregions)
       .join("path")
       .attr("d", (subregion) => line(closeBoundary(projectBoundary(subregion.boundary))))
-      .attr("fill", (_subregion, index) => `url(#hexbin-pattern-${index})`)
+      .attr("fill", (subregion, index) => subregion.style.fillMode === "none" ? "transparent" : `url(#hexbin-pattern-${index})`)
       .attr("stroke", (subregion) => subregion.style.color);
 
     svg.append("path")
@@ -5179,7 +5397,7 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
         .attr("width", 18)
         .attr("height", 18)
         .attr("rx", 2)
-        .attr("fill", (_subregion, index) => `url(#hexbin-pattern-${index})`)
+        .attr("fill", (subregion, index) => subregion.style.fillMode === "none" ? "transparent" : `url(#hexbin-pattern-${index})`)
         .attr("stroke", (subregion) => subregion.style.color);
       entries.append("text")
         .attr("x", 26)

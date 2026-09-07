@@ -116,7 +116,7 @@ For `Hexbin-map`, the binding includes:
 - optionally, one association from the selected root item to linked subregion
   instances whose entity has at least one `LOCATION_AREA` attribute
 - optionally, one subregion `LOCATION_AREA` attribute
-- an automatic per-subregion style mode
+- a subregion style assignment mode
 - a subregion legend label template using the same `{attribute}` placeholder
   convention, with `{id}` available as the backend instance id
 
@@ -130,10 +130,23 @@ The optional subregion overlay selector shows associations whose related entity
 has at least one `LOCATION_AREA` attribute. Selecting an overlay association
 and subregion boundary attribute loads a preview count for the selected root:
 how many linked subregions are renderable and how many have missing or invalid
-area data. The first style mode is automatic per subregion. It sorts linked
-subregion instances by id, assigns deterministic pattern/color combinations,
-and reports when the available combinations are exhausted and styles are
-reused.
+area data.
+
+Subregion style assignment modes are runtime-only:
+
+- `Automatic pattern and color per subregion` sorts linked subregion instances
+  by id, assigns deterministic pattern/color combinations, and reports when
+  the available combinations are exhausted and styles are reused.
+- `Automatic border color per subregion` renders transparent subregion fills
+  with deterministic stroke colors and reports when stroke colors are reused.
+- `Manual border color per subregion` renders transparent subregion fills and
+  requires a selected stroke color for each renderable subregion.
+- `Manual fill pattern and color per subregion` requires both a selected color
+  and a selected fill pattern for each renderable subregion.
+
+Manual assignment rows are keyed by linked subregion instance id and use the
+legend label template to identify each subregion. Invalid legend placeholders
+or incomplete manual style selections prevent rendering.
 
 The first supported `LOCATION_AREA` value shape is the current Metsapalsta dump
 shape:
@@ -229,9 +242,9 @@ intact while still rendering a one-direction family tree projection.
 - `Tree of life` currently uses constant-depth cluster layout only; branch
   length is intentionally skipped.
 - `Hexbin-map` supports one optional subregion overlay layer with automatic
-  per-subregion pattern/color assignment. Extra area formats, manual style
-  tables, classification, metrics, point-density hexbins, and real hex-cell
-  tiling are not implemented.
+  and manual per-subregion style assignment modes. Extra area formats,
+  classification, metrics, point-density hexbins, and real hex-cell tiling are
+  not implemented.
 
 ## Related Docs
 
