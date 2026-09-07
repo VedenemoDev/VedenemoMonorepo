@@ -355,6 +355,19 @@ type HexbinMapSubregion = {
   style: HexbinMapStyle;
 };
 
+type HexbinMapSharedBorderSegment = {
+  start: LocationPoint;
+  end: LocationPoint;
+  colors: [string, string];
+};
+
+type HexbinMapSegmentOccurrence = {
+  subregionIndex: number;
+  start: LocationPoint;
+  end: LocationPoint;
+  color: string;
+};
+
 type HexbinMapData = {
   title: string;
   detail: string;
@@ -1089,6 +1102,66 @@ function hexbinMapBorderColorStyleForIndex(index: number): HexbinMapStyle {
     pattern: "solid",
     fillMode: "none",
   };
+}
+
+function hexbinMapPointKey(point: LocationPoint): string {
+  return `${point.latitude},${point.longitude}`;
+}
+
+function hexbinMapSamePoint(first: LocationPoint, second: LocationPoint): boolean {
+  return first.latitude === second.latitude && first.longitude === second.longitude;
+}
+
+function hexbinMapSegmentKey(start: LocationPoint, end: LocationPoint): string {
+  const startKey = hexbinMapPointKey(start);
+  const endKey = hexbinMapPointKey(end);
+  return startKey < endKey ? `${startKey}|${endKey}` : `${endKey}|${startKey}`;
+}
+
+function hexbinMapOpenBoundary(boundary: LocationPoint[]): LocationPoint[] {
+  if (boundary.length > 1 && hexbinMapSamePoint(boundary[0], boundary[boundary.length - 1])) {
+    return boundary.slice(0, -1);
+  }
+  return boundary;
+}
+
+function sharedHexbinMapBorderSegments(subregions: HexbinMapSubregion[]): HexbinMapSharedBorderSegment[] {
+  const segments = new Map<string, HexbinMapSegmentOccurrence[]>();
+  subregions.forEach((subregion, subregionIndex) => {
+    const boundary = hexbinMapOpenBoundary(subregion.boundary);
+    boundary.forEach((start, pointIndex) => {
+      const end = boundary[(pointIndex + 1) % boundary.length];
+      if (hexbinMapSamePoint(start, end)) {
+        return;
+      }
+      const key = hexbinMapSegmentKey(start, end);
+      const occurrences = segments.get(key) ?? [];
+      occurrences.push({
+        subregionIndex,
+        start,
+        end,
+        color: subregion.style.color,
+      });
+      segments.set(key, occurrences);
+    });
+  });
+
+  return [...segments.values()].flatMap((occurrences) => {
+    const uniqueOccurrences = [...occurrences]
+      .sort((first, second) => first.subregionIndex - second.subregionIndex)
+      .filter((occurrence, index, sorted) => (
+        sorted.findIndex((candidate) => candidate.subregionIndex === occurrence.subregionIndex) === index
+      ));
+    if (uniqueOccurrences.length < 2) {
+      return [];
+    }
+    const [first, second] = uniqueOccurrences;
+    return [{
+      start: first.start,
+      end: first.end,
+      colors: [first.color, second.color],
+    }];
+  });
 }
 
 function hexbinMapBindingValidationMessage(
@@ -5239,15 +5312,39 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     const mapHeight = latitudeSpan * scale;
     const offsetX = (width - mapWidth) / 2;
     const offsetY = (height - mapHeight) / 2;
-    const projectBoundary = (boundary: LocationPoint[]) => boundary.map((point) => [
+    const projectPoint = (point: LocationPoint): [number, number] => [
       offsetX + (point.longitude - minLongitude) * scale,
       offsetY + (maxLatitude - point.latitude) * scale,
-    ] as [number, number]);
+    ];
+    const projectBoundary = (boundary: LocationPoint[]) => boundary.map(projectPoint);
     const closeBoundary = (boundary: [number, number][]) => boundary.length > 0
       ? [...boundary, boundary[0]]
       : boundary;
     const projectedBoundary = projectBoundary(data.boundary);
     const closedBoundary = closeBoundary(projectedBoundary);
+    const sharedBorderStrokeOffset = 1.8;
+    const sharedBorderStrokes = sharedHexbinMapBorderSegments(data.subregions).flatMap((segment) => {
+      const start = projectPoint(segment.start);
+      const end = projectPoint(segment.end);
+      const dx = end[0] - start[0];
+      const dy = end[1] - start[1];
+      const length = Math.hypot(dx, dy);
+      if (length === 0) {
+        return [];
+      }
+      const normalX = (-dy / length) * sharedBorderStrokeOffset;
+      const normalY = (dx / length) * sharedBorderStrokeOffset;
+      return segment.colors.map((color, colorIndex) => {
+        const direction = colorIndex === 0 ? -1 : 1;
+        return {
+          color,
+          x1: start[0] + normalX * direction,
+          y1: start[1] + normalY * direction,
+          x2: end[0] + normalX * direction,
+          y2: end[1] + normalY * direction,
+        };
+      });
+    });
     const line = d3.line<[number, number]>()
       .x((point) => point[0])
       .y((point) => point[1]);
@@ -5338,6 +5435,17 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .attr("d", (subregion) => line(closeBoundary(projectBoundary(subregion.boundary))))
       .attr("fill", (subregion, index) => subregion.style.fillMode === "none" ? "transparent" : `url(#hexbin-pattern-${index})`)
       .attr("stroke", (subregion) => subregion.style.color);
+
+    svg.append("g")
+      .attr("class", "hexbin-map-shared-borders")
+      .selectAll("line")
+      .data(sharedBorderStrokes)
+      .join("line")
+      .attr("x1", (stroke) => stroke.x1)
+      .attr("y1", (stroke) => stroke.y1)
+      .attr("x2", (stroke) => stroke.x2)
+      .attr("y2", (stroke) => stroke.y2)
+      .attr("stroke", (stroke) => stroke.color);
 
     svg.append("g")
       .attr("class", "hexbin-map-points")

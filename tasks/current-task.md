@@ -1,47 +1,61 @@
 # Current Task
 
-## Draw Hexbin-map subregion borders above main boundary
+## Add Hexbin-map dual-color shared subregion borders
 
 Status: executed
 
 ### Goal
 
-Adjust `Hexbin-map` SVG layering so subregion border colors visually override
-the main region boundary wherever subregion borders overlap it.
+Improve `Hexbin-map` subregion readability by rendering shared borders between
+adjacent subregions with visual contribution from both neighboring subregion
+styles.
 
-The rendered map should make linked subregion boundaries clearer by ensuring
-subregion strokes are not hidden or visually weakened by the main region
-outline.
+When two linked subregion polygons share the same boundary segment, the map
+should make it clear that the segment belongs to both subregions instead of
+letting one subregion's stroke visually dominate the other.
 
 ### Scope
 
 - Keep this feature in `vedenemo-ux`.
-- Change only SVG layer order and any directly related CSS stroke styling.
-- Preserve the existing style assignment modes and legend behavior.
-- Update visualization documentation when implemented.
+- Keep all geometry matching and SVG rendering frontend-only.
+- Prefer exact shared-segment matching for the first implementation.
+- Support reversed coordinate order when matching exact shared segments.
+- Document any tolerance or partial-overlap limitations if they remain.
 
 ### Out Of Scope
 
-- Shared-border dual-color rendering between adjacent subregions.
-- Geometry matching or topology analysis.
-- Backend model-rule changes.
+- Backend geometry libraries.
 - New backend endpoints.
 - Persistent visualization configuration.
+- Spatial topology validation.
+- Automatic gap closing or polygon repair.
+- Full tolerance-based line conflation unless exact matching proves
+  insufficient for the current data.
+- Partial-overlap splitting unless needed by concrete data.
 
 ### Acceptance Criteria
 
-- Subregion border colors appear above the main region boundary where the
-  geometries overlap.
-- The main region extent remains readable when subregions are present.
-- Existing no-overlay single-boundary rendering remains usable.
-- Existing automatic fill, automatic border-only, manual border-only, and
-  manual pattern/color modes remain usable.
+- Subregion borders still render correctly when subregion polygons do not share
+  exact boundary segments.
+- Exact shared boundary segments between two subregions are detected even when
+  the segment point order is reversed.
+- Shared boundary segments render with both neighboring subregion colors.
+- The shared-border overlay does not obscure the main region boundary or
+  unrelated non-shared subregion borders.
+- Existing no-overlay, automatic fill, automatic border-only, manual
+  border-only, and manual pattern/color modes remain usable.
 - Frontend build succeeds.
 
 ### Completion Notes
 
-- Moved the main `Hexbin-map` boundary stroke below the subregion polygon
-  overlay layer while keeping the main fill below both.
-- Preserved the existing point markers, labels, overlay notices, and legend
-  layer order above the map geometry.
-- Kept no-overlay single-boundary rendering on the same boundary stroke path.
+- Added frontend-only exact shared-segment detection for `Hexbin-map`
+  subregion boundaries using normalized source coordinate endpoint pairs.
+- Treated reversed point order as the same shared segment and ignored explicit
+  duplicated polygon closing points for segment detection.
+- Rendered shared borders in a dedicated SVG overlay layer above ordinary
+  subregion polygons with two thin parallel strokes, one per neighboring
+  subregion color.
+- Preserved ordinary subregion rendering for non-shared edges and all existing
+  Hexbin-map style assignment modes.
+- The first implementation intentionally does not split partial overlaps or
+  conflate near-identical/tolerance-based segments.

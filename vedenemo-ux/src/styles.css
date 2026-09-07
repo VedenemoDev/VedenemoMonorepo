@@ -1111,6 +1111,12 @@ body {
   stroke-width: 1.8;
 }
 
+.hexbin-map-shared-borders line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+
 .hexbin-map-points circle {
   fill: #2563eb;
   stroke: #fff;

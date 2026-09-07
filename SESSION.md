@@ -11398,3 +11398,78 @@ Current status and next steps:
 - `mvn -B clean verify` passed; Maven reports existing shade overlap/module
   warnings during web API packaging.
 - `git diff --check` passed.
+
+## 2026-09-07 23:39 EEST
+
+Session goal:
+
+- Execute the `Add Hexbin-map dual-color shared subregion borders` backlog
+  plan, run tests/builds, and keep the backlog item as executed history.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,220p' tasks/backlog.md`
+- `git status --short`
+- `rg -n "Hexbin|hexbin|subregion|boundary|polygon|shared|overlay" vedenemo-ux/src/App.tsx`
+- `rg -n "Hexbin|hexbin|subregion|boundary|style assignment|overlay|shared" README.md docs/visualizations.md docs/architecture_doc.md tasks/backlog.md`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `sed -n '250,380p' vedenemo-ux/src/App.tsx`
+- `sed -n '1050,1220p' vedenemo-ux/src/App.tsx`
+- `sed -n '5200,5420p' vedenemo-ux/src/App.tsx`
+- `sed -n '760,840p' vedenemo-ux/src/styles.css`
+- `sed -n '108,190p' docs/visualizations.md`
+- `sed -n '408,422p' README.md`
+- `sed -n '712,724p' docs/architecture_doc.md`
+- `sed -n '1018,1036p' docs/architecture_doc.md`
+- `sed -n '1,180p' vedenemo-ux/package.json`
+- `rg -n "HEXBIN_MAP_STYLE_COLORS|const HEXBIN" vedenemo-ux/src/App.tsx`
+- `npm run build` from `vedenemo-ux`
+- `mvn -B clean verify`
+- `git diff --check`
+- `rg -n "general-purpose software|no representation|warranty|Apache License" README.md`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `git diff -- README.md docs/visualizations.md docs/architecture_doc.md tasks/current-task.md tasks/backlog.md`
+- `sed -n '706,730p' docs/architecture_doc.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added frontend-only exact shared-segment detection for `Hexbin-map`
+  subregion boundaries using normalized source coordinate endpoint pairs.
+- Reversed point order is treated as the same segment; explicit duplicated
+  polygon closing points are ignored during segment detection.
+- Added a shared-border SVG overlay layer above ordinary subregion polygons
+  that renders two thin parallel strokes, one for each neighboring subregion
+  color.
+- Preserved existing no-overlay, automatic fill, automatic border-only, manual
+  border-only, and manual pattern/color Hexbin-map rendering modes.
+- Marked `Add Hexbin-map dual-color shared subregion borders` executed in
+  `tasks/backlog.md` while leaving it in place as history, and updated
+  `tasks/current-task.md`.
+- Updated README, visualization documentation, and current implementation
+  architecture documentation for the implemented exact-match behavior and
+  partial-overlap/tolerance limitations.
+- `npm run build` from `vedenemo-ux` passed; Vite reports the existing
+  large-chunk warning.
+- `mvn -B clean verify` passed; Maven reports existing shade module-info and
+  overlapping resource/class warnings during web API packaging.
+- `git diff --check` passed.

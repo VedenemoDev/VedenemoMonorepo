@@ -712,19 +712,19 @@ Current user-facing behavior:
   association traversal, support either a synthetic chart root or a single
   entity-instance root selected with query-style scalar and relationship
   criteria, support optional query-style filtering for the first entity level
-  and render scrollable SVG trees
+  under a synthetic root, fetch entity instances plus association links, skip
+  already visited instance ids on the current render path, and render
+  scrollable SVG trees with a refresh control; `Tree of life` currently uses
+  constant-depth radial cluster layout, angular radial link segments, labels
+  internal binding levels, and does not use branch lengths
 - includes a D3-backed `Hexbin-map` visualization wizard path for models with
   `LOCATION_AREA` attributes; the path loads candidate root-scoped instances,
   shows no-data candidates disabled, lets the user select one root item and one
   current-shape `LOCATION_AREA` attribute, optionally follows one eligible
   association to linked subregion instances with `LOCATION_AREA` data, assigns
   runtime automatic or manual subregion overlay styles, and renders the
-  boundary plus a matching subregion legend as a plain SVG map
-  under a synthetic root, fetch entity instances plus association links, skip
-  already visited instance ids on the current render path, and render a
-  scrollable SVG tree with a refresh control; `Tree of life` currently uses
-  constant-depth radial cluster layout, angular radial link segments, labels
-  internal binding levels, and does not use branch lengths
+  boundary plus a matching subregion legend as a plain SVG map, including a
+  dual-color overlay for exact shared subregion boundary segments
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle
@@ -1031,7 +1031,7 @@ sequenceDiagram
         end
         UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}
         API-->>UX: selected root item values
-        UX->>D3: render selected LOCATION_AREA boundary and optional subregion overlays as plain SVG map with subregion strokes above the main outline
+        UX->>D3: render selected LOCATION_AREA boundary and optional subregion overlays as plain SVG map with subregion strokes above the main outline and dual-color exact shared borders
     end
 ```
 

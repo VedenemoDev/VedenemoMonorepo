@@ -183,7 +183,12 @@ association is selected, it fetches the association links, resolves the linked
 subregion instances, renders valid subregion boundaries as patterned polygons,
 and adds a matching legend. The main region fill and outline are drawn below
 subregion polygons so linked subregion border colors remain visible when they
-overlap the main region boundary. It does not yet generate hexbin cells.
+overlap the main region boundary. When two subregion polygons share the same
+exact source-coordinate boundary segment, including reversed point order, the
+renderer draws a shared-border overlay with two thin parallel strokes so both
+neighboring subregion colors remain visible. The shared-border pass does not
+split partial overlaps or conflate near-identical/tolerance-based segments. It
+does not yet generate hexbin cells.
 
 Use `Refresh` to reload backend data without losing the current runtime binding.
 
@@ -244,8 +249,10 @@ intact while still rendering a one-direction family tree projection.
 - `Tree of life` currently uses constant-depth cluster layout only; branch
   length is intentionally skipped.
 - `Hexbin-map` supports one optional subregion overlay layer with automatic
-  and manual per-subregion style assignment modes. Extra area formats,
-  classification, metrics, point-density hexbins, and real hex-cell tiling are
+  and manual per-subregion style assignment modes. Exact shared subregion
+  boundary segments are overlaid with both neighboring colors. Extra area
+  formats, classification, metrics, point-density hexbins, partial-overlap
+  splitting, tolerance-based segment matching, and real hex-cell tiling are
   not implemented.
 
 ## Related Docs

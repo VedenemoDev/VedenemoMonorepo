@@ -2,7 +2,7 @@
 
 ## Add Hexbin-map dual-color shared subregion borders
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -72,6 +72,20 @@ subregion borders visually above the main region border.
 - Existing no-overlay, automatic fill, automatic border-only, manual
   border-only, and manual pattern/color modes remain usable.
 - Frontend build succeeds.
+
+### Completion Notes
+
+- Added frontend-only exact shared-segment detection for `Hexbin-map`
+  subregion boundaries using normalized source coordinate endpoint pairs.
+- Treated reversed point order as the same shared segment and ignored explicit
+  duplicated polygon closing points for segment detection.
+- Rendered shared borders in a dedicated SVG overlay layer above ordinary
+  subregion polygons with two thin parallel strokes, one per neighboring
+  subregion color.
+- Kept ordinary non-shared subregion edges unchanged and preserved existing
+  no-overlay plus automatic/manual style assignment modes.
+- Documented that the first implementation does not split partial overlaps or
+  conflate near-identical/tolerance-based segments.
 
 ## Draw Hexbin-map subregion borders above main boundary
 
