@@ -75,7 +75,7 @@ subregion borders visually above the main region border.
 
 ## Draw Hexbin-map subregion borders above main boundary
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -129,6 +129,14 @@ priority at overlapping edges.
 - Existing automatic fill, automatic border-only, manual border-only, and
   manual pattern/color modes remain usable.
 - Frontend build succeeds.
+
+### Completion Notes
+
+- Moved the main `Hexbin-map` boundary stroke below the subregion polygon
+  overlay layer while keeping the main fill below both.
+- Preserved point markers, labels, overlay notices, and legend rendering above
+  the map geometry.
+- Kept existing no-overlay rendering on the same main boundary stroke path.
 
 ## Add Hexbin-map subregion overlay layers
 

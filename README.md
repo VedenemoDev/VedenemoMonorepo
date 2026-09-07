@@ -414,9 +414,10 @@ available for models with `LOCATION_AREA` attributes and renders one selected
 root item's current area boundary as plain SVG. It can optionally follow one
 eligible association to linked subregion instances, render their
 `LOCATION_AREA` boundaries as styled overlays, and show a matching legend from
-a user-entered label template. Subregion styles can be automatic patterned
-fills, automatic border-only colors, manual border-only colors, or manual
-pattern/color pairs. See
+a user-entered label template. Subregion borders are drawn above the main
+region outline so overlapping edges keep the subregion color. Subregion styles
+can be automatic patterned fills, automatic border-only colors, manual
+border-only colors, or manual pattern/color pairs. See
 [docs/visualizations.md](docs/visualizations.md) for the full visualization
 workflow and current limits.
 The console output scrolls to the latest line as commands run. The full-page

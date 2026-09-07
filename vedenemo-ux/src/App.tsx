@@ -5326,6 +5326,10 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .attr("class", "hexbin-map-boundary-fill")
       .attr("d", line(closedBoundary));
 
+    svg.append("path")
+      .attr("class", "hexbin-map-boundary")
+      .attr("d", line(closedBoundary));
+
     svg.append("g")
       .attr("class", "hexbin-map-subregions")
       .selectAll("path")
@@ -5334,10 +5338,6 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .attr("d", (subregion) => line(closeBoundary(projectBoundary(subregion.boundary))))
       .attr("fill", (subregion, index) => subregion.style.fillMode === "none" ? "transparent" : `url(#hexbin-pattern-${index})`)
       .attr("stroke", (subregion) => subregion.style.color);
-
-    svg.append("path")
-      .attr("class", "hexbin-map-boundary")
-      .attr("d", line(closedBoundary));
 
     svg.append("g")
       .attr("class", "hexbin-map-points")

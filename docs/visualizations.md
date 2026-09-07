@@ -181,7 +181,9 @@ used. `Hexbin-map` fetches the selected root item and renders the chosen
 `LOCATION_AREA` boundary as a plain SVG area outline. When an overlay
 association is selected, it fetches the association links, resolves the linked
 subregion instances, renders valid subregion boundaries as patterned polygons,
-and adds a matching legend. It does not yet generate hexbin cells.
+and adds a matching legend. The main region fill and outline are drawn below
+subregion polygons so linked subregion border colors remain visible when they
+overlap the main region boundary. It does not yet generate hexbin cells.
 
 Use `Refresh` to reload backend data without losing the current runtime binding.
 

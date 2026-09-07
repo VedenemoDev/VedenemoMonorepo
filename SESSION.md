@@ -11336,3 +11336,65 @@ Current status and next steps:
 - `npm run build` from `vedenemo-ux` passed; Vite reports the existing
   large-chunk warning.
 - `mvn -B clean verify` passed.
+
+## 2026-09-07 22:38 EEST
+
+Session goal:
+
+- Execute the `Draw Hexbin-map subregion borders above main boundary` backlog
+  plan, verify builds/tests, and keep the executed item in backlog history.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,220p' tasks/backlog.md`
+- `git status --short`
+- `rg -n "main region|subregion|hexbin|Hexbin|boundary|polygon|pattern|overlay" vedenemo-ux/src/App.tsx`
+- `rg -n "Hexbin|hexbin|subregion|boundary|style assignment|overlay" README.md docs/visualizations.md docs/architecture_doc.md tasks/backlog.md`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `sed -n '5208,5412p' vedenemo-ux/src/App.tsx`
+- `sed -n '760,840p' vedenemo-ux/src/styles.css`
+- `sed -n '105,190p' docs/visualizations.md`
+- `sed -n '400,425p' README.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '1018,1038p' docs/architecture_doc.md`
+- `npm run build` from `vedenemo-ux`
+- `mvn -B clean verify`
+- `git diff --check`
+- `rg -n "general-purpose software|no representation|warranty|Apache License" README.md`
+- `git status --short`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `git diff -- README.md docs/visualizations.md docs/architecture_doc.md tasks/current-task.md tasks/backlog.md`
+
+Current status and next steps:
+
+- Moved the main `Hexbin-map` boundary stroke below the subregion polygon
+  overlay layer so subregion strokes render above overlapping main boundaries.
+- Preserved the main fill below all map geometry and kept points, labels,
+  overlay notice, and legend above the rendered map.
+- Marked the backlog item executed while leaving it in place as history.
+- Updated the current task, README, visualization documentation, and current
+  implementation architecture documentation to describe the implemented
+  layering.
+- `npm run build` from `vedenemo-ux` passed; Vite reports the existing
+  large-chunk warning.
+- `mvn -B clean verify` passed; Maven reports existing shade overlap/module
+  warnings during web API packaging.
+- `git diff --check` passed.

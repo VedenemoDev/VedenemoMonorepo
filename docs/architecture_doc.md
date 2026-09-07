@@ -1031,7 +1031,7 @@ sequenceDiagram
         end
         UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}
         API-->>UX: selected root item values
-        UX->>D3: render selected LOCATION_AREA boundary and optional subregion overlays as plain SVG map
+        UX->>D3: render selected LOCATION_AREA boundary and optional subregion overlays as plain SVG map with subregion strokes above the main outline
     end
 ```
 
