@@ -3215,6 +3215,33 @@ Current status and next steps:
 - The previous `NoClassDefFoundError:
   org/vedenemo/console/CommandClient` is fixed.
 - `mvn -B clean verify` passed.
+
+## 2026-09-07 22:33 EEST
+
+Session goal:
+
+- Plan separate Hexbin-map follow-up tasks for subregion border z-order and
+  dual-color shared subregion borders.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,260p' tasks/backlog.md`
+- `tail -n 120 SESSION.md`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `Draw Hexbin-map subregion borders above main boundary` as a planned
+  low-risk render-order task.
+- Added `Add Hexbin-map dual-color shared subregion borders` as a separate
+  planned task for exact shared-segment detection and dual-color rendering.
+- No implementation changes were made.
 - The backend+CLI smoke test passed when run outside the socket-restricted
   sandbox.
 
