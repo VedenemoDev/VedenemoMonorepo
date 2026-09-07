@@ -11197,3 +11197,41 @@ Current status and next steps:
 - Whitespace check passed.
 - Next step is to stage, commit, and push the changes to the `main` branch
   remote.
+
+## 2026-09-07 21:59 EEST
+
+Session goal:
+
+- Add a planning backlog item for richer Hexbin-map subregion style assignment
+  modes.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `tail -n 120 SESSION.md`
+- `git status --short`
+- `rg -n "^## " tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '145,195p' tasks/backlog.md`
+- `tail -n 40 SESSION.md`
+
+Current status and next steps:
+
+- Added a planned backlog follow-up immediately after the executed
+  `Add Hexbin-map subregion overlay layers` item.
+- Captured automatic filled overlays, automatic border-only overlays, manual
+  border-only overlays, and manual fill pattern/color assignments as planned
+  Hexbin-map binding modes.
+- No implementation changes were made; next step is to implement the planned
+  UX feature when selected as current work.

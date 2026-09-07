@@ -182,6 +182,99 @@ Later style modes can be added without changing the overlay concept:
 - Updated README, visualization documentation, current implementation
   architecture documentation, and current task status.
 
+## Add Hexbin-map subregion style assignment modes
+
+Status: planned
+
+### Goal
+
+Extend the `Hexbin-map` binding phase with additional subregion overlay style
+assignment modes beyond the current `Automatic per subregion` mode.
+
+The user should be able to choose whether linked subregions are rendered as
+filled patterned overlays, border-only overlays, or manually assigned
+pattern/color combinations per rendered subregion.
+
+### Context
+
+The executed `Add Hexbin-map subregion overlay layers` task introduced one
+runtime-only subregion style assignment mode:
+
+- `Automatic per subregion`: each linked subregion receives a deterministic
+  pattern/color style selected by the UX.
+
+That is a useful default, but it does not cover cases where the user wants
+cleaner boundary-only maps or explicit visual control over individual
+subregions.
+
+### Proposed Style Modes
+
+- `Automatic pattern and color per subregion`: keep the existing behavior,
+  assigning deterministic fill pattern and color combinations automatically.
+- `Automatic border color per subregion`: render subregions as border-only
+  polygons, assigning deterministic stroke colors automatically and leaving
+  subregion fills transparent.
+- `Manual border color per subregion`: render subregions as border-only
+  polygons and let the user select the stroke color for each rendered
+  subregion.
+- `Manual fill pattern and color per subregion`: render subregions with
+  user-selected fill pattern and color pairs, with a manual assignment row for
+  each rendered subregion.
+
+### Binding Flow
+
+- Keep the style mode selector in the `Hexbin-map` binding phase after the
+  subregion association and subregion `LOCATION_AREA` attribute are selected.
+- Load the linked renderable subregions before showing manual assignment
+  controls, so the UX can show one row per subregion.
+- Use the existing legend label template to identify subregions in the manual
+  assignment table.
+- For manual modes, require a valid color selection for each renderable
+  subregion before rendering.
+- For manual fill-pattern mode, require both a color and a fill pattern for
+  each renderable subregion before rendering.
+- Keep subregions with missing or invalid `LOCATION_AREA` data visible in the
+  preview counts, but exclude them from manual style assignment rows unless
+  they become renderable.
+
+### Scope
+
+- Keep this feature in `vedenemo-ux`.
+- Keep style assignments runtime-only.
+- Reuse the existing linked subregion preview data and legend placeholder
+  validation.
+- Reuse the current SVG overlay rendering path where practical.
+- Update visualization documentation when implemented.
+
+### Out Of Scope
+
+- Persistent visualization configuration.
+- Backend model-rule changes.
+- New backend endpoints unless the existing linked-subregion data proves
+  insufficient.
+- New `.vdos` or `.vdmp` syntax.
+- Attribute-grouped or classification-based styling.
+- Numeric metric-driven styling.
+- Spatial clipping, topology validation, or true hex-cell generation.
+
+### Acceptance Criteria
+
+- The `Hexbin-map` binding phase offers the existing automatic filled overlay
+  behavior and the new border-only and manual style assignment modes.
+- Automatic border-only mode renders linked subregions with transparent fills
+  and deterministic, visually distinct stroke colors.
+- Manual border-only mode renders linked subregions with transparent fills and
+  the user-selected stroke color for each rendered subregion.
+- Manual fill-pattern mode requires the user to select a color/pattern pair for
+  each rendered subregion and uses those selections in both the map and legend.
+- Manual assignment rows are keyed to stable linked subregion identities so
+  selections do not shift unexpectedly during re-rendering.
+- Validation prevents rendering when a renderable subregion lacks required
+  manual style settings.
+- Existing automatic filled overlay rendering remains usable.
+- Existing no-overlay single-boundary Hexbin-map rendering remains usable.
+- Frontend build succeeds.
+
 ## Plan skeletal Hexbin-map wizard root selection path
 
 Status: executed
