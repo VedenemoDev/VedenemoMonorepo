@@ -881,6 +881,12 @@ body {
   color: #b91c1c;
 }
 
+.binding-field-note {
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
 .binding-level-filter {
   padding-top: 0.35rem;
   border-top: 1px solid #e5e7eb;

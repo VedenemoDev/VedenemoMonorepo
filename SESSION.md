@@ -11754,3 +11754,50 @@ Current status and next steps:
   tests that bind local server sockets.
 - No architecture-document update was needed because the change is a scoped UX
   selection filter, not a component boundary or runtime/API change.
+
+## 2026-09-13 11:59 EEST
+
+Session goal:
+
+- Improve Hexbin-map empty overlay association wording after hiding invalid
+  part-to-whole ownership options.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '4260,4410p' vedenemo-ux/src/App.tsx`
+- `git status --short`
+- `rg -n "validationMessage|visualize-panel|binding-message|status-message|wizard" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `sed -n '4380,4520p' vedenemo-ux/src/App.tsx`
+- `sed -n '700,780p' vedenemo-ux/src/styles.css`
+- `sed -n '930,1030p' vedenemo-ux/src/styles.css`
+- `rg -n "query-field|dialog-error|binding-root-match|hexbin-overlay-binding" vedenemo-ux/src/styles.css`
+- `sed -n '850,890p' vedenemo-ux/src/styles.css`
+- `sed -n '1628,1658p' vedenemo-ux/src/styles.css`
+- `sed -n '360,380p' vedenemo-ux/src/styles.css`
+- `npm run build` from `vedenemo-ux`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Changed the Hexbin-map subregion association select to show
+  `No selectable overlay association` when a selected root item has no valid
+  overlay association choices.
+- Added a short helper message explaining that the selected root item has no
+  valid association to `LOCATION_AREA` subregion items.
+- Preserved the plain `No overlay` option when selectable overlay associations
+  exist and the user can intentionally choose none.
+- `npm run build` succeeded in `vedenemo-ux`; Vite reported existing large
+  chunk warnings.

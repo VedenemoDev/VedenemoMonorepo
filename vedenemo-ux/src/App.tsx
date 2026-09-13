@@ -4268,6 +4268,9 @@ function HexbinMapBindingPanel({
   const overlayTraversalOptions = hexbinMapOverlayTraversalOptions(apiDescription, selectedRootOption);
   const selectedOverlayTraversal = selectedHexbinMapOverlayTraversal(apiDescription, selectedRootOption, binding);
   const overlayAreaAttributes = selectedOverlayTraversal === null ? [] : locationAreaAttributes(selectedOverlayTraversal.relatedEntity);
+  const hasNoSelectableOverlayAssociation = selectedRootOption !== null
+    && selectedRootOption.disabledReason === undefined
+    && overlayTraversalOptions.length === 0;
 
   function selectRoot(rootValue: string) {
     const nextRootOption = rootOptionsState.options.find((option) => rootOptionValue(option) === rootValue) ?? null;
@@ -4379,13 +4382,18 @@ function HexbinMapBindingPanel({
               onChange={(event) => selectOverlayTraversal(event.target.value)}
               disabled={selectedRootOption === null || selectedRootOption.disabledReason !== undefined}
             >
-              <option value="">No overlay</option>
+              <option value="">{hasNoSelectableOverlayAssociation ? "No selectable overlay association" : "No overlay"}</option>
               {overlayTraversalOptions.map((option) => (
                 <option key={traversalOptionValue(option)} value={traversalOptionValue(option)}>
                   {traversalLabel(option)}
                 </option>
               ))}
             </select>
+            {hasNoSelectableOverlayAssociation && (
+              <span className="binding-field-note">
+                The selected root item has no valid association to LOCATION_AREA subregion items.
+              </span>
+            )}
           </label>
           <label className="query-field">
             <span>Subregion boundary</span>
