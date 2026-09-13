@@ -1,5 +1,76 @@
 # Backlog
 
+## Hide Hexbin-map part-to-whole ownership association choices
+
+Status: planned
+
+### Goal
+
+Prevent the `Hexbin-map` visualization setup flow from offering directed
+whole-part ownership associations in the part-to-whole direction.
+
+For a model such as `Metsapalsta.vdos`, where `Metsapalsta` owns
+`Metsakuvio`, the user should be offered the viable whole-to-part traversal
+from `Metsapalsta` to owned `Metsakuvio` instances. The inverse traversal from
+`Metsakuvio` back to owning `Metsapalsta` should not appear as a selectable
+Hexbin-map association path because it does not produce useful subregion map
+results.
+
+### Context
+
+`Hexbin-map` currently exposes association traversal choices broadly enough
+that ownership associations can be selected from the owned part back to the
+owning whole. That direction is semantically valid as model data, but it is not
+useful for the current map workflow, which expects a selected whole region and
+associated owned parts that can be rendered as subregions.
+
+Ordered associations traversed against their declared direction may deserve a
+separate review, but this task is limited to the concrete ownership
+part-to-whole problem for Hexbin-map selection.
+
+### Proposed Implementation Approach
+
+- Identify where the Hexbin-map wizard derives association choices for
+  subregion overlays.
+- Preserve whole-to-part ownership choices where the selected/root entity type
+  is the association source and the candidate subregion entity type is the
+  association target.
+- Filter out ownership choices where the selected/root entity type is the owned
+  part target and the association would be traversed back to its source whole.
+- Keep non-ownership association behavior unchanged unless a failing test or
+  concrete UX issue shows the same filter must be generalized.
+- Keep the change in `vedenemo-ux` unless existing backend metadata is
+  insufficient to distinguish association kind and source/target direction.
+
+### Scope
+
+- Update the browser UX Hexbin-map association-selection behavior.
+- Use existing association kind and source/target metadata.
+- Keep the model, `.vdos`, HTTP API, and CLI association semantics unchanged.
+- Add or update focused frontend tests if the surrounding test setup supports
+  this flow.
+
+### Out Of Scope
+
+- Changing ownership association semantics in core model code.
+- Removing valid part-to-whole traversal from non-map query/runtime behavior.
+- Redesigning ordered association traversal generally.
+- Adding new backend endpoints solely for this filter unless existing API data
+  proves insufficient.
+- Changing `Metsapalsta.vdos` model content.
+
+### Acceptance Criteria
+
+- In `Metsapalsta.vdos`-based data, Hexbin-map offers the
+  `Metsapalsta` to `Metsakuvio` ownership traversal for subregion overlays.
+- The inverse `Metsakuvio` to `Metsapalsta` ownership traversal is not offered
+  as a Hexbin-map selectable association path.
+- Existing useful Hexbin-map association choices for non-ownership or
+  whole-to-part ownership flows remain available.
+- Runtime/model data can still represent and traverse ownership links in both
+  directions where other features need that behavior.
+- Frontend build succeeds.
+
 ## Add Hexbin-map dual-color shared subregion borders
 
 Status: executed

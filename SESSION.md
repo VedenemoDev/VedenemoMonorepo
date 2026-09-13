@@ -11521,3 +11521,178 @@ Current status and next steps:
 - `npm run build` from `vedenemo-ux` passed; Vite reports the existing
   large-chunk warning.
 - `git diff --check` passed.
+
+## 2026-09-10 21:19 EEST
+
+Session goal:
+
+- Re-evaluate the original open-data use-case Q&A against the repository and
+  publisher sources, and mark revisions in the local planning file.
+
+Files changed:
+
+- `local-planning/use-case-scenarios.md` (local-only, excluded from Git)
+- `SESSION.md`
+
+Commands and research performed:
+
+- Read required architecture, milestone and current-task documents, latest
+  session entries, README, planning notes, visualization/dump/architecture
+  documentation, backlog excerpts, example models/loaders and relevant core/UX
+  source using `cat`, `sed`, `tail`, `rg` and `rg --files`.
+- Used web searches and publisher/catalogue pages to reassess the six original
+  candidates and investigate Service Map, building-grid and GTFS alternatives.
+- `cp local-planning/use-case-scenarios.md /tmp/vedenemo-use-case-scenarios-before-review.md`
+- Applied the dated review with KEEP/REVISE/DEFER/DISMISS/NEW markers.
+- Python comparison checked verbatim preservation of the original Q&A, local
+  review links and review whitespace.
+- `git check-ignore -v local-planning/use-case-scenarios.md local-planning/conceptual-planning.md`
+- `git diff --check`, `git status --short`, and `date`.
+
+Current status and next steps:
+
+- Added a source-linked review, revised demo sequence, implementation limits,
+  corrected data interpretations, three new candidates and a reproducible demo
+  acceptance recipe. Original Q&A is preserved verbatim.
+- Checked code as well as documentation: current tree binding validation allows
+  consecutive self-association steps despite the guide's blanket repeated-type
+  restriction.
+- Planning files remain excluded by `.git/info/exclude`'s `local-planning/`
+  rule. No commit or push performed. Existing untracked root package.json and
+  package-lock.json were left untouched.
+- Documentation-only change; no build or application tests needed. Local-link,
+  original-text preservation and whitespace checks passed.
+- Catalogue/publisher evidence was reviewed, but dataset downloads/imports were
+  not validated; retrieval failures are documented in the review. Next optional
+  implementation step is acquiring and profiling a small Service Map snapshot,
+  with municipal indicators as a fallback.
+
+## 2026-09-11 12:08 EEST
+
+Session goal:
+
+- Create a Finnish counterpart of the internal use-case scenarios memo in the
+  same local-only directory, as requested by the user.
+
+Files changed:
+
+- `local-planning/kayttotapaukset.md` (new, local-only, excluded from Git)
+- `SESSION.md`
+
+Commands run:
+
+- Read required architecture/milestone/task documents and latest session entries
+  with `cat` and `tail`; read the source memo with `cat` and `sed`.
+- `git status --short`, `wc -l`, and `ls local-planning`.
+- Created the Finnish memo using quoted heredocs.
+- Python checks verified preservation of all source Markdown link targets,
+  existence of local link targets, principal sections, translated review
+  markers, balanced code fences and clean line endings.
+- `git check-ignore -v local-planning/kayttotapaukset.md`
+- `git diff --check` and `date`.
+
+Current status and next steps:
+
+- Translated the dated review, original question/answer and subsequent Codex CLI
+  commentary. Kept technical identifiers and chart names for comparison, and
+  explained that historical claims are superseded by the dated review.
+- Original English memo left unchanged. All source Markdown links preserved.
+- Finnish memo remains covered by `.git/info/exclude`'s `local-planning/` rule;
+  no commit or push performed. Existing unrelated changes were left untouched.
+- Documentation checks passed; no build needed for this translation. Ready for
+  the user to read; no further work required.
+
+## 2026-09-13 10:48 EEST
+
+Session goal:
+
+- Answer whether association direction was already taken into account in the
+  current implementation.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg -n "association|Association|direction|Direction|directed|bidirectional|ownership|reference|relation" . -g '!vedenemo-ux/node_modules/**'`
+- `rg --files vedenemo-core vedenemo-model-api vedenemo-web-api vedenemo-cli .vedenemo docs tasks | rg "Association|association|vdos|architecture_doc|cli-reference|visualizations"`
+- `git status --short`
+- `sed -n '1,260p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/Association.java`
+- `sed -n '1,240p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/AssociationKind.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/OwnershipAssociation.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ReferenceAssociation.java`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/RelationAssociation.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/command/CreateAssociationCommand.java`
+- `sed -n '560,710p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,160p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java`
+- `sed -n '240,290p' vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `sed -n '80,175p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '330,355p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '440,462p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '880,920p' vedenemo-ux/src/App.tsx`
+- `sed -n '1770,1795p' vedenemo-ux/src/App.tsx`
+- `sed -n '2190,2210p' vedenemo-ux/src/App.tsx`
+- `nl -ba vedenemo-model-api/src/main/java/org/vedenemo/core/model/Association.java | sed -n '1,60p'`
+- `nl -ba vedenemo-core/src/main/java/org/vedenemo/core/instance/RelationshipDirection.java | sed -n '1,60p'`
+- `nl -ba vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java | sed -n '575,640p'`
+- `nl -ba vedenemo-core/src/main/java/org/vedenemo/core/instance/AssociationInstanceLink.java | sed -n '1,70p'`
+- `nl -ba vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java | sed -n '84,100p'`
+- `nl -ba vedenemo-ux/src/App.tsx | sed -n '880,920p'`
+- `nl -ba README.md | sed -n '238,260p'`
+- `nl -ba docs/architecture_doc.md | sed -n '150,160p;228,238p;704,714p'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Confirmed that association source/target direction is already part of the
+  model, command, instance-link, `.vdos`, API, query, and selected UX traversal
+  flows.
+- Also confirmed there is not a separate model-level `direction` field; the
+  direction is represented by source/target endpoints plus traversal-time
+  `outgoing`, `incoming`, or core/API `either`.
+
+## 2026-09-13 10:55 EEST
+
+Session goal:
+
+- Add a backlog plan item to prevent Hexbin-map from offering part-to-whole
+  ownership association choices.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,180p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/backlog.md`
+- `git status --short`
+
+Current status and next steps:
+
+- Added a newest-first planned backlog item describing the Hexbin-map ownership
+  association filter: keep whole-to-part `Metsapalsta` to `Metsakuvio`
+  traversal selectable and hide the inverse `Metsakuvio` to `Metsapalsta`
+  choice for the map workflow.
+- Scoped the item to frontend Hexbin-map association selection unless existing
+  API metadata proves insufficient.
+- Noted ordered/reverse-direction association concerns as context for possible
+  later review, outside this task.
+- No build run; planning/documentation-only change.
