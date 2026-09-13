@@ -2,7 +2,7 @@
 
 ## Hide Hexbin-map part-to-whole ownership association choices
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -70,6 +70,21 @@ part-to-whole problem for Hexbin-map selection.
 - Runtime/model data can still represent and traverse ownership links in both
   directions where other features need that behavior.
 - Frontend build succeeds.
+
+### Completion Notes
+
+- Added a frontend-only Hexbin-map overlay traversal filter in `vedenemo-ux`.
+- Kept generic traversal option generation unchanged so incoming ownership
+  traversal remains available to non-map features that need it.
+- Hid `OWNERSHIP` association options from Hexbin-map when the candidate
+  traversal direction is `incoming`, which corresponds to owned part back to
+  owning whole.
+- Preserved outgoing whole-to-part ownership traversal options for subregion
+  overlays.
+- No backend, API, CLI, or `.vdos` model semantic changes were required.
+- `npm run build` succeeded in `vedenemo-ux`.
+- `mvn clean verify` succeeded from the repository root when rerun with local
+  server-socket permissions for web API tests.
 
 ## Add Hexbin-map dual-color shared subregion borders
 

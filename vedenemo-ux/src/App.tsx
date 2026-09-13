@@ -1065,7 +1065,12 @@ function hexbinMapOverlayTraversalOptions(
     return [];
   }
   return traversalOptionsFor(rootOption.entity, apiDescription)
+    .filter(isHexbinMapOverlayTraversalOption)
     .filter((option) => locationAreaAttributes(option.relatedEntity).length > 0);
+}
+
+function isHexbinMapOverlayTraversalOption(option: TraversalOption): boolean {
+  return !(option.association.kind === "OWNERSHIP" && option.direction === "incoming");
 }
 
 function selectedHexbinMapOverlayTraversal(

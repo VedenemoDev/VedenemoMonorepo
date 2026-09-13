@@ -11696,3 +11696,61 @@ Current status and next steps:
 - Noted ordered/reverse-direction association concerns as context for possible
   later review, outside this task.
 - No build run; planning/documentation-only change.
+
+## 2026-09-13 11:10 EEST
+
+Session goal:
+
+- Execute the Hexbin-map ownership association filter plan, verify builds/tests,
+  and mark the backlog task executed while preserving it as history.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 160 SESSION.md`
+- `sed -n '1,120p' tasks/backlog.md`
+- `rg -n "Hexbin|hexbin|subregion|association|associations|Association|ownership|direction|incoming|outgoing" vedenemo-ux/src -g '!node_modules/**'`
+- `rg -n "kind|sourceEntity|targetEntity|source|target|OWNERSHIP|ownership" vedenemo-ux/src/App.tsx`
+- `rg --files vedenemo-ux | sort`
+- `git status --short`
+- `sed -n '70,110p' vedenemo-ux/src/App.tsx`
+- `sed -n '170,190p' vedenemo-ux/src/App.tsx`
+- `sed -n '860,925p' vedenemo-ux/src/App.tsx`
+- `sed -n '1035,1080p' vedenemo-ux/src/App.tsx`
+- `sed -n '4244,4400p' vedenemo-ux/src/App.tsx`
+- `cat vedenemo-ux/package.json`
+- `rg -n "test|vitest|playwright|jest|testing" vedenemo-ux package.json pom.xml .github -g '!vedenemo-ux/node_modules/**'`
+- `ls`
+- `git diff --stat`
+- `npm run build` from `vedenemo-ux`
+- `mvn clean verify` from the repository root; first sandboxed run failed when
+  web API tests could not open local server sockets.
+- `mvn clean verify` from the repository root with escalated local socket
+  permissions.
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented a Hexbin-map-specific overlay traversal filter that hides
+  incoming `OWNERSHIP` association choices while preserving outgoing
+  whole-to-part ownership options and all generic traversal behavior.
+- Updated the active task and backlog history item to `executed` with
+  completion notes.
+- `npm run build` succeeded in `vedenemo-ux`; Vite reported existing large
+  chunk warnings.
+- `mvn clean verify` succeeded after rerunning outside the sandbox for web API
+  tests that bind local server sockets.
+- No architecture-document update was needed because the change is a scoped UX
+  selection filter, not a component boundary or runtime/API change.

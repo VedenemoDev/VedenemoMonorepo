@@ -1,61 +1,58 @@
 # Current Task
 
-## Add Hexbin-map dual-color shared subregion borders
+## Hide Hexbin-map part-to-whole ownership association choices
 
 Status: executed
 
 ### Goal
 
-Improve `Hexbin-map` subregion readability by rendering shared borders between
-adjacent subregions with visual contribution from both neighboring subregion
-styles.
+Prevent the `Hexbin-map` visualization setup flow from offering directed
+whole-part ownership associations in the part-to-whole direction.
 
-When two linked subregion polygons share the same boundary segment, the map
-should make it clear that the segment belongs to both subregions instead of
-letting one subregion's stroke visually dominate the other.
+For a model such as `Metsapalsta.vdos`, where `Metsapalsta` owns
+`Metsakuvio`, the user should be offered the viable whole-to-part traversal
+from `Metsapalsta` to owned `Metsakuvio` instances. The inverse traversal from
+`Metsakuvio` back to owning `Metsapalsta` should not appear as a selectable
+Hexbin-map association path because it does not produce useful subregion map
+results.
 
 ### Scope
 
-- Keep this feature in `vedenemo-ux`.
-- Keep all geometry matching and SVG rendering frontend-only.
-- Prefer exact shared-segment matching for the first implementation.
-- Support reversed coordinate order when matching exact shared segments.
-- Document any tolerance or partial-overlap limitations if they remain.
+- Update the browser UX Hexbin-map association-selection behavior.
+- Use existing association kind and source/target metadata.
+- Keep the model, `.vdos`, HTTP API, and CLI association semantics unchanged.
+- Keep non-Hexbin-map traversal behavior unchanged.
 
 ### Out Of Scope
 
-- Backend geometry libraries.
-- New backend endpoints.
-- Persistent visualization configuration.
-- Spatial topology validation.
-- Automatic gap closing or polygon repair.
-- Full tolerance-based line conflation unless exact matching proves
-  insufficient for the current data.
-- Partial-overlap splitting unless needed by concrete data.
+- Changing ownership association semantics in core model code.
+- Removing valid part-to-whole traversal from non-map query/runtime behavior.
+- Redesigning ordered association traversal generally.
+- Adding new backend endpoints solely for this filter unless existing API data
+  proves insufficient.
+- Changing `Metsapalsta.vdos` model content.
 
 ### Acceptance Criteria
 
-- Subregion borders still render correctly when subregion polygons do not share
-  exact boundary segments.
-- Exact shared boundary segments between two subregions are detected even when
-  the segment point order is reversed.
-- Shared boundary segments render with both neighboring subregion colors.
-- The shared-border overlay does not obscure the main region boundary or
-  unrelated non-shared subregion borders.
-- Existing no-overlay, automatic fill, automatic border-only, manual
-  border-only, and manual pattern/color modes remain usable.
+- In `Metsapalsta.vdos`-based data, Hexbin-map offers the
+  `Metsapalsta` to `Metsakuvio` ownership traversal for subregion overlays.
+- The inverse `Metsakuvio` to `Metsapalsta` ownership traversal is not offered
+  as a Hexbin-map selectable association path.
+- Existing useful Hexbin-map association choices for non-ownership or
+  whole-to-part ownership flows remain available.
+- Runtime/model data can still represent and traverse ownership links in both
+  directions where other features need that behavior.
 - Frontend build succeeds.
 
 ### Completion Notes
 
-- Added frontend-only exact shared-segment detection for `Hexbin-map`
-  subregion boundaries using normalized source coordinate endpoint pairs.
-- Treated reversed point order as the same shared segment and ignored explicit
-  duplicated polygon closing points for segment detection.
-- Rendered shared borders in a dedicated SVG overlay layer above ordinary
-  subregion polygons with each neighboring color offset toward that
-  subregion's own interior side.
-- Preserved ordinary subregion rendering for non-shared edges and all existing
-  Hexbin-map style assignment modes.
-- The first implementation intentionally does not split partial overlaps or
-  conflate near-identical/tolerance-based segments.
+- Kept generic traversal option generation unchanged for query, tree, runtime,
+  and other non-map flows.
+- Added a Hexbin-map-specific overlay traversal filter in `vedenemo-ux` that
+  hides `OWNERSHIP` associations when they would be traversed in the incoming
+  part-to-whole direction.
+- Preserved outgoing whole-to-part ownership traversal choices for Hexbin-map
+  subregion overlays.
+- Reused existing API association kind and source/target direction metadata;
+  no backend endpoint, `.vdos`, CLI, or model semantic changes were needed.
+- Frontend build and full backend Maven verification succeeded.
