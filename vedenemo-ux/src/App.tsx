@@ -1073,6 +1073,11 @@ function isHexbinMapOverlayTraversalOption(option: TraversalOption): boolean {
   return !(option.association.kind === "OWNERSHIP" && option.direction === "incoming");
 }
 
+function supportsDesktopDoubleClick(): boolean {
+  return typeof window.matchMedia === "function"
+    && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
+
 function selectedHexbinMapOverlayTraversal(
   apiDescription: ApiDescriptionResponse | null,
   rootOption: HexbinMapRootOption | null,
@@ -3955,6 +3960,22 @@ function VisualizationWizardPage() {
     });
   }
 
+  function selectChartType(chartTypeId: string, selectable: boolean) {
+    if (!selectable) {
+      return;
+    }
+    setSelectedChartTypeId(chartTypeId);
+    clearVisualizationData();
+  }
+
+  function selectChartTypeAndContinue(chartTypeId: string, selectable: boolean) {
+    if (status !== "ok" || !selectable || !supportsDesktopDoubleClick()) {
+      return;
+    }
+    selectChartType(chartTypeId, selectable);
+    setStep("binding");
+  }
+
   function updateHexbinMapBinding(nextBinding: HexbinMapBinding) {
     setHexbinMapBinding(nextBinding);
     clearVisualizationData();
@@ -4145,12 +4166,8 @@ function VisualizationWizardPage() {
                   key={chartType.id}
                   type="button"
                   className={selectedChartTypeId === chartType.id ? "chart-type-option chart-type-option-active" : "chart-type-option"}
-                  onClick={() => {
-                    if (eligibility.selectable) {
-                      setSelectedChartTypeId(chartType.id);
-                      clearVisualizationData();
-                    }
-                  }}
+                  onClick={() => selectChartType(chartType.id, eligibility.selectable)}
+                  onDoubleClick={() => selectChartTypeAndContinue(chartType.id, eligibility.selectable)}
                   disabled={!eligibility.selectable}
                 >
                   <strong>{chartType.name}</strong>

@@ -11801,3 +11801,44 @@ Current status and next steps:
   exist and the user can intentionally choose none.
 - `npm run build` succeeded in `vedenemo-ux`; Vite reported existing large
   chunk warnings.
+
+## 2026-09-13 12:26 EEST
+
+Session goal:
+
+- Add desktop-browser mouse double-click support for selecting a visualization
+  chart type and advancing directly to the binding step.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '3880,4195p' vedenemo-ux/src/App.tsx`
+- `git status --short`
+- `rg -n "matchMedia|navigator|maxTouchPoints|ontouch|pointer|hover" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `sed -n '1,40p' vedenemo-ux/src/App.tsx`
+- `rg -n "function .*Visualization|function Visualize|VisualizationWizard|setStep\\(\\\"binding\\\"\\)|Chart Type Selection" vedenemo-ux/src/App.tsx`
+- `npm run build` from `vedenemo-ux`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added desktop-only double-click advancement for selectable chart type cards in
+  the visualization wizard.
+- Kept single-click selection and the explicit `Continue` button unchanged.
+- Guarded the shortcut with `(hover: hover) and (pointer: fine)` so touch/mobile
+  double-tap behavior is not changed.
+- Updated `tasks/current-task.md` with the executed task and completion notes.
+- `npm run build` succeeded in `vedenemo-ux`; Vite reported existing large
+  chunk warnings.
