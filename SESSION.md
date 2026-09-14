@@ -11802,6 +11802,41 @@ Current status and next steps:
 - `npm run build` succeeded in `vedenemo-ux`; Vite reported existing large
   chunk warnings.
 
+## 2026-09-14 22:12 EEST
+
+Session goal:
+
+- Add a new backlog planning item for Tree of Life aggregate/derived numeric
+  labels along the `Metsapalsta -> Metsakuvio -> Puulaji -> Mittaus` chain.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 80 SESSION.md`
+- `sed -n '1,160p' tasks/backlog.md`
+- `rg -n "Status: planned|Status: proposed|Tree of Life|aggregate|derived|Mets" tasks/backlog.md vedenemo-ux/src/App.tsx .vedenemo`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added the newest backlog item at the beginning of `tasks/backlog.md`.
+- Framed the item as a planned Tree of Life proof-of-concept for derived
+  numeric labels using `min`, `max`, `avg`, `median`, `variance`, and `sum`.
+- Included support for user-composed labels that combine free text, ordinary
+  field references, and multiple aggregate expressions.
+- No code, architecture documents, README, or current task files were changed.
+
 ## 2026-09-13 12:26 EEST
 
 Session goal:

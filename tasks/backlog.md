@@ -1,5 +1,99 @@
 # Backlog
 
+## Add Tree of Life aggregate labels for numeric descendant values
+
+Status: planned
+
+### Goal
+
+Create the first proof-of-concept for aggregates and derived values in the
+Tree of Life visualization by allowing a user to summarize numeric descendant
+values instead of rendering every individual association/value label.
+
+The motivating model path is:
+
+```text
+Metsapalsta -> Metsakuvio -> Puulaji -> Mittaus
+```
+
+When the selected label source resolves to a `NUMERIC` attribute, such as a
+measurement attribute on `Mittaus`, the user should be able to select an
+aggregate function and show the computed result for the relevant visual node or
+branch context.
+
+### Context
+
+Tree of Life can become visually noisy when every individual `Puulaji` to
+`Mittaus` association and measurement value is shown directly. In the
+Metsapalsta use case, the more useful first step is often a concise summary,
+for example average, minimum, maximum, or total measurement values below a
+selected `Puulaji` or `Metsakuvio`.
+
+This should also open the door to user-defined derived labels rather than a
+single hard-coded derived value. A label should be able to combine ordinary
+free text with one or more field references or aggregate expressions, so short
+labels remain possible while longer labels are not artificially blocked when
+the visual layout can handle them.
+
+### Proposed Implementation Approach
+
+- Extend the Tree of Life label-binding UX so a label can be built from ordered
+  parts:
+  - free-text fragments;
+  - existing field references;
+  - aggregate function templates for eligible numeric descendant fields.
+- Offer aggregate templates only when the selected attribute data type is
+  `NUMERIC`.
+- Support these aggregate functions for the first proof-of-concept:
+  - `min`;
+  - `max`;
+  - `avg`;
+  - `median`;
+  - `variance`;
+  - `sum`.
+- Evaluate aggregate values across the currently resolved association path and
+  the current visualization node/branch context.
+- Prefer frontend-only derived label evaluation if the existing model and data
+  payloads contain enough information.
+- Keep any reusable aggregate semantics deterministic and pure JDK if backend
+  support later proves necessary.
+
+### Scope
+
+- Tree of Life visualization setup and rendering.
+- Label composition for Tree of Life node or branch labels.
+- Numeric aggregate options for descendant values reached through association
+  paths such as `Puulaji -> Mittaus`.
+- First proof-of-concept behavior against the Metsapalsta test data shape.
+- Focused tests where the existing frontend test setup supports the label
+  builder or aggregate evaluator.
+
+### Out Of Scope
+
+- General-purpose query language support.
+- Persisted visualization configuration unless an existing persistence path
+  already supports the needed shape.
+- Backend API changes unless current model/data payloads are insufficient.
+- Non-numeric aggregate functions.
+- Cross-visualization aggregate label support beyond Tree of Life.
+- Database-backed aggregate execution.
+
+### Acceptance Criteria
+
+- Tree of Life label configuration can still use existing individual field
+  references and free text.
+- For `NUMERIC` attributes, the user can choose `min`, `max`, `avg`, `median`,
+  `variance`, or `sum` as a derived label part.
+- Aggregate choices are not offered for non-`NUMERIC` attributes.
+- A single rendered label can combine free text, ordinary field references, and
+  more than one aggregate expression.
+- In the Metsapalsta chain, a `Puulaji` or higher-level visual context can show
+  an aggregate of linked `Mittaus` numeric values without rendering every
+  individual `Puulaji -> Mittaus` value association.
+- Empty or missing numeric value sets render predictably without crashing the
+  visualization.
+- Frontend build succeeds.
+
 ## Hide Hexbin-map part-to-whole ownership association choices
 
 Status: executed
