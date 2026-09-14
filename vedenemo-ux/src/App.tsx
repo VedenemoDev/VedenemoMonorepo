@@ -176,6 +176,7 @@ type QueryRequest = {
 };
 
 type RelationshipDirection = "outgoing" | "incoming";
+type TreeLabelAggregateFunction = "min" | "max" | "avg" | "median" | "variance" | "sum";
 
 type TraversalOption = {
   association: AssociationDescription;
@@ -265,6 +266,24 @@ type TidyTreeNode = {
   label: string;
   detail?: string;
   children: TidyTreeNode[];
+};
+
+type TreeLabelAggregateOption = {
+  aggregateFunction: TreeLabelAggregateFunction;
+  entityAzName: string;
+  attributeAzName: string;
+  label: string;
+  template: string;
+};
+
+type TreeLabelDescendantContext = {
+  entityAzName: string;
+  values: Record<string, unknown>;
+};
+
+type BuiltTidyTreeNode = {
+  node: TidyTreeNode;
+  descendantContexts: TreeLabelDescendantContext[];
 };
 
 type VisualizationDataState = {
@@ -382,6 +401,7 @@ const TIDY_TREE_CHART_ID = "tidy-tree";
 const RADIAL_TREE_CHART_ID = "radial-tree";
 const TREE_OF_LIFE_CHART_ID = "tree-of-life";
 const HEXBIN_MAP_CHART_ID = "hexbin-map";
+const TREE_LABEL_AGGREGATE_FUNCTIONS: TreeLabelAggregateFunction[] = ["min", "max", "avg", "median", "variance", "sum"];
 const NO_LOCATION_AREA_DATA_REASON = "No LOCATION_AREA data";
 const HEXBIN_MAP_STYLE_PATTERNS: HexbinMapPattern[] = ["solid", "diagonal", "reverse-diagonal", "crosshatch", "dots", "horizontal", "vertical"];
 const HEXBIN_MAP_PATTERN_LABELS: Record<HexbinMapPattern, string> = {
@@ -1423,6 +1443,49 @@ function templatePlaceholders(template: string): string[] {
     .filter((placeholder) => placeholder.length > 0);
 }
 
+function parseTreeLabelAggregatePlaceholder(placeholder: string): {
+  aggregateFunction: TreeLabelAggregateFunction;
+  entityAzName: string;
+  attributeAzName: string;
+} | null {
+  const match = /^(min|max|avg|median|variance|sum):([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)$/.exec(placeholder.trim());
+  if (match === null) {
+    return null;
+  }
+  return {
+    aggregateFunction: match[1] as TreeLabelAggregateFunction,
+    entityAzName: match[2],
+    attributeAzName: match[3],
+  };
+}
+
+function treeLabelAggregateOptionsForLevel(
+  apiDescription: ApiDescriptionResponse | null,
+  binding: TidyTreeBinding,
+  levelIndex: number,
+): TreeLabelAggregateOption[] {
+  if (apiDescription === null) {
+    return [];
+  }
+  return binding.levels
+    .slice(levelIndex + 1)
+    .flatMap((level) => {
+      const entity = findEntity(apiDescription.entities, level.entityAzName);
+      if (entity === null) {
+        return [];
+      }
+      return entity.attributes
+        .filter((attribute) => attribute.dataType === "NUMERIC")
+        .flatMap((attribute) => TREE_LABEL_AGGREGATE_FUNCTIONS.map((aggregateFunction) => ({
+          aggregateFunction,
+          entityAzName: entity.azName,
+          attributeAzName: attribute.azName,
+          label: `${aggregateFunction} ${entity.visName}.${attribute.visName}`,
+          template: `{${aggregateFunction}:${entity.azName}.${attribute.azName}}`,
+        })));
+    });
+}
+
 function validateLabelTemplate(entity: EntityDescription, template: string): string | null {
   if (!template.trim()) {
     return "Label template is required.";
@@ -1431,6 +1494,37 @@ function validateLabelTemplate(entity: EntityDescription, template: string): str
   for (const placeholder of templatePlaceholders(template)) {
     if (placeholder === "id") {
       continue;
+    }
+    if (!attributeNames.has(placeholder.toLocaleLowerCase())) {
+      return `${placeholder} is not an attribute of ${entity.visName}.`;
+    }
+  }
+  return null;
+}
+
+function validateTreeLabelTemplate(
+  entity: EntityDescription,
+  template: string,
+  aggregateOptions: TreeLabelAggregateOption[],
+): string | null {
+  if (!template.trim()) {
+    return "Label template is required.";
+  }
+  const attributeNames = new Set(entity.attributes.map((attribute) => attribute.azName.toLocaleLowerCase()));
+  const aggregateTemplateNames = new Set(aggregateOptions.map((option) => option.template.slice(1, -1).toLocaleLowerCase()));
+  for (const placeholder of templatePlaceholders(template)) {
+    if (placeholder === "id") {
+      continue;
+    }
+    const aggregatePlaceholder = parseTreeLabelAggregatePlaceholder(placeholder);
+    if (aggregatePlaceholder !== null) {
+      if (!aggregateTemplateNames.has(placeholder.toLocaleLowerCase())) {
+        return `${placeholder} is not a reachable numeric aggregate.`;
+      }
+      continue;
+    }
+    if (placeholder.includes(":")) {
+      return `${placeholder} is not a valid aggregate expression.`;
     }
     if (!attributeNames.has(placeholder.toLocaleLowerCase())) {
       return `${placeholder} is not an attribute of ${entity.visName}.`;
@@ -1452,6 +1546,71 @@ function renderLabelTemplate(entity: EntityDescription, instance: EntityInstance
     return formatAttributeValue(attribute, instance.values[attribute.azName]);
   }).trim();
   return rendered || instance.id;
+}
+
+function renderTreeLabelTemplate(
+  entity: EntityDescription,
+  instance: EntityInstanceResponse,
+  template: string,
+  descendantContexts: TreeLabelDescendantContext[],
+): string {
+  const rendered = template.replace(/\{([^{}]+)\}/g, (_match, rawPlaceholder: string) => {
+    const placeholder = rawPlaceholder.trim();
+    const aggregatePlaceholder = parseTreeLabelAggregatePlaceholder(placeholder);
+    if (aggregatePlaceholder !== null) {
+      const values = descendantContexts
+        .filter((context) => sameAzName(context.entityAzName, aggregatePlaceholder.entityAzName))
+        .map((context) => context.values[aggregatePlaceholder.attributeAzName])
+        .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+      return formatTreeLabelAggregateValue(aggregatePlaceholder.aggregateFunction, values);
+    }
+    if (placeholder === "id") {
+      return instance.id;
+    }
+    const attribute = entity.attributes.find((candidate) => sameAzName(candidate.azName, placeholder));
+    if (attribute === undefined) {
+      return "";
+    }
+    return formatAttributeValue(attribute, instance.values[attribute.azName]);
+  }).trim();
+  return rendered || instance.id;
+}
+
+function formatTreeLabelAggregateValue(aggregateFunction: TreeLabelAggregateFunction, values: number[]): string {
+  if (values.length === 0) {
+    return "n/a";
+  }
+  const sortedValues = [...values].sort((left, right) => left - right);
+  let aggregateValue: number;
+  if (aggregateFunction === "min") {
+    aggregateValue = sortedValues[0];
+  } else if (aggregateFunction === "max") {
+    aggregateValue = sortedValues[sortedValues.length - 1];
+  } else if (aggregateFunction === "median") {
+    const middleIndex = Math.floor(sortedValues.length / 2);
+    aggregateValue = sortedValues.length % 2 === 0
+      ? (sortedValues[middleIndex - 1] + sortedValues[middleIndex]) / 2
+      : sortedValues[middleIndex];
+  } else {
+    const sum = sortedValues.reduce((total, value) => total + value, 0);
+    if (aggregateFunction === "sum") {
+      aggregateValue = sum;
+    } else if (aggregateFunction === "variance") {
+      const average = sum / sortedValues.length;
+      aggregateValue = sortedValues.reduce((total, value) => total + (value - average) ** 2, 0) / sortedValues.length;
+    } else {
+      aggregateValue = sum / sortedValues.length;
+    }
+  }
+  return Number.isInteger(aggregateValue)
+    ? String(aggregateValue)
+    : aggregateValue.toLocaleString(undefined, { maximumFractionDigits: 6 });
+}
+
+function treeLabelDescendantContextsForBuiltChildren(children: BuiltTidyTreeNode[]): TreeLabelDescendantContext[] {
+  return children.flatMap((child) => [
+    ...child.descendantContexts,
+  ]);
 }
 
 function selectedEntityNames(binding: TidyTreeBinding): Set<string> {
@@ -1597,7 +1756,7 @@ function rootSelectionValidationMessage(apiDescription: ApiDescriptionResponse |
   if (rootEntity === null) {
     return "Select a root entity type.";
   }
-  const labelTemplateError = validateLabelTemplate(rootEntity, binding.rootSelection.labelTemplate);
+  const labelTemplateError = validateTreeLabelTemplate(rootEntity, binding.rootSelection.labelTemplate, treeLabelAggregateOptionsForLevel(apiDescription, binding, 0));
   if (labelTemplateError !== null) {
     return `Root label: ${labelTemplateError}`;
   }
@@ -1775,7 +1934,7 @@ function bindingValidationMessage(
       }
     }
     seenEntities.add(entityKey);
-    const templateError = validateLabelTemplate(entity, level.labelTemplate);
+    const templateError = validateTreeLabelTemplate(entity, level.labelTemplate, treeLabelAggregateOptionsForLevel(apiDescription, binding, index));
     if (templateError !== null) {
       return `Level ${index + 1}: ${templateError}`;
     }
@@ -1791,12 +1950,6 @@ function linkChildIdForParent(parentId: string, link: AssociationLinkResponse, d
     return link.sourceInstanceId === parentId ? link.targetInstanceId : null;
   }
   return link.targetInstanceId === parentId ? link.sourceInstanceId : null;
-}
-
-function sortInstancesByLabel(entity: EntityDescription, instances: EntityInstanceResponse[], template: string): EntityInstanceResponse[] {
-  return [...instances].sort((left, right) => (
-    renderLabelTemplate(entity, left, template).localeCompare(renderLabelTemplate(entity, right, template))
-  ));
 }
 
 async function buildTidyTreeData(
@@ -1852,7 +2005,7 @@ async function buildTidyTreeData(
     linksByLevel.set(index + 1, links);
   }));
 
-  function buildLevelNode(levelIndex: number, instance: EntityInstanceResponse, visitedPath = new Set<string>(), labelTemplateOverride?: string): TidyTreeNode {
+  function buildLevelNode(levelIndex: number, instance: EntityInstanceResponse, visitedPath = new Set<string>(), labelTemplateOverride?: string): BuiltTidyTreeNode {
     const level = binding.levels[levelIndex];
     const entity = entityByAzName.get(level.entityAzName.toLocaleLowerCase());
     if (entity === undefined) {
@@ -1862,7 +2015,7 @@ async function buildTidyTreeData(
     nextVisitedPath.add(instance.id);
 
     const nextLevel = binding.levels[levelIndex + 1] ?? null;
-    let children: TidyTreeNode[] = [];
+    let builtChildren: BuiltTidyTreeNode[] = [];
     if (nextLevel !== null && nextLevel.traversal !== undefined) {
       const nextEntity = entityByAzName.get(nextLevel.entityAzName.toLocaleLowerCase());
       const nextInstances = instancesByLevel.get(levelIndex + 1) ?? [];
@@ -1878,17 +2031,29 @@ async function buildTidyTreeData(
       const childInstances = [...childIds]
         .map((childId) => nextInstanceById.get(childId) ?? null)
         .filter((candidate): candidate is EntityInstanceResponse => candidate !== null);
-      children = nextEntity === undefined
+      builtChildren = nextEntity === undefined
         ? []
-        : sortInstancesByLabel(nextEntity, childInstances, nextLevel.labelTemplate)
-            .map((childInstance) => buildLevelNode(levelIndex + 1, childInstance, nextVisitedPath));
+        : childInstances
+            .map((childInstance) => buildLevelNode(levelIndex + 1, childInstance, nextVisitedPath))
+            .sort((left, right) => left.node.label.localeCompare(right.node.label));
     }
+    const descendantContexts = treeLabelDescendantContextsForBuiltChildren(builtChildren);
+    const label = renderTreeLabelTemplate(entity, instance, labelTemplateOverride ?? level.labelTemplate, descendantContexts);
 
     return {
-      id: instance.id,
-      label: renderLabelTemplate(entity, instance, labelTemplateOverride ?? level.labelTemplate),
-      detail: entity.visName,
-      children,
+      node: {
+        id: instance.id,
+        label,
+        detail: entity.visName,
+        children: builtChildren.map((child) => child.node),
+      },
+      descendantContexts: [
+        {
+          entityAzName: entity.azName,
+          values: instance.values,
+        },
+        ...descendantContexts,
+      ],
     };
   }
 
@@ -1899,16 +2064,18 @@ async function buildTidyTreeData(
     if (firstEntity === undefined || firstInstances[0] === undefined) {
       throw new Error("Resolved root instance is unavailable.");
     }
-    return buildLevelNode(0, firstInstances[0], new Set<string>(), binding.rootSelection.labelTemplate);
+    return buildLevelNode(0, firstInstances[0], new Set<string>(), binding.rootSelection.labelTemplate).node;
   }
+  const builtChildren = firstEntity === undefined
+    ? []
+    : firstInstances
+        .map((instance) => buildLevelNode(0, instance))
+        .sort((left, right) => left.node.label.localeCompare(right.node.label));
   return {
     id: "root",
     label: binding.rootLabel.trim(),
     detail: apiDescription.modelVisName,
-    children: firstEntity === undefined
-      ? []
-      : sortInstancesByLabel(firstEntity, firstInstances, firstLevel.labelTemplate)
-          .map((instance) => buildLevelNode(0, instance)),
+    children: builtChildren.map((child) => child.node),
   };
 }
 
@@ -4570,6 +4737,7 @@ function TidyTreeBindingPanel({
   const canAddLevel = apiDescription !== null && traversalOptionsForBindingLevel(apiDescription, binding, binding.levels.length).length > 0;
   const rootEntity = selectedRootEntity(apiDescription, binding);
   const rootRelationshipOptions = traversalOptionsFor(rootEntity, apiDescription);
+  const rootAggregateOptions = treeLabelAggregateOptionsForLevel(apiDescription, binding, 0);
   const levelOneEntity = findEntity(apiDescription?.entities ?? [], binding.levels[0]?.entityAzName ?? "");
   const levelOneRelationshipOptions = traversalOptionsFor(levelOneEntity, apiDescription);
   const labelInputRefs = useRef(new Map<number, HTMLInputElement>());
@@ -4732,16 +4900,26 @@ function TidyTreeBindingPanel({
             </label>
           </div>
 
-          {rootEntity !== null && rootEntity.attributes.length > 0 && (
+          {rootEntity !== null && (
             <div className="binding-template-hints" aria-label="Root label template hints">
-              {[...rootEntity.attributes.map((attribute) => `{${attribute.azName}}`), "{id}"].map((hint) => (
+              {[
+                ...rootEntity.attributes.map((attribute) => ({
+                  template: `{${attribute.azName}}`,
+                  title: `Append {${attribute.azName}}`,
+                })),
+                { template: "{id}", title: "Append {id}" },
+                ...rootAggregateOptions.map((option) => ({
+                  template: option.template,
+                  title: `Append ${option.label}`,
+                })),
+              ].map((hint, hintIndex) => (
                 <button
-                  key={hint}
+                  key={`${hint.template}-${hintIndex}`}
                   type="button"
-                  onClick={() => setRootLabelTemplate(`${binding.rootSelection.labelTemplate}${hint}`)}
-                  title={`Append ${hint}`}
+                  onClick={() => setRootLabelTemplate(`${binding.rootSelection.labelTemplate}${hint.template}`)}
+                  title={hint.title}
                 >
-                  <code>{hint}</code>
+                  <code>{hint.template}</code>
                 </button>
               ))}
             </div>
@@ -4956,6 +5134,7 @@ function TidyTreeBindingPanel({
           const selectedTraversalValue = level.traversal === undefined
             ? ""
             : `${level.traversal.associationAzName}::${level.traversal.direction}::${level.entityAzName}`;
+          const aggregateOptions = treeLabelAggregateOptionsForLevel(apiDescription, binding, index);
           return (
             <section key={`${index}-${level.entityAzName}`} className="binding-level">
               <header>
@@ -5030,17 +5209,27 @@ function TidyTreeBindingPanel({
                   />
                 </label>
               )}
-              {entity !== null && entity.attributes.length > 0 && !(index === 0 && binding.rootSelection.mode === "entity") && (
+              {entity !== null && !(index === 0 && binding.rootSelection.mode === "entity") && (
                 <div className="binding-template-hints" aria-label={`Level ${index + 1} label template hints`}>
-                  {[...entity.attributes.map((attribute) => `{${attribute.azName}}`), "{id}"].map((hint) => (
+                  {[
+                    ...entity.attributes.map((attribute) => ({
+                      template: `{${attribute.azName}}`,
+                      title: `Insert {${attribute.azName}}`,
+                    })),
+                    { template: "{id}", title: "Insert {id}" },
+                    ...aggregateOptions.map((option) => ({
+                      template: option.template,
+                      title: `Insert ${option.label}`,
+                    })),
+                  ].map((hint, hintIndex) => (
                     <button
-                      key={hint}
+                      key={`${hint.template}-${hintIndex}`}
                       type="button"
                       onPointerDown={(event: PointerEvent<HTMLButtonElement>) => event.preventDefault()}
-                      onClick={() => insertLabelTemplateHint(index, level, hint)}
-                      title={`Insert ${hint}`}
+                      onClick={() => insertLabelTemplateHint(index, level, hint.template)}
+                      title={hint.title}
                     >
-                      <code>{hint}</code>
+                      <code>{hint.template}</code>
                     </button>
                   ))}
                 </div>

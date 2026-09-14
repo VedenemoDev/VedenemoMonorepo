@@ -11802,6 +11802,82 @@ Current status and next steps:
 - `npm run build` succeeded in `vedenemo-ux`; Vite reported existing large
   chunk warnings.
 
+## 2026-09-14 22:30 EEST
+
+Session goal:
+
+- Execute the reusable tree-chart aggregate label plan as the current task and
+  keep the executed backlog item as history.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,140p' tasks/backlog.md`
+- `rg -n "Tree of Life|Tidy tree|Radial tree|tree-of-life|tidy|radial|label|Visualization|chart" vedenemo-ux/src/App.tsx`
+- `rg -n "type .*Visualization|interface .*Visualization|ChartType|chartType|Tree" vedenemo-ux/src/App.tsx vedenemo-ux/src/*.ts vedenemo-ux/src/*.tsx`
+- `rg --files vedenemo-ux/src`
+- `find vedenemo-ux -maxdepth 2 -type f \( -name 'package.json' -o -name 'vite.config.*' -o -name 'tsconfig*.json' \) -print`
+- `sed -n '180,285p' vedenemo-ux/src/App.tsx`
+- `sed -n '900,1045p' vedenemo-ux/src/App.tsx`
+- `sed -n '1260,1425p' vedenemo-ux/src/App.tsx`
+- `sed -n '1700,1930p' vedenemo-ux/src/App.tsx`
+- `sed -n '1425,1705p' vedenemo-ux/src/App.tsx`
+- `sed -n '4540,5060p' vedenemo-ux/src/App.tsx`
+- `sed -n '5060,5265p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,190p' vedenemo-ux/src/App.tsx`
+- `sed -n '5265,5550p' vedenemo-ux/src/App.tsx`
+- `sed -n '640,700p' vedenemo-ux/src/App.tsx`
+- `rg -n "fetchAssociationLinks|fetchEntityInstance|queryEntityInstances|formatAttributeValue|sameAzName|traversalOptionsFor" vedenemo-ux/src/App.tsx`
+- `cat vedenemo-ux/package.json`
+- `sed -n '440,625p' vedenemo-ux/src/App.tsx`
+- `sed -n '720,905p' vedenemo-ux/src/App.tsx`
+- `sed -n '2120,2365p' vedenemo-ux/src/App.tsx`
+- `rg -n "describe\(|test\(|vitest|playwright|@testing-library" vedenemo-ux . -g '!node_modules'`
+- `sed -n '700,860p' vedenemo-ux/src/styles.css`
+- `sed -n '900,1080p' vedenemo-ux/src/styles.css`
+- `sed -n '3600,4120p' vedenemo-ux/src/App.tsx`
+- `rg -n "binding-template-hints|binding-level|visualize-actions|tree-empty|query-field" vedenemo-ux/src/styles.css`
+- `cat vedenemo-ux/tsconfig.json`
+- `npm run build` from `vedenemo-ux`
+- `mvn clean verify`
+- `git status --short`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx tasks/current-task.md tasks/backlog.md | sed -n '1,260p'`
+- `git diff -- vedenemo-ux/src/App.tsx | sed -n '260,620p'`
+- `git diff -- vedenemo-ux/src/App.tsx | sed -n '120,280p'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented reusable tree-chart aggregate label placeholders in
+  `vedenemo-ux/src/App.tsx`.
+- Added aggregate placeholders using syntax such as
+  `{avg:Mittaus.halkaisija_cm}` for `min`, `max`, `avg`, `median`,
+  `variance`, and `sum`.
+- Aggregate insertion chips now appear only for reachable descendant
+  `NUMERIC` attributes in the shared tree binding panel.
+- The common tree data builder now resolves aggregate labels for Tidy tree,
+  Radial tree, and Tree of Life.
+- Updated `tasks/current-task.md` and marked the retained backlog item executed
+  in `tasks/backlog.md`.
+- `npm run build` succeeded in `vedenemo-ux`; Vite reported existing large
+  chunk warnings.
+- `mvn clean verify` succeeded from the repository root; Maven reported
+  existing shade-plugin overlap warnings.
+
 ## 2026-09-14 22:21 EEST
 
 Session goal:

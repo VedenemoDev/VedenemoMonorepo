@@ -2,7 +2,7 @@
 
 ## Add reusable tree-chart aggregate labels for numeric descendant values
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -118,6 +118,22 @@ the visual layout can handle them.
 - Empty or missing numeric value sets render predictably without crashing the
   visualization.
 - Frontend build succeeds.
+
+### Completion Notes
+
+- Added reusable frontend tree-label aggregate placeholders for
+  `min`, `max`, `avg`, `median`, `variance`, and `sum`.
+- Used template syntax such as `{avg:Mittaus.halkaisija_cm}` so one label can
+  combine free text, direct field references, and multiple aggregate
+  expressions.
+- Aggregate insertion chips are generated only for reachable descendant
+  attributes whose model metadata data type is `NUMERIC`.
+- Evaluated aggregate labels in the common tree data builder shared by `Tidy
+  tree`, `Radial tree`, and `Tree of life`.
+- Empty or missing numeric aggregate input renders as `n/a`.
+- No backend API, CLI, `.vdos`, or core model changes were needed.
+- `npm run build` succeeded in `vedenemo-ux`.
+- `mvn clean verify` succeeded from the repository root.
 
 ## Hide Hexbin-map part-to-whole ownership association choices
 

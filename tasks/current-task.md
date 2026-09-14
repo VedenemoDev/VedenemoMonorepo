@@ -1,49 +1,64 @@
 # Current Task
 
-## Add desktop double-click chart type advance
+## Add reusable tree-chart aggregate labels for numeric descendant values
 
 Status: executed
 
 ### Goal
 
-Improve desktop browser ergonomics in the visualization wizard by allowing a
-mouse double-click on a selectable chart type to select that chart and advance
-directly to the binding step.
+Implement the planned proof-of-concept for reusable aggregate and derived label
+support across tree-structured visualizations.
 
-The existing single-click selection plus explicit `Continue` button remains
-available for all users.
+Tree of Life, Tidy tree, and Radial tree share the same tree binding/data path,
+so the shared aggregate evaluator should be usable by all three chart renderers
+while preserving chart-specific rendering.
 
 ### Scope
 
-- Update the browser UX chart type selection step.
-- Keep the existing `Continue` button behavior unchanged.
-- Limit the shortcut to desktop-style pointer devices that support hover and a
-  fine pointer.
-- Do not advance for disabled or non-selectable chart types.
+- Add a reusable tree label template expression for numeric descendant
+  aggregates.
+- Support `min`, `max`, `avg`, `median`, `variance`, and `sum`.
+- Offer aggregate label insertions only for reachable `NUMERIC` descendant
+  attributes.
+- Preserve existing free text, `{id}`, and direct attribute label templates.
+- Evaluate aggregate labels in the common tree data builder used by Tree of
+  Life, Tidy tree, and Radial tree.
+- Mark the backlog item executed after implementation and verification.
 
 ### Out Of Scope
 
-- Backend, API, CLI, or `.vdos` changes.
-- Touch/mobile double-tap navigation behavior.
-- Changing the visualization binding or rendering steps.
-- Adding visible shortcut instructions to the UI.
+- Backend API changes unless current UX data is insufficient.
+- Database-backed aggregate execution.
+- Non-numeric aggregate functions.
+- Persisted visualization configuration beyond the current in-memory wizard
+  binding state.
 
 ### Acceptance Criteria
 
-- A selectable chart type still becomes selected on single click.
-- The `Continue` button still advances to the binding step when the selected
-  chart type is available.
-- On desktop-style fine-pointer/hover browsers, double-clicking a selectable
-  chart type selects it and advances to the binding step.
-- Double-clicking a disabled or non-selectable chart type does not advance.
-- Touch/mobile behavior is not given a new double-tap shortcut.
-- Frontend build succeeds.
+- Existing tree chart label templates continue to work.
+- Aggregate template options appear only for reachable `NUMERIC` descendant
+  attributes.
+- A label can combine free text, ordinary placeholders, and more than one
+  aggregate expression.
+- Empty or missing numeric value sets render predictably without crashing.
+- Tidy tree, Radial tree, and Tree of Life can all render labels resolved by
+  the shared aggregate evaluator.
+- `cd vedenemo-ux && npm run build` succeeds.
+- `mvn clean verify` succeeds from the repository root.
 
 ### Completion Notes
 
-- Added a shared chart type selection helper for the visualization wizard.
-- Added a double-click handler to selectable chart type buttons that selects
-  the clicked chart and advances to the binding step only when
-  `(hover: hover) and (pointer: fine)` matches.
-- Preserved the existing single-click selection and `Continue` button flow.
-- No backend, API, CLI, `.vdos`, or rendering logic changes were needed.
+- Added reusable tree label aggregate placeholders using
+  `{min:Entity.attribute}`, `{max:Entity.attribute}`, `{avg:Entity.attribute}`,
+  `{median:Entity.attribute}`, `{variance:Entity.attribute}`, and
+  `{sum:Entity.attribute}` syntax.
+- Aggregate placeholder insertion is offered only for reachable descendant
+  attributes whose metadata data type is `NUMERIC`.
+- Existing free text, `{id}`, and direct `{attribute}` label templates remain
+  supported.
+- Moved tree label rendering through the shared tree data builder used by Tidy
+  tree, Radial tree, and Tree of Life.
+- Empty or missing aggregate input values render as `n/a`.
+- No backend API or core model changes were needed.
+- `npm run build` succeeded in `vedenemo-ux`.
+- `mvn clean verify` succeeded from the repository root.
