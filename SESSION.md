@@ -11802,6 +11802,34 @@ Current status and next steps:
 - `npm run build` succeeded in `vedenemo-ux`; Vite reported existing large
   chunk warnings.
 
+## 2026-09-14 22:21 EEST
+
+Session goal:
+
+- Refine the tree-chart aggregate label backlog item so it plans a reusable
+  solution for `Tree of Life`, `Tidy tree`, and `Radial tree`, with chart
+  adoption implemented one chart type at a time.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,120p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short`
+
+Current status and next steps:
+
+- Broadened the backlog item from Tree of Life only to reusable tree-chart
+  aggregate labels.
+- Kept Tree of Life as the preferred first implementation target.
+- Added explicit planning that `Tidy tree` and `Radial tree` should reuse the
+  same derived-label representation and aggregate evaluator in later focused
+  implementation contexts.
+
 ## 2026-09-14 22:12 EEST
 
 Session goal:

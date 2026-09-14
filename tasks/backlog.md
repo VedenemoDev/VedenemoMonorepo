@@ -1,14 +1,15 @@
 # Backlog
 
-## Add Tree of Life aggregate labels for numeric descendant values
+## Add reusable tree-chart aggregate labels for numeric descendant values
 
 Status: planned
 
 ### Goal
 
-Create the first proof-of-concept for aggregates and derived values in the
-Tree of Life visualization by allowing a user to summarize numeric descendant
-values instead of rendering every individual association/value label.
+Create the first proof-of-concept for reusable aggregates and derived labels
+across tree-structured visualizations by allowing a user to summarize numeric
+descendant values instead of rendering every individual association/value
+label.
 
 The motivating model path is:
 
@@ -21,6 +22,10 @@ measurement attribute on `Mittaus`, the user should be able to select an
 aggregate function and show the computed result for the relevant visual node or
 branch context.
 
+The shared label and aggregate mechanism should be designed so `Tree of Life`,
+`Tidy tree`, and `Radial tree` can use it, while actual chart integration can
+be implemented and verified one chart type at a time.
+
 ### Context
 
 Tree of Life can become visually noisy when every individual `Puulaji` to
@@ -28,6 +33,10 @@ Tree of Life can become visually noisy when every individual `Puulaji` to
 Metsapalsta use case, the more useful first step is often a concise summary,
 for example average, minimum, maximum, or total measurement values below a
 selected `Puulaji` or `Metsakuvio`.
+
+The same aggregate concepts are natural for `Tidy tree` and `Radial tree`
+because they operate on similar hierarchical or association-path structures,
+even though their visual layout and label placement constraints differ.
 
 This should also open the door to user-defined derived labels rather than a
 single hard-coded derived value. A label should be able to combine ordinary
@@ -37,11 +46,17 @@ the visual layout can handle them.
 
 ### Proposed Implementation Approach
 
-- Extend the Tree of Life label-binding UX so a label can be built from ordered
-  parts:
+- Introduce a reusable derived-label representation for tree-like chart
+  bindings so a label can be built from ordered parts:
   - free-text fragments;
   - existing field references;
   - aggregate function templates for eligible numeric descendant fields.
+- Keep the aggregate evaluator independent from an individual chart renderer so
+  `Tree of Life`, `Tidy tree`, and `Radial tree` can share the same value
+  resolution behavior.
+- Integrate the reusable label builder into one chart first, preferably `Tree
+  of Life`, and then add `Tidy tree` and `Radial tree` support in separate
+  focused tasks or implementation contexts.
 - Offer aggregate templates only when the selected attribute data type is
   `NUMERIC`.
 - Support these aggregate functions for the first proof-of-concept:
@@ -60,8 +75,10 @@ the visual layout can handle them.
 
 ### Scope
 
-- Tree of Life visualization setup and rendering.
-- Label composition for Tree of Life node or branch labels.
+- Shared derived-label planning for tree-structured visualizations.
+- First chart integration for Tree of Life visualization setup and rendering.
+- Later chart-by-chart adoption by `Tidy tree` and `Radial tree`.
+- Label composition for tree chart node or branch labels.
 - Numeric aggregate options for descendant values reached through association
   paths such as `Puulaji -> Mittaus`.
 - First proof-of-concept behavior against the Metsapalsta test data shape.
@@ -75,13 +92,18 @@ the visual layout can handle them.
   already supports the needed shape.
 - Backend API changes unless current model/data payloads are insufficient.
 - Non-numeric aggregate functions.
-- Cross-visualization aggregate label support beyond Tree of Life.
+- Non-tree visualization aggregate label support.
+- Implementing `Tree of Life`, `Tidy tree`, and `Radial tree` all in one
+  coding pass if context size or chart-specific verification would make that
+  risky.
 - Database-backed aggregate execution.
 
 ### Acceptance Criteria
 
-- Tree of Life label configuration can still use existing individual field
-  references and free text.
+- The design supports a reusable derived-label representation that can be
+  applied by `Tree of Life`, `Tidy tree`, and `Radial tree`.
+- The first implemented chart's label configuration can still use existing
+  individual field references and free text.
 - For `NUMERIC` attributes, the user can choose `min`, `max`, `avg`, `median`,
   `variance`, or `sum` as a derived label part.
 - Aggregate choices are not offered for non-`NUMERIC` attributes.
@@ -90,6 +112,9 @@ the visual layout can handle them.
 - In the Metsapalsta chain, a `Puulaji` or higher-level visual context can show
   an aggregate of linked `Mittaus` numeric values without rendering every
   individual `Puulaji -> Mittaus` value association.
+- `Tidy tree` and `Radial tree` can be enabled in later focused changes by
+  reusing the shared derived-label and aggregate evaluator behavior, with only
+  chart-specific binding and rendering adjustments.
 - Empty or missing numeric value sets render predictably without crashing the
   visualization.
 - Frontend build succeeds.
