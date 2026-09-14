@@ -1486,6 +1486,18 @@ function treeLabelAggregateOptionsForLevel(
     });
 }
 
+function treeLabelAggregateOptionsForEntity(entity: EntityDescription): TreeLabelAggregateOption[] {
+  return entity.attributes
+    .filter((attribute) => attribute.dataType === "NUMERIC")
+    .flatMap((attribute) => TREE_LABEL_AGGREGATE_FUNCTIONS.map((aggregateFunction) => ({
+      aggregateFunction,
+      entityAzName: entity.azName,
+      attributeAzName: attribute.azName,
+      label: `${aggregateFunction} ${entity.visName}.${attribute.visName}`,
+      template: `{${aggregateFunction}:${entity.azName}.${attribute.azName}}`,
+    })));
+}
+
 function validateLabelTemplate(entity: EntityDescription, template: string): string | null {
   if (!template.trim()) {
     return "Label template is required.";
@@ -4775,6 +4787,25 @@ function TidyTreeBindingPanel({
     });
   }
 
+  function appendAggregateToParentLabel(index: number, hint: string) {
+    if (index <= 0) {
+      return;
+    }
+    const parentIndex = index - 1;
+    if (parentIndex === 0 && binding.rootSelection.mode === "entity") {
+      setRootLabelTemplate(`${binding.rootSelection.labelTemplate}${hint}`);
+      return;
+    }
+    const parentLevel = binding.levels[parentIndex] ?? null;
+    if (parentLevel === null) {
+      return;
+    }
+    onLevelChange(parentIndex, {
+      ...parentLevel,
+      labelTemplate: `${parentLevel.labelTemplate}${hint}`,
+    });
+  }
+
   function setRootMode(mode: TidyTreeRootMode) {
     onRootSelectionChange({
       ...binding.rootSelection,
@@ -5135,6 +5166,10 @@ function TidyTreeBindingPanel({
             ? ""
             : `${level.traversal.associationAzName}::${level.traversal.direction}::${level.entityAzName}`;
           const aggregateOptions = treeLabelAggregateOptionsForLevel(apiDescription, binding, index);
+          const currentLevelAggregateOptions = entity === null ? [] : treeLabelAggregateOptionsForEntity(entity);
+          const parentAggregateTargetLabel = index === 1 && binding.rootSelection.mode === "entity"
+            ? "root label"
+            : `Level ${index} label`;
           return (
             <section key={`${index}-${level.entityAzName}`} className="binding-level">
               <header>
@@ -5230,6 +5265,21 @@ function TidyTreeBindingPanel({
                       title={hint.title}
                     >
                       <code>{hint.template}</code>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {index > 0 && currentLevelAggregateOptions.length > 0 && (
+                <div className="binding-template-hints" aria-label={`Level ${index + 1} aggregate label templates`}>
+                  {currentLevelAggregateOptions.map((option) => (
+                    <button
+                      key={option.template}
+                      type="button"
+                      onPointerDown={(event: PointerEvent<HTMLButtonElement>) => event.preventDefault()}
+                      onClick={() => appendAggregateToParentLabel(index, option.template)}
+                      title={`Insert ${option.label} into ${parentAggregateTargetLabel}`}
+                    >
+                      <code>{parentAggregateTargetLabel}: {option.template}</code>
                     </button>
                   ))}
                 </div>

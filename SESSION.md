@@ -11802,6 +11802,43 @@ Current status and next steps:
 - `npm run build` succeeded in `vedenemo-ux`; Vite reported existing large
   chunk warnings.
 
+## 2026-09-14 22:52 EEST
+
+Session goal:
+
+- Make tree aggregate label controls visible from numeric child levels after
+  the user noticed no aggregate aids on the `Mittaus` level.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '4720,5245p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,120p' tasks/current-task.md`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `npm run build` from `vedenemo-ux`
+- `mvn clean verify`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx tasks/current-task.md tasks/backlog.md | sed -n '1,260p'`
+
+Current status and next steps:
+
+- Added numeric child-level aggregate chips in the shared tree binding panel.
+- Selecting one of those chips appends the aggregate expression to the previous
+  level's label template, making the `Mittaus` to `Puulaji` aggregation
+  workflow visible from the `Mittaus` level.
+- Updated current task and backlog completion notes with the correction.
+- `npm run build` succeeded in `vedenemo-ux`; Vite reported existing large
+  chunk warnings.
+- `mvn clean verify` succeeded from the repository root; Maven reported
+  existing shade-plugin overlap warnings.
+
 ## 2026-09-14 22:30 EEST
 
 Session goal:

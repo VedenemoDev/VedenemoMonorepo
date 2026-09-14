@@ -62,3 +62,7 @@ while preserving chart-specific rendering.
 - No backend API or core model changes were needed.
 - `npm run build` succeeded in `vedenemo-ux`.
 - `mvn clean verify` succeeded from the repository root.
+- Follow-up correction: numeric child levels now show aggregate chips that
+  insert the aggregate expression into the previous level's label template,
+  making the `Mittaus` to `Puulaji` aggregation workflow visible where the
+  numeric attribute is selected.
