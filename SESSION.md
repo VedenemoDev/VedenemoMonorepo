@@ -12018,3 +12018,40 @@ Current status and next steps:
 - Updated `tasks/current-task.md` with the executed task and completion notes.
 - `npm run build` succeeded in `vedenemo-ux`; Vite reported existing large
   chunk warnings.
+## 2026-09-18 00:30 EEST
+
+Session goal:
+
+- Fill album release years in `.vedenemo/LevykokoelmaIlmanJulkaisuvuotta.vdmp`
+  and save a new `.vdmp` copy with found years set.
+
+Files changed:
+
+- `.vedenemo/LevykokoelmaJulkaisuvuodenKanssa.vdmp`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- Python JSON inspection commands for the source `.vdmp`.
+- MusicBrainz, Wikidata, Deezer, and iTunes API probe/fill commands.
+- Python validation commands for final album counts and year values.
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Created `.vedenemo/LevykokoelmaJulkaisuvuodenKanssa.vdmp`.
+- Preserved the original `.vedenemo/LevykokoelmaIlmanJulkaisuvuotta.vdmp`.
+- Filled 369 of 460 album `year` values: 360 from Deezer album release
+  dates and 9 from years encoded directly in `Soundi CD` album titles.
+- Left 91 album `year` values as `null` because no sufficiently reliable
+  match was found during this pass.
+- Validated that the output JSON is readable, keeps 460 albums, and contains
+  only integer release years or `null` year values.
