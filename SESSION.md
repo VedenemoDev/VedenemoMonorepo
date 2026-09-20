@@ -12290,3 +12290,43 @@ Current status and next steps:
 - Adjusted the unlinked-point diagnostic label and map detail text for the
   root-only point overlay case.
 - Verification passed: `npm run build` in `vedenemo-ux`.
+
+## 2026-09-20 17:38 EEST
+
+Session goal:
+
+- Remove nonsensical parent-area point overlay traversal choices such as
+  `Metsakuvio -> Metsapalsta` while preserving the valid
+  `Metsakuvio -> Puulaji -> Mittaus` point path.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1160,1245p' vedenemo-ux/src/App.tsx`
+- `sed -n '4888,4938p' vedenemo-ux/src/App.tsx`
+- `rg -n "OWNERSHIP|Metsapalsta|Metsakuvio|Puulaji|Mittaus|pointContextTraversalOptions" vedenemo-ux/src/App.tsx .vedenemo tasks/backlog.md tasks/current-task.md`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Shared the Hexbin-map descendant traversal rule across subregion overlays and
+  point overlays.
+- Point style-context and point-association selectors now filter out incoming
+  `OWNERSHIP` traversals, preventing part-to-whole choices like
+  `Metsakuvio -> Metsapalsta`.
+- Verification passed: `npm run build` in `vedenemo-ux` and `git diff --check`.

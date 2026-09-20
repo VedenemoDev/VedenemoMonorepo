@@ -1176,8 +1176,12 @@ function hexbinMapOverlayTraversalOptions(
     .filter((option) => locationAreaAttributes(option.relatedEntity).length > 0);
 }
 
-function isHexbinMapOverlayTraversalOption(option: TraversalOption): boolean {
+function isHexbinMapAreaDescendantTraversalOption(option: TraversalOption): boolean {
   return !(option.association.kind === "OWNERSHIP" && option.direction === "incoming");
+}
+
+function isHexbinMapOverlayTraversalOption(option: TraversalOption): boolean {
+  return isHexbinMapAreaDescendantTraversalOption(option);
 }
 
 function supportsDesktopDoubleClick(): boolean {
@@ -1206,7 +1210,8 @@ function hexbinMapPointContextTraversalOptions(
   rootOption: HexbinMapRootOption | null,
   overlayTraversal: TraversalOption | null,
 ): TraversalOption[] {
-  return traversalOptionsFor(hexbinMapPointContextEntity(rootOption, overlayTraversal), apiDescription);
+  return traversalOptionsFor(hexbinMapPointContextEntity(rootOption, overlayTraversal), apiDescription)
+    .filter(isHexbinMapAreaDescendantTraversalOption);
 }
 
 function selectedHexbinMapPointContextTraversal(
@@ -1227,6 +1232,7 @@ function hexbinMapPointTraversalOptions(
     return [];
   }
   return traversalOptionsFor(contextTraversal.relatedEntity, apiDescription)
+    .filter(isHexbinMapAreaDescendantTraversalOption)
     .filter((option) => locationAttributes(option.relatedEntity).length > 0);
 }
 
