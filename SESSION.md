@@ -12171,3 +12171,68 @@ Current status and next steps:
 - No conceptual blockers remain; remaining details are marker-shape choices,
   warning wording/placement, and whether diagnostic unlinked points should be
   renderable with a separate style.
+
+## 2026-09-20 12:19 EEST
+
+Session goal:
+
+- Execute the Hexbin-map associated point overlay plan as the current task,
+  verify it, and mark the backlog item executed while preserving it as
+  historical reference.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `rg -n "Hexbin|hexbin|LOCATION_AREA|LOCATION|subregion|overlay|legend|warning|Visualization" vedenemo-ux/src tasks/current-task.md tasks/backlog.md`
+- `rg --files vedenemo-ux/src`
+- `sed -n '1,220p' tasks/current-task.md`
+- `git status --short`
+- `sed -n '1,260p' vedenemo-ux/src/App.tsx`
+- `sed -n '2500,3360p' vedenemo-ux/src/App.tsx`
+- `sed -n '3840,4070p' vedenemo-ux/src/App.tsx`
+- `sed -n '4440,4710p' vedenemo-ux/src/App.tsx`
+- `sed -n '5540,5800p' vedenemo-ux/src/App.tsx`
+- `rg -n "hexbin|binding-template|visualize|warning|legend" vedenemo-ux/src/styles.css`
+- `sed -n '180,360p' vedenemo-ux/src/App.tsx`
+- `sed -n '3360,3845p' vedenemo-ux/src/App.tsx`
+- `sed -n '930,1175p' vedenemo-ux/src/styles.css`
+- `rg -n "function (emptyHexbin|buildHexbin|resolveHexbin|hexbinMap|locationArea|parseLocation|queryEntity|fetchEntity|association|traversal|LabelTemplate|formatAttribute|pointIn)" vedenemo-ux/src/App.tsx`
+- `sed -n '1200,1780p' vedenemo-ux/src/App.tsx`
+- `sed -n '1780,2500p' vedenemo-ux/src/App.tsx`
+- `sed -n '450,1215p' vedenemo-ux/src/App.tsx`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `rg -n "pointContextTraversalValue|pointTraversalValue|HexbinMapData|hexbinMapBindingValidationMessage|resolveHexbinMapPoints|hexbin-map-points|hexbin-map-warnings" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `mvn clean verify`
+- `sed -n '1,220p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '1,110p' tasks/current-task.md`
+- `sed -n '1,235p' tasks/backlog.md`
+- `git diff --stat`
+- `git diff --check`
+- `npm run dev -- --host 127.0.0.1` from `vedenemo-ux`
+
+Current status and next steps:
+
+- Implemented optional Hexbin-map associated point overlays in the browser UX.
+- Added point overlay visual roles for style context association, point
+  association, point `LOCATION` attribute, style attribute, legend label
+  template, and unlinked-point diagnostics.
+- Rendered raw point markers over existing Hexbin-map area/subregion layers
+  with deterministic colors, circle/square/triangle/cross shapes, and a point
+  legend.
+- Added warnings for missing point locations, outside-subregion points,
+  conflicting duplicate style/subregion paths, and optional unlinked points
+  geometrically inside a rendered subregion.
+- Updated `tasks/current-task.md` and marked the backlog item executed with
+  completion notes plus planned-vs-executed evaluation.
+- Verification passed: `npm run build` in `vedenemo-ux` and root
+  `mvn clean verify`.
+- Vite dev server is running at `http://127.0.0.1:5173/`.

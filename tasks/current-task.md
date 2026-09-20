@@ -1,68 +1,81 @@
 # Current Task
 
-## Add reusable tree-chart aggregate labels for numeric descendant values
+## Add Hexbin-map associated point overlays with path-based styling
 
 Status: executed
 
 ### Goal
 
-Implement the planned proof-of-concept for reusable aggregate and derived label
-support across tree-structured visualizations.
+Implement the first executable slice of the planned `Hexbin-map` point overlay
+workflow.
 
-Tree of Life, Tidy tree, and Radial tree share the same tree binding/data path,
-so the shared aggregate evaluator should be usable by all three chart renderers
-while preserving chart-specific rendering.
+For the Metsapalsta example, the visualization should be able to render
+`Mittaus.lokaatio` point markers through the explicit path:
+
+```text
+Metsapalsta -> Metsakuvio -> Puulaji -> Mittaus
+```
+
+The user should select visual roles in the binding wizard rather than relying
+on hard-coded entity names. `Metsakuvio.alue` remains the subregion area,
+`Puulaji.nimi` can provide point classification/style, and
+`Mittaus.lokaatio` provides point coordinates.
 
 ### Scope
 
-- Add a reusable tree label template expression for numeric descendant
-  aggregates.
-- Support `min`, `max`, `avg`, `median`, `variance`, and `sum`.
-- Offer aggregate label insertions only for reachable `NUMERIC` descendant
-  attributes.
-- Preserve existing free text, `{id}`, and direct attribute label templates.
-- Evaluate aggregate labels in the common tree data builder used by Tree of
-  Life, Tidy tree, and Radial tree.
-- Mark the backlog item executed after implementation and verification.
+- Extend the browser `Hexbin-map` binding with optional point overlay roles.
+- Resolve point markers through explicit association paths below the selected
+  subregion overlay.
+- Style points by a selected attribute on the retained style-context entity.
+- Render raw point markers over the existing area and subregion layers.
+- Use simple marker shapes and colors with a point legend.
+- Warn about missing point locations, points outside their associated
+  subregion, conflicting duplicate paths, and optionally geometrically
+  contained points that are not linked through the selected path.
+- Keep the implementation frontend-only unless current API payloads are
+  insufficient.
+- Mark the backlog item executed after verification while leaving it in
+  `tasks/backlog.md` as history.
 
 ### Out Of Scope
 
-- Backend API changes unless current UX data is insufficient.
-- Database-backed aggregate execution.
-- Non-numeric aggregate functions.
-- Persisted visualization configuration beyond the current in-memory wizard
-  binding state.
+- True hexbin aggregation.
+- Moving `Puulaji.nimi` onto `Mittaus`.
+- Backend query language changes.
+- Core model, CLI, `.vdos`, or HTTP API changes.
+- Persistent visualization configuration.
+- GIS-grade topology, clipping, or projection behavior.
 
 ### Acceptance Criteria
 
-- Existing tree chart label templates continue to work.
-- Aggregate template options appear only for reachable `NUMERIC` descendant
-  attributes.
-- A label can combine free text, ordinary placeholders, and more than one
-  aggregate expression.
-- Empty or missing numeric value sets render predictably without crashing.
-- Tidy tree, Radial tree, and Tree of Life can all render labels resolved by
-  the shared aggregate evaluator.
+- Hexbin-map binding asks for visual roles rather than hard-coded
+  Metsapalsta-specific names.
+- The Metsapalsta role chain can be represented as subregion area
+  `Metsakuvio.alue`, style context `Puulaji`, style attribute `Puulaji.nimi`,
+  point entity `Mittaus`, and point location `Mittaus.lokaatio`.
+- Rendered points use raw markers over the existing area/subregion map.
+- Point colors and shapes are deterministic and reflected in a legend.
+- Conflicting duplicate paths render with a neutral/conflict marker style and
+  produce warnings.
+- Points outside their associated subregion produce warnings.
+- Optional unlinked-point diagnostics are disabled by default and produce
+  warnings only.
 - `cd vedenemo-ux && npm run build` succeeds.
 - `mvn clean verify` succeeds from the repository root.
 
 ### Completion Notes
 
-- Added reusable tree label aggregate placeholders using
-  `{min:Entity.attribute}`, `{max:Entity.attribute}`, `{avg:Entity.attribute}`,
-  `{median:Entity.attribute}`, `{variance:Entity.attribute}`, and
-  `{sum:Entity.attribute}` syntax.
-- Aggregate placeholder insertion is offered only for reachable descendant
-  attributes whose metadata data type is `NUMERIC`.
-- Existing free text, `{id}`, and direct `{attribute}` label templates remain
-  supported.
-- Moved tree label rendering through the shared tree data builder used by Tidy
-  tree, Radial tree, and Tree of Life.
-- Empty or missing aggregate input values render as `n/a`.
-- No backend API or core model changes were needed.
+- Added optional Hexbin-map point overlay binding fields for point style
+  context association, point association, point `LOCATION` attribute, point
+  style attribute, point legend label template, and unlinked-point diagnostics.
+- Kept visual roles generic while supporting the concrete
+  `Metsakuvio -> Puulaji -> Mittaus` path.
+- Rendered associated point markers with deterministic color and shape
+  assignment plus a point legend.
+- Added data warnings for missing point locations, outside-subregion points,
+  conflicting duplicate style/subregion paths, and optional unlinked points
+  geometrically inside a rendered subregion.
+- Kept all changes in `vedenemo-ux`; no backend, core, CLI, `.vdos`, or HTTP
+  API changes were needed.
 - `npm run build` succeeded in `vedenemo-ux`.
 - `mvn clean verify` succeeded from the repository root.
-- Follow-up correction: numeric child levels now show aggregate chips that
-  insert the aggregate expression into the previous level's label template,
-  making the `Mittaus` to `Puulaji` aggregation workflow visible where the
-  numeric attribute is selected.

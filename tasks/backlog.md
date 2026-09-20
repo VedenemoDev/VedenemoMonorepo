@@ -2,7 +2,7 @@
 
 ## Plan Hexbin-map associated point overlays with path-based styling
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -172,13 +172,54 @@ path-based point overlay binding:
   out of `vedenemo-core`.
 - The plan leaves a clear first implementation slice for later execution.
 
-### Remaining Implementation Details
+### Implementation Details Resolved During Execution
 
-- Exact marker-shape set and legend layout.
-- Exact wording and placement of warnings for outside-area and duplicate-path
+- Marker-shape and legend layout were resolved with a deterministic
+  circle/square/triangle/cross cycle and a separate point legend.
+- Outside-area and duplicate-path diagnostics were resolved as concise warning
+  list entries below the rendered map.
+- Diagnostic geometrically contained points are listed only in warnings for
+  this first slice and are not rendered as extra markers.
+
+### Completion Notes
+
+- Implemented the first executable slice as frontend-only `Hexbin-map` point
+  overlays in `vedenemo-ux`.
+- Added generic point overlay visual roles to the binding wizard: point style
+  context association, point association, point `LOCATION` attribute, point
+  style attribute, point legend label template, and optional unlinked-point
   diagnostics.
-- Whether diagnostic geometrically contained points should be listed only in
-  warnings or also optionally rendered with a separate style.
+- Supported the Metsapalsta path by allowing `Metsakuvio` subregions to reach
+  `Puulaji` style-context instances and then linked `Mittaus` point instances.
+- Rendered raw point markers over the existing area/subregion SVG layers with
+  deterministic color and shape assignment plus a point legend.
+- Added warning output for missing point locations, points outside their
+  associated subregion, conflicting duplicate style/subregion paths, and
+  optional geometrically contained unlinked points.
+- Kept true hexbin aggregation, persistent visualization configuration, backend
+  query language changes, and model restructuring out of scope.
+- `npm run build` succeeded in `vedenemo-ux`.
+- `mvn clean verify` succeeded from the repository root.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the planned first slice by using explicit
+  association paths as the source of truth and rendering raw point markers
+  before true hexbin aggregation.
+- Summary: the implementation kept the roles generic rather than hard-coding
+  Metsapalsta entity names, while still supporting the concrete
+  `Metsakuvio -> Puulaji -> Mittaus` workflow.
+- Summary: marker-shape and legend details were resolved during execution with
+  a deterministic circle/square/triangle/cross cycle and a separate point
+  legend.
+- Summary: unlinked geometrically contained points were implemented as the
+  planned unchecked diagnostic option and produce warnings only, not extra
+  rendered markers.
+- Summary: duplicate/conflict behavior followed the plan: identical point/path
+  keys deduplicate, while conflicting style or subregion paths produce warnings
+  and render with a neutral conflict marker style.
+- Summary: scope stayed frontend-only. No backend API, core model, CLI,
+  `.vdos`, README, or architecture-document changes were needed.
 
 ## Add reusable tree-chart aggregate labels for numeric descendant values
 
