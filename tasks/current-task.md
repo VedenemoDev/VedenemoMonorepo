@@ -77,3 +77,16 @@ parent through the `Puulaji -> Mittaus` association before saving.
   `.vdmp` changes were needed.
 - `npm run build` succeeded in `vedenemo-ux`.
 - `mvn clean verify` succeeded from the repository root.
+
+### Refinement Notes
+
+- Refined parent candidate selection after testing the Metsapalsta
+  `Metsakuvio -> Puulaji -> Mittaus` data-entry flow.
+- The original implementation loaded every `Puulaji` instance from the selected
+  root, which showed repeated value-set values from other `Metsakuvio`
+  branches.
+- Added an optional context filter for parent entities that themselves have
+  incoming associations, so the editor can select a context instance such as
+  `Metsakuvio` and then list only linked `Puulaji` candidates for that context.
+- Kept the refinement frontend-only and reused existing entity query and
+  association-link endpoints.

@@ -182,6 +182,13 @@ parent-context-aware create flow:
   selected.
 - Added visible parent-link failure feedback while preserving the successfully
   created child instance.
+- Refinement: added a context filter for parent candidates after discovering
+  that the first implementation listed all parent-entity instances in the root,
+  which let `Puulaji` instances from other `Metsakuvio` branches appear while
+  creating `Mittaus`.
+- Refinement: parent entities with their own incoming associations can now be
+  limited by a selected context instance, for example choosing a `Metsakuvio`
+  before choosing the linked `Puulaji` parent for a new `Mittaus`.
 - `npm run build` succeeded in `vedenemo-ux`.
 - `mvn clean verify` succeeded from the repository root.
 
@@ -201,6 +208,11 @@ parent-context-aware create flow:
 - Summary: no backend, core, CLI, `.vdos`, `.vdmp`, README, or architecture
   documentation changes were needed because no component boundaries or runtime
   API contracts changed.
+- Refinement: follow-up use exposed that "load candidates from the current
+  model-instance root and selected parent entity" was too broad for normalized
+  chains such as `Metsakuvio -> Puulaji -> Mittaus`; the executed UI now
+  supports narrowing the parent candidate list through a selected upstream
+  context association and instance.
 
 ## Plan Hexbin-map associated point overlays with path-based styling
 

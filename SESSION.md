@@ -12331,6 +12331,124 @@ Current status and next steps:
   `Metsakuvio -> Metsapalsta`.
 - Verification passed: `npm run build` in `vedenemo-ux` and `git diff --check`.
 
+## 2026-09-20 22:54 EEST
+
+Session goal:
+
+- Fix and record a refinement for the executed Entity data editor parent
+  association selection task so `Mittaus` creation can limit `Puulaji` parent
+  candidates to the selected `Metsakuvio` context.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,240p' vedenemo-ux/src/App.tsx`
+- `sed -n '640,725p' vedenemo-ux/src/App.tsx`
+- `sed -n '3260,3530p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,230p' tasks/backlog.md`
+- `sed -n '1,140p' tasks/current-task.md`
+- `rg -n "editor.html|/editor|entityAzName|instanceRootId|instanceId|href=.*editor|open.*Editor|Edit" vedenemo-ux/src/App.tsx`
+- `rg -n "queryEntityInstances|function queryEntityInstances|relationships" vedenemo-ux/src/App.tsx`
+- `rg -n "data/.*/roots/.*/.*_query|relationships|QueryRelationship" vedenemo-web-api/src vedenemo-core/src vedenemo-model-api/src -S`
+- `sed -n '596,620p' vedenemo-ux/src/App.tsx`
+- `sed -n '2160,2210p' vedenemo-ux/src/App.tsx`
+- `sed -n '7100,7170p' vedenemo-ux/src/App.tsx`
+- `sed -n '450,490p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '120,170p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '490,620p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '170,240p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '8060,8110p' vedenemo-ux/src/App.tsx`
+- `rg -n "function selectedRelationshipTraversal|availableRelationshipTraversals|RelationshipTraversal" vedenemo-ux/src/App.tsx`
+- `sed -n '2030,2125p' vedenemo-ux/src/App.tsx`
+- `sed -n '3600,3715p' vedenemo-ux/src/App.tsx`
+- `sed -n '3400,3535p' vedenemo-ux/src/App.tsx`
+- `sed -n '3585,3675p' vedenemo-ux/src/App.tsx`
+- `sed -n '3900,3985p' vedenemo-ux/src/App.tsx`
+- `sed -n '3880,3975p' vedenemo-ux/src/App.tsx`
+- `sed -n '3990,4085p' vedenemo-ux/src/App.tsx`
+- `sed -n '4085,4165p' vedenemo-ux/src/App.tsx`
+- `npm run build` from `vedenemo-ux`
+- `mvn clean verify`
+- `git diff --check`
+- `git status --short`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx tasks/current-task.md tasks/backlog.md | sed -n '1,260p'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added a generic parent-context selector to the Entity data editor parent-link
+  create flow.
+- When the selected parent entity has an incoming association, the user can now
+  select a context association and context instance; parent candidates are then
+  filtered through the exact existing context-to-parent links.
+- For Metsapalsta, creating `Mittaus` can now select `Metsakuvio` context
+  first, causing the `Puulaji` parent list to show only the tree-species
+  instances linked to that kuvio instead of all repeated value-set values in
+  the root.
+- Recorded the refinement in `tasks/current-task.md` and in the executed
+  backlog item.
+- Verification passed: `npm run build` in `vedenemo-ux`, root
+  `mvn clean verify`, and `git diff --check`.
+
+## 2026-09-20 22:48 EEST
+
+Session goal:
+
+- Diagnose whether Entity data editor parent association selection for
+  `Mittaus` is showing duplicate `Puulaji` value-set values because of data
+  shape or candidate filtering.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg -n "parentAssociation|parent link|Parent link|parentCandidate|association link|createAssociationLink|Association" vedenemo-ux/src/App.tsx`
+- `rg -n "Metsapalsta|Metsakuvio|Puulaji|Mittaus" .vedenemo scripts vedenemo-ux/src tasks -S`
+- `git status --short --branch`
+- `sed -n '2830,2865p' vedenemo-ux/src/App.tsx`
+- `sed -n '3410,3525p' vedenemo-ux/src/App.tsx`
+- `sed -n '3900,3955p' vedenemo-ux/src/App.tsx`
+- `jq -r '.instances[] | select(.entityAzName=="Puulaji") | [.id, (.attributes.nimi // "")] | @tsv' .vedenemo/Metsapalsta3.vdmp`
+- `jq -r '.associationLinks[] | select(.associationAzName=="Metsakuvio_sisaltaa_Puulaji") | [.sourceInstanceId, .targetInstanceId] | @tsv' .vedenemo/Metsapalsta3.vdmp`
+- `jq 'keys' .vedenemo/Metsapalsta3.vdmp`
+- `sed -n '1,130p' .vedenemo/Metsapalsta3.vdmp`
+- `sed -n '260,370p' .vedenemo/Metsapalsta3.vdmp`
+- `sed -n '1560,1640p' .vedenemo/Metsapalsta3.vdmp`
+- `jq -r '.entities[] | select(.entityAzName=="Puulaji") | .records[] | [.dumpId, .values.nimi] | @tsv' .vedenemo/Metsapalsta3.vdmp`
+- `jq -r '.links[] | select(.associationAzName=="Metsakuvio_sisaltaa_Puulaji") | [.sourceDumpId, .targetDumpId] | @tsv' .vedenemo/Metsapalsta3.vdmp`
+- `jq -r '.entities[] | select(.entityAzName=="Puulaji") | .records[] | .values.nimi' .vedenemo/Metsapalsta3.vdmp | sort | uniq -c`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Diagnosed that the current editor loads all instances of the incoming parent
+  entity for the selected instance root.
+- In the Metsapalsta data, `Puulaji` instances are per-`Metsakuvio`, so the
+  same value-set value appears multiple times across different kuvios.
+- The editor is not currently loading existing `Puulaji -> Mittaus` association
+  instances for the selected `Metsakuvio`; it lacks a selected-context filter
+  for "only `Puulaji` children of this `Metsakuvio`".
+- A follow-up fix should add context-constrained parent candidates for chained
+  creation, likely by selecting or deriving an ancestor context such as the
+  current `Metsakuvio` and filtering parent candidates through the preceding
+  association.
+
 ## 2026-09-20 17:52 EEST
 
 Session goal:

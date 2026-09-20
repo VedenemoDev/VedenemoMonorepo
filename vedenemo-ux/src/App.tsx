@@ -189,6 +189,11 @@ type ParentAssociationOption = {
   parentEntity: EntityDescription;
 };
 
+type ParentContextOption = {
+  association: AssociationDescription;
+  contextEntity: EntityDescription;
+};
+
 type AssociationMatchContext = {
   associationLabel: string;
   criterionLabel: string;
@@ -2847,6 +2852,26 @@ function parentAssociationLabel(option: ParentAssociationOption): string {
   return `${option.association.visName} (${parentLabel} -> ${option.association.targetEntityAzName}, ${option.association.kind})`;
 }
 
+function parentContextOptionsFor(parentEntity: EntityDescription | null, apiDescription: ApiDescriptionResponse | null): ParentContextOption[] {
+  if (parentEntity === null || apiDescription === null) {
+    return [];
+  }
+
+  return (apiDescription.associations ?? []).flatMap((association) => {
+    if (!sameAzName(association.targetEntityAzName, parentEntity.azName)) {
+      return [];
+    }
+    const contextEntity = findEntity(apiDescription.entities, association.sourceEntityAzName);
+    return contextEntity === null ? [] : [{ association, contextEntity }];
+  });
+}
+
+function parentContextLabel(option: ParentContextOption): string {
+  const roleLabel = option.association.sourceRoleName?.trim();
+  const contextLabel = roleLabel ? `${option.contextEntity.visName} (${roleLabel})` : option.contextEntity.visName;
+  return `${option.association.visName} (${contextLabel} -> ${option.association.targetEntityAzName}, ${option.association.kind})`;
+}
+
 function relatedInstanceIdForLink(resultId: string, link: AssociationLinkResponse, direction: RelationshipDirection): string | null {
   if (direction === "outgoing") {
     return link.sourceInstanceId === resultId ? link.targetInstanceId : null;
@@ -3284,6 +3309,9 @@ function EditorPage() {
   const [selectedTargetInstanceId, setSelectedTargetInstanceId] = useState("");
   const [createdAssociationLink, setCreatedAssociationLink] = useState<AssociationLinkResponse | null>(null);
   const [selectedParentAssociationAzName, setSelectedParentAssociationAzName] = useState("");
+  const [selectedParentContextAssociationAzName, setSelectedParentContextAssociationAzName] = useState("");
+  const [parentContextInstances, setParentContextInstances] = useState<EntityInstanceResponse[]>([]);
+  const [selectedParentContextInstanceId, setSelectedParentContextInstanceId] = useState("");
   const [parentInstances, setParentInstances] = useState<EntityInstanceResponse[]>([]);
   const [selectedParentInstanceId, setSelectedParentInstanceId] = useState("");
   const [createdParentAssociationLink, setCreatedParentAssociationLink] = useState<AssociationLinkResponse | null>(null);
@@ -3293,6 +3321,7 @@ function EditorPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAssociation, setIsSavingAssociation] = useState(false);
   const [isLoadingParentInstances, setIsLoadingParentInstances] = useState(false);
+  const [isLoadingParentContextInstances, setIsLoadingParentContextInstances] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -3374,6 +3403,9 @@ function EditorPage() {
         setSelectedSourceInstanceId("");
         setSelectedTargetInstanceId("");
         setCreatedAssociationLink(null);
+        setSelectedParentContextAssociationAzName("");
+        setParentContextInstances([]);
+        setSelectedParentContextInstanceId("");
         setStatus("ok");
         if (nextRoots.length === 0) {
           setStatusMessage("No model instance roots available");
@@ -3413,6 +3445,11 @@ function EditorPage() {
     [selectedEntity, apiDescription],
   );
   const selectedParentAssociationOption = parentAssociationOptions.find((option) => option.association.azName === selectedParentAssociationAzName) ?? null;
+  const parentContextOptions = useMemo(
+    () => parentContextOptionsFor(selectedParentAssociationOption?.parentEntity ?? null, apiDescription),
+    [selectedParentAssociationOption, apiDescription],
+  );
+  const selectedParentContextOption = parentContextOptions.find((option) => option.association.azName === selectedParentContextAssociationAzName) ?? null;
   const showParentLinkSection = parentAssociationOptions.length > 0
     && (willCreate || parentLinkError.length > 0 || createdParentAssociationLink !== null);
 
@@ -3452,6 +3489,9 @@ function EditorPage() {
   useEffect(() => {
     setParentInstances([]);
     setSelectedParentInstanceId("");
+    setParentContextInstances([]);
+    setSelectedParentContextInstanceId("");
+    setSelectedParentContextAssociationAzName("");
     if (!willCreate || parentAssociationOptions.length === 0) {
       setSelectedParentAssociationAzName("");
       return;
@@ -3464,6 +3504,78 @@ function EditorPage() {
       setSelectedParentAssociationAzName("");
     }
   }, [willCreate, parentAssociationOptions]);
+
+  useEffect(() => {
+    setParentInstances([]);
+    setSelectedParentInstanceId("");
+    setParentContextInstances([]);
+    setSelectedParentContextInstanceId("");
+    if (!willCreate || selectedParentAssociationOption === null || parentContextOptions.length === 0) {
+      setSelectedParentContextAssociationAzName("");
+      return;
+    }
+    if (parentContextOptions.length === 1) {
+      setSelectedParentContextAssociationAzName(parentContextOptions[0].association.azName);
+      return;
+    }
+    if (!parentContextOptions.some((option) => option.association.azName === selectedParentContextAssociationAzName)) {
+      setSelectedParentContextAssociationAzName("");
+    }
+  }, [willCreate, selectedParentAssociationOption, parentContextOptions]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadParentContextInstances() {
+      if (
+        !willCreate
+        || !apiBaseUrl
+        || !selectedModelAzName
+        || !selectedRootId
+        || selectedParentContextOption === null
+      ) {
+        setParentContextInstances([]);
+        setSelectedParentContextInstanceId("");
+        setIsLoadingParentContextInstances(false);
+        return;
+      }
+
+      setIsLoadingParentContextInstances(true);
+      setParentLinkError("");
+      try {
+        const nextContextInstances = await queryEntityInstances(
+          apiBaseUrl,
+          selectedModelAzName,
+          selectedRootId,
+          selectedParentContextOption.contextEntity.azName,
+          {},
+        );
+        if (cancelled) {
+          return;
+        }
+        setParentContextInstances(nextContextInstances);
+        setSelectedParentContextInstanceId((current) => (
+          nextContextInstances.some((instance) => instance.id === current) ? current : nextContextInstances[0]?.id ?? ""
+        ));
+      } catch (error) {
+        if (!cancelled) {
+          setParentContextInstances([]);
+          setSelectedParentContextInstanceId("");
+          setParentLinkError(error instanceof Error ? error.message : "Parent context instances load failed");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingParentContextInstances(false);
+        }
+      }
+    }
+
+    void loadParentContextInstances();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBaseUrl, selectedModelAzName, selectedRootId, selectedParentContextOption, willCreate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -3485,13 +3597,28 @@ function EditorPage() {
       setIsLoadingParentInstances(true);
       setParentLinkError("");
       try {
-        const nextParentInstances = await queryEntityInstances(
+        const loadedParentInstances = await queryEntityInstances(
           apiBaseUrl,
           selectedModelAzName,
           selectedRootId,
           selectedParentAssociationOption.parentEntity.azName,
           {},
         );
+        let nextParentInstances = loadedParentInstances;
+        if (selectedParentContextOption !== null && !selectedParentContextInstanceId) {
+          nextParentInstances = [];
+        } else if (selectedParentContextOption !== null) {
+          const contextLinks = await fetchAssociationLinks(
+            apiBaseUrl,
+            selectedModelAzName,
+            selectedRootId,
+            selectedParentContextOption.association.azName,
+          );
+          const parentInstanceIds = new Set(contextLinks
+            .filter((link) => link.sourceInstanceId === selectedParentContextInstanceId)
+            .map((link) => link.targetInstanceId));
+          nextParentInstances = loadedParentInstances.filter((instance) => parentInstanceIds.has(instance.id));
+        }
         if (cancelled) {
           return;
         }
@@ -3517,7 +3644,15 @@ function EditorPage() {
     return () => {
       cancelled = true;
     };
-  }, [apiBaseUrl, selectedModelAzName, selectedRootId, selectedParentAssociationOption, willCreate]);
+  }, [
+    apiBaseUrl,
+    selectedModelAzName,
+    selectedRootId,
+    selectedParentAssociationOption,
+    selectedParentContextOption,
+    selectedParentContextInstanceId,
+    willCreate,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -3589,6 +3724,9 @@ function EditorPage() {
     setSelectedTargetInstanceId("");
     setCreatedAssociationLink(null);
     setSelectedParentAssociationAzName("");
+    setSelectedParentContextAssociationAzName("");
+    setParentContextInstances([]);
+    setSelectedParentContextInstanceId("");
     setParentInstances([]);
     setSelectedParentInstanceId("");
     setCreatedParentAssociationLink(null);
@@ -3605,6 +3743,9 @@ function EditorPage() {
     setCreateCopy(false);
     setFormValues(emptyEditorValues(nextEntity));
     setSelectedParentAssociationAzName("");
+    setSelectedParentContextAssociationAzName("");
+    setParentContextInstances([]);
+    setSelectedParentContextInstanceId("");
     setParentInstances([]);
     setSelectedParentInstanceId("");
     setCreatedParentAssociationLink(null);
@@ -3641,6 +3782,19 @@ function EditorPage() {
 
   function selectParentAssociation(nextAssociationAzName: string) {
     setSelectedParentAssociationAzName(nextAssociationAzName);
+    setSelectedParentContextAssociationAzName("");
+    setParentContextInstances([]);
+    setSelectedParentContextInstanceId("");
+    setParentInstances([]);
+    setSelectedParentInstanceId("");
+    setCreatedParentAssociationLink(null);
+    setParentLinkError("");
+  }
+
+  function selectParentContext(nextAssociationAzName: string) {
+    setSelectedParentContextAssociationAzName(nextAssociationAzName);
+    setParentContextInstances([]);
+    setSelectedParentContextInstanceId("");
     setParentInstances([]);
     setSelectedParentInstanceId("");
     setCreatedParentAssociationLink(null);
@@ -3917,6 +4071,58 @@ function EditorPage() {
                       ))}
                     </select>
                   </div>
+                  {parentContextOptions.length > 0 && (
+                    <>
+                      <div className="query-field">
+                        <label htmlFor="editor-parent-context-association">Limit by context</label>
+                        <select
+                          id="editor-parent-context-association"
+                          value={selectedParentContextAssociationAzName}
+                          onChange={(event) => selectParentContext(event.target.value)}
+                          disabled={!willCreate || status === "loading" || isSaving || selectedParentAssociationOption === null}
+                        >
+                          <option value="">No context filter</option>
+                          {parentContextOptions.map((option) => (
+                            <option key={option.association.azName} value={option.association.azName}>
+                              {parentContextLabel(option)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="query-field">
+                        <label htmlFor="editor-parent-context-instance">
+                          {selectedParentContextOption === null
+                            ? "Context instance"
+                            : associationEndpointLabel(selectedParentContextOption.contextEntity, selectedParentContextOption.association.sourceRoleName)}
+                        </label>
+                        <select
+                          id="editor-parent-context-instance"
+                          value={selectedParentContextInstanceId}
+                          onChange={(event) => setSelectedParentContextInstanceId(event.target.value)}
+                          disabled={
+                            !willCreate
+                            || status === "loading"
+                            || isSaving
+                            || isLoadingParentContextInstances
+                            || selectedParentContextOption === null
+                            || parentContextInstances.length === 0
+                          }
+                        >
+                          {selectedParentContextOption === null ? (
+                            <option value="">No context filter selected</option>
+                          ) : isLoadingParentContextInstances ? (
+                            <option value="">Loading context instances</option>
+                          ) : parentContextInstances.length === 0 ? (
+                            <option value="">No context instances</option>
+                          ) : parentContextInstances.map((instance) => (
+                            <option key={instance.id} value={instance.id}>
+                              {entityInstanceLabel(selectedParentContextOption.contextEntity, instance)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  )}
                   <div className="query-field">
                     <label htmlFor="editor-parent-instance">
                       {selectedParentAssociationOption === null
