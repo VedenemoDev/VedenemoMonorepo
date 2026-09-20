@@ -11915,6 +11915,44 @@ Current status and next steps:
 - `mvn clean verify` succeeded from the repository root; Maven reported
   existing shade-plugin overlap warnings.
 
+## 2026-09-20 09:55 EEST
+
+Session goal:
+
+- Add a planned-vs-executed review to the latest executed backlog item and make
+  that post-execution review a standing agent requirement.
+
+Files changed:
+
+- `AGENTS.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 140 SESSION.md`
+- `sed -n '1,220p' tasks/backlog.md`
+- `sed -n '1,260p' AGENTS.md`
+- `git status --short`
+- `git diff -- AGENTS.md tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `Planned vs. Executed Evaluation` to the latest executed backlog item.
+- Noted that execution made aggregate labels available to `Tree of Life`,
+  `Tidy tree`, and `Radial tree` in the same pass through the shared tree data
+  builder, broader than the cautious one-chart-first plan.
+- Added an `AGENTS.md` requirement that future executed backlog items receive a
+  brief planned-vs-executed post mortem section.
+- No application code was changed, so build/test commands were not run.
+
 ## 2026-09-14 22:21 EEST
 
 Session goal:

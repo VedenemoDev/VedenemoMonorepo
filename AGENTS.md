@@ -164,6 +164,18 @@ Backlog items in `tasks/backlog.md` are listed from newest to oldest.
 Add each new backlog item at the beginning of the backlog file. Do not reorder
 or rewrite older backlog history unless explicitly requested.
 
+## Backlog execution review
+
+After executing a backlog item, add a `Planned vs. Executed Evaluation`
+section to that backlog item.
+
+The section is a brief post mortem comparing the original plan, scope,
+out-of-scope cautions, and acceptance criteria against what was actually
+implemented and verified. Include concise summary bullet points for any
+meaningful differences, scope expansions, scope reductions, follow-up
+corrections, or verification differences. If execution matched the plan with no
+meaningful differences, state that explicitly.
+
 ## Persistent session record
 
 Each agent session must be recorded in `SESSION.md`.

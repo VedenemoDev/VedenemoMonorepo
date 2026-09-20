@@ -139,6 +139,29 @@ the visual layout can handle them.
   making the `Mittaus` to `Puulaji` aggregation workflow visible where the
   numeric attribute is selected.
 
+### Planned vs. Executed Evaluation
+
+- Summary: execution delivered the reusable aggregate label behavior more
+  broadly than the cautious plan required, because `Tree of Life`, `Tidy tree`,
+  and `Radial tree` already shared the same tree binding/data builder path.
+- Summary: the planned one-chart-first fallback was not needed in practice;
+  implementing aggregate resolution in the shared tree data builder made the
+  feature available to all three tree chart renderers in the same coding pass
+  without separate chart-specific rendering changes.
+- Summary: the `Out Of Scope` caution about not implementing all three tree
+  charts at once was conditional on context size or chart-specific verification
+  risk. During execution, the common implementation path kept the change small
+  enough to include all three.
+- Summary: scope stayed frontend-only as planned. No backend API, CLI, `.vdos`,
+  persistence, or core model changes were needed.
+- Summary: aggregate chips initially needed a follow-up correction so numeric
+  child-level attributes could insert expressions into the previous level's
+  label template; after that correction, the visible UX matched the intended
+  `Mittaus` to `Puulaji` aggregation workflow.
+- Summary: verification exceeded the backlog item's original frontend-build
+  requirement because both `npm run build` in `vedenemo-ux` and repository-root
+  `mvn clean verify` succeeded.
+
 ## Hide Hexbin-map part-to-whole ownership association choices
 
 Status: executed
