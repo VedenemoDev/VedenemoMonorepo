@@ -1,81 +1,79 @@
 # Current Task
 
-## Add Hexbin-map associated point overlays with path-based styling
+## Add parent association selection to entity instance creation
 
 Status: executed
 
 ### Goal
 
-Implement the first executable slice of the planned `Hexbin-map` point overlay
-workflow.
+Implement the first executable slice of the Entity data editor workflow where a
+user can create a new entity instance and optionally link it to an existing
+parent entity instance in the same save action.
 
-For the Metsapalsta example, the visualization should be able to render
-`Mittaus.lokaatio` point markers through the explicit path:
-
-```text
-Metsapalsta -> Metsakuvio -> Puulaji -> Mittaus
-```
-
-The user should select visual roles in the binding wizard rather than relying
-on hard-coded entity names. `Metsakuvio.alue` remains the subregion area,
-`Puulaji.nimi` can provide point classification/style, and
-`Mittaus.lokaatio` provides point coordinates.
+For the Metsapalsta proof-of-concept, a user should be able to create a new
+`Mittaus` instance with its relevant data and select the correct `Puulaji`
+parent through the `Puulaji -> Mittaus` association before saving.
 
 ### Scope
 
-- Extend the browser `Hexbin-map` binding with optional point overlay roles.
-- Resolve point markers through explicit association paths below the selected
-  subregion overlay.
-- Style points by a selected attribute on the retained style-context entity.
-- Render raw point markers over the existing area and subregion layers.
-- Use simple marker shapes and colors with a point legend.
-- Warn about missing point locations, points outside their associated
-  subregion, conflicting duplicate paths, and optionally geometrically
-  contained points that are not linked through the selected path.
-- Keep the implementation frontend-only unless current API payloads are
+- Keep the implementation browser UX first unless current APIs are
   insufficient.
+- Show parent-link controls only during create/copy flows for entities with
+  eligible incoming associations.
+- Discover eligible parent links from associations whose target entity is the
+  entity being created.
+- Let the user choose no parent link even when a parent association is
+  available.
+- Auto-select the only eligible parent association as a convenience, while
+  still allowing the user to clear it.
+- Load parent instance candidates from the selected model-instance root and
+  selected parent entity.
+- Create the child instance first, then create the selected parent-to-child
+  association link.
+- Keep a successfully created child visible if association-link creation fails,
+  and show a clear retryable error.
 - Mark the backlog item executed after verification while leaving it in
   `tasks/backlog.md` as history.
 
 ### Out Of Scope
 
-- True hexbin aggregation.
-- Moving `Puulaji.nimi` onto `Mittaus`.
-- Backend query language changes.
-- Core model, CLI, `.vdos`, or HTTP API changes.
-- Persistent visualization configuration.
-- GIS-grade topology, clipping, or projection behavior.
+- Backend transaction semantics.
+- New core association semantics.
+- Durable persistence changes.
+- Full Entity data editor redesign.
+- Inline parent creation.
+- Multiple simultaneous parent links in the first slice.
+- `.vdos` or `.vdmp` format changes.
 
 ### Acceptance Criteria
 
-- Hexbin-map binding asks for visual roles rather than hard-coded
-  Metsapalsta-specific names.
-- The Metsapalsta role chain can be represented as subregion area
-  `Metsakuvio.alue`, style context `Puulaji`, style attribute `Puulaji.nimi`,
-  point entity `Mittaus`, and point location `Mittaus.lokaatio`.
-- Rendered points use raw markers over the existing area/subregion map.
-- Point colors and shapes are deterministic and reflected in a legend.
-- Conflicting duplicate paths render with a neutral/conflict marker style and
-  produce warnings.
-- Points outside their associated subregion produce warnings.
-- Optional unlinked-point diagnostics are disabled by default and produce
-  warnings only.
+- The Entity data editor can create `Mittaus` data and link it to a selected
+  `Puulaji` parent in one create flow when the model exposes that association.
+- Parent-link controls are derived from eligible incoming associations rather
+  than hard-coded Metsapalsta names.
+- The user can choose no parent link where the model/editor allows unlinked
+  creation.
+- The save button communicates when a create-and-link action will run.
+- If child creation succeeds but link creation fails, the created child remains
+  loaded and the link failure is visible.
 - `cd vedenemo-ux && npm run build` succeeds.
 - `mvn clean verify` succeeds from the repository root.
 
 ### Completion Notes
 
-- Added optional Hexbin-map point overlay binding fields for point style
-  context association, point association, point `LOCATION` attribute, point
-  style attribute, point legend label template, and unlinked-point diagnostics.
-- Kept visual roles generic while supporting the concrete
-  `Metsakuvio -> Puulaji -> Mittaus` path.
-- Rendered associated point markers with deterministic color and shape
-  assignment plus a point legend.
-- Added data warnings for missing point locations, outside-subregion points,
-  conflicting duplicate style/subregion paths, and optional unlinked points
-  geometrically inside a rendered subregion.
-- Kept all changes in `vedenemo-ux`; no backend, core, CLI, `.vdos`, or HTTP
-  API changes were needed.
+- Added parent-link controls to the Entity data editor create/copy flow when
+  the selected entity has eligible incoming associations.
+- Derived parent-link options generically from model metadata by finding
+  associations whose target entity is the entity being created.
+- Auto-selected the only eligible parent association while preserving the
+  explicit `No parent link` option.
+- Loaded parent instance candidates from the selected model-instance root and
+  used existing instance labeling for readable selector values.
+- Chained save behavior so the child instance is created first and the selected
+  parent-to-child association link is created second.
+- Kept a created child loaded if parent-link creation fails, and surfaced the
+  link failure in both the editor status and parent-link section.
+- Kept implementation in `vedenemo-ux`; no backend, core, CLI, `.vdos`, or
+  `.vdmp` changes were needed.
 - `npm run build` succeeded in `vedenemo-ux`.
 - `mvn clean verify` succeeded from the repository root.

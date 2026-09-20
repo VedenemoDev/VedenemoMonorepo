@@ -1,5 +1,207 @@
 # Backlog
 
+## Plan entity data editor parent association selection during instance creation
+
+Status: executed
+
+### Goal
+
+Plan how the Entity data editor should let a user create a new entity instance
+and, in the same authoring flow, optionally link it under an existing parent
+entity instance through a selected association.
+
+The proof-of-concept example is creating a new `Mittaus` instance with its
+relevant measurement values and selecting the correct parent `Puulaji` instance
+at the same time, so the editor creates both the `Mittaus` record and the
+`Puulaji -> Mittaus` association link as one user-visible action.
+
+### Context
+
+The current model-instance editing flow separates two related authoring steps:
+
+- create the child entity instance, for example `Mittaus`;
+- create or manage the association link that places it under the intended
+  parent, for example the relevant `Puulaji` category.
+
+That separation is precise, but awkward for data entry. In normalized models
+such as:
+
+```text
+Metsapalsta -> Metsakuvio -> Puulaji -> Mittaus
+```
+
+a user often knows the parent context at the moment they are entering the new
+child data. Requiring the user to create the child first and then find it again
+to link it increases the chance of orphaned records, incorrect category links,
+or unnecessary navigation.
+
+The useful general concept is not specific to `Puulaji` and `Mittaus`. It is a
+parent-context-aware create flow:
+
+- the user chooses the child entity to create;
+- the editor detects eligible incoming associations whose target is that child
+  entity;
+- the user can select one eligible association and one existing parent instance
+  for that association;
+- saving creates the new child instance and then creates the selected parent to
+  child association link;
+- the flow still allows creating an unlinked child when that is valid for the
+  data-entry task.
+
+### Planning Questions
+
+- Should the parent selector be shown only when the selected child entity has
+  eligible incoming associations?
+  - Decision: yes. Keep the default editor simple and show parent-link controls
+    only when there is at least one association whose target entity is the
+    entity being created.
+- Should the first version support one parent link or multiple parent links
+  during creation?
+  - Decision: start with one optional parent link. Multiple simultaneous links
+    can be planned later after the one-link workflow is comfortable.
+- Should the parent association be restricted to ownership-style associations?
+  - Decision: do not hard-code `OWNERSHIP` only. Offer eligible incoming
+    associations, but visually distinguish association kind where metadata is
+    available. If a future model marks an association as cardinality-required,
+    the editor can use that metadata to make the parent selector mandatory.
+- Should the editor create the child and association link as an atomic backend
+  command?
+  - Decision: prefer reusing existing instance-create and association-link
+    endpoints for the first implementation, unless the UX cannot recover
+    cleanly from partial failure. If partial failure is possible, surface a
+    clear warning with the created child instance id and provide a retry path
+    for creating the missing link.
+- How should the parent instances be listed?
+  - Decision: load candidates from the current model-instance root and selected
+    parent entity. Display existing instance labels using the same label
+    conventions already used by visualization and instance lists, with backend
+    ids as fallback.
+- Should the flow be available from a global "add entity" action, a parent row
+  action, or both?
+  - Decision: plan both shapes, but implement the simpler first slice in the
+    existing add-entity form: select child entity, then optional parent
+    association and parent instance. A later ergonomic improvement can add
+    parent-row actions that preselect the association and parent instance.
+
+### Proposed Implementation Approach
+
+- Treat this backlog item as planning first: define the UX and data-flow shape
+  before changing the editor.
+- Keep the implementation primarily in `vedenemo-ux` if current HTTP endpoints
+  already support creating entity instances and association links under the
+  active model-instance root.
+- Reuse existing model metadata to find associations where:
+  - the association target entity matches the entity being created;
+  - the association source entity has existing instances in the active root;
+  - the association is valid in the current model.
+- Add an optional parent-link section to the new entity instance form:
+  - association selector when more than one eligible incoming association
+    exists;
+  - parent entity instance selector for the selected association source entity;
+  - a "no parent link" option unless later cardinality metadata makes the link
+    required.
+- On save, perform the child create first and then create the selected
+  association link from the chosen parent instance to the new child instance.
+- Keep the UI honest about failure:
+  - if child creation fails, do not attempt the link;
+  - if child creation succeeds but link creation fails, keep the created child
+    visible and show a retryable link error rather than hiding the partial
+    result.
+- Refresh the relevant entity and association data after a successful save so
+  the newly created child appears immediately under the selected parent context.
+- Keep backend, core model, `.vdos`, and `.vdmp` semantics unchanged for the
+  first slice unless the current API shape proves insufficient.
+
+### Scope
+
+- Plan the Entity data editor create-flow change.
+- Use `Puulaji -> Mittaus` in the Metsapalsta example as the proof-of-concept
+  fixture.
+- Support selecting an existing parent entity instance while creating a new
+  child entity instance.
+- Define how eligible parent associations and parent instances should be
+  discovered from current model metadata and root-scoped instance data.
+- Preserve the ability to create an entity instance without selecting a parent
+  where the model allows it.
+- Identify a small first implementation slice suitable for later execution.
+
+### Out Of Scope
+
+- Adding new association semantics to `vedenemo-core`.
+- Introducing backend transactions or durable persistence.
+- Redesigning the full entity data editor.
+- Bulk import or spreadsheet-style entry.
+- Creating new parent instances inline while creating the child.
+- Multi-parent, multi-association, or nested create workflows in the first
+  slice.
+- Changing `.vdos` model definition scripting or `.vdmp` dump semantics unless
+  a later implementation requires documentation of existing behavior.
+
+### Acceptance Criteria
+
+- The backlog item captures the target behavior: create `Mittaus` data and link
+  it to the correct `Puulaji` parent in one editor flow.
+- The plan describes the general parent-context-aware create flow rather than a
+  Metsapalsta-only shortcut.
+- The plan identifies eligible incoming associations as the mechanism for
+  discovering possible parent links.
+- The plan keeps core model semantics unchanged and keeps the first slice in
+  the browser UX unless current APIs are insufficient.
+- The plan explicitly handles optional unlinked creation and partial failure
+  when child creation succeeds but link creation fails.
+- The plan leaves a clear first implementation slice for later execution.
+
+### Implementation Details Resolved During Execution
+
+- Parent-link controls were added only to the entity create/copy flow, not to
+  normal edit mode.
+- Eligible parent links were implemented as incoming associations where the
+  selected child entity is the association target and the source entity exists
+  in the current model metadata.
+- The first implementation reuses existing frontend API helpers for child
+  instance creation, parent candidate queries, and association-link creation.
+- Parent candidate loading uses its own loading state so users can continue
+  editing child attributes while parent instances load.
+- A single eligible parent association is auto-selected, but users can still
+  choose `No parent link`.
+- The create submit path keeps the newly created child loaded if association
+  link creation fails and reports the parent-link error.
+
+### Completion Notes
+
+- Implemented the first slice in `vedenemo-ux` without backend or core changes.
+- Added generic parent association discovery and labels based on current model
+  metadata rather than Metsapalsta-specific entity names.
+- Added an optional `Parent link` section to the Entity data editor for
+  create/copy flows with eligible incoming associations.
+- Loaded parent instances from the selected model-instance root and displayed
+  them using existing instance-label behavior.
+- Chained create behavior so saving can create the child entity instance and
+  then the selected parent-to-child association link.
+- Updated the submit button to say `Create and link` when a parent link is
+  selected.
+- Added visible parent-link failure feedback while preserving the successfully
+  created child instance.
+- `npm run build` succeeded in `vedenemo-ux`.
+- `mvn clean verify` succeeded from the repository root.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the planned first slice by keeping the feature in
+  the browser UX and reusing existing entity-instance and association-link HTTP
+  flows.
+- Summary: the implementation stayed generic, deriving options from eligible
+  incoming associations rather than hard-coding `Puulaji` or `Mittaus`.
+- Summary: scope stayed to one optional parent link; inline parent creation,
+  multiple parent links, backend transactions, and persistence changes remained
+  out of scope.
+- Summary: the planned partial-failure behavior was implemented: a created
+  child remains loaded and the parent-link error is visible if link creation
+  fails.
+- Summary: no backend, core, CLI, `.vdos`, `.vdmp`, README, or architecture
+  documentation changes were needed because no component boundaries or runtime
+  API contracts changed.
+
 ## Plan Hexbin-map associated point overlays with path-based styling
 
 Status: executed

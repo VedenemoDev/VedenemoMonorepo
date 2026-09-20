@@ -184,6 +184,11 @@ type TraversalOption = {
   relatedEntity: EntityDescription;
 };
 
+type ParentAssociationOption = {
+  association: AssociationDescription;
+  parentEntity: EntityDescription;
+};
+
 type AssociationMatchContext = {
   associationLabel: string;
   criterionLabel: string;
@@ -2822,6 +2827,26 @@ function associationEndpointLabel(entity: EntityDescription | null, roleName?: s
   return roleLabel ? `${entity.visName} (${roleLabel})` : entity.visName;
 }
 
+function parentAssociationOptionsFor(entity: EntityDescription | null, apiDescription: ApiDescriptionResponse | null): ParentAssociationOption[] {
+  if (entity === null || apiDescription === null) {
+    return [];
+  }
+
+  return (apiDescription.associations ?? []).flatMap((association) => {
+    if (!sameAzName(association.targetEntityAzName, entity.azName)) {
+      return [];
+    }
+    const parentEntity = findEntity(apiDescription.entities, association.sourceEntityAzName);
+    return parentEntity === null ? [] : [{ association, parentEntity }];
+  });
+}
+
+function parentAssociationLabel(option: ParentAssociationOption): string {
+  const roleLabel = option.association.sourceRoleName?.trim();
+  const parentLabel = roleLabel ? `${option.parentEntity.visName} (${roleLabel})` : option.parentEntity.visName;
+  return `${option.association.visName} (${parentLabel} -> ${option.association.targetEntityAzName}, ${option.association.kind})`;
+}
+
 function relatedInstanceIdForLink(resultId: string, link: AssociationLinkResponse, direction: RelationshipDirection): string | null {
   if (direction === "outgoing") {
     return link.sourceInstanceId === resultId ? link.targetInstanceId : null;
@@ -3258,10 +3283,16 @@ function EditorPage() {
   const [selectedSourceInstanceId, setSelectedSourceInstanceId] = useState("");
   const [selectedTargetInstanceId, setSelectedTargetInstanceId] = useState("");
   const [createdAssociationLink, setCreatedAssociationLink] = useState<AssociationLinkResponse | null>(null);
+  const [selectedParentAssociationAzName, setSelectedParentAssociationAzName] = useState("");
+  const [parentInstances, setParentInstances] = useState<EntityInstanceResponse[]>([]);
+  const [selectedParentInstanceId, setSelectedParentInstanceId] = useState("");
+  const [createdParentAssociationLink, setCreatedParentAssociationLink] = useState<AssociationLinkResponse | null>(null);
+  const [parentLinkError, setParentLinkError] = useState("");
   const [status, setStatus] = useState<ModelInstanceLoadState>("loading");
   const [statusMessage, setStatusMessage] = useState("Loading editor...");
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAssociation, setIsSavingAssociation] = useState(false);
+  const [isLoadingParentInstances, setIsLoadingParentInstances] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -3377,6 +3408,13 @@ function EditorPage() {
     : findEntity(apiDescription?.entities ?? [], selectedAssociation.targetEntityAzName);
   const isEditMode = Boolean(loadedInstanceId);
   const willCreate = !isEditMode || createCopy;
+  const parentAssociationOptions = useMemo(
+    () => parentAssociationOptionsFor(selectedEntity, apiDescription),
+    [selectedEntity, apiDescription],
+  );
+  const selectedParentAssociationOption = parentAssociationOptions.find((option) => option.association.azName === selectedParentAssociationAzName) ?? null;
+  const showParentLinkSection = parentAssociationOptions.length > 0
+    && (willCreate || parentLinkError.length > 0 || createdParentAssociationLink !== null);
 
   useEffect(() => {
     let cancelled = false;
@@ -3410,6 +3448,76 @@ function EditorPage() {
       cancelled = true;
     };
   }, [apiBaseUrl, selectedModelAzName, selectedRootId, selectedEntity, loadedInstanceId]);
+
+  useEffect(() => {
+    setParentInstances([]);
+    setSelectedParentInstanceId("");
+    if (!willCreate || parentAssociationOptions.length === 0) {
+      setSelectedParentAssociationAzName("");
+      return;
+    }
+    if (parentAssociationOptions.length === 1) {
+      setSelectedParentAssociationAzName(parentAssociationOptions[0].association.azName);
+      return;
+    }
+    if (!parentAssociationOptions.some((option) => option.association.azName === selectedParentAssociationAzName)) {
+      setSelectedParentAssociationAzName("");
+    }
+  }, [willCreate, parentAssociationOptions]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadParentInstances() {
+      if (
+        !willCreate
+        || !apiBaseUrl
+        || !selectedModelAzName
+        || !selectedRootId
+        || selectedParentAssociationOption === null
+      ) {
+        setParentInstances([]);
+        setSelectedParentInstanceId("");
+        setIsLoadingParentInstances(false);
+        return;
+      }
+
+      setIsLoadingParentInstances(true);
+      setParentLinkError("");
+      try {
+        const nextParentInstances = await queryEntityInstances(
+          apiBaseUrl,
+          selectedModelAzName,
+          selectedRootId,
+          selectedParentAssociationOption.parentEntity.azName,
+          {},
+        );
+        if (cancelled) {
+          return;
+        }
+        setParentInstances(nextParentInstances);
+        setSelectedParentInstanceId((current) => (
+          nextParentInstances.some((instance) => instance.id === current) ? current : nextParentInstances[0]?.id ?? ""
+        ));
+      } catch (error) {
+        if (!cancelled) {
+          setParentInstances([]);
+          setSelectedParentInstanceId("");
+          setParentLinkError(error instanceof Error ? error.message : "Parent instances load failed");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingParentInstances(false);
+        }
+      }
+    }
+
+    void loadParentInstances();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBaseUrl, selectedModelAzName, selectedRootId, selectedParentAssociationOption, willCreate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -3480,6 +3588,11 @@ function EditorPage() {
     setSelectedSourceInstanceId("");
     setSelectedTargetInstanceId("");
     setCreatedAssociationLink(null);
+    setSelectedParentAssociationAzName("");
+    setParentInstances([]);
+    setSelectedParentInstanceId("");
+    setCreatedParentAssociationLink(null);
+    setParentLinkError("");
     setLoadedInstanceId("");
     setCreateCopy(false);
     window.history.replaceState(null, "", "/editor");
@@ -3491,6 +3604,11 @@ function EditorPage() {
     setLoadedInstanceId("");
     setCreateCopy(false);
     setFormValues(emptyEditorValues(nextEntity));
+    setSelectedParentAssociationAzName("");
+    setParentInstances([]);
+    setSelectedParentInstanceId("");
+    setCreatedParentAssociationLink(null);
+    setParentLinkError("");
     setStatusMessage(nextEntity === null ? "Select an entity type" : "Ready");
   }
 
@@ -3504,6 +3622,11 @@ function EditorPage() {
     setSelectedSourceInstanceId("");
     setSelectedTargetInstanceId("");
     setCreatedAssociationLink(null);
+    setSelectedParentAssociationAzName("");
+    setParentInstances([]);
+    setSelectedParentInstanceId("");
+    setCreatedParentAssociationLink(null);
+    setParentLinkError("");
   }
 
   function selectAssociation(nextAssociationAzName: string) {
@@ -3514,6 +3637,14 @@ function EditorPage() {
     setSelectedTargetInstanceId("");
     setCreatedAssociationLink(null);
     setStatusMessage(nextAssociationAzName ? "Ready" : "Select an association type");
+  }
+
+  function selectParentAssociation(nextAssociationAzName: string) {
+    setSelectedParentAssociationAzName(nextAssociationAzName);
+    setParentInstances([]);
+    setSelectedParentInstanceId("");
+    setCreatedParentAssociationLink(null);
+    setParentLinkError("");
   }
 
   async function submitEditor(event: FormEvent<HTMLFormElement>) {
@@ -3532,6 +3663,11 @@ function EditorPage() {
       setStatusMessage(error instanceof Error ? error.message : "Invalid editor values");
       return;
     }
+    if (willCreate && selectedParentAssociationOption !== null && !selectedParentInstanceId) {
+      setStatus("error");
+      setStatusMessage("Select a parent instance or choose no parent link");
+      return;
+    }
 
     setIsSaving(true);
     setStatus("loading");
@@ -3544,6 +3680,31 @@ function EditorPage() {
       setCreateCopy(false);
       setFormValues(formValuesFromInstance(selectedEntity, saved));
       window.history.replaceState(null, "", editorUrl(selectedModelAzName, selectedRootId, selectedEntity.azName, saved.id));
+      if (willCreate && selectedParentAssociationOption !== null && selectedParentInstanceId) {
+        try {
+          setStatusMessage("Creating parent link...");
+          const linked = await createAssociationLink(
+            apiBaseUrl,
+            selectedModelAzName,
+            selectedRootId,
+            selectedParentAssociationOption.association.azName,
+            selectedParentInstanceId,
+            saved.id,
+          );
+          setCreatedParentAssociationLink(linked);
+          setParentLinkError("");
+          setStatus("ok");
+          setStatusMessage(`Created ${selectedEntity.visName} and linked parent`);
+          return;
+        } catch (linkError) {
+          const message = linkError instanceof Error ? linkError.message : "Parent link save failed";
+          setCreatedParentAssociationLink(null);
+          setParentLinkError(message);
+          setStatus("error");
+          setStatusMessage(`Created ${selectedEntity.visName}, but parent link failed: ${message}`);
+          return;
+        }
+      }
       setStatus("ok");
       setStatusMessage(willCreate ? `Created ${selectedEntity.visName}` : `Saved ${selectedEntity.visName}`);
     } catch (error) {
@@ -3692,7 +3853,11 @@ function EditorPage() {
                     id="editor-create-copy"
                     type="checkbox"
                     checked={createCopy}
-                    onChange={(event) => setCreateCopy(event.target.checked)}
+                    onChange={(event) => {
+                      setCreateCopy(event.target.checked);
+                      setCreatedParentAssociationLink(null);
+                      setParentLinkError("");
+                    }}
                     disabled={status === "loading" || isSaving}
                   />
                   Create copy
@@ -3730,10 +3895,80 @@ function EditorPage() {
               ))}
             </div>
 
+            {showParentLinkSection && (
+              <section className="editor-parent-link" aria-labelledby="editor-parent-link-heading">
+                <div>
+                  <h2 id="editor-parent-link-heading">Parent link</h2>
+                </div>
+                <div className="editor-context-grid">
+                  <div className="query-field">
+                    <label htmlFor="editor-parent-association">Association</label>
+                    <select
+                      id="editor-parent-association"
+                      value={selectedParentAssociationAzName}
+                      onChange={(event) => selectParentAssociation(event.target.value)}
+                      disabled={!willCreate || status === "loading" || isSaving}
+                    >
+                      <option value="">No parent link</option>
+                      {parentAssociationOptions.map((option) => (
+                        <option key={option.association.azName} value={option.association.azName}>
+                          {parentAssociationLabel(option)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="query-field">
+                    <label htmlFor="editor-parent-instance">
+                      {selectedParentAssociationOption === null
+                        ? "Parent instance"
+                        : associationEndpointLabel(selectedParentAssociationOption.parentEntity, selectedParentAssociationOption.association.sourceRoleName)}
+                    </label>
+                    <select
+                      id="editor-parent-instance"
+                      value={selectedParentInstanceId}
+                      onChange={(event) => setSelectedParentInstanceId(event.target.value)}
+                      disabled={
+                        !willCreate
+                        || status === "loading"
+                        || isSaving
+                        || isLoadingParentInstances
+                        || selectedParentAssociationOption === null
+                        || parentInstances.length === 0
+                      }
+                    >
+                      {selectedParentAssociationOption === null ? (
+                        <option value="">No association selected</option>
+                      ) : isLoadingParentInstances ? (
+                        <option value="">Loading parent instances</option>
+                      ) : parentInstances.length === 0 ? (
+                        <option value="">No parent instances</option>
+                      ) : parentInstances.map((instance) => (
+                        <option key={instance.id} value={instance.id}>
+                          {entityInstanceLabel(selectedParentAssociationOption.parentEntity, instance)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                {parentLinkError && (
+                  <div className="editor-link-error">
+                    <span>Parent link error</span>
+                    <strong>{parentLinkError}</strong>
+                  </div>
+                )}
+                {createdParentAssociationLink !== null && (
+                  <div className="editor-link-summary">
+                    <span>Created parent link</span>
+                    <strong>{createdParentAssociationLink.id}</strong>
+                  </div>
+                )}
+              </section>
+            )}
+
             <div className="editor-actions">
               <span className={`model-status model-status-${status}`}>{statusMessage}</span>
               <button type="submit" disabled={isSaving || status === "loading" || selectedEntity === null || !selectedRootId}>
-                {willCreate ? "Create" : "Save"}
+                {willCreate && selectedParentAssociationOption !== null ? "Create and link" : willCreate ? "Create" : "Save"}
               </button>
             </div>
           </form>

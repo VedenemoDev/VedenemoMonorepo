@@ -12330,3 +12330,110 @@ Current status and next steps:
   `OWNERSHIP` traversals, preventing part-to-whole choices like
   `Metsakuvio -> Metsapalsta`.
 - Verification passed: `npm run build` in `vedenemo-ux` and `git diff --check`.
+
+## 2026-09-20 17:52 EEST
+
+Session goal:
+
+- Add the next backlog planning item for improving the Entity data editor so a
+  new child entity instance can be linked to a selected parent instance during
+  creation.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `tail -n 160 SESSION.md`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `rg -n "Entity data editor|entity data|association|instance|parent" vedenemo-ux/src tasks docs README.md .vedenemo`
+- `sed -n '1,190p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+
+Current status and next steps:
+
+- Added a newest-first planned backlog item for parent association selection
+  during entity instance creation.
+- Captured the proof-of-concept workflow of creating `Mittaus` data while
+  selecting the correct `Puulaji -> Mittaus` parent link in one editor flow.
+- Kept the plan UX-first and general, based on eligible incoming associations,
+  with core, `.vdos`, and `.vdmp` semantics unchanged for the first slice.
+- Documented optional unlinked creation, one-link first scope, parent candidate
+  discovery, and partial failure handling.
+- Verification passed: `git diff --check`.
+
+## 2026-09-20 18:24 EEST
+
+Session goal:
+
+- Execute the Entity data editor parent association selection plan as the
+  current task, verify it, and mark the backlog item executed while preserving
+  it as historical reference.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `sed -n '1,220p' tasks/backlog.md`
+- `tail -n 180 SESSION.md`
+- `git status --short --branch`
+- `rg -n "Entity data|Model instances|instanceRoot|create.*instance|association link|_links|createEntity|EntityInstance|Association|link" vedenemo-ux/src/App.tsx`
+- `rg --files vedenemo-ux/src`
+- `cat vedenemo-ux/package.json`
+- `rg -n "POST /data|_links|roots/.*/.*_query|association" vedenemo-web-api/src vedenemo-ux/src docs | head -n 200`
+- `sed -n '1,220p' vedenemo-ux/src/App.tsx`
+- `sed -n '516,730p' vedenemo-ux/src/App.tsx`
+- `sed -n '2760,2965p' vedenemo-ux/src/App.tsx`
+- `sed -n '3180,3835p' vedenemo-ux/src/App.tsx`
+- `rg -n "editor-|status|form-row|entity data editor|editor-link|tab" vedenemo-ux/src/styles.css`
+- `sed -n '880,1020p' vedenemo-ux/src/App.tsx`
+- `sed -n '1580,1765p' vedenemo-ux/src/styles.css`
+- `rg -n "function findEntity|function sameAzName|function formatAttributeValue|function inputTypeFor|function inputStepFor" vedenemo-ux/src/App.tsx`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css tasks/current-task.md`
+- `rg -n "parentAssociation|Parent link|Create and link|parent link|ParentAssociation" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css tasks/current-task.md`
+- `mvn clean verify`
+- `git diff --check`
+- `git diff --stat`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented optional parent association selection in the Entity data editor
+  create/copy flow.
+- Parent link options are derived from incoming associations whose target is
+  the selected child entity, using the selected root to load parent candidates.
+- Creating with a selected parent now creates the child instance first and then
+  creates the parent-to-child association link.
+- The user can still choose `No parent link`; a single eligible association is
+  auto-selected as a convenience.
+- Parent-link failure after child creation keeps the child loaded and reports
+  the failed link visibly.
+- Updated `tasks/current-task.md` and marked the backlog item executed with
+  completion notes plus planned-vs-executed evaluation.
+- Verification passed: `npm run build` in `vedenemo-ux`, root
+  `mvn clean verify`, and `git diff --check`.
