@@ -12134,3 +12134,40 @@ Current status and next steps:
   point location, point style, and optional point metric.
 - Left implementation for a later execution task; no code, architecture docs,
   README, or current task files were changed.
+
+## 2026-09-20 12:07 EEST
+
+Session goal:
+
+- Incorporate user answers to the Hexbin-map associated point overlay planning
+  questions and identify whether conceptual open questions remain.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,170p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `git status --short`
+- `sed -n '35,150p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Converted the open planning questions in `tasks/backlog.md` into explicit
+  decisions.
+- Captured that explicit association paths are the default source of truth,
+  with an unchecked diagnostic option for geometrically contained unlinked
+  points.
+- Captured the first implementation preference: raw colored point markers,
+  optional marker-shape separation, user-configurable legend labels, warnings
+  for outside-area points, and Hexbin-map-specific path resolution.
+- Captured duplicate-path handling as warning-oriented: identical duplicates
+  can be deduplicated, but conflicting `Puulaji` or `Metsakuvio` paths should
+  be surfaced to the user.
+- No conceptual blockers remain; remaining details are marker-shape choices,
+  warning wording/placement, and whether diagnostic unlinked points should be
+  renderable with a separate style.

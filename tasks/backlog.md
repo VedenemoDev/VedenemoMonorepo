@@ -57,37 +57,44 @@ path-based point overlay binding:
 - Should `Mittaus` points be included only through the explicit
   `Metsakuvio -> Puulaji -> Mittaus` path, or should points also be accepted
   when their coordinates fall geometrically inside a `Metsakuvio.alue` even if
-  the association path is missing? => A: Could this be checkbox option? 
-  Not selected by default, because it is expected that there is correct path,
-  but it would be of course nice to find out these kind of unexpected exceptions.
+  the association path is missing?
+  - Decision: explicit association paths are the normal source of truth.
+    Add an optional diagnostic checkbox, disabled by default, for detecting
+    unexpected geometrically contained points that lack the expected path.
 - Should the first version render raw point markers, true hexbin aggregation,
-  or both as selectable modes? => A: Let's start with raw point markers with color separation.
-  It would be nice to have also other kind of separation, if possible (rectangles, 
-  circles, crosses...whatever alterative naturally could be include into the
-  legen in addition to color separation).
+  or both as selectable modes?
+  - Decision: start with raw point markers and color separation. Also include
+    marker-shape separation where practical, such as circles, squares,
+    triangles, crosses, or other simple legend-friendly symbols.
 - Should coloring use the nearest upstream classification instance
   (`Puulaji.nimi`) by default when the point entity itself has no suitable
   classification attribute?
-  => A: Yes, in this case Puulaji.nimi is natural selection, but I would
-     leave the actual legend label to be configured by user based on the
-     available attribute values + possible free text additions.
+  - Decision: yes. In the Metsapalsta case, `Puulaji.nimi` is the natural
+    classification source. The actual legend label should be user-configurable
+    from available attribute values plus optional free text.
 - How should duplicate path results be handled if one point is reachable
   through multiple classification instances or multiple subregion paths?
+  - Decision: treat conflicting duplicate paths as data-quality warnings in the
+    first implementation, not as something the renderer silently solves.
+    Identical duplicate paths can be deduplicated quietly. A point reached
+    through multiple `Puulaji` values should be warned and rendered with a
+    neutral or conflict marker style. A point reached through multiple
+    `Metsakuvio` containers should be warned more strongly because it likely
+    means overlapping areas or incorrect associations.
 - Should the binding wizard describe this as `point`, `classification`, and
   `container area` roles rather than as fixed entity names?
-  => A: Can you eloborate this more. In the used example this situation is 
-   an error, but I could imagine there could be other problem areas in which
-   it might be links from several places (of course not when there is s strict
-   geographical limits, as a some location cannot be inside several areas
-   unless those areas are ovelapping i.e. criterion for areas slipt something
-   else than strict geographical split).
+  - Decision: yes. The wizard should ask for visual roles rather than
+    hard-coding Metsapalsta-specific entity names. In this example the roles
+    resolve to `Metsapalsta.alue` as extent, `Metsakuvio.alue` as subregion,
+    `Mittaus.lokaatio` as point location, and `Puulaji.nimi` as point
+    classification/style.
 - Should points outside their associated `Metsakuvio.alue` be hidden, warned
   about, or rendered with a diagnostic style?
-  => A: Let's start with warnings that identify the problematic data points.
+  - Decision: start with warnings that identify the problematic data points.
 - Which pieces of this path-resolution logic are already reusable from tree
   aggregate labels, and which should stay Hexbin-map specific?
-    => A: Let's keep them at first as Hexbin-map specific as I cannot yet
-       fathom realistic use case(s) related to other chart types.
+  - Decision: keep this path-resolution behavior Hexbin-map specific at first.
+    Generalization can wait until another chart type has a realistic use case.
 
 ### Proposed Implementation Approach
 
@@ -103,7 +110,9 @@ path-based point overlay binding:
 - Require explicit association paths for the first implementation so visual
   results are explainable and deterministic.
 - Keep geometric point-in-polygon validation as a later enhancement or
-  diagnostic layer, not the primary relationship resolver.
+  diagnostic layer, not the primary relationship resolver. The first diagnostic
+  mode should be an explicit unchecked option for finding geometrically
+  contained points that are not linked by the expected association path.
 - Let the wizard discover eligible `LOCATION` point attributes reachable below
   the selected extent or subregion path.
 - Let style choices include attributes reachable in the retained path context,
@@ -111,9 +120,15 @@ path-based point overlay binding:
   attributes on the point entity.
 - Prefer coloring by finite categorical values first, especially `ValueSet`
   backed `TEXT` attributes.
+- Let users configure legend labels from available attribute placeholders and
+  free text.
 - Keep the first renderer simple with colored point markers over existing
-  `Hexbin-map` area overlays; add true hexbin aggregation as a separate step
-  once point/path binding is proven.
+  `Hexbin-map` area overlays. Include simple marker shapes when they can be
+  represented cleanly in the legend. Add true hexbin aggregation as a separate
+  step once point/path binding is proven.
+- Deduplicate identical point/path results quietly, but surface conflicting
+  duplicate paths as warnings and render conflicted points with a neutral or
+  diagnostic marker style.
 - Keep the implementation in `vedenemo-ux` unless current API payloads cannot
   provide the model metadata, instance values, and associations needed for
   path resolution.
@@ -156,6 +171,14 @@ path-based point overlay binding:
 - The plan keeps core model semantics unchanged and keeps visualization logic
   out of `vedenemo-core`.
 - The plan leaves a clear first implementation slice for later execution.
+
+### Remaining Implementation Details
+
+- Exact marker-shape set and legend layout.
+- Exact wording and placement of warnings for outside-area and duplicate-path
+  diagnostics.
+- Whether diagnostic geometrically contained points should be listed only in
+  warnings or also optionally rendered with a separate style.
 
 ## Add reusable tree-chart aggregate labels for numeric descendant values
 
