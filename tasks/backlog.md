@@ -1,5 +1,145 @@
 # Backlog
 
+## Plan Hexbin-map associated point overlays with path-based styling
+
+Status: planned
+
+### Goal
+
+Plan how `Hexbin-map` should show linked point data inside selected subregion
+areas, using the Metsapalsta example as the first concrete case while shaping
+the solution as generally as possible.
+
+The motivating model path is:
+
+```text
+Metsapalsta -> Metsakuvio -> Puulaji -> Mittaus
+```
+
+For the example case, a selected `Metsapalsta.alue` should provide the map
+extent, associated `Metsakuvio.alue` instances should provide visible
+subregion boundaries, and linked `Mittaus.lokaatio` values should render as
+point markers inside the correct `Metsakuvio` area. Each point should be colored
+by the associated `Puulaji.nimi`, so different tree species are visually
+separated.
+
+### Context
+
+This would be simple if the point location and classification lived on the same
+entity, for example a single `Mittaus` row with both `lokaatio` and `puulaji`.
+The current model is intentionally more normalized:
+
+```text
+Metsakuvio --contains--> Puulaji --has measurements--> Mittaus
+```
+
+That shape is good domain modeling because `Puulaji` carries the species
+classification and can have many measurements, but it makes visualization
+binding harder. The renderer must resolve a point entity (`Mittaus`), the
+classification entity (`Puulaji`), and the containing area entity
+(`Metsakuvio`) through association paths instead of reading all visual
+properties from one instance.
+
+The useful general concept is not "Metsapalsta-specific coloring". It is a
+path-based point overlay binding:
+
+- choose a map extent area;
+- choose optional subregion areas;
+- choose a point-location entity and `LOCATION` attribute reachable from the
+  map or subregion context;
+- choose a style/classification attribute reachable from each point through the
+  same resolved path context;
+- preserve enough path context so point markers can be grouped, filtered,
+  colored, and optionally clipped or validated against a containing area.
+
+### Planning Questions
+
+- Should `Mittaus` points be included only through the explicit
+  `Metsakuvio -> Puulaji -> Mittaus` path, or should points also be accepted
+  when their coordinates fall geometrically inside a `Metsakuvio.alue` even if
+  the association path is missing?
+- Should the first version render raw point markers, true hexbin aggregation,
+  or both as selectable modes?
+- Should coloring use the nearest upstream classification instance
+  (`Puulaji.nimi`) by default when the point entity itself has no suitable
+  classification attribute?
+- How should duplicate path results be handled if one point is reachable
+  through multiple classification instances or multiple subregion paths?
+- Should the binding wizard describe this as `point`, `classification`, and
+  `container area` roles rather than as fixed entity names?
+- Should points outside their associated `Metsakuvio.alue` be hidden, warned
+  about, or rendered with a diagnostic style?
+- Which pieces of this path-resolution logic are already reusable from tree
+  aggregate labels, and which should stay Hexbin-map specific?
+
+### Proposed Implementation Approach
+
+- Treat this backlog item as planning first: refine the binding shape before
+  coding the visualization behavior.
+- Model the generic binding as a set of visual roles rather than fixed domain
+  names:
+  - extent area role, for example `Metsapalsta.alue`;
+  - subregion area role, for example associated `Metsakuvio.alue`;
+  - point location role, for example descendant `Mittaus.lokaatio`;
+  - point style role, for example ancestor/context `Puulaji.nimi`;
+  - optional point metric role, for example `Mittaus.halkaisija_cm`.
+- Require explicit association paths for the first implementation so visual
+  results are explainable and deterministic.
+- Keep geometric point-in-polygon validation as a later enhancement or
+  diagnostic layer, not the primary relationship resolver.
+- Let the wizard discover eligible `LOCATION` point attributes reachable below
+  the selected extent or subregion path.
+- Let style choices include attributes reachable in the retained path context,
+  including ancestor/context attributes such as `Puulaji.nimi`, not only
+  attributes on the point entity.
+- Prefer coloring by finite categorical values first, especially `ValueSet`
+  backed `TEXT` attributes.
+- Keep the first renderer simple with colored point markers over existing
+  `Hexbin-map` area overlays; add true hexbin aggregation as a separate step
+  once point/path binding is proven.
+- Keep the implementation in `vedenemo-ux` unless current API payloads cannot
+  provide the model metadata, instance values, and associations needed for
+  path resolution.
+
+### Scope
+
+- Plan the UX binding model for path-based point overlays on `Hexbin-map`.
+- Use `Metsapalsta`, `Metsakuvio`, `Puulaji`, and `Mittaus` as the concrete
+  example and acceptance fixture.
+- Define how a point entity can be styled by an associated non-point entity.
+- Define how point markers relate to subregion areas when the point entity is
+  reached through the subregion's association path.
+- Preserve the option to generalize beyond forestry data and beyond species
+  coloring.
+- Identify a small first implementation slice suitable for a later execution
+  task.
+
+### Out Of Scope
+
+- Implementing the feature in this planning item.
+- Changing the Metsapalsta model solely to make visualization easier.
+- Moving `Puulaji.nimi` onto `Mittaus`.
+- Backend query language design.
+- Database-backed spatial queries.
+- Persistent visualization configuration.
+- Authentication, authorization, or multi-user map sharing.
+- General GIS-grade topology, clipping, and projection behavior.
+
+### Acceptance Criteria
+
+- The backlog item captures the Metsapalsta target behavior: render
+  `Mittaus.lokaatio` points inside `Metsakuvio.alue` and color them by linked
+  `Puulaji.nimi`.
+- The plan explicitly addresses why the current normalized model is harder
+  than a single point/classification entity.
+- The plan proposes a general visual-role binding rather than a
+  Metsapalsta-only solution.
+- The plan identifies association-path context as the key mechanism for
+  reaching point locations, area containers, and style attributes.
+- The plan keeps core model semantics unchanged and keeps visualization logic
+  out of `vedenemo-core`.
+- The plan leaves a clear first implementation slice for later execution.
+
 ## Add reusable tree-chart aggregate labels for numeric descendant values
 
 Status: executed

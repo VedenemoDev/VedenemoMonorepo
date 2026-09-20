@@ -12093,3 +12093,44 @@ Current status and next steps:
   match was found during this pass.
 - Validated that the output JSON is readable, keeps 460 albums, and contains
   only integer release years or `null` year values.
+
+## 2026-09-20 10:07 EEST
+
+Session goal:
+
+- Add a new planning backlog item for Hexbin-map point overlays that can show
+  `Mittaus.lokaatio` points inside `Metsakuvio.alue` and color them by linked
+  `Puulaji.nimi`.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,220p' tasks/backlog.md`
+- `rg -n "Hexbin|hexbin|Metsapalsta|Metsakuvio|Puulaji|Mittaus|visual|location" tasks/backlog.md tasks/current-task.md docs .vedenemo vedenemo-ux/src`
+- `git status --short`
+- `sed -n '1,190p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added the newest backlog item at the beginning of `tasks/backlog.md`.
+- Framed the problem as path-based point overlay planning rather than a
+  Metsapalsta-only special case.
+- Captured the core modeling tension: `Mittaus.lokaatio` is on the point
+  entity, while `Puulaji.nimi` is on an associated classification/context
+  entity and `Metsakuvio.alue` is on the containing area entity.
+- Proposed a general visual-role binding shape: extent area, subregion area,
+  point location, point style, and optional point metric.
+- Left implementation for a later execution task; no code, architecture docs,
+  README, or current task files were changed.
