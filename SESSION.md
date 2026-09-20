@@ -12555,3 +12555,57 @@ Current status and next steps:
   completion notes plus planned-vs-executed evaluation.
 - Verification passed: `npm run build` in `vedenemo-ux`, root
   `mvn clean verify`, and `git diff --check`.
+
+## 2026-09-20 23:26 EEST
+
+Session goal:
+
+- Plan a further Entity data editor usability improvement that uses browser
+  geolocation to fill single-point `LOCATION` attributes with saveable current
+  location data.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,240p' docs/architecture/module-map.md`
+- `sed -n '1,240p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `git status --short --branch`
+- `rg -n "LOCATION|Location|location|DataType|Entity data editor|Use current location" vedenemo-ux/src vedenemo-* tasks docs README.md .vedenemo`
+- `sed -n '2620,2675p' vedenemo-ux/src/App.tsx`
+- `sed -n '2840,2945p' vedenemo-ux/src/App.tsx`
+- `sed -n '3840,4055p' vedenemo-ux/src/App.tsx`
+- `sed -n '345,365p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '2360,2465p' vedenemo-ux/src/App.tsx`
+- `rg -n "function parse|formValues|createEntityInstance|updateEntityInstance|JSON.parse|LOCATION" vedenemo-ux/src/App.tsx`
+- `sed -n '2788,2825p' vedenemo-ux/src/App.tsx`
+- `sed -n '2535,2665p' vedenemo-ux/src/App.tsx`
+- `git diff -- tasks/backlog.md`
+- `git diff --check`
+- `git status --short`
+
+Current status and next steps:
+
+- Added the newest backlog planning item for current-location capture in the
+  Entity data editor.
+- Planned a generic `Use current location` action for every `LOCATION`
+  attribute, using explicit browser geolocation only after a user press.
+- Captured the existing saveable value shape as `{ "latitude": number,
+  "longitude": number }`.
+- Noted that implementation should also parse `LOCATION` field JSON into a
+  structured object before create/update submission, since the current editor
+  mostly treats non-numeric fields as strings.
+- Kept scope frontend-only unless the existing API rejects the already-supported
+  `LOCATION` object shape; no core, backend, `.vdos`, or `.vdmp` changes are
+  planned for this slice.
+- Verification passed: `git diff --check`.

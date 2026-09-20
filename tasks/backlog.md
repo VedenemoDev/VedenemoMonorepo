@@ -1,5 +1,135 @@
 # Backlog
 
+## Plan current-location capture for LOCATION attributes in Entity data editor
+
+Status: planned
+
+### Goal
+
+Plan a usability improvement for the Entity data editor where each `LOCATION`
+attribute field includes a `Use current location` action. When the user presses
+the action, the browser asks for the device's current position and the editor
+fills the attribute with a value that can be saved as a model-instance
+`LOCATION` value.
+
+The proof-of-concept example is `Mittaus.lokaatio` in the Metsapalsta model: a
+user entering a measurement in the field should be able to press `Use current
+location` and save the measurement with the current latitude and longitude
+without manually typing coordinate JSON.
+
+### Context
+
+Vedenemo already has a pure model data type for a point location:
+
+```json
+{ "latitude": 62.1234567, "longitude": 30.1234567 }
+```
+
+`LOCATION_LINE` and `LOCATION_AREA` use structured collections of the same point
+shape, but this first editor improvement should focus only on single-point
+`LOCATION` attributes. Browser geolocation is a UX concern and should stay in
+`vedenemo-ux`; core model semantics, HTTP DTO names, `.vdos`, and `.vdmp`
+formats do not need new concepts for this slice.
+
+The current Entity data editor renders attribute fields generically. That is a
+good place to add a type-specific convenience action, but the implementation
+also needs to ensure that saved `LOCATION` attributes are sent to the backend as
+objects rather than ordinary strings.
+
+### Planning Questions
+
+- Should the button appear for every `LOCATION` attribute or only attributes
+  with location-like names?
+  - Decision: every attribute whose model metadata has `dataType=LOCATION`.
+    Avoid name-based shortcuts such as `lokaatio`.
+- Should the first version support `LOCATION_LINE` or `LOCATION_AREA` capture?
+  - Decision: no. Keep this slice to single current-position points. Lines and
+    areas need different capture workflows such as repeated points, drawing, or
+    polygon editing.
+- Should the editor automatically request location when the form opens?
+  - Decision: no. Request only after an explicit `Use current location` press
+    so the browser permission prompt is clearly tied to a user action.
+- What value should be written into the field?
+  - Decision: store an editor-friendly string representation of the exact
+    backend shape, for example compact JSON with `latitude` and `longitude`,
+    then parse it into the structured object before create/update submission.
+- Should geolocation metadata such as accuracy, altitude, heading, speed, or
+  timestamp be saved?
+  - Decision: not in this slice. The current model `LOCATION` value supports
+    latitude and longitude only. Show accuracy as transient UI feedback if
+    useful, but do not add it to the saved value.
+- How should errors be handled?
+  - Decision: show a field-level or editor status message for unsupported
+    browsers, denied permission, unavailable position, timeout, and unknown
+    browser errors. Do not clear any existing manually entered value on failure.
+
+### Proposed Implementation Approach
+
+- Keep the implementation in `vedenemo-ux`.
+- Detect `LOCATION` attributes while rendering Entity data editor fields and
+  show a `Use current location` button beside each matching field.
+- On button press, call `navigator.geolocation.getCurrentPosition` from the
+  browser:
+  - set per-attribute loading state while the request is pending;
+  - disable the button while the request is active or the editor is saving;
+  - request a reasonably fresh position without continuously watching the
+    device location.
+- Convert the browser coordinates to the existing Vedenemo `LOCATION` point
+  shape:
+
+```json
+{ "latitude": 62.1234567, "longitude": 30.1234567 }
+```
+
+- Fill the selected field with that shape in a readable JSON string form.
+- Extend the editor submit parsing so `LOCATION` attributes accept this JSON
+  shape and submit a structured object to the existing entity create/update
+  endpoints.
+- Keep validation local and clear:
+  - require both `latitude` and `longitude`;
+  - require numeric values;
+  - reject arrays, line/area wrappers, and unrelated objects for this field;
+  - preserve existing empty-field behavior for optional attributes.
+- Continue to let users type or paste a `LOCATION` JSON value manually.
+- Avoid backend changes unless the current API rejects the already-supported
+  point object shape.
+
+### Scope
+
+- Plan the Entity data editor `LOCATION` current-position capture flow.
+- Add a button for each single-point `LOCATION` attribute field.
+- Use the browser Geolocation API only after an explicit user action.
+- Fill and save values in the existing model-instance `LOCATION` object shape.
+- Handle geolocation permission and availability failures visibly.
+- Keep the implementation generic across models and entities.
+
+### Out Of Scope
+
+- `LOCATION_LINE` route capture.
+- `LOCATION_AREA` polygon capture or map drawing tools.
+- Reverse geocoding addresses or place names.
+- Persisting accuracy, altitude, heading, speed, timestamps, or browser
+  permission state.
+- Background tracking or continuous location watching.
+- Backend geolocation services.
+- Core model, `.vdos`, or `.vdmp` format changes.
+
+### Acceptance Criteria
+
+- Every Entity data editor field for an attribute with `dataType=LOCATION`
+  shows a `Use current location` button.
+- Pressing the button requests current browser location and fills only that
+  attribute field on success.
+- The filled value can be saved through the existing entity create/update flow
+  and is submitted as `{ "latitude": number, "longitude": number }`.
+- Manual JSON entry for `LOCATION` values remains possible and is validated
+  before submission.
+- Geolocation failures produce a visible, understandable message and do not
+  overwrite existing field content.
+- Non-`LOCATION` attributes, `LOCATION_LINE`, and `LOCATION_AREA` fields are
+  unchanged.
+- `cd vedenemo-ux && npm run build` succeeds after implementation.
+
 ## Plan entity data editor parent association selection during instance creation
 
 Status: executed
