@@ -57,20 +57,37 @@ path-based point overlay binding:
 - Should `Mittaus` points be included only through the explicit
   `Metsakuvio -> Puulaji -> Mittaus` path, or should points also be accepted
   when their coordinates fall geometrically inside a `Metsakuvio.alue` even if
-  the association path is missing?
+  the association path is missing? => A: Could this be checkbox option? 
+  Not selected by default, because it is expected that there is correct path,
+  but it would be of course nice to find out these kind of unexpected exceptions.
 - Should the first version render raw point markers, true hexbin aggregation,
-  or both as selectable modes?
+  or both as selectable modes? => A: Let's start with raw point markers with color separation.
+  It would be nice to have also other kind of separation, if possible (rectangles, 
+  circles, crosses...whatever alterative naturally could be include into the
+  legen in addition to color separation).
 - Should coloring use the nearest upstream classification instance
   (`Puulaji.nimi`) by default when the point entity itself has no suitable
   classification attribute?
+  => A: Yes, in this case Puulaji.nimi is natural selection, but I would
+     leave the actual legend label to be configured by user based on the
+     available attribute values + possible free text additions.
 - How should duplicate path results be handled if one point is reachable
   through multiple classification instances or multiple subregion paths?
 - Should the binding wizard describe this as `point`, `classification`, and
   `container area` roles rather than as fixed entity names?
+  => A: Can you eloborate this more. In the used example this situation is 
+   an error, but I could imagine there could be other problem areas in which
+   it might be links from several places (of course not when there is s strict
+   geographical limits, as a some location cannot be inside several areas
+   unless those areas are ovelapping i.e. criterion for areas slipt something
+   else than strict geographical split).
 - Should points outside their associated `Metsakuvio.alue` be hidden, warned
   about, or rendered with a diagnostic style?
+  => A: Let's start with warnings that identify the problematic data points.
 - Which pieces of this path-resolution logic are already reusable from tree
   aggregate labels, and which should stay Hexbin-map specific?
+    => A: Let's keep them at first as Hexbin-map specific as I cannot yet
+       fathom realistic use case(s) related to other chart types.
 
 ### Proposed Implementation Approach
 
