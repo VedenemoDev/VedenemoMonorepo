@@ -12236,3 +12236,57 @@ Current status and next steps:
 - Verification passed: `npm run build` in `vedenemo-ux` and root
   `mvn clean verify`.
 - Vite dev server is running at `http://127.0.0.1:5173/`.
+
+## 2026-09-20 17:22 EEST
+
+Session goal:
+
+- Allow Hexbin-map point overlays when the selected map root item is a single
+  subregion such as `Metsakuvio`, without requiring a separate subregion
+  overlay.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `tail -n 120 SESSION.md`
+- `git status --short`
+- `rg -n "Point overlay|point overlay|pointContext|pointTraversal|hexbinMapBindingValidationMessage|resolveHexbinMapPoints|subregion|Metsakuvio|Hexbin-map|Hexbin" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `sed -n '320,760p' vedenemo-ux/src/App.tsx`
+- `sed -n '2500,3860p' vedenemo-ux/src/App.tsx`
+- `sed -n '4440,4750p' vedenemo-ux/src/App.tsx`
+- `sed -n '998,1428p' vedenemo-ux/src/App.tsx`
+- `sed -n '1430,1815p' vedenemo-ux/src/App.tsx`
+- `sed -n '4854,5265p' vedenemo-ux/src/App.tsx`
+- `rg -n "type TraversalOption|function traversalOptions|traversalOptionValue|RelationshipDirection|AssociationDescription|sourceEntity|targetEntity" vedenemo-ux/src/App.tsx`
+- `sed -n '40,200p' vedenemo-ux/src/App.tsx`
+- `sed -n '920,985p' vedenemo-ux/src/App.tsx`
+- `sed -n '6090,6425p' vedenemo-ux/src/App.tsx`
+- `cat vedenemo-ux/package.json`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `sed -n '1188,1435p' vedenemo-ux/src/App.tsx`
+- `sed -n '1530,1818p' vedenemo-ux/src/App.tsx`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Updated Hexbin-map point overlay binding so point style-context choices come
+  from the selected root entity when no subregion overlay is selected, and from
+  the selected subregion entity when an overlay is selected.
+- Updated point resolution to use either the root area or the rendered
+  subregions as point containers, preserving outside-area and unlinked-point
+  diagnostics for both modes.
+- Adjusted the unlinked-point diagnostic label and map detail text for the
+  root-only point overlay case.
+- Verification passed: `npm run build` in `vedenemo-ux`.

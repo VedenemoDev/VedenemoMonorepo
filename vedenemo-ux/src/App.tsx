@@ -378,7 +378,16 @@ type HexbinMapSubregion = {
   id: string;
   label: string;
   boundary: LocationPoint[];
+  instance: EntityInstanceResponse;
   style: HexbinMapStyle;
+};
+
+type HexbinMapPointContainer = {
+  id: string;
+  label: string;
+  boundary: LocationPoint[];
+  instance: EntityInstanceResponse;
+  entity: EntityDescription;
 };
 
 type HexbinMapSegmentOccurrence = {
@@ -1185,22 +1194,28 @@ function selectedHexbinMapOverlayTraversal(
     .find((option) => traversalOptionValue(option) === binding.overlayTraversalValue) ?? null;
 }
 
+function hexbinMapPointContextEntity(
+  rootOption: HexbinMapRootOption | null,
+  overlayTraversal: TraversalOption | null,
+): EntityDescription | null {
+  return overlayTraversal?.relatedEntity ?? rootOption?.entity ?? null;
+}
+
 function hexbinMapPointContextTraversalOptions(
   apiDescription: ApiDescriptionResponse | null,
+  rootOption: HexbinMapRootOption | null,
   overlayTraversal: TraversalOption | null,
 ): TraversalOption[] {
-  if (overlayTraversal === null) {
-    return [];
-  }
-  return traversalOptionsFor(overlayTraversal.relatedEntity, apiDescription);
+  return traversalOptionsFor(hexbinMapPointContextEntity(rootOption, overlayTraversal), apiDescription);
 }
 
 function selectedHexbinMapPointContextTraversal(
   apiDescription: ApiDescriptionResponse | null,
+  rootOption: HexbinMapRootOption | null,
   overlayTraversal: TraversalOption | null,
   binding: HexbinMapBinding,
 ): TraversalOption | null {
-  return hexbinMapPointContextTraversalOptions(apiDescription, overlayTraversal)
+  return hexbinMapPointContextTraversalOptions(apiDescription, rootOption, overlayTraversal)
     .find((option) => traversalOptionValue(option) === binding.pointContextTraversalValue) ?? null;
 }
 
@@ -1330,8 +1345,7 @@ function locationPointInsideBoundary(point: LocationPoint, boundary: LocationPoi
 
 function hexbinMapPointBindingEnabled(binding: HexbinMapBinding): boolean {
   return Boolean(
-    binding.overlayTraversalValue
-    && binding.pointContextTraversalValue
+    binding.pointContextTraversalValue
     && binding.pointTraversalValue
     && binding.pointLocationAttributeAzName
     && binding.pointStyleAttributeAzName,
@@ -1380,28 +1394,6 @@ function hexbinMapBindingValidationMessage(
     if (labelTemplateError !== null) {
       return `Subregion legend: ${labelTemplateError}`;
     }
-    if (binding.pointContextTraversalValue || binding.pointTraversalValue || binding.pointLocationAttributeAzName || binding.pointStyleAttributeAzName) {
-      const contextTraversal = selectedHexbinMapPointContextTraversal(apiDescription, traversal, binding);
-      if (contextTraversal === null) {
-        return "Select a valid point style context association.";
-      }
-      const pointTraversal = selectedHexbinMapPointTraversal(apiDescription, contextTraversal, binding);
-      if (pointTraversal === null) {
-        return "Select a valid point association.";
-      }
-      const locationAttribute = pointTraversal.relatedEntity.attributes.find((candidate) => candidate.azName === binding.pointLocationAttributeAzName) ?? null;
-      if (locationAttribute === null || locationAttribute.dataType !== "LOCATION") {
-        return "Select a point LOCATION attribute.";
-      }
-      const styleAttribute = contextTraversal.relatedEntity.attributes.find((candidate) => candidate.azName === binding.pointStyleAttributeAzName) ?? null;
-      if (styleAttribute === null) {
-        return "Select a point style attribute.";
-      }
-      const pointLegendTemplateError = validateLabelTemplate(contextTraversal.relatedEntity, binding.pointLegendLabelTemplate);
-      if (pointLegendTemplateError !== null) {
-        return `Point legend: ${pointLegendTemplateError}`;
-      }
-    }
     if (binding.overlayStyleMode === "manualBorderColor" || binding.overlayStyleMode === "manualPatternColor") {
       if (overlayPreviewState === undefined || overlayPreviewState.status === "loading") {
         return "Loading subregion manual style rows.";
@@ -1422,6 +1414,29 @@ function hexbinMapBindingValidationMessage(
           return `Select a manual fill pattern for ${subregion.label}.`;
         }
       }
+    }
+  }
+  if (binding.pointContextTraversalValue || binding.pointTraversalValue || binding.pointLocationAttributeAzName || binding.pointStyleAttributeAzName) {
+    const traversal = selectedHexbinMapOverlayTraversal(apiDescription, rootOption, binding);
+    const contextTraversal = selectedHexbinMapPointContextTraversal(apiDescription, rootOption, traversal, binding);
+    if (contextTraversal === null) {
+      return "Select a valid point style context association.";
+    }
+    const pointTraversal = selectedHexbinMapPointTraversal(apiDescription, contextTraversal, binding);
+    if (pointTraversal === null) {
+      return "Select a valid point association.";
+    }
+    const locationAttribute = pointTraversal.relatedEntity.attributes.find((candidate) => candidate.azName === binding.pointLocationAttributeAzName) ?? null;
+    if (locationAttribute === null || locationAttribute.dataType !== "LOCATION") {
+      return "Select a point LOCATION attribute.";
+    }
+    const styleAttribute = contextTraversal.relatedEntity.attributes.find((candidate) => candidate.azName === binding.pointStyleAttributeAzName) ?? null;
+    if (styleAttribute === null) {
+      return "Select a point style attribute.";
+    }
+    const pointLegendTemplateError = validateLabelTemplate(contextTraversal.relatedEntity, binding.pointLegendLabelTemplate);
+    if (pointLegendTemplateError !== null) {
+      return `Point legend: ${pointLegendTemplateError}`;
     }
   }
   return null;
@@ -1532,27 +1547,21 @@ async function resolveHexbinMapPoints(
   modelAzName: string,
   instanceRootId: string,
   apiDescription: ApiDescriptionResponse,
-  subregions: HexbinMapSubregion[],
+  containers: HexbinMapPointContainer[],
+  rootOption: HexbinMapRootOption,
+  overlayTraversal: TraversalOption | null,
   binding: HexbinMapBinding,
 ): Promise<{
   points: HexbinMapPoint[];
   legend: HexbinMapPointLegendEntry[];
   warnings: string[];
 }> {
-  const rootEntity = findEntity(apiDescription.entities, binding.rootEntityAzName);
-  if (rootEntity === null) {
+  if (containers.length === 0) {
     return { points: [], legend: [], warnings: [] };
   }
-  const rootOption = {
-    entity: rootEntity,
-    instance: { id: binding.rootInstanceId, modelAzName, modelVersion: "", entityAzName: binding.rootEntityAzName, values: {} },
-    label: "",
-    attributes: [],
-  };
-  const overlayTraversal = selectedHexbinMapOverlayTraversal(apiDescription, rootOption, binding);
-  const contextTraversal = selectedHexbinMapPointContextTraversal(apiDescription, overlayTraversal, binding);
+  const contextTraversal = selectedHexbinMapPointContextTraversal(apiDescription, rootOption, overlayTraversal, binding);
   const pointTraversal = selectedHexbinMapPointTraversal(apiDescription, contextTraversal, binding);
-  if (overlayTraversal === null || contextTraversal === null || pointTraversal === null) {
+  if (contextTraversal === null || pointTraversal === null) {
     return { points: [], legend: [], warnings: [] };
   }
   const styleAttribute = contextTraversal.relatedEntity.attributes.find((candidate) => candidate.azName === binding.pointStyleAttributeAzName) ?? null;
@@ -1563,15 +1572,15 @@ async function resolveHexbinMapPoints(
 
   const contextLinks = await fetchAssociationLinks(apiBaseUrl, modelAzName, instanceRootId, contextTraversal.association.azName);
   const pointLinks = await fetchAssociationLinks(apiBaseUrl, modelAzName, instanceRootId, pointTraversal.association.azName);
-  const subregionById = new Map(subregions.map((subregion) => [subregion.id, subregion]));
-  const contextIdsBySubregionId = new Map<string, Set<string>>();
-  for (const subregion of subregions) {
+  const containerById = new Map(containers.map((container) => [container.id, container]));
+  const contextIdsByContainerId = new Map<string, Set<string>>();
+  for (const container of containers) {
     for (const link of contextLinks) {
-      const contextId = relatedInstanceIdForLink(subregion.id, link, contextTraversal.direction);
+      const contextId = relatedInstanceIdForLink(container.id, link, contextTraversal.direction);
       if (contextId !== null) {
-        const ids = contextIdsBySubregionId.get(subregion.id) ?? new Set<string>();
+        const ids = contextIdsByContainerId.get(container.id) ?? new Set<string>();
         ids.add(contextId);
-        contextIdsBySubregionId.set(subregion.id, ids);
+        contextIdsByContainerId.set(container.id, ids);
       }
     }
   }
@@ -1580,7 +1589,7 @@ async function resolveHexbinMapPoints(
     modelAzName,
     instanceRootId,
     contextTraversal.relatedEntity,
-    [...contextIdsBySubregionId.values()].flatMap((ids) => [...ids]),
+    [...contextIdsByContainerId.values()].flatMap((ids) => [...ids]),
   );
   const pointIdsByContextId = new Map<string, Set<string>>();
   for (const contextId of contextInstancesById.keys()) {
@@ -1602,7 +1611,7 @@ async function resolveHexbinMapPoints(
   );
 
   type PointPath = {
-    subregion: HexbinMapSubregion;
+    container: HexbinMapPointContainer;
     context: EntityInstanceResponse;
     point: EntityInstanceResponse;
     location: LocationPoint;
@@ -1612,9 +1621,9 @@ async function resolveHexbinMapPoints(
 
   const pathByKey = new Map<string, PointPath>();
   const warnings: string[] = [];
-  for (const [subregionId, contextIds] of contextIdsBySubregionId) {
-    const subregion = subregionById.get(subregionId);
-    if (subregion === undefined) {
+  for (const [containerId, contextIds] of contextIdsByContainerId) {
+    const container = containerById.get(containerId);
+    if (container === undefined) {
       continue;
     }
     for (const contextId of contextIds) {
@@ -1635,10 +1644,10 @@ async function resolveHexbinMapPoints(
         }
         const styleValue = formatAttributeValue(styleAttribute, context.values[styleAttribute.azName]) || "n/a";
         const styleLabel = renderLabelTemplate(contextTraversal.relatedEntity, context, binding.pointLegendLabelTemplate);
-        const pathKey = `${subregion.id}::${context.id}::${point.id}::${styleValue}`;
+        const pathKey = `${container.id}::${context.id}::${point.id}::${styleValue}`;
         if (!pathByKey.has(pathKey)) {
           pathByKey.set(pathKey, {
-            subregion,
+            container,
             context,
             point,
             location,
@@ -1672,21 +1681,21 @@ async function resolveHexbinMapPoints(
 
   const points: HexbinMapPoint[] = [];
   for (const [pointId, paths] of [...pathsByPointId.entries()].sort((left, right) => left[0].localeCompare(right[0]))) {
-    const subregionIds = new Set(paths.map((path) => path.subregion.id));
+    const containerIds = new Set(paths.map((path) => path.container.id));
     const styleKeys = new Set(paths.map((path) => path.styleKey));
-    const conflict = subregionIds.size > 1 || styleKeys.size > 1;
+    const conflict = containerIds.size > 1 || styleKeys.size > 1;
     const firstPath = paths[0];
     if (conflict) {
       if (styleKeys.size > 1) {
         warnings.push(`${entityInstanceLabel(pointTraversal.relatedEntity, firstPath.point)} is reached through multiple ${contextTraversal.relatedEntity.visName} style values.`);
       }
-      if (subregionIds.size > 1) {
-        warnings.push(`${entityInstanceLabel(pointTraversal.relatedEntity, firstPath.point)} is reached through multiple subregions.`);
+      if (containerIds.size > 1) {
+        warnings.push(`${entityInstanceLabel(pointTraversal.relatedEntity, firstPath.point)} is reached through multiple areas.`);
       }
     }
     for (const path of conflict ? [firstPath] : paths) {
-      if (!locationPointInsideBoundary(path.location, path.subregion.boundary)) {
-        warnings.push(`${entityInstanceLabel(pointTraversal.relatedEntity, path.point)} is outside associated subregion ${path.subregion.label}.`);
+      if (!locationPointInsideBoundary(path.location, path.container.boundary)) {
+        warnings.push(`${entityInstanceLabel(pointTraversal.relatedEntity, path.point)} is outside associated area ${path.container.label}.`);
       }
       points.push({
         id: path.point.id,
@@ -1711,9 +1720,9 @@ async function resolveHexbinMapPoints(
       if (location === null) {
         continue;
       }
-      const containingSubregion = subregions.find((subregion) => locationPointInsideBoundary(location, subregion.boundary)) ?? null;
-      if (containingSubregion !== null) {
-        warnings.push(`${entityInstanceLabel(pointTraversal.relatedEntity, point)} is geometrically inside ${containingSubregion.label} but is not linked through the selected point path.`);
+      const containingContainer = containers.find((container) => locationPointInsideBoundary(location, container.boundary)) ?? null;
+      if (containingContainer !== null) {
+        warnings.push(`${entityInstanceLabel(pointTraversal.relatedEntity, point)} is geometrically inside ${containingContainer.label} but is not linked through the selected point path.`);
       }
     }
   }
@@ -1774,24 +1783,41 @@ async function buildHexbinMapData(
       notices.push("some subregion border colors are reused");
     }
     overlayNotice = notices.length === 0 ? undefined : notices.join("; ");
-    if (hexbinMapPointBindingEnabled(binding) && subregions.length > 0) {
-      const resolvedPoints = await resolveHexbinMapPoints(
-        apiBaseUrl,
-        modelAzName,
-        instanceRootId,
-        apiDescription,
-        subregions,
-        binding,
-      );
-      points = resolvedPoints.points;
-      pointLegend = resolvedPoints.legend;
-      warnings = resolvedPoints.warnings;
-    }
+  }
+  if (hexbinMapPointBindingEnabled(binding)) {
+    const pointContainers: HexbinMapPointContainer[] = traversal === null
+      ? [{
+        id: instance.id,
+        label: instanceOptionLabel(rootOption.entity, instance),
+        boundary,
+        instance,
+        entity: rootOption.entity,
+      }]
+      : subregions.map((subregion) => ({
+        id: subregion.id,
+        label: subregion.label,
+        boundary: subregion.boundary,
+        instance: subregion.instance,
+        entity: traversal.relatedEntity,
+      }));
+    const resolvedPoints = await resolveHexbinMapPoints(
+      apiBaseUrl,
+      modelAzName,
+      instanceRootId,
+      apiDescription,
+      pointContainers,
+      rootOption,
+      traversal,
+      binding,
+    );
+    points = resolvedPoints.points;
+    pointLegend = resolvedPoints.legend;
+    warnings = resolvedPoints.warnings;
   }
   return {
     title: instanceOptionLabel(rootOption.entity, instance),
     detail: subregions.length === 0
-      ? `${attribute.visName} (${attribute.azName})`
+      ? `${attribute.visName} (${attribute.azName})${points.length === 0 ? "" : ` with ${points.length} point${points.length === 1 ? "" : "s"}`}`
       : `${attribute.visName} (${attribute.azName}) with ${subregions.length} subregion overlay${subregions.length === 1 ? "" : "s"}${points.length === 0 ? "" : ` and ${points.length} point${points.length === 1 ? "" : "s"}`}`,
     boundary,
     subregions,
@@ -4873,8 +4899,9 @@ function HexbinMapBindingPanel({
   const overlayTraversalOptions = hexbinMapOverlayTraversalOptions(apiDescription, selectedRootOption);
   const selectedOverlayTraversal = selectedHexbinMapOverlayTraversal(apiDescription, selectedRootOption, binding);
   const overlayAreaAttributes = selectedOverlayTraversal === null ? [] : locationAreaAttributes(selectedOverlayTraversal.relatedEntity);
-  const pointContextTraversalOptions = hexbinMapPointContextTraversalOptions(apiDescription, selectedOverlayTraversal);
-  const selectedPointContextTraversal = selectedHexbinMapPointContextTraversal(apiDescription, selectedOverlayTraversal, binding);
+  const pointContextEntity = hexbinMapPointContextEntity(selectedRootOption, selectedOverlayTraversal);
+  const pointContextTraversalOptions = hexbinMapPointContextTraversalOptions(apiDescription, selectedRootOption, selectedOverlayTraversal);
+  const selectedPointContextTraversal = selectedHexbinMapPointContextTraversal(apiDescription, selectedRootOption, selectedOverlayTraversal, binding);
   const pointTraversalOptions = hexbinMapPointTraversalOptions(apiDescription, selectedPointContextTraversal);
   const selectedPointTraversal = selectedHexbinMapPointTraversal(apiDescription, selectedPointContextTraversal, binding);
   const pointLocationAttributes = selectedPointTraversal === null ? [] : locationAttributes(selectedPointTraversal.relatedEntity);
@@ -5161,9 +5188,9 @@ function HexbinMapBindingPanel({
             <select
               value={binding.pointContextTraversalValue}
               onChange={(event) => selectPointContextTraversal(event.target.value)}
-              disabled={selectedOverlayTraversal === null}
+              disabled={pointContextEntity === null}
             >
-              <option value="">{selectedOverlayTraversal === null ? "Select a subregion overlay first" : "No point overlay"}</option>
+              <option value="">{pointContextEntity === null ? "Select a root item first" : "No point overlay"}</option>
               {pointContextTraversalOptions.map((option) => (
                 <option key={traversalOptionValue(option)} value={traversalOptionValue(option)}>
                   {traversalLabel(option)}
@@ -5241,7 +5268,7 @@ function HexbinMapBindingPanel({
               onChange={(event) => onBindingChange({ ...binding, showUnlinkedPointDiagnostics: event.target.checked })}
               disabled={selectedPointTraversal === null}
             />
-            Find unlinked points inside subregions
+            {selectedOverlayTraversal === null ? "Find unlinked points inside root area" : "Find unlinked points inside subregions"}
           </label>
         </div>
         {selectedPointContextTraversal !== null && (
