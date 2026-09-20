@@ -316,6 +316,11 @@ type LocationPoint = {
   longitude: number;
 };
 
+type LocationFormValue = {
+  latitude: number;
+  longitude: number;
+};
+
 type HexbinMapBinding = {
   rootEntityAzName: string;
   rootInstanceId: string;
@@ -931,6 +936,23 @@ function inputStepFor(attribute: AttributeDescription | null | undefined): strin
     return "1";
   }
   return undefined;
+}
+
+function roundLocationCoordinate(value: number): number {
+  return Math.round(value * 10_000_000) / 10_000_000;
+}
+
+function geolocationErrorMessage(error: GeolocationPositionError): string {
+  switch (error.code) {
+    case error.PERMISSION_DENIED:
+      return "Location permission was denied.";
+    case error.POSITION_UNAVAILABLE:
+      return "Current location is unavailable.";
+    case error.TIMEOUT:
+      return "Current location request timed out.";
+    default:
+      return error.message || "Current location request failed.";
+  }
 }
 
 function queryOperatorsFor(attribute: AttributeDescription | null): QueryOperator[] {
@@ -2810,6 +2832,8 @@ function parseEditorFormValues(entity: EntityDescription, formValues: EditorForm
         throw new Error(`${attribute.visName} must be a valid number`);
       }
       values[attribute.azName] = numericValue;
+    } else if (attribute.dataType === "LOCATION") {
+      values[attribute.azName] = parseLocationFormValue(attribute, trimmedValue);
     } else {
       const valueError = criterionValueError(attribute, trimmedValue);
       if (valueError !== null) {
@@ -2822,6 +2846,28 @@ function parseEditorFormValues(entity: EntityDescription, formValues: EditorForm
     throw new Error("Fill at least one attribute");
   }
   return values;
+}
+
+function parseLocationFormValue(attribute: AttributeDescription, rawValue: string): LocationFormValue {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(rawValue);
+  } catch {
+    throw new Error(`${attribute.visName} must be LOCATION JSON such as {"latitude":62.1234567,"longitude":30.1234567}`);
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(`${attribute.visName} must be a LOCATION object`);
+  }
+  const candidate = parsed as Record<string, unknown>;
+  const latitude = candidate.latitude;
+  const longitude = candidate.longitude;
+  if (typeof latitude !== "number" || !Number.isFinite(latitude)) {
+    throw new Error(`${attribute.visName} latitude must be a valid number`);
+  }
+  if (typeof longitude !== "number" || !Number.isFinite(longitude)) {
+    throw new Error(`${attribute.visName} longitude must be a valid number`);
+  }
+  return { latitude, longitude };
 }
 
 function associationEndpointLabel(entity: EntityDescription | null, roleName?: string | null): string {
@@ -3302,6 +3348,8 @@ function EditorPage() {
   const [loadedInstanceId, setLoadedInstanceId] = useState(initialInstanceId);
   const [createCopy, setCreateCopy] = useState(false);
   const [formValues, setFormValues] = useState<EditorFormValues>({});
+  const [locatingAttributeAzName, setLocatingAttributeAzName] = useState("");
+  const [locationFieldMessages, setLocationFieldMessages] = useState<Record<string, string>>({});
   const [selectedAssociationAzName, setSelectedAssociationAzName] = useState("");
   const [sourceInstances, setSourceInstances] = useState<EntityInstanceResponse[]>([]);
   const [targetInstances, setTargetInstances] = useState<EntityInstanceResponse[]>([]);
@@ -3397,6 +3445,8 @@ function EditorPage() {
           ? selectedAssociationAzName
           : nextApiDescription.associations?.[0]?.azName ?? "";
         setFormValues(emptyEditorValues(nextEntity));
+        setLocatingAttributeAzName("");
+        setLocationFieldMessages({});
         setSelectedAssociationAzName(nextAssociationAzName);
         setSourceInstances([]);
         setTargetInstances([]);
@@ -3733,6 +3783,8 @@ function EditorPage() {
     setParentLinkError("");
     setLoadedInstanceId("");
     setCreateCopy(false);
+    setLocatingAttributeAzName("");
+    setLocationFieldMessages({});
     window.history.replaceState(null, "", "/editor");
   }
 
@@ -3742,6 +3794,8 @@ function EditorPage() {
     setLoadedInstanceId("");
     setCreateCopy(false);
     setFormValues(emptyEditorValues(nextEntity));
+    setLocatingAttributeAzName("");
+    setLocationFieldMessages({});
     setSelectedParentAssociationAzName("");
     setSelectedParentContextAssociationAzName("");
     setParentContextInstances([]);
@@ -3758,6 +3812,8 @@ function EditorPage() {
     setLoadedInstanceId("");
     setCreateCopy(false);
     setFormValues(emptyEditorValues(selectedEntity));
+    setLocatingAttributeAzName("");
+    setLocationFieldMessages({});
     setSourceInstances([]);
     setTargetInstances([]);
     setSelectedSourceInstanceId("");
@@ -3799,6 +3855,53 @@ function EditorPage() {
     setSelectedParentInstanceId("");
     setCreatedParentAssociationLink(null);
     setParentLinkError("");
+  }
+
+  function useCurrentLocation(attribute: AttributeDescription) {
+    if (!("geolocation" in navigator)) {
+      const message = "Current location is not supported by this browser.";
+      setLocationFieldMessages((current) => ({ ...current, [attribute.azName]: message }));
+      setStatus("error");
+      setStatusMessage(message);
+      return;
+    }
+
+    setLocatingAttributeAzName(attribute.azName);
+    setLocationFieldMessages((current) => ({ ...current, [attribute.azName]: "Requesting current location..." }));
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const locationValue = {
+          latitude: roundLocationCoordinate(position.coords.latitude),
+          longitude: roundLocationCoordinate(position.coords.longitude),
+        };
+        const accuracy = Number.isFinite(position.coords.accuracy)
+          ? ` Accuracy about ${Math.round(position.coords.accuracy)} m.`
+          : "";
+        setFormValues((current) => ({
+          ...current,
+          [attribute.azName]: JSON.stringify(locationValue),
+        }));
+        setLocationFieldMessages((current) => ({
+          ...current,
+          [attribute.azName]: `Current location captured.${accuracy}`,
+        }));
+        setLocatingAttributeAzName("");
+        setStatus("ok");
+        setStatusMessage(`Filled ${attribute.visName} from current location`);
+      },
+      (error) => {
+        const message = geolocationErrorMessage(error);
+        setLocationFieldMessages((current) => ({ ...current, [attribute.azName]: message }));
+        setLocatingAttributeAzName("");
+        setStatus("error");
+        setStatusMessage(message);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 30_000,
+        timeout: 10_000,
+      },
+    );
   }
 
   async function submitEditor(event: FormEvent<HTMLFormElement>) {
@@ -4022,31 +4125,66 @@ function EditorPage() {
             <div className="editor-fields">
               {selectedEntity === null || selectedEntity.attributes.length === 0 ? (
                 <div className="tree-empty">No attributes</div>
-              ) : selectedEntity.attributes.map((attribute) => (
-                <div key={attribute.azName} className="query-field">
-                  <label htmlFor={`editor-${attribute.azName}`}>
-                    {attribute.visName}
-                    {attribute.required ? " *" : ""}
-                  </label>
-                  {attribute.dataType === "DATA" ? (
-                    <textarea
-                      id={`editor-${attribute.azName}`}
-                      value={formValues[attribute.azName] ?? ""}
-                      onChange={(event) => setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }))}
-                      disabled={status === "loading" || isSaving}
-                    />
-                  ) : (
-                    <input
-                      id={`editor-${attribute.azName}`}
-                      value={formValues[attribute.azName] ?? ""}
-                      type={inputTypeFor(attribute)}
-                      step={inputStepFor(attribute)}
-                      onChange={(event) => setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }))}
-                      disabled={status === "loading" || isSaving}
-                    />
-                  )}
-                </div>
-              ))}
+              ) : selectedEntity.attributes.map((attribute) => {
+                const fieldId = `editor-${attribute.azName}`;
+                const locationMessage = locationFieldMessages[attribute.azName] ?? "";
+                const isLocatingAttribute = locatingAttributeAzName === attribute.azName;
+                const fieldDisabled = status === "loading" || isSaving;
+                return (
+                  <div key={attribute.azName} className="query-field">
+                    <label htmlFor={fieldId}>
+                      {attribute.visName}
+                      {attribute.required ? " *" : ""}
+                    </label>
+                    {attribute.dataType === "DATA" ? (
+                      <textarea
+                        id={fieldId}
+                        value={formValues[attribute.azName] ?? ""}
+                        onChange={(event) => setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }))}
+                        disabled={fieldDisabled}
+                      />
+                    ) : attribute.dataType === "LOCATION" ? (
+                      <>
+                        <div className="editor-field-with-action">
+                          <input
+                            id={fieldId}
+                            value={formValues[attribute.azName] ?? ""}
+                            type={inputTypeFor(attribute)}
+                            step={inputStepFor(attribute)}
+                            onChange={(event) => {
+                              setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }));
+                              setLocationFieldMessages((current) => ({ ...current, [attribute.azName]: "" }));
+                            }}
+                            disabled={fieldDisabled}
+                            aria-describedby={locationMessage ? `${fieldId}-message` : undefined}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => useCurrentLocation(attribute)}
+                            disabled={fieldDisabled || isLocatingAttribute}
+                          >
+                            {isLocatingAttribute ? "Locating..." : "Use current location"}
+                          </button>
+                        </div>
+                        {locationMessage && (
+                          <span id={`${fieldId}-message`} className="editor-field-message">
+                            {locationMessage}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <input
+                        id={fieldId}
+                        value={formValues[attribute.azName] ?? ""}
+                        type={inputTypeFor(attribute)}
+                        step={inputStepFor(attribute)}
+                        onChange={(event) => setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }))}
+                        disabled={fieldDisabled}
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {showParentLinkSection && (

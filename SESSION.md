@@ -12609,3 +12609,70 @@ Current status and next steps:
   `LOCATION` object shape; no core, backend, `.vdos`, or `.vdmp` changes are
   planned for this slice.
 - Verification passed: `git diff --check`.
+
+## 2026-09-20 23:36 EEST
+
+Session goal:
+
+- Execute the Entity data editor current-location capture plan so browser
+  geolocation can fill single-point `LOCATION` attributes with saveable model
+  instance data.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,240p' docs/architecture/module-map.md`
+- `sed -n '1,240p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 140 SESSION.md`
+- `git status --short --branch`
+- `sed -n '1,180p' vedenemo-ux/package.json`
+- `sed -n '1,120p' vedenemo-ux/src/App.tsx`
+- `sed -n '2780,2835p' vedenemo-ux/src/App.tsx`
+- `sed -n '3260,3865p' vedenemo-ux/src/App.tsx`
+- `sed -n '4000,4085p' vedenemo-ux/src/App.tsx`
+- `sed -n '1580,1760p' vedenemo-ux/src/styles.css`
+- `sed -n '1,180p' tasks/backlog.md`
+- `rg -n "function formatInstanceValue|criterionValueError|inputTypeFor|inputStepFor" vedenemo-ux/src/App.tsx`
+- `sed -n '780,950p' vedenemo-ux/src/App.tsx`
+- `sed -n '1760,1825p' vedenemo-ux/src/styles.css`
+- `sed -n '1,140p' tasks/current-task.md`
+- `npm run build` from `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `git status --short`
+- `rg -n "Use current location|parseLocationFormValue|locatingAttributeAzName|editor-field-with-action|current-location capture" vedenemo-ux/src tasks`
+- `mvn clean verify`
+- `git diff --check`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/current-task.md tasks/backlog.md`
+- `rg -n "type LocationFormValue|function parseLocationFormValue|function useCurrentLocation|Use current location|editor-field-with-action|Add current-location capture" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css tasks/current-task.md tasks/backlog.md`
+
+Current status and next steps:
+
+- Implemented `Use current location` controls for Entity data editor attributes
+  whose metadata is `LOCATION`.
+- Browser geolocation is requested only after the user presses the field
+  button, and only the selected field is filled.
+- Captured latitude/longitude are rounded to seven decimal places and placed in
+  the field as compact JSON.
+- The editor now parses `LOCATION` form JSON into a structured
+  `{ latitude, longitude }` object before create/update submission, while still
+  allowing manual JSON entry.
+- Added visible per-field and editor-level geolocation feedback for success,
+  unsupported browser, denied permission, unavailable position, timeout, and
+  fallback failures; failures preserve existing field content.
+- Marked the backlog item executed with completion notes and planned-vs-
+  executed evaluation, and updated `tasks/current-task.md`.
+- Verification passed: `npm run build` in `vedenemo-ux`, root
+  `mvn clean verify`, and `git diff --check`.

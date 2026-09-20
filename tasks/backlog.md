@@ -2,7 +2,7 @@
 
 ## Plan current-location capture for LOCATION attributes in Entity data editor
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -129,6 +129,52 @@ objects rather than ordinary strings.
 - Non-`LOCATION` attributes, `LOCATION_LINE`, and `LOCATION_AREA` fields are
   unchanged.
 - `cd vedenemo-ux && npm run build` succeeds after implementation.
+
+### Implementation Details Resolved During Execution
+
+- The browser action was added to the existing generic Entity data editor field
+  renderer rather than creating a Metsapalsta-specific editor path.
+- Captured latitude and longitude values are rounded to seven decimal places
+  before being placed in the field, matching the precision used in existing
+  examples.
+- The field remains a normal editable text input containing compact JSON, so a
+  user can paste or correct a location value manually.
+- The save parser now treats `LOCATION` differently from ordinary string-like
+  values and submits a structured point object.
+- Per-attribute feedback is stored in the editor state so success and failure
+  messages stay next to the relevant field.
+
+### Completion Notes
+
+- Implemented the first slice in `vedenemo-ux` without backend or core changes.
+- Added `Use current location` controls for `LOCATION` attributes only.
+- Used `navigator.geolocation.getCurrentPosition` after an explicit user action
+  with high accuracy enabled, a 30-second maximum cached age, and a 10-second
+  timeout.
+- Added browser support, permission-denied, unavailable-position, timeout, and
+  fallback error messages.
+- Preserved existing field contents on geolocation failure.
+- Added validation for manually entered `LOCATION` JSON, requiring a JSON object
+  with numeric `latitude` and `longitude`.
+- Kept `LOCATION_LINE`, `LOCATION_AREA`, `.vdos`, `.vdmp`, CLI, and backend
+  behavior unchanged.
+- `npm run build` succeeded in `vedenemo-ux`.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the planned frontend-only scope and reused the
+  existing model-instance create/update endpoints.
+- Summary: the implementation stayed generic by checking `dataType=LOCATION`
+  rather than attribute names such as `lokaatio`.
+- Summary: the first slice stayed limited to single-point `LOCATION` fields;
+  line capture, area capture, reverse geocoding, and continuous tracking remain
+  out of scope.
+- Summary: the planned error handling was implemented with visible field-level
+  and editor-level feedback, and failures do not overwrite existing field
+  values.
+- Summary: no backend, core, CLI, `.vdos`, `.vdmp`, README, or architecture
+  documentation changes were needed because no component boundaries, API
+  contracts, or model formats changed.
 
 ## Plan entity data editor parent association selection during instance creation
 
