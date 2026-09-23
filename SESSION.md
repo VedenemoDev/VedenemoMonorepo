@@ -12834,3 +12834,72 @@ Current status and next steps:
 - Validated the file as JSON.
 - Validated import through local Vedenemo backend and CLI: one `Metsapalsta`
   record was created and zero association links were created.
+
+## 2026-09-23 23:51 EEST
+
+Session goal:
+
+- Add a new backlog planning item for zoom controls in the UX `Hexbin-map`
+  `LOCATION_AREA` visualization.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,220p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+- `rg -n "Hexbin|LOCATION_AREA|location area|visualization|visualized" vedenemo-ux/src tasks docs README.md .vedenemo`
+
+Current status and next steps:
+
+- Added the new planned backlog item at the top of `tasks/backlog.md`.
+- Scoped the work as a frontend-only `Hexbin-map` interaction improvement with
+  zoom-in, zoom-out, and reset-to-fit controls.
+- Kept model data, backend APIs, `.vdos`, `.vdmp`, and persistent
+  visualization configuration out of scope for the first slice.
+- No build was run because this session only updated planning/session notes.
+
+## 2026-09-23 23:57 EEST
+
+Session goal:
+
+- Refine the planned `Hexbin-map` zoom backlog item to include mouse-wheel and
+  pinch zoom when feasible.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,130p' tasks/backlog.md`
+- `tail -n 80 SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+
+Current status and next steps:
+
+- Updated the zoom planning item so mouse-wheel and pinch zoom are desired for
+  the first slice when feasible in the existing D3/SVG renderer.
+- Kept visible zoom controls in scope as the discoverable and reliable fallback.
+- Added a note to avoid interfering with ordinary page scrolling more than
+  necessary.
+- No build was run because this was a planning/session note refinement only.

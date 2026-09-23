@@ -1,5 +1,109 @@
 # Backlog
 
+## Plan Hexbin-map zoom controls for LOCATION_AREA visualization
+
+Status: planned
+
+### Goal
+
+Plan a usability improvement for the browser UX `Hexbin-map` renderer so a
+user can zoom in on visualized `LOCATION_AREA` boundaries when the default
+fit-to-canvas drawing makes the area, subregions, borders, or point overlays
+too small to inspect comfortably.
+
+The motivating case is a `LOCATION_AREA` visualization whose geographic extent
+is fitted to the available page area. That default fit is useful for first
+orientation, but it can leave narrow subregions, shared borders, or nearby
+measurement points visually compressed. The user should be able to zoom closer
+without changing the stored `LOCATION_AREA` data.
+
+### Context
+
+`Hexbin-map` currently renders selected `LOCATION_AREA` values as an SVG map in
+`vedenemo-ux`. It can draw the main boundary, optional linked subregion
+boundaries, shared border styling, and optional linked point overlays. The map
+projection and drawing coordinates are visualization concerns; stored
+`LOCATION`, `LOCATION_LINE`, and `LOCATION_AREA` values must remain geographic
+model-instance data.
+
+This improvement should therefore stay in the frontend renderer and interaction
+layer. It should not introduce backend, core, `.vdos`, or `.vdmp` changes, and
+the first slice does not need persistent visualization configuration.
+
+### Planning Questions
+
+- Should zooming apply only to the root `LOCATION_AREA` boundary or to all
+  rendered layers?
+  - Decision: zoom and pan the rendered map viewport as a whole so the main
+    boundary, subregions, shared borders, point overlays, and legend-referenced
+    shapes remain visually aligned.
+- Should the first version use mouse/touch gestures, explicit buttons, or both?
+  - Decision: include visible controls for zoom in, zoom out, and reset to fit,
+    and support mouse-wheel and pinch zoom when feasible within the existing
+    D3/SVG renderer. Keep the visible controls as the reliable fallback and
+    discoverable path.
+- What should reset do?
+  - Decision: restore the current default fit-to-canvas view for the selected
+    `LOCATION_AREA` visualization.
+- Should the zoom level be saved with the model or visualization binding?
+  - Decision: no. Keep zoom state runtime-only for this first usability slice.
+- Should zooming alter the underlying coordinate projection or stored geometry?
+  - Decision: no. Zoom should only transform the rendered SVG view/layer.
+
+### Proposed Implementation Approach
+
+- Keep the implementation in `vedenemo-ux`.
+- Add runtime zoom state to the `HexbinMapRenderer` or a small nearby component.
+- Wrap the rendered map marks in an SVG group that can be transformed without
+  changing the computed geographic projection.
+- Provide visible icon or text controls for:
+  - zoom in;
+  - zoom out;
+  - reset to fit.
+- Clamp zoom to practical minimum and maximum values so the map cannot vanish
+  or become unusably large.
+- Preserve the current initial fit-to-canvas behavior.
+- Keep legends, warnings, setup controls, and non-map page UI readable and
+  unscaled while only the map drawing layer zooms.
+- Add mouse-wheel and pinch zoom support when feasible, and ensure those
+  interactions do not interfere with ordinary page scrolling more than
+  necessary.
+
+### Scope
+
+- Plan interactive zooming for rendered `Hexbin-map` `LOCATION_AREA`
+  visualizations.
+- Keep the default render fitted to the available visualization area.
+- Add an easy way to zoom closer and reset back to the default fit.
+- Support mouse-wheel and pinch zoom when feasible for the SVG map surface.
+- Keep all map layers aligned while zoomed.
+- Keep zoom state local to the current browser visualization session.
+
+### Out Of Scope
+
+- Editing `LOCATION_AREA` geometry.
+- Drawing new polygons or capturing new area data.
+- Spatial measurement tools such as distance, perimeter, or area calculation.
+- Persistent visualization configuration.
+- Backend, core, CLI, `.vdos`, or `.vdmp` changes.
+- A general zoom framework for all visualization types unless it naturally
+  falls out of the local Hexbin-map implementation.
+
+### Acceptance Criteria
+
+- A rendered `Hexbin-map` visualization offers discoverable zoom-in, zoom-out,
+  and reset-to-fit controls.
+- Mouse-wheel and pinch zoom work on the map surface when feasible in the
+  target browser/SVG implementation.
+- The initial view remains the existing fit-to-canvas map view.
+- Zooming keeps the main boundary, subregion overlays, shared borders, and point
+  overlays spatially aligned.
+- Reset returns the visualization to the default fitted view.
+- Zoom state is runtime-only and does not change model data, `.vdos`, `.vdmp`,
+  or backend API behavior.
+- Existing non-Hexbin visualization renderers continue to work.
+- `cd vedenemo-ux && npm run build` succeeds after implementation.
+
 ## Plan current-location capture for LOCATION attributes in Entity data editor
 
 Status: executed
