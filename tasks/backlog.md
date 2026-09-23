@@ -2,7 +2,7 @@
 
 ## Plan Hexbin-map zoom controls for LOCATION_AREA visualization
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -103,6 +103,36 @@ the first slice does not need persistent visualization configuration.
   or backend API behavior.
 - Existing non-Hexbin visualization renderers continue to work.
 - `cd vedenemo-ux && npm run build` succeeds after implementation.
+
+### Completion Notes
+
+- Implemented the first executable slice in `vedenemo-ux`.
+- Added a compact zoom toolbar above rendered `Hexbin-map` SVG output with
+  zoom-out, zoom percentage, zoom-in, and reset controls.
+- Added D3 zoom behavior to the SVG surface so mouse-wheel zoom, drag-pan, and
+  browser-supported touch/pinch zoom transform the same map layer.
+- Wrapped the main boundary, subregion overlays, shared-border strokes, and
+  point overlays in one transformed map layer so they stay spatially aligned.
+- Kept titles, details, legends, warnings, setup controls, and page chrome
+  outside the transformed layer so they remain readable and unscaled.
+- Kept zoom state runtime-only and left backend APIs, core model behavior, CLI,
+  `.vdos`, `.vdmp`, and persisted visualization configuration unchanged.
+- `npm run build` succeeded in `vedenemo-ux`.
+- `mvn clean verify` succeeded from the repository root.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the planned frontend-only scope and did not change
+  model data, backend APIs, `.vdos`, `.vdmp`, or persistence behavior.
+- Summary: the planned visible controls were implemented, with reset returning
+  to the initial fit-to-canvas transform.
+- Summary: mouse-wheel and pinch-capable D3 zoom were implemented as requested;
+  drag-pan was included as part of the same D3 zoom behavior so zoomed maps can
+  be inspected without adding a separate mode.
+- Summary: legends and labels were intentionally left unscaled, matching the
+  plan to zoom only the map drawing layer.
+- Summary: verification exceeded the frontend acceptance criterion by also
+  running the full backend `mvn clean verify` build successfully.
 
 ## Plan current-location capture for LOCATION attributes in Entity data editor
 

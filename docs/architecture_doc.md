@@ -724,7 +724,8 @@ Current user-facing behavior:
   association to linked subregion instances with `LOCATION_AREA` data, assigns
   runtime automatic or manual subregion overlay styles, and renders the
   boundary plus a matching subregion legend as a plain SVG map, including a
-  dual-color overlay for exact shared subregion boundary segments
+  dual-color overlay for exact shared subregion boundary segments and
+  runtime-only SVG zoom/pan controls for inspecting fitted maps
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle
@@ -1031,7 +1032,7 @@ sequenceDiagram
         end
         UX->>API: GET /data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}
         API-->>UX: selected root item values
-        UX->>D3: render selected LOCATION_AREA boundary and optional subregion overlays as plain SVG map with subregion strokes above the main outline and dual-color exact shared borders
+        UX->>D3: render selected LOCATION_AREA boundary and optional subregion overlays as zoomable plain SVG map with subregion strokes above the main outline and dual-color exact shared borders
     end
 ```
 

@@ -6711,6 +6711,8 @@ function TidyTreeBindingPanel({
 
 function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  const [zoomScale, setZoomScale] = useState(1);
 
   useEffect(() => {
     const svgElement = svgRef.current;
@@ -6874,15 +6876,18 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .attr("width", width)
       .attr("height", height);
 
-    svg.append("path")
+    const mapLayer = svg.append("g")
+      .attr("class", "hexbin-map-zoom-layer");
+
+    mapLayer.append("path")
       .attr("class", "hexbin-map-boundary-fill")
       .attr("d", line(closedBoundary));
 
-    svg.append("path")
+    mapLayer.append("path")
       .attr("class", "hexbin-map-boundary")
       .attr("d", line(closedBoundary));
 
-    svg.append("g")
+    mapLayer.append("g")
       .attr("class", "hexbin-map-subregions")
       .selectAll("path")
       .data(projectedSubregions)
@@ -6891,7 +6896,7 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .attr("fill", (projectedSubregion, index) => projectedSubregion.subregion.style.fillMode === "none" ? "transparent" : `url(#hexbin-pattern-${index})`)
       .attr("stroke", (projectedSubregion) => projectedSubregion.subregion.style.color);
 
-    svg.append("g")
+    mapLayer.append("g")
       .attr("class", "hexbin-map-shared-borders")
       .selectAll("line")
       .data(sharedBorderStrokes)
@@ -6902,7 +6907,7 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .attr("y2", (stroke) => stroke.y2)
       .attr("stroke", (stroke) => stroke.color);
 
-    svg.append("g")
+    mapLayer.append("g")
       .attr("class", "hexbin-map-points")
       .selectAll("path")
       .data(data.points.map((point) => ({
@@ -6916,6 +6921,22 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .attr("stroke", "#ffffff")
       .append("title")
       .text((point) => `${point.label} - ${point.styleLabel}`);
+
+    const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([1, 12])
+      .extent([[0, 0], [width, height]])
+      .translateExtent([[-width, -height], [width * 2, height * 2]])
+      .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+        mapLayer.attr("transform", event.transform.toString());
+        setZoomScale(event.transform.k);
+      });
+
+    zoomBehaviorRef.current = zoomBehavior;
+    setZoomScale(1);
+    svg
+      .call(zoomBehavior)
+      .call(zoomBehavior.transform, d3.zoomIdentity)
+      .on("dblclick.zoom", null);
 
     svg.append("text")
       .attr("class", "hexbin-map-title")
@@ -7011,10 +7032,43 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
         .attr("y", 5)
         .text((entry) => entry.label);
     }
+
+    return () => {
+      svg.on(".zoom", null);
+    };
   }, [data]);
+
+  function applyZoom(action: "in" | "out" | "reset") {
+    const svgElement = svgRef.current;
+    const zoomBehavior = zoomBehaviorRef.current;
+    if (svgElement === null || zoomBehavior === null) {
+      return;
+    }
+    const svg = d3.select(svgElement);
+    const transition = svg.transition().duration(180);
+    if (action === "in") {
+      transition.call(zoomBehavior.scaleBy, 1.4);
+    } else if (action === "out") {
+      transition.call(zoomBehavior.scaleBy, 1 / 1.4);
+    } else {
+      transition.call(zoomBehavior.transform, d3.zoomIdentity);
+    }
+  }
 
   return (
     <>
+      <div className="hexbin-map-toolbar" aria-label="Hexbin-map zoom controls">
+        <button type="button" onClick={() => applyZoom("out")} aria-label="Zoom out">
+          -
+        </button>
+        <span aria-live="polite">{Math.round(zoomScale * 100)}%</span>
+        <button type="button" onClick={() => applyZoom("in")} aria-label="Zoom in">
+          +
+        </button>
+        <button type="button" onClick={() => applyZoom("reset")}>
+          Reset
+        </button>
+      </div>
       <svg ref={svgRef} className="hexbin-map-svg" role="img" aria-label="Hexbin-map boundary" />
       {data.warnings.length > 0 && (
         <div className="hexbin-map-warnings" aria-label="Hexbin-map data warnings">

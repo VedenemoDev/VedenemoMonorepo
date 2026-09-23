@@ -12903,3 +12903,90 @@ Current status and next steps:
 - Added a note to avoid interfering with ordinary page scrolling more than
   necessary.
 - No build was run because this was a planning/session note refinement only.
+
+## 2026-09-24 00:03 EEST
+
+Session goal:
+
+- Execute the planned `Hexbin-map` zoom task as the current task, verify builds,
+  and mark the backlog item executed while preserving it as history.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,150p' tasks/backlog.md`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `sed -n '6680,7045p' vedenemo-ux/src/App.tsx`
+- `sed -n '1040,1125p' vedenemo-ux/src/styles.css`
+- `cat vedenemo-ux/package.json`
+- `sed -n '412,423p' README.md`
+- `sed -n '100,145p' docs/visualizations.md`
+- `sed -n '175,210p' docs/visualizations.md`
+- `sed -n '715,730p' docs/architecture_doc.md`
+- `sed -n '1018,1038p' docs/architecture_doc.md`
+- `npm run build` in `vedenemo-ux`
+- `mvn clean verify`
+- `git diff --check`
+- `rg -n "general-purpose software|Apache License 2.0|warranty disclaimer|limitation of liability" README.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css | sed -n '1,260p'`
+- `git status --short --branch`
+
+Current status and next steps:
+
+- Implemented runtime-only `Hexbin-map` zoom in `vedenemo-ux`.
+- Added visible zoom-out, zoom-in, zoom percentage, and reset controls.
+- Added D3 SVG zoom behavior for mouse-wheel zoom, drag-pan, and
+  browser-supported touch/pinch zoom.
+- Kept titles, details, legends, and warnings unscaled while the boundary,
+  subregion, shared-border, and point layers zoom together.
+- Updated README, visualization docs, current implementation architecture docs,
+  current task, and backlog history.
+- Marked the backlog item executed and added the required Planned vs. Executed
+  Evaluation.
+- Verified `npm run build` in `vedenemo-ux` and `mvn clean verify` from the
+  repository root both succeed.
+
+## 2026-09-24 00:15 EEST
+
+Session goal:
+
+- Commit the executed `Hexbin-map` zoom changes with a detailed message and
+  push them to the remote.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `git diff --stat`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `tail -n 90 SESSION.md`
+
+Current status and next steps:
+
+- Pre-commit status showed the intended `Hexbin-map` zoom implementation,
+  documentation, task, backlog, and session files modified.
+- `git diff --check` reported no whitespace errors before staging.
+- Next step is to stage, commit, and push the completed change.
