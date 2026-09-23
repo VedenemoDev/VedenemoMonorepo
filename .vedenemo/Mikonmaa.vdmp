@@ -1,0 +1,61 @@
+{
+  "format": "vedenemo-instance-dump",
+  "formatVersion": 1,
+  "savedAt": "2026-09-23T20:35:00Z",
+  "model": {
+    "azName": "Metsapalsta",
+    "visName": "Metsäpalsta",
+    "version": "1.0.0"
+  },
+  "root": {
+    "sourceInstanceRootId": "00000000-0000-0000-0000-000000001462",
+    "visName": "Mikonmaa"
+  },
+  "entities": [
+    {
+      "entityAzName": "Metsapalsta",
+      "records": [
+        {
+          "dumpId": "palsta-mikonmaa",
+          "values": {
+            "nimi": "Mikonmaa",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 62.54424298,
+                  "longitude": 31.23622455
+                },
+                {
+                  "latitude": 62.54310278,
+                  "longitude": 31.24763608
+                },
+                {
+                  "latitude": 62.54220502,
+                  "longitude": 31.24683665
+                },
+                {
+                  "latitude": 62.54265021,
+                  "longitude": 31.2424529
+                },
+                {
+                  "latitude": 62.54309284,
+                  "longitude": 31.23809296
+                },
+                {
+                  "latitude": 62.54295126,
+                  "longitude": 31.23708146
+                },
+                {
+                  "latitude": 62.5432844,
+                  "longitude": 31.23685754
+                }
+              ]
+            },
+            "hehtaarit": 6.0
+          }
+        }
+      ]
+    }
+  ],
+  "links": []
+}

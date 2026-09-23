@@ -12705,3 +12705,132 @@ Current status and next steps:
 - Created commit `12134ee Add current-location capture for LOCATION fields`.
 - Pushed `main` to `origin/main`.
 - Confirmed the branch was aligned with `origin/main` after the push.
+
+## 2026-09-23 23:27 EEST
+
+Session goal:
+
+- Confirm whether Maanmittauslaitos OGC API Features can be used to fetch
+  parcel GeoJSON by `kiinteistotunnus` for Metsapalsta coordinate preparation,
+  and create a reusable Codex skill for the workflow.
+
+Files changed:
+
+- `/home/vedenemodev/.codex/skills/maanmittauslaitos-kiinteisto-geojson/SKILL.md`
+- `/home/vedenemodev/.codex/skills/maanmittauslaitos-kiinteisto-geojson/references/mml-ktj-ogc-api.md`
+- `/home/vedenemodev/.codex/skills/maanmittauslaitos-kiinteisto-geojson/agents/openai.yaml`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,260p' /home/vedenemodev/.codex/skills/.system/skill-creator/SKILL.md`
+- Web lookup of Maanmittauslaitos Kiinteistotietojen kyselypalvelu OGC API
+  Features pages and API-key technical description.
+- `ls -la /home/vedenemodev/.codex/skills`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+- `python3 /home/vedenemodev/.codex/skills/.system/skill-creator/scripts/init_skill.py maanmittauslaitos-kiinteisto-geojson --path /tmp --resources references`
+- `sed -n '1,220p' /tmp/maanmittauslaitos-kiinteisto-geojson/SKILL.md`
+- `sed -n '1,160p' /tmp/maanmittauslaitos-kiinteisto-geojson/agents/openai.yaml`
+- `find /tmp/maanmittauslaitos-kiinteisto-geojson -maxdepth 3 -type f -print`
+- `python3 /home/vedenemodev/.codex/skills/.system/skill-creator/scripts/quick_validate.py /tmp/maanmittauslaitos-kiinteisto-geojson`
+- `cp -a /tmp/maanmittauslaitos-kiinteisto-geojson /home/vedenemodev/.codex/skills/`
+- `find /home/vedenemodev/.codex/skills/maanmittauslaitos-kiinteisto-geojson -maxdepth 3 -type f -print`
+- `python3 /home/vedenemodev/.codex/skills/.system/skill-creator/scripts/quick_validate.py /home/vedenemodev/.codex/skills/maanmittauslaitos-kiinteisto-geojson`
+
+Current status and next steps:
+
+- Confirmed from MML documentation that the open API-key service provides
+  GeoJSON simple products and has a `PalstanSijaintitiedot` query example using
+  `kiinteistotunnus`.
+- Created and installed the `maanmittauslaitos-kiinteisto-geojson` Codex skill.
+- The skill records API-key secrecy, endpoint/query defaults, GeoJSON
+  coordinate order cautions, and Vedenemo boundary guidance.
+- Live API-key calls were not tested because no API key was available in the
+  session.
+
+## 2026-09-23 23:33 EEST
+
+Session goal:
+
+- Use the local Maanmittauslaitos API key to test a live
+  `PalstanSijaintitiedot` query for kiinteistotunnus `146-421-1-135` and
+  derive Vedenemo-style coordinate data.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' /home/vedenemodev/.codex/skills/maanmittauslaitos-kiinteisto-geojson/SKILL.md`
+- `tail -n 80 SESSION.md`
+- `sed -n '1,260p' /home/vedenemodev/.codex/skills/maanmittauslaitos-kiinteisto-geojson/references/mml-ktj-ogc-api.md`
+- `curl` live query to MML `PalstanSijaintitiedot` with the API key supplied
+  via hidden stdin, writing GeoJSON to `/tmp`
+- local Python JSON inspection and coordinate conversion from `/tmp`
+- `rg -n "Metsapalsta|LOCATION_AREA|LOCATION_LINE|lokaatio|koord|latitude|longitude" .vedenemo vedenemo-ux/src tasks docs README.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Converted the hyphenated identifier `146-421-1-135` to MML's 14-digit query
+  form `14642100010135`.
+- Live MML query succeeded and returned one GeoJSON FeatureCollection feature.
+- The feature has id `57934645`, geometry type `Polygon`, and seven distinct
+  exterior ring points plus the closing coordinate in source GeoJSON.
+- Derived Vedenemo `LOCATION_AREA`-style boundary points by converting GeoJSON
+  `[longitude, latitude]` positions to `{ "latitude": ..., "longitude": ... }`.
+- API key was not written to repository files or session notes.
+
+## 2026-09-23 23:38 EEST
+
+Session goal:
+
+- Create a minimal Metsapalsta-compatible `Mikonmaa.vdmp` dump containing only
+  the Metsäpalsta name, six-hectare size, and the previously fetched MML
+  polygon as `LOCATION_AREA` data.
+
+Files changed:
+
+- `.vedenemo/Mikonmaa.vdmp`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' /home/vedenemodev/.codex/skills/maanmittauslaitos-kiinteisto-geojson/SKILL.md`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '1,260p' /home/vedenemodev/.codex/skills/maanmittauslaitos-kiinteisto-geojson/references/mml-ktj-ogc-api.md`
+- `sed -n '1,240p' .vedenemo/Metsapalsta.vdos`
+- `sed -n '1,140p' .vedenemo/Metsapalsta_testiaineisto_v1_0_0.vdmp`
+- `sed -n '1,120p' docs/model-instance-dump-format.md`
+- `rg -n "Metsapalsta|koko|alue|nimi" .vedenemo/Metsapalsta*.vdmp .vedenemo/Metsapalsta.vdos`
+- `python3 -m json.tool .vedenemo/Mikonmaa.vdmp`
+- `git status --short --branch`
+- `rg -n "dload|vdmp|LoadMetsapalsta" scripts vedenemo-cli README.md docs`
+- Local backend plus CLI validation loading `.vedenemo/Metsapalsta.vdos` and
+  `.vedenemo/Mikonmaa.vdmp`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- .vedenemo/Mikonmaa.vdmp SESSION.md`
+
+Current status and next steps:
+
+- Created `.vedenemo/Mikonmaa.vdmp` with one `Metsapalsta` record.
+- Included only `nimi`, `alue`, and `hehtaarit` values as requested; omitted
+  the optional `tunnus` value and all child entities/links.
+- Validated the file as JSON.
+- Validated import through local Vedenemo backend and CLI: one `Metsapalsta`
+  record was created and zero association links were created.
