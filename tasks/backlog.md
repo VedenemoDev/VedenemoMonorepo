@@ -1,5 +1,173 @@
 # Backlog
 
+## Plan scrollable zoom viewport for Hexbin-map LOCATION_AREA visualization
+
+Status: executed
+
+### Goal
+
+Plan a follow-up usability improvement for the browser UX `Hexbin-map`
+`LOCATION_AREA` renderer so a user can scroll horizontally and vertically when
+the map has been zoomed in enough that part of the drawn area is outside the
+visible visualization region.
+
+The previous zoom-controls slice made zoom in, zoom out, reset, mouse-wheel
+zoom, pinch-capable zoom, and drag-pan available. This continuation focuses on
+the case where the zoomed map is larger than its visible viewport and the user
+expects ordinary scrollbars as an additional, discoverable way to move to the
+wanted position.
+
+### Context
+
+`Hexbin-map` currently renders `LOCATION_AREA` values in `vedenemo-ux` and now
+supports runtime-only zoom and pan behavior. Drag-pan is useful while interacting
+directly with the SVG, but it is not always discoverable, convenient, or
+accessible. When zooming hides part of the rendered area, the containing map
+surface should expose horizontal and vertical scrolling so users can inspect the
+off-screen portions without relying only on pointer-drag gestures.
+
+This remains a frontend visualization concern. The stored `LOCATION_AREA`
+coordinates, model-instance data, backend APIs, `.vdos`, and `.vdmp` formats
+should not change.
+
+### Planning Questions
+
+- Should scrollbars appear all the time or only when zoomed content overflows?
+  - Decision: show scrollbars only when the zoomed map content exceeds the
+    visible map viewport, using ordinary browser overflow behavior where
+    practical.
+- Should scrollbar movement and D3 drag-pan share the same view state?
+  - Decision: yes. Scrolling, drag-pan, zoom buttons, wheel zoom, pinch zoom,
+    and reset should remain synchronized so there is one effective map view.
+- Should the scrollbars include legends, warnings, setup controls, or page
+  chrome?
+  - Decision: no. Only the map drawing viewport should scroll; legends,
+    warnings, setup controls, and other non-map UI should remain readable and
+    outside the scrollable zoomed drawing area.
+- Should reset clear the scroll position too?
+  - Decision: yes. Reset should restore the default fit-to-canvas view and
+    return the scrollable viewport to its origin or equivalent fitted position.
+- Should scroll position be persisted with the model or visualization binding?
+  - Decision: no. Keep scroll and zoom state runtime-only for this usability
+    slice.
+- Should zooming anchor around the pointer, the current center, or the
+  top-left/current scroll origin?
+  - Decision: prefer pointer-anchored zoom for wheel/pinch interactions and
+    current-view-center zoom for explicit toolbar buttons. Avoid surprising
+    jumps to the top-left while zooming.
+- How should touch interaction behave?
+  - Decision: keep pinch zoom available where feasible, keep ordinary page
+    scrolling from feeling trapped, and let one-finger drag-pan or native
+    scrolling follow the implementation path that best preserves predictable
+    movement in the map viewport.
+
+### Proposed Implementation Approach
+
+- Keep the implementation in `vedenemo-ux`.
+- Wrap the SVG map surface in a constrained viewport element with `overflow:
+  auto` when zoomed content can exceed the available display area.
+- Ensure both horizontal and vertical scrollbars can appear when the scaled map
+  drawing is wider or taller than the viewport.
+- Keep the transformed map layer and scroll container coordinated:
+  - zooming should update the effective scrollable extent;
+  - scrolling should move the visible map region predictably;
+  - drag-pan should update the same visible position or be reconciled with the
+    scroll offset.
+- Preserve the existing initial fit-to-canvas render with no unnecessary
+  scrollbars.
+- Keep visible zoom controls, wheel zoom, pinch-capable zoom, and reset
+  behavior working.
+- Anchor zoom around the pointer for direct wheel/pinch interaction where the
+  event provides a useful focal point, and around the current viewport center
+  for toolbar zoom buttons.
+- Keep legends, warnings, setup controls, and non-map UI outside the scrollable
+  transformed area.
+- Check keyboard and accessibility basics so a focused scroll container can be
+  navigated with standard browser scrolling behavior.
+- Check touch behavior so pinch zoom is usable without making normal page
+  scrolling feel trapped.
+
+### Scope
+
+- Plan horizontal and vertical scrolling for zoomed `Hexbin-map`
+  `LOCATION_AREA` visualizations.
+- Add scrollbars when zoomed map content is larger than the visible map
+  viewport.
+- Keep scrolling synchronized with existing zoom and pan interactions.
+- Keep all rendered map layers spatially aligned while zoomed and scrolled.
+- Keep scroll state local to the current browser visualization session.
+
+### Out Of Scope
+
+- Editing `LOCATION_AREA` geometry.
+- Drawing new polygons or capturing new area data.
+- Spatial measurement tools.
+- Persistent visualization configuration.
+- Backend, core, CLI, `.vdos`, or `.vdmp` changes.
+- A general scroll/zoom framework for all visualization types unless it
+  naturally falls out of the local Hexbin-map implementation.
+
+### Acceptance Criteria
+
+- When a `Hexbin-map` `LOCATION_AREA` visualization is zoomed so the rendered
+  map is larger than its visible viewport, horizontal and vertical scrollbars
+  appear as needed.
+- The user can scroll to hidden left/right and top/bottom portions of the
+  zoomed map.
+- Scrollbar movement stays synchronized with zoom controls, wheel zoom,
+  pinch-capable zoom, drag-pan, and reset-to-fit behavior.
+- Wheel or pinch zoom keeps the interaction focus near the pointer or gesture
+  focal point where feasible, while toolbar zoom keeps the current viewport
+  center stable.
+- The scrollable map viewport can receive focus and supports standard keyboard
+  scrolling behavior.
+- Touch behavior allows pinch zoom where feasible without blocking ordinary page
+  scrolling unnecessarily.
+- The initial fitted map view remains unchanged and does not show unnecessary
+  scrollbars.
+- Reset returns the visualization to the default fitted view and clears or
+  normalizes scroll position.
+- Main boundary, subregion overlays, shared borders, and point overlays remain
+  spatially aligned while zoomed and scrolled.
+- Scroll and zoom state remains runtime-only and does not change model data,
+  `.vdos`, `.vdmp`, or backend API behavior.
+- Existing non-Hexbin visualization renderers continue to work.
+- `cd vedenemo-ux && npm run build` succeeds after implementation.
+
+### Completion Notes
+
+- Implemented the scrollable zoom viewport in `vedenemo-ux`.
+- Wrapped the Hexbin-map SVG in a focusable `hexbin-map-viewport` with
+  constrained height and `overflow: auto` so horizontal and vertical scrollbars
+  appear when zoomed map content exceeds the visible viewport.
+- Updated Hexbin-map zoom handling so the SVG drawing surface grows with the
+  current zoom scale and the map drawing layer scales in sync.
+- Synchronized D3 zoom transforms with `scrollLeft` and `scrollTop` so wheel
+  zoom, pinch-capable zoom, drag-pan, toolbar zoom, reset, and scrollbar
+  movement operate on one effective view state.
+- Reset now returns the map to the default zoom and clears the viewport scroll
+  position.
+- Added focus styling for the map viewport so keyboard scrolling has a visible
+  focus target.
+- Kept the implementation frontend-only and did not change backend, core, CLI,
+  `.vdos`, `.vdmp`, model data, or persisted visualization configuration.
+- `npm run build` succeeded in `vedenemo-ux`.
+- `mvn clean verify` succeeded from the repository root.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the planned UX-only scope and preserved runtime-only
+  zoom/scroll state.
+- Summary: the planned focusable scroll viewport was implemented with native
+  browser overflow scrollbars.
+- Summary: scrollbars, D3 wheel/pinch-capable zoom, drag-pan, toolbar zoom, and
+  reset were reconciled through the same D3 transform and scroll offset state.
+- Summary: the implementation kept all map drawing marks in one scaled layer so
+  the main boundary, subregions, shared borders, and point overlays remain
+  aligned.
+- Summary: verification matched and exceeded the planned frontend build check by
+  also running the full backend Maven verification successfully.
+
 ## Plan Hexbin-map zoom controls for LOCATION_AREA visualization
 
 Status: executed

@@ -6710,11 +6710,15 @@ function TidyTreeBindingPanel({
 }
 
 function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
+  const viewportRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  const zoomScaleRef = useRef(1);
+  const syncingScrollRef = useRef(false);
   const [zoomScale, setZoomScale] = useState(1);
 
   useEffect(() => {
+    const viewportElement = viewportRef.current;
     const svgElement = svgRef.current;
     if (svgElement === null) {
       return;
@@ -6805,6 +6809,9 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     const symbolPathForStyle = (style: HexbinMapPointStyle, size: number) => d3.symbol()
       .type(symbolTypeForShape(style.shape))
       .size(size)();
+    const scaledWidth = (nextScale: number) => width * nextScale;
+    const scaledHeight = (nextScale: number) => height * nextScale;
+    const clampScroll = (value: number, maxValue: number) => Math.min(Math.max(value, 0), Math.max(maxValue, 0));
 
     const svg = d3.select(svgElement);
     svg.selectAll("*").remove();
@@ -6922,21 +6929,59 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .append("title")
       .text((point) => `${point.label} - ${point.styleLabel}`);
 
+    const applyZoomTransform = (transform: d3.ZoomTransform) => {
+      const nextScale = transform.k;
+      const nextWidth = scaledWidth(nextScale);
+      const nextHeight = scaledHeight(nextScale);
+
+      zoomScaleRef.current = nextScale;
+      setZoomScale(nextScale);
+      svg
+        .attr("viewBox", `0 0 ${nextWidth} ${nextHeight}`)
+        .attr("width", nextWidth)
+        .attr("height", nextHeight);
+      svg.select<SVGRectElement>(".hexbin-map-background")
+        .attr("width", nextWidth)
+        .attr("height", nextHeight);
+      mapLayer.attr("transform", `scale(${nextScale})`);
+
+      if (viewportElement === null || syncingScrollRef.current) {
+        return;
+      }
+
+      syncingScrollRef.current = true;
+      viewportElement.scrollLeft = clampScroll(-transform.x, nextWidth - viewportElement.clientWidth);
+      viewportElement.scrollTop = clampScroll(-transform.y, nextHeight - viewportElement.clientHeight);
+      window.requestAnimationFrame(() => {
+        syncingScrollRef.current = false;
+      });
+    };
+
     const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 12])
       .extent([[0, 0], [width, height]])
-      .translateExtent([[-width, -height], [width * 2, height * 2]])
       .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
-        mapLayer.attr("transform", event.transform.toString());
-        setZoomScale(event.transform.k);
+        applyZoomTransform(event.transform);
       });
 
     zoomBehaviorRef.current = zoomBehavior;
+    zoomScaleRef.current = 1;
     setZoomScale(1);
     svg
       .call(zoomBehavior)
       .call(zoomBehavior.transform, d3.zoomIdentity)
       .on("dblclick.zoom", null);
+
+    const syncZoomToScroll = () => {
+      if (viewportElement === null || syncingScrollRef.current) {
+        return;
+      }
+      const scrollTransform = d3.zoomIdentity
+        .translate(-viewportElement.scrollLeft, -viewportElement.scrollTop)
+        .scale(zoomScaleRef.current);
+      svg.call(zoomBehavior.transform, scrollTransform);
+    };
+    viewportElement?.addEventListener("scroll", syncZoomToScroll);
 
     svg.append("text")
       .attr("class", "hexbin-map-title")
@@ -7035,11 +7080,13 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
 
     return () => {
       svg.on(".zoom", null);
+      viewportElement?.removeEventListener("scroll", syncZoomToScroll);
     };
   }, [data]);
 
   function applyZoom(action: "in" | "out" | "reset") {
     const svgElement = svgRef.current;
+    const viewportElement = viewportRef.current;
     const zoomBehavior = zoomBehaviorRef.current;
     if (svgElement === null || zoomBehavior === null) {
       return;
@@ -7051,6 +7098,10 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     } else if (action === "out") {
       transition.call(zoomBehavior.scaleBy, 1 / 1.4);
     } else {
+      if (viewportElement !== null) {
+        viewportElement.scrollLeft = 0;
+        viewportElement.scrollTop = 0;
+      }
       transition.call(zoomBehavior.transform, d3.zoomIdentity);
     }
   }
@@ -7069,7 +7120,15 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
           Reset
         </button>
       </div>
-      <svg ref={svgRef} className="hexbin-map-svg" role="img" aria-label="Hexbin-map boundary" />
+      <div
+        ref={viewportRef}
+        className="hexbin-map-viewport"
+        tabIndex={0}
+        role="region"
+        aria-label="Scrollable Hexbin-map viewport"
+      >
+        <svg ref={svgRef} className="hexbin-map-svg" role="img" aria-label="Hexbin-map boundary" />
+      </div>
       {data.warnings.length > 0 && (
         <div className="hexbin-map-warnings" aria-label="Hexbin-map data warnings">
           <h3>Data warnings</h3>

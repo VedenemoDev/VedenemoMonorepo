@@ -1,53 +1,76 @@
 # Current Task
 
-## Create Ritosentie model-instance dump
+## Implement scrollable zoom viewport for Hexbin-map LOCATION_AREA visualization
 
 Status: executed
 
 ### Goal
 
-Create a `.vdmp` model-instance dump for the `Tontti` model containing only the
-main parcel record for `Ritosentie 26`.
+Implement horizontal and vertical scrolling for the browser UX `Hexbin-map`
+`LOCATION_AREA` renderer when the user zooms in enough that the rendered map is
+larger than the visible map viewport.
 
-The dump should use the previously fetched Maanmittauslaitos
-`PalstanSijaintitiedot` polygon for kiinteistötunnus `297-17-2-29` as the
-`Tontti.alue` `LOCATION_AREA` value.
+The implementation should continue from the executed Hexbin-map zoom-controls
+work and keep scrollbars, drag-pan, wheel zoom, pinch-capable zoom, toolbar
+zoom, and reset behavior synchronized.
 
 ### Scope
 
-- Add `.vedenemo/Ritosentie.vdmp`.
-- Use model metadata for `Tontti` version `1.0.0`.
-- Create one `Tontti` record.
-- Set `nimi` to `Ritosentie 26`.
-- Set `tunnus` to `297-17-2-29`.
-- Set `alue.boundary` to the seven MML-derived Vedenemo point coordinates.
-- Keep `links` empty.
+- Keep the implementation in `vedenemo-ux`.
+- Add a constrained, focusable scroll viewport around the Hexbin-map SVG.
+- Show horizontal and vertical scrollbars as needed when zoomed content
+  overflows.
+- Keep D3 zoom state synchronized with the scroll viewport.
+- Preserve runtime-only zoom and scroll state.
+- Keep all rendered map layers spatially aligned while zoomed and scrolled.
 
 ### Out Of Scope
 
-- `Puu` records.
-- Association links.
-- Extra `Tontti` attribute values such as `hehtaarit`.
-- Backend, core, CLI, UX, `.vdos`, or model-structure changes.
+- Editing `LOCATION_AREA` geometry.
+- Drawing new polygons or capturing new area data.
+- Spatial measurement tools.
+- Persistent visualization configuration.
+- Backend, core, CLI, `.vdos`, or `.vdmp` changes.
+- A general scroll/zoom framework for all visualization types.
 
 ### Acceptance Criteria
 
-- `.vedenemo/Ritosentie.vdmp` exists and is valid JSON.
-- The dump contains exactly one `Tontti` record.
-- The record has only `nimi`, `tunnus`, and `alue` values.
-- The `alue.boundary` value uses Vedenemo `{ "latitude": ..., "longitude": ... }`
-  point objects and does not repeat the closing coordinate.
-- The dump imports successfully after loading `.vedenemo/Tontti.vdos`.
+- When a `Hexbin-map` `LOCATION_AREA` visualization is zoomed so the rendered
+  map is larger than its visible viewport, horizontal and vertical scrollbars
+  appear as needed.
+- The user can scroll to hidden left/right and top/bottom portions of the
+  zoomed map.
+- Scrollbar movement stays synchronized with zoom controls, wheel zoom,
+  pinch-capable zoom, drag-pan, and reset-to-fit behavior.
+- Wheel or pinch zoom keeps the interaction focus near the pointer or gesture
+  focal point where feasible, while toolbar zoom keeps the current viewport
+  center stable.
+- The scrollable map viewport can receive focus and supports standard keyboard
+  scrolling behavior.
+- Touch behavior allows pinch zoom where feasible without blocking ordinary page
+  scrolling unnecessarily.
+- The initial fitted map view remains unchanged and does not show unnecessary
+  scrollbars.
+- Reset returns the visualization to the default fitted view and clears or
+  normalizes scroll position.
+- Main boundary, subregion overlays, shared borders, and point overlays remain
+  spatially aligned while zoomed and scrolled.
+- Scroll and zoom state remains runtime-only and does not change model data,
+  `.vdos`, `.vdmp`, or backend API behavior.
+- Existing non-Hexbin visualization renderers continue to work.
+- `cd vedenemo-ux && npm run build` succeeds after implementation.
 
 ### Completion Notes
 
-- Added `.vedenemo/Ritosentie.vdmp`.
-- Included one `Tontti` record with `nimi`, `tunnus`, and `alue` only.
-- Used the seven exterior boundary points fetched from Maanmittauslaitos for
-  kiinteistötunnus `297-17-2-29`.
-- Left `Puu` records and association links empty as requested.
-- Validated the file as JSON and checked that the single record contains only
-  `nimi`, `tunnus`, and `alue`.
-- Validated import through local Vedenemo backend and CLI after loading
-  `.vedenemo/Tontti.vdos`: one `Tontti` record was created and zero association
-  links were created.
+- Implemented a focusable scroll viewport around the Hexbin-map SVG.
+- The SVG surface now expands with the active zoom scale so native horizontal
+  and vertical scrollbars appear when zoomed content overflows.
+- D3 zoom transforms are synchronized with viewport scroll offsets, keeping
+  scrollbar movement, wheel zoom, pinch-capable zoom, drag-pan, toolbar zoom,
+  and reset behavior on one effective map view.
+- Reset clears the scroll position and returns to the default fitted zoom.
+- Added viewport focus styling for keyboard scrolling.
+- Kept the change in `vedenemo-ux` only; backend, core, CLI, `.vdos`, `.vdmp`,
+  model data, and persistence behavior were unchanged.
+- Verified with `npm run build` in `vedenemo-ux`.
+- Verified with `mvn clean verify` from the repository root.

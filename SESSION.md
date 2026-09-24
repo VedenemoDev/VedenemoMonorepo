@@ -13116,3 +13116,129 @@ Current status and next steps:
 - The dump has no `Puu` records and no association links.
 - Validated JSON and verified local backend/CLI import: one `Tontti` record
   created, zero association links created.
+
+## 2026-09-24 23:34 EEST
+
+Session goal:
+
+- Add a new backlog planning item continuing the executed Hexbin-map zoom
+  controls task, focused on horizontal and vertical scrollbars for zoomed
+  `LOCATION_AREA` visualizations.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,260p' tasks/backlog.md`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added newest-first planned backlog item
+  `Plan scrollable zoom viewport for Hexbin-map LOCATION_AREA visualization`.
+- The item keeps the work scoped to `vedenemo-ux`, preserving runtime-only
+  scroll/zoom state and avoiding backend, core, CLI, `.vdos`, and `.vdmp`
+  changes.
+- Acceptance criteria now cover horizontal and vertical scrollbars when zoomed
+  content overflows, synchronization with existing zoom/pan controls, reset
+  behavior, layer alignment, and frontend build verification.
+
+## 2026-09-24 23:38 EEST
+
+Session goal:
+
+- Record approved default decisions for the planned Hexbin-map scrollable zoom
+  viewport item.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 90 SESSION.md`
+- `sed -n '1,150p' tasks/backlog.md`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added default implementation decisions to the planned backlog item:
+  scrollbars and drag-pan should stay synchronized, scrollbars should appear
+  only on real overflow, wheel/pinch zoom should prefer pointer or gesture
+  anchoring, toolbar zoom should keep the current viewport center stable, and
+  touch behavior should avoid trapping normal page scrolling unnecessarily.
+- Added acceptance criteria for keyboard scrolling support and zoom focal-point
+  behavior.
+
+## 2026-09-24 23:42 EEST
+
+Session goal:
+
+- Execute the current Hexbin-map scrollable zoom viewport task, verify builds,
+  and mark the backlog item executed while keeping it as history.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,180p' tasks/backlog.md`
+- `rg -n "Hexbin|hexbin|zoom|d3.zoom|LOCATION_AREA" vedenemo-ux/src`
+- `find vedenemo-ux -maxdepth 2 -type f | sort | sed -n '1,160p'`
+- `sed -n '1,220p' vedenemo-ux/package.json`
+- `git status --short --branch`
+- `sed -n '6680,7085p' vedenemo-ux/src/App.tsx`
+- `sed -n '1060,1155p' vedenemo-ux/src/styles.css`
+- `sed -n '1155,1235p' vedenemo-ux/src/styles.css`
+- `sed -n '1,80p' vedenemo-ux/src/App.tsx`
+- `npm run build` in `vedenemo-ux`
+- `mvn clean verify`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `git diff -- tasks/current-task.md tasks/backlog.md SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented a focusable scroll viewport around the Hexbin-map SVG.
+- The SVG surface now expands with zoom so native scrollbars expose zoomed
+  content that extends outside the visible viewport.
+- D3 zoom transforms and viewport scroll offsets are synchronized so wheel zoom,
+  pinch-capable zoom, drag-pan, toolbar zoom, reset, and scrollbar movement use
+  one effective view state.
+- Marked `Plan scrollable zoom viewport for Hexbin-map LOCATION_AREA
+  visualization` executed in `tasks/backlog.md` and added the required
+  `Planned vs. Executed Evaluation`.
+- Marked `tasks/current-task.md` executed with completion notes.
+- Verification passed: `npm run build` in `vedenemo-ux` and `mvn clean verify`
+  from the repository root.
