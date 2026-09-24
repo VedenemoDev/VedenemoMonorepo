@@ -1,0 +1,27 @@
+vedenemo-script 1
+
+model azName=Tontti visName="Tontti" version=1.0.0
+
+commands
+create-entity model=Tontti entity=Tontti visName="Tontti" activeSince=1.0.0
+create-attribute model=Tontti entity=Tontti attribute=nimi visName="nimi" dataType=TEXT required=true activeSince=1.0.0
+create-attribute model=Tontti entity=Tontti attribute=tunnus visName="tunnus" dataType=TEXT required=false activeSince=1.0.0
+create-attribute model=Tontti entity=Tontti attribute=alue visName="alue" dataType=LOCATION_AREA required=false activeSince=1.0.0
+create-attribute model=Tontti entity=Tontti attribute=hehtaarit visName="hehtaarit" dataType=NUMERIC required=false activeSince=1.0.0
+create-entity model=Tontti entity=Puu visName="Puu" activeSince=1.0.0
+create-value-set model=Tontti valueSet=PuuLaji dataType=TEXT entry1="KUUSI" entry1VisName="Kuusi" entry2="LEHTIKUUSI" entry2VisName="Lehtikuusi" entry3="TUIJA" entry3VisName="Tuija" entry4="LUUMUPUU" entry4VisName="Luumupuu" entry5="OMENAPUU" entry5VisName="Omenapuu" entry6="KOIVU" entry6VisName="Koivu" activeSince=1.0.0
+create-attribute model=Tontti entity=Puu attribute=laji visName="laji" dataType=TEXT required=true valueSet=PuuLaji activeSince=1.0.0
+create-attribute model=Tontti entity=Puu attribute=lokaatio visName="lokaatio" dataType=LOCATION required=false activeSince=1.0.0
+create-association model=Tontti kind=OWNERSHIP association=Tontti_omistaa_Puu visName="omistaa" source=Tontti target=Puu cardinality=0..* activeSince=1.0.0
+
+snapshot
+value-set azName=PuuLaji dataType=TEXT entry1="KUUSI" entry1VisName="Kuusi" entry2="LEHTIKUUSI" entry2VisName="Lehtikuusi" entry3="TUIJA" entry3VisName="Tuija" entry4="LUUMUPUU" entry4VisName="Luumupuu" entry5="OMENAPUU" entry5VisName="Omenapuu" entry6="KOIVU" entry6VisName="Koivu"
+entity azName=Tontti visName="Tontti" activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Tontti azName=nimi visName="nimi" dataType=TEXT required=true activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Tontti azName=tunnus visName="tunnus" dataType=TEXT required=false activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Tontti azName=alue visName="alue" dataType=LOCATION_AREA required=false activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Tontti azName=hehtaarit visName="hehtaarit" dataType=NUMERIC required=false activeSince=1.0.0 deprecatedSince=null retiredSince=null
+entity azName=Puu visName="Puu" activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Puu azName=laji visName="laji" dataType=TEXT required=true valueSet=PuuLaji activeSince=1.0.0 deprecatedSince=null retiredSince=null
+attribute entity=Puu azName=lokaatio visName="lokaatio" dataType=LOCATION required=false activeSince=1.0.0 deprecatedSince=null retiredSince=null
+association azName=Tontti_omistaa_Puu visName="omistaa" kind=OWNERSHIP source=Tontti target=Puu cardinality=0..* activeSince=1.0.0 deprecatedSince=null retiredSince=null

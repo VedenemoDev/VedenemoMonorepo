@@ -1,0 +1,61 @@
+{
+  "format": "vedenemo-instance-dump",
+  "formatVersion": 1,
+  "savedAt": "2026-09-24T20:25:00Z",
+  "model": {
+    "azName": "Tontti",
+    "visName": "Tontti",
+    "version": "1.0.0"
+  },
+  "root": {
+    "sourceInstanceRootId": "00000000-0000-0000-0000-000000297017",
+    "visName": "Ritosentie 26"
+  },
+  "entities": [
+    {
+      "entityAzName": "Tontti",
+      "records": [
+        {
+          "dumpId": "tontti-ritosentie-26",
+          "values": {
+            "nimi": "Ritosentie 26",
+            "tunnus": "297-17-2-29",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 62.91534725,
+                  "longitude": 27.68277031
+                },
+                {
+                  "latitude": 62.91568089,
+                  "longitude": 27.68337195
+                },
+                {
+                  "latitude": 62.91558152,
+                  "longitude": 27.68385217
+                },
+                {
+                  "latitude": 62.91531379,
+                  "longitude": 27.6833896
+                },
+                {
+                  "latitude": 62.91503316,
+                  "longitude": 27.68290473
+                },
+                {
+                  "latitude": 62.91504767,
+                  "longitude": 27.68281217
+                },
+                {
+                  "latitude": 62.91526197,
+                  "longitude": 27.68318244
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "links": []
+}

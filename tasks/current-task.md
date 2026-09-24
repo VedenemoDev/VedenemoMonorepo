@@ -1,68 +1,53 @@
 # Current Task
 
-## Add Hexbin-map zoom controls for LOCATION_AREA visualization
+## Create Ritosentie model-instance dump
 
 Status: executed
 
 ### Goal
 
-Implement the planned browser UX improvement for `Hexbin-map` so a user can
-zoom into a rendered `LOCATION_AREA` visualization when the default
-fit-to-canvas view is too zoomed out for inspection.
+Create a `.vdmp` model-instance dump for the `Tontti` model containing only the
+main parcel record for `Ritosentie 26`.
 
-The first executable slice should keep the initial fitted view, then allow the
-user to zoom closer with visible controls, mouse-wheel zoom, and pinch zoom
-where supported by the browser/SVG runtime.
+The dump should use the previously fetched Maanmittauslaitos
+`PalstanSijaintitiedot` polygon for kiinteistötunnus `297-17-2-29` as the
+`Tontti.alue` `LOCATION_AREA` value.
 
 ### Scope
 
-- Keep the implementation in `vedenemo-ux`.
-- Add runtime-only zoom state to the `Hexbin-map` renderer.
-- Keep the default render fitted to the visualization area.
-- Add visible zoom-out, zoom-in, and reset-to-fit controls.
-- Support mouse-wheel and pinch zoom through the SVG map surface where
-  supported.
-- Keep the main boundary, subregion overlays, shared borders, and point
-  overlays spatially aligned while zoomed.
-- Keep legends, titles, warnings, setup controls, backend data, `.vdos`, and
-  `.vdmp` formats unchanged.
+- Add `.vedenemo/Ritosentie.vdmp`.
+- Use model metadata for `Tontti` version `1.0.0`.
+- Create one `Tontti` record.
+- Set `nimi` to `Ritosentie 26`.
+- Set `tunnus` to `297-17-2-29`.
+- Set `alue.boundary` to the seven MML-derived Vedenemo point coordinates.
+- Keep `links` empty.
 
 ### Out Of Scope
 
-- Editing `LOCATION_AREA` geometry.
-- Drawing new polygons or capturing new area data.
-- Spatial measurement tools such as distance, perimeter, or area calculation.
-- Persistent visualization configuration.
-- Backend, core, CLI, `.vdos`, or `.vdmp` changes.
-- A general zoom framework for all visualization types.
+- `Puu` records.
+- Association links.
+- Extra `Tontti` attribute values such as `hehtaarit`.
+- Backend, core, CLI, UX, `.vdos`, or model-structure changes.
 
 ### Acceptance Criteria
 
-- A rendered `Hexbin-map` visualization offers discoverable zoom-in, zoom-out,
-  and reset-to-fit controls.
-- Mouse-wheel and pinch zoom work on the map surface where supported by the
-  target browser/SVG implementation.
-- The initial view remains the existing fit-to-canvas map view.
-- Zooming keeps the main boundary, subregion overlays, shared borders, and point
-  overlays spatially aligned.
-- Reset returns the visualization to the default fitted view.
-- Zoom state is runtime-only and does not change model data, `.vdos`, `.vdmp`,
-  or backend API behavior.
-- Existing non-Hexbin visualization renderers continue to work.
-- `cd vedenemo-ux && npm run build` succeeds.
-- `mvn clean verify` succeeds.
+- `.vedenemo/Ritosentie.vdmp` exists and is valid JSON.
+- The dump contains exactly one `Tontti` record.
+- The record has only `nimi`, `tunnus`, and `alue` values.
+- The `alue.boundary` value uses Vedenemo `{ "latitude": ..., "longitude": ... }`
+  point objects and does not repeat the closing coordinate.
+- The dump imports successfully after loading `.vedenemo/Tontti.vdos`.
 
 ### Completion Notes
 
-- Added a compact `Hexbin-map` zoom toolbar with zoom-out, zoom percentage,
-  zoom-in, and reset controls.
-- Added D3 zoom behavior to the SVG map surface with scale limits, mouse-wheel
-  zoom, drag-pan, and browser-supported touch/pinch zoom.
-- Wrapped only the rendered map marks in a transformed zoom layer, keeping
-  titles, details, legends, and warnings readable and unscaled.
-- Kept the default render at the existing fit-to-canvas transform and reset
-  returns to that fitted view.
-- Left backend, core, CLI, `.vdos`, `.vdmp`, and persisted visualization
-  configuration unchanged.
-- `npm run build` succeeded in `vedenemo-ux`.
-- `mvn clean verify` succeeded from the repository root.
+- Added `.vedenemo/Ritosentie.vdmp`.
+- Included one `Tontti` record with `nimi`, `tunnus`, and `alue` only.
+- Used the seven exterior boundary points fetched from Maanmittauslaitos for
+  kiinteistötunnus `297-17-2-29`.
+- Left `Puu` records and association links empty as requested.
+- Validated the file as JSON and checked that the single record contains only
+  `nimi`, `tunnus`, and `alue`.
+- Validated import through local Vedenemo backend and CLI after loading
+  `.vedenemo/Tontti.vdos`: one `Tontti` record was created and zero association
+  links were created.

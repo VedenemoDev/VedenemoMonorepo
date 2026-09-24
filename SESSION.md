@@ -12990,3 +12990,129 @@ Current status and next steps:
   documentation, task, backlog, and session files modified.
 - `git diff --check` reported no whitespace errors before staging.
 - Next step is to stage, commit, and push the completed change.
+
+## 2026-09-24 23:09 EEST
+
+Session goal:
+
+- Create a simple `.vedenemo/Tontti.vdos` model based on the
+  `.vedenemo/Metsapalsta.vdos` root shape, with owned `Puu` point data.
+
+Files changed:
+
+- `.vedenemo/Tontti.vdos`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `sed -n '1,240p' .vedenemo/Metsapalsta.vdos`
+- `rg -n "create-value-set|value-set|valueSet|OWNERSHIP|association" .vedenemo docs README.md tasks vedenemo-core vedenemo-cli vedenemo-web-api`
+- `git status --short --branch`
+- `sed -n '1,220p' .vedenemo/Tontti.vdos`
+- `git diff -- .vedenemo/Tontti.vdos`
+- Local web API plus CLI validation:
+  `VedenemoCli --mload .vedenemo/Tontti.vdos`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Added `.vedenemo/Tontti.vdos` with root entity `Tontti`, root attributes
+  `nimi`, `tunnus`, `alue`, and `hehtaarit`, entity `Puu`, and ownership
+  association `Tontti_omistaa_Puu`.
+- Added `PuuLaji` value set with `Kuusi`, `Lehtikuusi`, `Tuija`, `Luumupuu`,
+  `Omenapuu`, and `Koivu`.
+- Added `Puu.laji` as required value-set-backed `TEXT` and `Puu.lokaatio` as
+  optional `LOCATION`.
+- Validated `.vdos` import through the local backend and CLI; the model loaded
+  successfully with 10 commands.
+
+## 2026-09-24 23:17 EEST
+
+Session goal:
+
+- Fetch Maanmittauslaitos `PalstanSijaintitiedot` `LOCATION_AREA` geometry for
+  kiinteistötunnus `297-17-2-29`.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,240p' /home/vedenemodev/.codex/skills/maanmittauslaitos-kiinteisto-geojson/SKILL.md`
+- `sed -n '1,260p' /home/vedenemodev/.codex/skills/maanmittauslaitos-kiinteisto-geojson/references/mml-ktj-ogc-api.md`
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `git status --short --branch`
+- local Python conversion of `297-17-2-29` to `29701700020029`
+- attempted hidden-stdin API-key read for MML query, which failed before key
+  input because the sandboxed terminal could not provide a controlling TTY
+- MML OGC API live query for `29701700020029`, saving GeoJSON to `/tmp`
+- local Python GeoJSON inspection and coordinate conversion from `/tmp`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Converted kiinteistötunnus `297-17-2-29` to MML query id
+  `29701700020029`.
+- Live MML query succeeded and returned one GeoJSON FeatureCollection feature.
+- The feature has id `149900357`, geometry type `Polygon`, seven exterior
+  boundary points after removing the closing duplicate coordinate, and no
+  holes.
+- Converted GeoJSON `[longitude, latitude]` positions into Vedenemo
+  `{ "latitude": ..., "longitude": ... }` point objects.
+- API key was not written to repository files or session notes.
+
+## 2026-09-24 23:25 EEST
+
+Session goal:
+
+- Create `.vedenemo/Ritosentie.vdmp` for the `Tontti` model using the fetched
+  MML `LOCATION_AREA` data for kiinteistötunnus `297-17-2-29`.
+
+Files changed:
+
+- `.vedenemo/Ritosentie.vdmp`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/model-instance-dump-format.md`
+- `sed -n '1,180p' .vedenemo/Mikonmaa.vdmp`
+- `sed -n '1,140p' .vedenemo/Tontti.vdos`
+- `tail -n 100 SESSION.md`
+- `git status --short --branch`
+- `python3 -m json.tool .vedenemo/Ritosentie.vdmp`
+- local Python content assertion for `.vedenemo/Ritosentie.vdmp`
+- `sed -n '1,220p' .vedenemo/Ritosentie.vdmp`
+- local backend plus CLI validation loading `.vedenemo/Tontti.vdos` and
+  `.vedenemo/Ritosentie.vdmp`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+
+Current status and next steps:
+
+- Added `.vedenemo/Ritosentie.vdmp`.
+- The dump contains one `Tontti` record with only `nimi`, `tunnus`, and
+  `alue` values.
+- `nimi` is `Ritosentie 26`; `tunnus` is `297-17-2-29`.
+- `alue.boundary` contains the seven MML-derived Vedenemo coordinate points and
+  does not repeat the closing coordinate.
+- The dump has no `Puu` records and no association links.
+- Validated JSON and verified local backend/CLI import: one `Tontti` record
+  created, zero association links created.
