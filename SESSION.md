@@ -13242,3 +13242,74 @@ Current status and next steps:
 - Marked `tasks/current-task.md` executed with completion notes.
 - Verification passed: `npm run build` in `vedenemo-ux` and `mvn clean verify`
   from the repository root.
+
+## 2026-09-25 00:06 EEST
+
+Session goal:
+
+- Plan whether the implemented Hexbin-map zoom/scroll interaction can be
+  generalized across all browser UX chart types.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 160 SESSION.md`
+- `find . -maxdepth 3 -type f ...`
+- `rg -n "Hexbin|hexbin|zoom|d3\\.zoom|LOCATION_AREA|visualization|chart|render" vedenemo-ux/src/App.tsx`
+- `sed -n` reads of relevant `vedenemo-ux/src/App.tsx` renderer sections
+- `sed -n` reads of relevant `vedenemo-ux/src/styles.css` sections
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short --branch`
+
+Current status and next steps:
+
+- Reviewed the Hexbin-map renderer, existing tree renderers, chart selection,
+  and visualization canvas styling.
+- Found that a shared UX shell for zoom controls, focusable scroll viewport,
+  reset behavior, runtime-only interaction state, and common styling is
+  practical.
+- Found that the D3 transform/layout math should remain chart-specific because
+  map and tree charts use different coordinate systems, initial fitting, and
+  overflow strategies.
+- No implementation changes were made beyond this session record.
+
+## 2026-09-25 00:23 EEST
+
+Session goal:
+
+- Split the generalized chart zoom/scroll plan into phased backlog tasks that
+  can be executed one by one.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,260p' tasks/backlog.md`
+- `tail -n 90 SESSION.md`
+- `sed -n '1,230p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/backlog.md`
+
+Current status and next steps:
+
+- Added four planned backlog phases at the beginning of `tasks/backlog.md`.
+- Phase 1 extracts a shared visualization zoom viewport shell while preserving
+  Hexbin-map behavior.
+- Phase 2 proves the shared shell with Tidy tree.
+- Phase 3 extends the shell to Radial tree and Tree of life.
+- Phase 4 harmonizes zoom/scroll interaction behavior across current SVG chart
+  types.
+- Each phase stays scoped to `vedenemo-ux`, keeps interaction state runtime-only,
+  and avoids backend, core, CLI, `.vdos`, and `.vdmp` changes.

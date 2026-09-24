@@ -1,5 +1,179 @@
 # Backlog
 
+## Phase 1: Extract shared visualization zoom viewport shell
+
+Status: planned
+
+### Goal
+
+Create a small shared frontend-only viewport shell for SVG chart zoom controls
+without changing the existing Hexbin-map behavior.
+
+This phase should turn the already implemented Hexbin-map toolbar, focusable
+scroll viewport, zoom scale display, and reset affordance into reusable browser
+UX structure while leaving the Hexbin-map D3 projection and transform math
+owned by `HexbinMapRenderer`.
+
+### Scope
+
+- Keep the implementation in `vedenemo-ux`.
+- Extract shared JSX/CSS for:
+  - zoom in, zoom out, and reset controls;
+  - zoom percentage display;
+  - focusable scroll viewport;
+  - shared accessibility labels and focus styling.
+- Keep Hexbin-map rendering, D3 zoom behavior, projection math, scroll
+  synchronization, legends, warnings, and data binding behavior unchanged.
+- Keep all zoom and scroll state runtime-only.
+
+### Out Of Scope
+
+- Applying shared zoom behavior to non-Hexbin chart renderers.
+- Rewriting D3 transform math into a generic engine.
+- Backend, core, CLI, `.vdos`, or `.vdmp` changes.
+- Persistent visualization settings.
+
+### Acceptance Criteria
+
+- Hexbin-map still supports toolbar zoom, wheel zoom, pinch-capable zoom,
+  drag-pan, scrollbars, keyboard scrolling, and reset behavior as before.
+- Shared viewport shell code is reusable by another SVG chart renderer without
+  depending on Hexbin-map data types.
+- Chart-specific D3 layout and transform logic remains inside the chart
+  renderer or a chart-specific helper.
+- Existing non-Hexbin visualization renderers continue to work.
+- `cd vedenemo-ux && npm run build` succeeds after implementation.
+
+## Phase 2: Prove shared zoom viewport with Tidy tree
+
+Status: planned
+
+### Goal
+
+Apply the shared visualization zoom viewport shell to `TidyTreeRenderer` as the
+first non-map proving case.
+
+Tidy tree is the safest tree candidate because it already uses a rectangular
+layout with natural horizontal and vertical overflow. This phase should reveal
+whether the shared shell is enough, or whether the abstraction is trying to hide
+chart-specific behavior that should stay explicit.
+
+### Scope
+
+- Keep the implementation in `vedenemo-ux`.
+- Add toolbar zoom, reset, and a focusable scroll viewport for Tidy tree.
+- Preserve the current initial Tidy tree layout sizing and readable labels.
+- Keep toolbar zoom centered on the current viewport where practical.
+- Keep reset returning to the default unzoomed Tidy tree view and normalized
+  scroll position.
+- Keep Tidy tree zoom and scroll state runtime-only.
+
+### Out Of Scope
+
+- Changing the Tidy tree binding flow or hierarchy-building rules.
+- Applying the shared viewport to Radial tree or Tree of life in this phase.
+- A single generic D3 layout or transform implementation for all chart types.
+- Backend, core, CLI, `.vdos`, or `.vdmp` changes.
+- Persistent visualization settings.
+
+### Acceptance Criteria
+
+- Tidy tree has visible zoom in, zoom out, and reset controls.
+- Tidy tree remains scrollable when the rendered or zoomed SVG exceeds the
+  visible visualization region.
+- Tidy tree labels, links, and nodes remain spatially aligned while zoomed.
+- Reset restores the default Tidy tree scale and scroll position.
+- Hexbin-map behavior remains unchanged.
+- Radial tree and Tree of life continue to render as before.
+- `cd vedenemo-ux && npm run build` succeeds after implementation.
+
+## Phase 3: Extend shared zoom viewport to radial tree charts
+
+Status: planned
+
+### Goal
+
+Apply the shared visualization zoom viewport shell to `RadialTreeRenderer` and
+`TreeOfLifeRenderer` after the Tidy tree proving case succeeds.
+
+This phase should preserve each radial chart's circular coordinate system and
+label orientation while making inspection of dense radial layouts easier
+through the same visible zoom and scroll affordances.
+
+### Scope
+
+- Keep the implementation in `vedenemo-ux`.
+- Add shared toolbar zoom, reset, and focusable scroll viewport behavior to
+  Radial tree.
+- Add shared toolbar zoom, reset, and focusable scroll viewport behavior to
+  Tree of life.
+- Keep radial label rotation, root centering, node/link alignment, and color
+  behavior intact.
+- Keep zoom and scroll state runtime-only.
+
+### Out Of Scope
+
+- Changing tree binding, filtering, traversal, or aggregation behavior.
+- Changing radial/tree-of-life layout algorithms beyond what is necessary for
+  viewport integration.
+- Backend, core, CLI, `.vdos`, or `.vdmp` changes.
+- Persistent visualization settings.
+
+### Acceptance Criteria
+
+- Radial tree has visible zoom in, zoom out, and reset controls.
+- Tree of life has visible zoom in, zoom out, and reset controls.
+- Both radial chart types remain scrollable when zoomed content exceeds the
+  visible visualization region.
+- Labels, nodes, links, and radial guide/extension paths remain aligned while
+  zoomed.
+- Reset restores each chart's default rendered view and normalized scroll
+  position.
+- Hexbin-map and Tidy tree behavior remain unchanged.
+- `cd vedenemo-ux && npm run build` succeeds after implementation.
+
+## Phase 4: Harmonize visualization zoom interaction behavior
+
+Status: planned
+
+### Goal
+
+Review and harmonize the shared zoom/scroll interaction across Hexbin-map, Tidy
+tree, Radial tree, and Tree of life after all renderers use the shared viewport
+shell.
+
+This phase is for polish and consistency, not for introducing new chart
+capabilities. It should remove rough edges discovered during phased adoption
+while preserving chart-specific layout logic.
+
+### Scope
+
+- Keep the implementation in `vedenemo-ux`.
+- Compare zoom increments, minimum and maximum zoom bounds, reset behavior,
+  focus styling, scroll behavior, and accessibility labels across chart types.
+- Align behavior where chart differences do not justify different UX.
+- Document any intentionally chart-specific interaction differences in code
+  comments only where the reason would otherwise be unclear.
+- Keep interaction state runtime-only.
+
+### Out Of Scope
+
+- Persistent visualization settings.
+- Exporting zoom state.
+- New chart types.
+- Backend, core, CLI, `.vdos`, or `.vdmp` changes.
+- Large visual redesign of the visualization wizard.
+
+### Acceptance Criteria
+
+- All current SVG chart types expose consistent visible zoom controls.
+- Keyboard scrolling and focus indication work consistently for zoomable chart
+  viewports.
+- Reset behavior is predictable across all chart types.
+- Any remaining chart-specific zoom or scroll behavior has a practical reason.
+- No model data, `.vdos`, `.vdmp`, backend API, or CLI behavior changes.
+- `cd vedenemo-ux && npm run build` succeeds after implementation.
+
 ## Plan scrollable zoom viewport for Hexbin-map LOCATION_AREA visualization
 
 Status: executed
