@@ -1081,7 +1081,7 @@ body {
   background: #f9fafb;
 }
 
-.hexbin-map-toolbar {
+.visualization-zoom-toolbar {
   position: sticky;
   top: 0;
   z-index: 1;
@@ -1094,7 +1094,7 @@ body {
   background: rgba(249, 250, 251, 0.95);
 }
 
-.hexbin-map-toolbar button {
+.visualization-zoom-toolbar button {
   min-width: 2.25rem;
   padding: 0.35rem 0.55rem;
   border: 1px solid #334155;
@@ -1106,12 +1106,12 @@ body {
   cursor: pointer;
 }
 
-.hexbin-map-toolbar button:hover,
-.hexbin-map-toolbar button:focus-visible {
+.visualization-zoom-toolbar button:hover,
+.visualization-zoom-toolbar button:focus-visible {
   background: #e0f2fe;
 }
 
-.hexbin-map-toolbar span {
+.visualization-zoom-toolbar span {
   min-width: 3.25rem;
   color: #334155;
   font-size: 0.85rem;
@@ -1125,7 +1125,7 @@ body {
   background: #f9fafb;
 }
 
-.hexbin-map-viewport {
+.visualization-zoom-viewport {
   max-width: 100%;
   max-height: min(42rem, 70vh);
   overflow: auto;
@@ -1133,7 +1133,7 @@ body {
   outline: none;
 }
 
-.hexbin-map-viewport:focus-visible {
+.visualization-zoom-viewport:focus-visible {
   box-shadow: inset 0 0 0 3px #38bdf8;
 }
 

@@ -3,6 +3,8 @@ import {
   type FormEvent,
   type KeyboardEvent,
   type PointerEvent,
+  type ReactNode,
+  type RefObject,
   useEffect,
   useMemo,
   useRef,
@@ -7108,27 +7110,17 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
 
   return (
     <>
-      <div className="hexbin-map-toolbar" aria-label="Hexbin-map zoom controls">
-        <button type="button" onClick={() => applyZoom("out")} aria-label="Zoom out">
-          -
-        </button>
-        <span aria-live="polite">{Math.round(zoomScale * 100)}%</span>
-        <button type="button" onClick={() => applyZoom("in")} aria-label="Zoom in">
-          +
-        </button>
-        <button type="button" onClick={() => applyZoom("reset")}>
-          Reset
-        </button>
-      </div>
-      <div
-        ref={viewportRef}
-        className="hexbin-map-viewport"
-        tabIndex={0}
-        role="region"
-        aria-label="Scrollable Hexbin-map viewport"
+      <VisualizationZoomViewport
+        scale={zoomScale}
+        toolbarLabel="Hexbin-map zoom controls"
+        viewportLabel="Scrollable Hexbin-map viewport"
+        viewportRef={viewportRef}
+        onZoomIn={() => applyZoom("in")}
+        onZoomOut={() => applyZoom("out")}
+        onReset={() => applyZoom("reset")}
       >
         <svg ref={svgRef} className="hexbin-map-svg" role="img" aria-label="Hexbin-map boundary" />
-      </div>
+      </VisualizationZoomViewport>
       {data.warnings.length > 0 && (
         <div className="hexbin-map-warnings" aria-label="Hexbin-map data warnings">
           <h3>Data warnings</h3>
@@ -7139,6 +7131,52 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
           </ul>
         </div>
       )}
+    </>
+  );
+}
+
+function VisualizationZoomViewport({
+  children,
+  onReset,
+  onZoomIn,
+  onZoomOut,
+  scale,
+  toolbarLabel,
+  viewportLabel,
+  viewportRef,
+}: {
+  children: ReactNode;
+  onReset: () => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  scale: number;
+  toolbarLabel: string;
+  viewportLabel: string;
+  viewportRef: RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <>
+      <div className="visualization-zoom-toolbar" aria-label={toolbarLabel}>
+        <button type="button" onClick={onZoomOut} aria-label="Zoom out">
+          -
+        </button>
+        <span aria-live="polite">{Math.round(scale * 100)}%</span>
+        <button type="button" onClick={onZoomIn} aria-label="Zoom in">
+          +
+        </button>
+        <button type="button" onClick={onReset}>
+          Reset
+        </button>
+      </div>
+      <div
+        ref={viewportRef}
+        className="visualization-zoom-viewport"
+        tabIndex={0}
+        role="region"
+        aria-label={viewportLabel}
+      >
+        {children}
+      </div>
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 ## Phase 1: Extract shared visualization zoom viewport shell
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -43,6 +43,31 @@ owned by `HexbinMapRenderer`.
   renderer or a chart-specific helper.
 - Existing non-Hexbin visualization renderers continue to work.
 - `cd vedenemo-ux && npm run build` succeeds after implementation.
+
+### Completion Notes
+
+- Added `VisualizationZoomViewport` in `vedenemo-ux/src/App.tsx` as a shared
+  JSX shell for zoom toolbar controls, zoom percentage display, and a focusable
+  scroll viewport.
+- Updated `HexbinMapRenderer` to render its existing SVG through the shared
+  shell while keeping all Hexbin-map D3 zoom behavior, projection math, scroll
+  synchronization, warnings, and map-specific SVG classes in place.
+- Renamed the reusable toolbar and viewport CSS from Hexbin-map-specific class
+  names to shared `visualization-zoom-*` class names.
+- Kept the implementation frontend-only and did not change backend, core, CLI,
+  `.vdos`, `.vdmp`, model data, or persisted visualization configuration.
+- Verified with `npm run build` in `vedenemo-ux`.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the planned behavior-preserving extraction scope.
+- Summary: the shared shell is independent of Hexbin-map data types and accepts
+  caller-provided labels, handlers, scale, viewport ref, and children.
+- Summary: chart-specific D3 layout and transform logic remained in
+  `HexbinMapRenderer`.
+- Summary: no non-Hexbin renderer was migrated in this phase, matching the
+  explicit out-of-scope boundary.
+- Summary: verification matched the planned frontend build check.
 
 ## Phase 2: Prove shared zoom viewport with Tidy tree
 

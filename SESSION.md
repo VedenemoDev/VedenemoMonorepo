@@ -13313,3 +13313,55 @@ Current status and next steps:
   types.
 - Each phase stays scoped to `vedenemo-ux`, keeps interaction state runtime-only,
   and avoids backend, core, CLI, `.vdos`, and `.vdmp` changes.
+
+## 2026-09-25 00:29 EEST
+
+Session goal:
+
+- Execute Phase 1 by extracting a shared visualization zoom viewport shell while
+  preserving Hexbin-map behavior.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,90p' tasks/backlog.md`
+- `tail -n 100 SESSION.md`
+- `sed -n '1,80p' vedenemo-ux/src/App.tsx`
+- `sed -n '6690,7145p' vedenemo-ux/src/App.tsx`
+- `sed -n '1068,1238p' vedenemo-ux/src/styles.css`
+- `git status --short --branch`
+- `npm run build` in `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `sed -n '1,120p' tasks/current-task.md`
+- `sed -n '1,70p' tasks/backlog.md`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `VisualizationZoomViewport` as a reusable frontend shell for SVG chart
+  zoom toolbar controls, zoom percentage display, and a focusable scroll
+  viewport.
+- Updated Hexbin-map rendering to use the shared shell while keeping D3 zoom
+  behavior, projection math, scroll synchronization, warnings, and
+  map-specific SVG classes in `HexbinMapRenderer`.
+- Renamed reusable toolbar and viewport CSS to `visualization-zoom-*`.
+- Marked Phase 1 executed in `tasks/backlog.md` and added the required
+  `Planned vs. Executed Evaluation`.
+- Updated `tasks/current-task.md` with the executed Phase 1 task record.
+- Verification passed: `npm run build` in `vedenemo-ux`.
+- Next planned execution slice is Phase 2: prove the shared viewport with Tidy
+  tree.
