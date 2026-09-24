@@ -13365,3 +13365,48 @@ Current status and next steps:
 - Verification passed: `npm run build` in `vedenemo-ux`.
 - Next planned execution slice is Phase 2: prove the shared viewport with Tidy
   tree.
+
+## 2026-09-25 00:41 EEST
+
+Session goal:
+
+- Fix the Hexbin-map reset regression where Reset needed two clicks after the
+  Phase 1 shared viewport extraction.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 100 SESSION.md`
+- `git status --short --branch`
+- `sed -n '6925,7148p' vedenemo-ux/src/App.tsx`
+- `git show HEAD~1:vedenemo-ux/src/App.tsx | sed -n '6925,7148p'`
+- `rg -n "syncingScrollRef|applyZoomTransform|syncZoomToScroll|applyZoom\\(" vedenemo-ux/src/App.tsx`
+- `npm run build` in `vedenemo-ux`
+- `sed -n '1,95p' tasks/backlog.md`
+- `sed -n '1,90p' tasks/current-task.md`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx tasks/backlog.md tasks/current-task.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Removed the manual `scrollLeft`/`scrollTop` clearing from Hexbin-map Reset so
+  the D3 identity transform owns both scale reset and scroll normalization.
+- This avoids a race where the scroll event could synchronize the previous
+  zoom scale back into D3 before the identity transform completed.
+- Added follow-up correction notes to `tasks/backlog.md` and
+  `tasks/current-task.md`.
+- Verification passed: `npm run build` in `vedenemo-ux`.

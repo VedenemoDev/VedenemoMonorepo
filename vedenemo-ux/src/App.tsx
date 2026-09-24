@@ -7088,7 +7088,6 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
 
   function applyZoom(action: "in" | "out" | "reset") {
     const svgElement = svgRef.current;
-    const viewportElement = viewportRef.current;
     const zoomBehavior = zoomBehaviorRef.current;
     if (svgElement === null || zoomBehavior === null) {
       return;
@@ -7100,10 +7099,6 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     } else if (action === "out") {
       transition.call(zoomBehavior.scaleBy, 1 / 1.4);
     } else {
-      if (viewportElement !== null) {
-        viewportElement.scrollLeft = 0;
-        viewportElement.scrollTop = 0;
-      }
       transition.call(zoomBehavior.transform, d3.zoomIdentity);
     }
   }

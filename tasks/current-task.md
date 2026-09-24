@@ -54,6 +54,8 @@ by `HexbinMapRenderer`.
   synchronization, warnings, and map-specific SVG classes in place.
 - Renamed the reusable toolbar and viewport CSS from Hexbin-map-specific class
   names to shared `visualization-zoom-*` class names.
+- Follow-up correction: removed the manual scroll offset reset that competed
+  with the D3 identity transform so one Reset click returns Hexbin-map to 100%.
 - Kept the implementation frontend-only and did not change backend, core, CLI,
   `.vdos`, `.vdmp`, model data, or persisted visualization configuration.
 - Verified with `npm run build` in `vedenemo-ux`.
