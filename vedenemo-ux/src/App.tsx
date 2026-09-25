@@ -7194,7 +7194,7 @@ type VisualizationSvgSize = {
 const VISUALIZATION_DEFAULT_ZOOM = 1;
 const VISUALIZATION_ZOOM_STEP = 1.35;
 const VISUALIZATION_ZOOM_EPSILON = 0.001;
-const VISUALIZATION_TREE_ZOOM_MIN = 0.75;
+const VISUALIZATION_TREE_ZOOM_MIN = 0.4;
 const VISUALIZATION_TREE_ZOOM_MAX = 3.5;
 const VISUALIZATION_HEXBIN_ZOOM_MIN = 0.75;
 // Hexbin-map keeps a deeper D3 zoom range because users inspect geographic

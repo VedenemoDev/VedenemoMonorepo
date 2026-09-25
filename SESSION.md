@@ -13602,3 +13602,33 @@ Current status and next steps:
   `Planned vs. Executed Evaluation`, and updated `tasks/current-task.md`.
 - Verification passed: `npm run build` in `vedenemo-ux`.
 - Next steps: select the next backlog slice before making further changes.
+
+## 2026-09-25 23:46 EEST
+
+Session goal:
+
+- Restore the 40% zoom-out lower bound for tree visualizations while keeping
+  min/max zoom button disabling.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `git status --short --branch`
+- `rg -n "VISUALIZATION_TREE_ZOOM_MIN|75%|40%|lower zoom" vedenemo-ux/src/App.tsx tasks/current-task.md tasks/backlog.md SESSION.md`
+- `npm run build` in `vedenemo-ux`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Restored `VISUALIZATION_TREE_ZOOM_MIN` to `0.4`, bringing back the useful
+  40% structure overview for Tidy tree, Radial tree, and Tree of life.
+- Kept shared min/max-aware toolbar disabling behavior in place.
+- Updated Phase 4 task notes and backlog evaluation to document the intentional
+  lower-bound difference between tree charts and Hexbin-map.
+- Verification passed: `npm run build` in `vedenemo-ux`.

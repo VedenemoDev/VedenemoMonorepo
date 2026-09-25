@@ -23,11 +23,13 @@ shell.
 ### Completion Notes
 
 - Added shared zoom constants for the visualization viewport interaction.
-- Harmonized the toolbar zoom step and 75% lower zoom bound across Hexbin-map,
-  Tidy tree, Radial tree, and Tree of life.
+- Harmonized the toolbar zoom step across Hexbin-map, Tidy tree, Radial tree,
+  and Tree of life.
+- Restored the tree chart lower zoom bound to 40% after follow-up review
+  because it gives a useful structure overview for all tree renderers.
 - Added consistent disabled states for zoom in, zoom out, and reset controls,
   including an explicit reset accessibility label.
-- Kept Hexbin-map's deeper maximum zoom as an intentional chart-specific
-  behavior for detailed geographic overlay inspection with D3 pan/scroll.
+- Kept Hexbin-map's 75% lower bound and deeper maximum zoom as intentional
+  chart-specific behavior for geographic overlay inspection with D3 pan/scroll.
 - Kept zoom and scroll state runtime-only.
 - Verified with `npm run build` in `vedenemo-ux`.
