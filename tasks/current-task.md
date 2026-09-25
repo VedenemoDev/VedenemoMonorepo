@@ -1,37 +1,40 @@
 # Current Task
 
-## Allow Hexbin-map zoom below 100%
+## Phase 3: Extend shared zoom viewport to radial tree charts
 
 Status: executed
 
 ### Goal
 
-Let Hexbin-map zoom out modestly below its default 100% view without changing
-the shared visualization zoom viewport shell or disrupting existing map
-inspection behavior.
+Apply the shared visualization zoom viewport shell to `RadialTreeRenderer` and
+`TreeOfLifeRenderer` while preserving each chart's radial layout behavior.
 
 ### Scope
 
 - Keep the implementation in `vedenemo-ux`.
-- Lower the Hexbin-map D3 zoom minimum below 100%.
-- Preserve existing zoom in, reset, drag-pan, wheel/pinch-capable zoom, and
-  scroll synchronization behavior.
+- Add shared toolbar zoom, reset, and focusable scroll viewport behavior to
+  Radial tree.
+- Add shared toolbar zoom, reset, and focusable scroll viewport behavior to
+  Tree of life.
+- Keep radial label rotation, root centering, node/link alignment, and color
+  behavior intact.
 - Keep zoom and scroll state runtime-only.
 
 ### Out Of Scope
 
-- Changing Hexbin-map projection, boundary rendering, legend rendering, data
-  binding, or warnings.
-- Changing Tidy tree, Radial tree, or Tree of life behavior.
+- Changing tree binding, filtering, traversal, or aggregation behavior.
+- Changing radial/tree-of-life layout algorithms beyond what is necessary for
+  viewport integration.
 - Backend, core, CLI, `.vdos`, or `.vdmp` changes.
 - Persistent visualization settings.
 
 ### Completion Notes
 
-- Changed Hexbin-map D3 `scaleExtent` from a 100% minimum to a 75% minimum.
-- Removed the Hexbin-map SVG fixed CSS minimum width so the rendered SVG can
-  visually follow modest below-100% zoom instead of being forced back toward
-  the old minimum layout width.
-- Left reset behavior anchored at D3 identity, so Reset still restores the
-  default 100% map view.
+- Added the shared visualization zoom viewport shell to Radial tree and Tree of
+  life renderers.
+- Extracted Tidy tree's runtime SVG zoom and scroll bookkeeping into a shared
+  local hook used by all three SVG tree renderers.
+- Kept circular coordinate systems, label orientation, node/link alignment,
+  guide/extension paths, and color behavior in the existing D3 renderers.
+- Reset restores the default 100% rendered view and normalized scroll position.
 - Verified with `npm run build` in `vedenemo-ux`.

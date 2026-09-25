@@ -7176,13 +7176,97 @@ function VisualizationZoomViewport({
   );
 }
 
-function TidyTreeRenderer({ tree }: { tree: TidyTreeNode }) {
-  const svgRef = useRef<SVGSVGElement>(null);
+type VisualizationSvgSize = {
+  width: number;
+  height: number;
+};
+
+function useVisualizationSvgZoom(initialSize: VisualizationSvgSize) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const zoomScaleRef = useRef(1);
   const pendingScrollRef = useRef<{ left: number; top: number } | null>(null);
   const [zoomScale, setZoomScale] = useState(1);
-  const [svgSize, setSvgSize] = useState({ width: 960, height: 520 });
+  const [svgSize, setSvgSize] = useState(initialSize);
+
+  useEffect(() => {
+    const pendingScroll = pendingScrollRef.current;
+    if (pendingScroll === null) {
+      return;
+    }
+    pendingScrollRef.current = null;
+    const animationFrameId = window.requestAnimationFrame(() => {
+      const viewportElement = viewportRef.current;
+      if (viewportElement === null) {
+        return;
+      }
+      const maxLeft = Math.max(0, viewportElement.scrollWidth - viewportElement.clientWidth);
+      const maxTop = Math.max(0, viewportElement.scrollHeight - viewportElement.clientHeight);
+      viewportElement.scrollLeft = Math.min(Math.max(pendingScroll.left, 0), maxLeft);
+      viewportElement.scrollTop = Math.min(Math.max(pendingScroll.top, 0), maxTop);
+    });
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [zoomScale]);
+
+  function resetZoomAndScroll() {
+    zoomScaleRef.current = 1;
+    setZoomScale(1);
+    window.requestAnimationFrame(() => {
+      const viewportElement = viewportRef.current;
+      if (viewportElement !== null) {
+        viewportElement.scrollLeft = 0;
+        viewportElement.scrollTop = 0;
+      }
+    });
+  }
+
+  function applyZoom(action: "in" | "out" | "reset") {
+    const viewportElement = viewportRef.current;
+    const currentScale = zoomScaleRef.current;
+    const nextScale = action === "reset"
+      ? 1
+      : Math.min(Math.max(currentScale * (action === "in" ? 1.35 : 1 / 1.35), 0.4), 3.5);
+
+    if (viewportElement === null || action === "reset") {
+      pendingScrollRef.current = { left: 0, top: 0 };
+    } else {
+      const scaleRatio = nextScale / currentScale;
+      const centerLeft = viewportElement.scrollLeft + viewportElement.clientWidth / 2;
+      const centerTop = viewportElement.scrollTop + viewportElement.clientHeight / 2;
+      pendingScrollRef.current = {
+        left: centerLeft * scaleRatio - viewportElement.clientWidth / 2,
+        top: centerTop * scaleRatio - viewportElement.clientHeight / 2,
+      };
+    }
+
+    zoomScaleRef.current = nextScale;
+    setZoomScale(nextScale);
+  }
+
+  const scaledSvgStyle: CSSProperties = {
+    width: `${Math.round(svgSize.width * zoomScale)}px`,
+    height: `${Math.round(svgSize.height * zoomScale)}px`,
+  };
+
+  return {
+    applyZoom,
+    resetZoomAndScroll,
+    scaledSvgStyle,
+    setSvgSize,
+    viewportRef,
+    zoomScale,
+  };
+}
+
+function TidyTreeRenderer({ tree }: { tree: TidyTreeNode }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const {
+    applyZoom,
+    resetZoomAndScroll,
+    scaledSvgStyle,
+    setSvgSize,
+    viewportRef,
+    zoomScale,
+  } = useVisualizationSvgZoom({ width: 960, height: 520 });
 
   useEffect(() => {
     const svgElement = svgRef.current;
@@ -7207,15 +7291,7 @@ function TidyTreeRenderer({ tree }: { tree: TidyTreeNode }) {
         ? current
         : { width, height: actualHeight }
     ));
-    zoomScaleRef.current = 1;
-    setZoomScale(1);
-    window.requestAnimationFrame(() => {
-      const viewportElement = viewportRef.current;
-      if (viewportElement !== null) {
-        viewportElement.scrollLeft = 0;
-        viewportElement.scrollTop = 0;
-      }
-    });
+    resetZoomAndScroll();
 
     const svg = d3.select(svgElement);
     svg.selectAll("*").remove();
@@ -7265,53 +7341,6 @@ function TidyTreeRenderer({ tree }: { tree: TidyTreeNode }) {
       .text((node) => node.data.detail ?? "");
   }, [tree]);
 
-  useEffect(() => {
-    const pendingScroll = pendingScrollRef.current;
-    if (pendingScroll === null) {
-      return;
-    }
-    pendingScrollRef.current = null;
-    const animationFrameId = window.requestAnimationFrame(() => {
-      const viewportElement = viewportRef.current;
-      if (viewportElement === null) {
-        return;
-      }
-      const maxLeft = Math.max(0, viewportElement.scrollWidth - viewportElement.clientWidth);
-      const maxTop = Math.max(0, viewportElement.scrollHeight - viewportElement.clientHeight);
-      viewportElement.scrollLeft = Math.min(Math.max(pendingScroll.left, 0), maxLeft);
-      viewportElement.scrollTop = Math.min(Math.max(pendingScroll.top, 0), maxTop);
-    });
-    return () => window.cancelAnimationFrame(animationFrameId);
-  }, [zoomScale]);
-
-  function applyZoom(action: "in" | "out" | "reset") {
-    const viewportElement = viewportRef.current;
-    const currentScale = zoomScaleRef.current;
-    const nextScale = action === "reset"
-      ? 1
-      : Math.min(Math.max(currentScale * (action === "in" ? 1.35 : 1 / 1.35), 0.4), 3.5);
-
-    if (viewportElement === null || action === "reset") {
-      pendingScrollRef.current = { left: 0, top: 0 };
-    } else {
-      const scaleRatio = nextScale / currentScale;
-      const centerLeft = viewportElement.scrollLeft + viewportElement.clientWidth / 2;
-      const centerTop = viewportElement.scrollTop + viewportElement.clientHeight / 2;
-      pendingScrollRef.current = {
-        left: centerLeft * scaleRatio - viewportElement.clientWidth / 2,
-        top: centerTop * scaleRatio - viewportElement.clientHeight / 2,
-      };
-    }
-
-    zoomScaleRef.current = nextScale;
-    setZoomScale(nextScale);
-  }
-
-  const scaledSvgStyle: CSSProperties = {
-    width: `${Math.round(svgSize.width * zoomScale)}px`,
-    height: `${Math.round(svgSize.height * zoomScale)}px`,
-  };
-
   return (
     <VisualizationZoomViewport
       scale={zoomScale}
@@ -7329,6 +7358,14 @@ function TidyTreeRenderer({ tree }: { tree: TidyTreeNode }) {
 
 function RadialTreeRenderer({ tree }: { tree: TidyTreeNode }) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const {
+    applyZoom,
+    resetZoomAndScroll,
+    scaledSvgStyle,
+    setSvgSize,
+    viewportRef,
+    zoomScale,
+  } = useVisualizationSvgZoom({ width: 720, height: 720 });
 
   useEffect(() => {
     const svgElement = svgRef.current;
@@ -7348,6 +7385,12 @@ function RadialTreeRenderer({ tree }: { tree: TidyTreeNode }) {
     const height = width;
     const centerX = width * 0.5;
     const centerY = height * 0.52;
+    setSvgSize((current) => (
+      current.width === width && current.height === height
+        ? current
+        : { width, height }
+    ));
+    resetZoomAndScroll();
     const linkGenerator = d3.linkRadial<d3.HierarchyPointLink<TidyTreeNode>, d3.HierarchyPointNode<TidyTreeNode>>()
       .angle((node) => node.x)
       .radius((node) => node.y);
@@ -7396,7 +7439,19 @@ function RadialTreeRenderer({ tree }: { tree: TidyTreeNode }) {
       .text((node) => node.data.detail ?? "");
   }, [tree]);
 
-  return <svg ref={svgRef} className="tidy-tree-svg" role="img" aria-label="Radial tree" />;
+  return (
+    <VisualizationZoomViewport
+      scale={zoomScale}
+      toolbarLabel="Radial tree zoom controls"
+      viewportLabel="Scrollable Radial tree viewport"
+      viewportRef={viewportRef}
+      onZoomIn={() => applyZoom("in")}
+      onZoomOut={() => applyZoom("out")}
+      onReset={() => applyZoom("reset")}
+    >
+      <svg ref={svgRef} className="tidy-tree-svg" role="img" aria-label="Radial tree" style={scaledSvgStyle} />
+    </VisualizationZoomViewport>
+  );
 }
 
 function radialLabelGoesOutward(node: d3.HierarchyPointNode<TidyTreeNode>): boolean {
@@ -7405,6 +7460,14 @@ function radialLabelGoesOutward(node: d3.HierarchyPointNode<TidyTreeNode>): bool
 
 function TreeOfLifeRenderer({ tree }: { tree: TidyTreeNode }) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const {
+    applyZoom,
+    resetZoomAndScroll,
+    scaledSvgStyle,
+    setSvgSize,
+    viewportRef,
+    zoomScale,
+  } = useVisualizationSvgZoom({ width: 760, height: 760 });
 
   useEffect(() => {
     const svgElement = svgRef.current;
@@ -7420,6 +7483,12 @@ function TreeOfLifeRenderer({ tree }: { tree: TidyTreeNode }) {
     const labelRadius = innerRadius + 8;
     const labelAllowance = 250;
     const width = Math.max(760, (innerRadius + labelAllowance) * 2);
+    setSvgSize((current) => (
+      current.width === width && current.height === width
+        ? current
+        : { width, height: width }
+    ));
+    resetZoomAndScroll();
     const color = d3.scaleOrdinal<string>()
       .domain((hierarchy.children ?? []).map((node) => node.data.label))
       .range(d3.schemeTableau10);
@@ -7490,7 +7559,19 @@ function TreeOfLifeRenderer({ tree }: { tree: TidyTreeNode }) {
       .text((node) => node.ancestors().reverse().map((ancestor) => ancestor.data.label).join(" / "));
   }, [tree]);
 
-  return <svg ref={svgRef} className="tidy-tree-svg" role="img" aria-label="Tree of life" />;
+  return (
+    <VisualizationZoomViewport
+      scale={zoomScale}
+      toolbarLabel="Tree of life zoom controls"
+      viewportLabel="Scrollable Tree of life viewport"
+      viewportRef={viewportRef}
+      onZoomIn={() => applyZoom("in")}
+      onZoomOut={() => applyZoom("out")}
+      onReset={() => applyZoom("reset")}
+    >
+      <svg ref={svgRef} className="tidy-tree-svg" role="img" aria-label="Tree of life" style={scaledSvgStyle} />
+    </VisualizationZoomViewport>
+  );
 }
 
 function radialPoint(angle: number, radius: number): [number, number] {

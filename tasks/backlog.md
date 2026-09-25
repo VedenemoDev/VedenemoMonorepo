@@ -146,7 +146,7 @@ chart-specific behavior that should stay explicit.
 
 ## Phase 3: Extend shared zoom viewport to radial tree charts
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -188,6 +188,32 @@ through the same visible zoom and scroll affordances.
   position.
 - Hexbin-map and Tidy tree behavior remain unchanged.
 - `cd vedenemo-ux && npm run build` succeeds after implementation.
+
+### Completion Notes
+
+- Added the shared visualization zoom viewport shell to `RadialTreeRenderer`
+  and `TreeOfLifeRenderer`.
+- Extracted Tidy tree's runtime SVG zoom and scroll bookkeeping into a shared
+  local hook used by Tidy tree, Radial tree, and Tree of life.
+- Kept radial and tree-of-life D3 hierarchy construction, circular layout,
+  label rotation/orientation, link paths, node styling, and color logic inside
+  their existing renderers.
+- Implemented toolbar zoom, reset, focusable scroll viewport behavior, and
+  viewport-centered zoom preservation for both radial chart types.
+- Verified with `npm run build` in `vedenemo-ux`.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the frontend-only radial chart viewport scope.
+- Summary: both radial chart types now expose visible zoom out, zoom in, and
+  reset controls through the shared viewport shell.
+- Summary: the implementation reused the same runtime-only SVG scaling and
+  scroll-preserving behavior proven by Tidy tree, without changing binding,
+  filtering, traversal, aggregation, or backend behavior.
+- Summary: radial coordinate and label logic remained chart-local; only the
+  outer viewport, zoom controls, scaled SVG dimensions, and reset handling were
+  shared.
+- Summary: verification matched the planned frontend build check.
 
 ## Phase 4: Harmonize visualization zoom interaction behavior
 

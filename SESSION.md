@@ -13502,3 +13502,55 @@ Current status and next steps:
 - Kept Reset anchored to the D3 identity transform, so it still restores 100%.
 - Updated `tasks/current-task.md` with the executed follow-up task record.
 - Verification passed: `npm run build` in `vedenemo-ux`.
+
+## 2026-09-25 23:17 EEST
+
+Session goal:
+
+- Execute Phase 3: extend the shared visualization zoom viewport to radial tree
+  charts.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,260p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg -n "Phase 3: Extend shared zoom viewport to radial tree charts|shared zoom|radial tree|zoom viewport" tasks docs vedenemo-ux`
+- `sed -n '130,230p' tasks/backlog.md`
+- `git status --short --branch`
+- `rg -n "RadialTreeRenderer|TreeOfLife|tree of life|VisualizationZoomViewport|TidyTreeRenderer|zoom" vedenemo-ux/src/App.tsx`
+- `rg -n "radial|tree-of-life|visualization-zoom|tidy" vedenemo-ux/src/styles.css`
+- `sed -n` reads of the shared zoom viewport, Tidy tree, Radial tree, Tree of
+  life, visualization canvas, and related CSS sections
+- `npm run build` in `vedenemo-ux` three times
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `git diff -- tasks/backlog.md tasks/current-task.md`
+- `nl -ba vedenemo-ux/src/App.tsx | sed -n '7130,7575p'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added shared viewport toolbar zoom, reset, and focusable scroll viewport
+  behavior to Radial tree and Tree of life.
+- Extracted the runtime SVG zoom/scroll behavior used by Tidy tree into a
+  shared local hook used by all three SVG tree renderers.
+- Preserved chart-local D3 hierarchy construction, radial coordinate systems,
+  label orientation, node/link alignment, guide/extension paths, and color
+  behavior.
+- Marked Phase 3 executed in `tasks/backlog.md`, added the required
+  `Planned vs. Executed Evaluation`, and updated `tasks/current-task.md`.
+- Verification passed: `npm run build` in `vedenemo-ux`.
+- Next planned execution slice is Phase 4: harmonize visualization zoom
+  interaction behavior across the chart types.
