@@ -13462,3 +13462,43 @@ Current status and next steps:
 - Verification passed: `npm run build` in `vedenemo-ux`.
 - Next planned execution slice is Phase 3: extend the shared zoom viewport to
   Radial tree and Tree of life.
+
+## 2026-09-25 23:04 EEST
+
+Session goal:
+
+- Allow Hexbin-map to zoom modestly below 100% without disrupting existing map
+  zoom, scroll, or reset behavior.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,180p' tasks/current-task.md`
+- `tail -n 90 SESSION.md`
+- `git status --short --branch`
+- `sed -n '6710,6995p' vedenemo-ux/src/App.tsx`
+- `npm run build` in `vedenemo-ux` twice
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css tasks/current-task.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Changed Hexbin-map D3 `scaleExtent` from `[1, 12]` to `[0.75, 12]`, allowing
+  toolbar, wheel, and pinch-capable zoom to go down to 75%.
+- Removed the fixed `min-width` from `.hexbin-map-svg` so the rendered SVG can
+  visually follow the below-100% zoom size.
+- Kept Reset anchored to the D3 identity transform, so it still restores 100%.
+- Updated `tasks/current-task.md` with the executed follow-up task record.
+- Verification passed: `npm run build` in `vedenemo-ux`.

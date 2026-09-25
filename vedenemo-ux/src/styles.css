@@ -1139,7 +1139,6 @@ body {
 
 .hexbin-map-svg {
   display: block;
-  min-width: 48rem;
   width: auto;
   height: auto;
   background: #f9fafb;

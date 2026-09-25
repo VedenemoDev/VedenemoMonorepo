@@ -6960,7 +6960,7 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     };
 
     const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([1, 12])
+      .scaleExtent([0.75, 12])
       .extent([[0, 0], [width, height]])
       .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
         applyZoomTransform(event.transform);
