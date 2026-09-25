@@ -1111,6 +1111,13 @@ body {
   background: #e0f2fe;
 }
 
+.visualization-zoom-toolbar button:disabled {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
 .visualization-zoom-toolbar span {
   min-width: 3.25rem;
   color: #334155;

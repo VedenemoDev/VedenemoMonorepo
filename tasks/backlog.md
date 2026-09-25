@@ -217,7 +217,7 @@ through the same visible zoom and scroll affordances.
 
 ## Phase 4: Harmonize visualization zoom interaction behavior
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -256,6 +256,21 @@ while preserving chart-specific layout logic.
 - Any remaining chart-specific zoom or scroll behavior has a practical reason.
 - No model data, `.vdos`, `.vdmp`, backend API, or CLI behavior changes.
 - `cd vedenemo-ux && npm run build` succeeds after implementation.
+
+### Planned vs. Executed Evaluation
+
+- Execution matched the planned UX-only scope: changes stayed in `vedenemo-ux`
+  and did not affect model data, backend APIs, CLI behavior, `.vdos`, or
+  `.vdmp`.
+- Zoom increments and lower zoom bounds were harmonized across Hexbin-map,
+  Tidy tree, Radial tree, and Tree of life.
+- Shared zoom controls now expose consistent disabled states for zoom in, zoom
+  out, and reset, with reset explicitly labeled as restoring zoom and scroll.
+- Hexbin-map intentionally keeps a larger maximum zoom than tree charts because
+  its D3 pan/scroll behavior supports detailed geographic overlay inspection;
+  this chart-specific reason is documented in code.
+- Verification matched the acceptance criteria with `npm run build` in
+  `vedenemo-ux`.
 
 ## Plan scrollable zoom viewport for Hexbin-map LOCATION_AREA visualization
 

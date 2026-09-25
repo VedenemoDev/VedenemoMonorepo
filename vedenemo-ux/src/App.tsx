@@ -6960,7 +6960,7 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     };
 
     const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.75, 12])
+      .scaleExtent([VISUALIZATION_HEXBIN_ZOOM_MIN, VISUALIZATION_HEXBIN_ZOOM_MAX])
       .extent([[0, 0], [width, height]])
       .on("zoom", (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
         applyZoomTransform(event.transform);
@@ -7095,9 +7095,9 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     const svg = d3.select(svgElement);
     const transition = svg.transition().duration(180);
     if (action === "in") {
-      transition.call(zoomBehavior.scaleBy, 1.4);
+      transition.call(zoomBehavior.scaleBy, VISUALIZATION_ZOOM_STEP);
     } else if (action === "out") {
-      transition.call(zoomBehavior.scaleBy, 1 / 1.4);
+      transition.call(zoomBehavior.scaleBy, 1 / VISUALIZATION_ZOOM_STEP);
     } else {
       transition.call(zoomBehavior.transform, d3.zoomIdentity);
     }
@@ -7107,6 +7107,8 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     <>
       <VisualizationZoomViewport
         scale={zoomScale}
+        minScale={VISUALIZATION_HEXBIN_ZOOM_MIN}
+        maxScale={VISUALIZATION_HEXBIN_ZOOM_MAX}
         toolbarLabel="Hexbin-map zoom controls"
         viewportLabel="Scrollable Hexbin-map viewport"
         viewportRef={viewportRef}
@@ -7136,11 +7138,15 @@ function VisualizationZoomViewport({
   onZoomIn,
   onZoomOut,
   scale,
+  minScale,
+  maxScale,
   toolbarLabel,
   viewportLabel,
   viewportRef,
 }: {
   children: ReactNode;
+  maxScale: number;
+  minScale: number;
   onReset: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -7149,17 +7155,21 @@ function VisualizationZoomViewport({
   viewportLabel: string;
   viewportRef: RefObject<HTMLDivElement | null>;
 }) {
+  const canZoomOut = scale > minScale + VISUALIZATION_ZOOM_EPSILON;
+  const canZoomIn = scale < maxScale - VISUALIZATION_ZOOM_EPSILON;
+  const canReset = Math.abs(scale - VISUALIZATION_DEFAULT_ZOOM) > VISUALIZATION_ZOOM_EPSILON;
+
   return (
     <>
       <div className="visualization-zoom-toolbar" aria-label={toolbarLabel}>
-        <button type="button" onClick={onZoomOut} aria-label="Zoom out">
+        <button type="button" onClick={onZoomOut} aria-label="Zoom out" disabled={!canZoomOut}>
           -
         </button>
         <span aria-live="polite">{Math.round(scale * 100)}%</span>
-        <button type="button" onClick={onZoomIn} aria-label="Zoom in">
+        <button type="button" onClick={onZoomIn} aria-label="Zoom in" disabled={!canZoomIn}>
           +
         </button>
-        <button type="button" onClick={onReset}>
+        <button type="button" onClick={onReset} aria-label="Reset zoom and scroll" disabled={!canReset}>
           Reset
         </button>
       </div>
@@ -7181,11 +7191,21 @@ type VisualizationSvgSize = {
   height: number;
 };
 
+const VISUALIZATION_DEFAULT_ZOOM = 1;
+const VISUALIZATION_ZOOM_STEP = 1.35;
+const VISUALIZATION_ZOOM_EPSILON = 0.001;
+const VISUALIZATION_TREE_ZOOM_MIN = 0.75;
+const VISUALIZATION_TREE_ZOOM_MAX = 3.5;
+const VISUALIZATION_HEXBIN_ZOOM_MIN = 0.75;
+// Hexbin-map keeps a deeper D3 zoom range because users inspect geographic
+// overlays and synchronized pan/scroll detail, while tree charts scale labels.
+const VISUALIZATION_HEXBIN_ZOOM_MAX = 12;
+
 function useVisualizationSvgZoom(initialSize: VisualizationSvgSize) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const zoomScaleRef = useRef(1);
+  const zoomScaleRef = useRef(VISUALIZATION_DEFAULT_ZOOM);
   const pendingScrollRef = useRef<{ left: number; top: number } | null>(null);
-  const [zoomScale, setZoomScale] = useState(1);
+  const [zoomScale, setZoomScale] = useState(VISUALIZATION_DEFAULT_ZOOM);
   const [svgSize, setSvgSize] = useState(initialSize);
 
   useEffect(() => {
@@ -7208,8 +7228,8 @@ function useVisualizationSvgZoom(initialSize: VisualizationSvgSize) {
   }, [zoomScale]);
 
   function resetZoomAndScroll() {
-    zoomScaleRef.current = 1;
-    setZoomScale(1);
+    zoomScaleRef.current = VISUALIZATION_DEFAULT_ZOOM;
+    setZoomScale(VISUALIZATION_DEFAULT_ZOOM);
     window.requestAnimationFrame(() => {
       const viewportElement = viewportRef.current;
       if (viewportElement !== null) {
@@ -7223,8 +7243,14 @@ function useVisualizationSvgZoom(initialSize: VisualizationSvgSize) {
     const viewportElement = viewportRef.current;
     const currentScale = zoomScaleRef.current;
     const nextScale = action === "reset"
-      ? 1
-      : Math.min(Math.max(currentScale * (action === "in" ? 1.35 : 1 / 1.35), 0.4), 3.5);
+      ? VISUALIZATION_DEFAULT_ZOOM
+      : Math.min(
+        Math.max(
+          currentScale * (action === "in" ? VISUALIZATION_ZOOM_STEP : 1 / VISUALIZATION_ZOOM_STEP),
+          VISUALIZATION_TREE_ZOOM_MIN,
+        ),
+        VISUALIZATION_TREE_ZOOM_MAX,
+      );
 
     if (viewportElement === null || action === "reset") {
       pendingScrollRef.current = { left: 0, top: 0 };
@@ -7344,6 +7370,8 @@ function TidyTreeRenderer({ tree }: { tree: TidyTreeNode }) {
   return (
     <VisualizationZoomViewport
       scale={zoomScale}
+      minScale={VISUALIZATION_TREE_ZOOM_MIN}
+      maxScale={VISUALIZATION_TREE_ZOOM_MAX}
       toolbarLabel="Tidy tree zoom controls"
       viewportLabel="Scrollable Tidy tree viewport"
       viewportRef={viewportRef}
@@ -7442,6 +7470,8 @@ function RadialTreeRenderer({ tree }: { tree: TidyTreeNode }) {
   return (
     <VisualizationZoomViewport
       scale={zoomScale}
+      minScale={VISUALIZATION_TREE_ZOOM_MIN}
+      maxScale={VISUALIZATION_TREE_ZOOM_MAX}
       toolbarLabel="Radial tree zoom controls"
       viewportLabel="Scrollable Radial tree viewport"
       viewportRef={viewportRef}
@@ -7562,6 +7592,8 @@ function TreeOfLifeRenderer({ tree }: { tree: TidyTreeNode }) {
   return (
     <VisualizationZoomViewport
       scale={zoomScale}
+      minScale={VISUALIZATION_TREE_ZOOM_MIN}
+      maxScale={VISUALIZATION_TREE_ZOOM_MAX}
       toolbarLabel="Tree of life zoom controls"
       viewportLabel="Scrollable Tree of life viewport"
       viewportRef={viewportRef}

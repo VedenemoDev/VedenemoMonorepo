@@ -13554,3 +13554,51 @@ Current status and next steps:
 - Verification passed: `npm run build` in `vedenemo-ux`.
 - Next planned execution slice is Phase 4: harmonize visualization zoom
   interaction behavior across the chart types.
+
+## 2026-09-25 23:35 EEST
+
+Session goal:
+
+- Execute Phase 4: harmonize visualization zoom interaction behavior.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `pwd && rg --files -g ...`
+- `git status --short`
+- `sed -n` reads of required architecture, roadmap, task, backlog, session,
+  visualization implementation, and CSS files
+- `tail -n 120 SESSION.md`
+- `rg -n "Phase 4: Harmonize visualization zoom interaction behavior|Harmonize visualization zoom" tasks/backlog.md`
+- `rg -n "VisualizationZoomViewport|useSvgVisualizationZoom|zoom|Hexbin|TreeRenderer|Force|Mind|Chord|Sunburst|Sankey" vedenemo-ux/src/App.tsx`
+- `rg -n "visualization-zoom|hexbin|force|mind|chord|sunburst|sankey|tidy|radial|tree-of-life" vedenemo-ux/src/styles.css`
+- `find vedenemo-ux -maxdepth 2 -type f | sort | sed -n '1,160p'`
+- `cat vedenemo-ux/package.json`
+- `npm run build` in `vedenemo-ux` twice
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css tasks/backlog.md tasks/current-task.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Harmonized the visible zoom interaction across Hexbin-map, Tidy tree, Radial
+  tree, and Tree of life with shared constants for default zoom, toolbar zoom
+  step, lower zoom bound, and epsilon comparisons.
+- Added shared toolbar disabled states for zoom in, zoom out, and reset, plus
+  an explicit reset accessibility label.
+- Changed the tree zoom lower bound from 40% to 75% to match Hexbin-map's
+  modest zoom-out behavior and keep tree labels readable.
+- Kept Hexbin-map's larger maximum zoom as an intentional chart-specific
+  exception for detailed geographic overlay inspection with synchronized
+  D3 pan/scroll behavior, documented in code.
+- Marked Phase 4 executed in `tasks/backlog.md`, added the required
+  `Planned vs. Executed Evaluation`, and updated `tasks/current-task.md`.
+- Verification passed: `npm run build` in `vedenemo-ux`.
+- Next steps: select the next backlog slice before making further changes.
