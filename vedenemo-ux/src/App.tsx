@@ -7178,6 +7178,11 @@ function VisualizationZoomViewport({
 
 function TidyTreeRenderer({ tree }: { tree: TidyTreeNode }) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const zoomScaleRef = useRef(1);
+  const pendingScrollRef = useRef<{ left: number; top: number } | null>(null);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [svgSize, setSvgSize] = useState({ width: 960, height: 520 });
 
   useEffect(() => {
     const svgElement = svgRef.current;
@@ -7197,6 +7202,20 @@ function TidyTreeRenderer({ tree }: { tree: TidyTreeNode }) {
     const maxX = Math.max(...nodes.map((node) => node.x ?? 0));
     const actualHeight = Math.max(height, maxX - minX + 96);
     const offsetX = 96 - minX;
+    setSvgSize((current) => (
+      current.width === width && current.height === actualHeight
+        ? current
+        : { width, height: actualHeight }
+    ));
+    zoomScaleRef.current = 1;
+    setZoomScale(1);
+    window.requestAnimationFrame(() => {
+      const viewportElement = viewportRef.current;
+      if (viewportElement !== null) {
+        viewportElement.scrollLeft = 0;
+        viewportElement.scrollTop = 0;
+      }
+    });
 
     const svg = d3.select(svgElement);
     svg.selectAll("*").remove();
@@ -7246,7 +7265,66 @@ function TidyTreeRenderer({ tree }: { tree: TidyTreeNode }) {
       .text((node) => node.data.detail ?? "");
   }, [tree]);
 
-  return <svg ref={svgRef} className="tidy-tree-svg" role="img" aria-label="Tidy tree" />;
+  useEffect(() => {
+    const pendingScroll = pendingScrollRef.current;
+    if (pendingScroll === null) {
+      return;
+    }
+    pendingScrollRef.current = null;
+    const animationFrameId = window.requestAnimationFrame(() => {
+      const viewportElement = viewportRef.current;
+      if (viewportElement === null) {
+        return;
+      }
+      const maxLeft = Math.max(0, viewportElement.scrollWidth - viewportElement.clientWidth);
+      const maxTop = Math.max(0, viewportElement.scrollHeight - viewportElement.clientHeight);
+      viewportElement.scrollLeft = Math.min(Math.max(pendingScroll.left, 0), maxLeft);
+      viewportElement.scrollTop = Math.min(Math.max(pendingScroll.top, 0), maxTop);
+    });
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [zoomScale]);
+
+  function applyZoom(action: "in" | "out" | "reset") {
+    const viewportElement = viewportRef.current;
+    const currentScale = zoomScaleRef.current;
+    const nextScale = action === "reset"
+      ? 1
+      : Math.min(Math.max(currentScale * (action === "in" ? 1.35 : 1 / 1.35), 0.4), 3.5);
+
+    if (viewportElement === null || action === "reset") {
+      pendingScrollRef.current = { left: 0, top: 0 };
+    } else {
+      const scaleRatio = nextScale / currentScale;
+      const centerLeft = viewportElement.scrollLeft + viewportElement.clientWidth / 2;
+      const centerTop = viewportElement.scrollTop + viewportElement.clientHeight / 2;
+      pendingScrollRef.current = {
+        left: centerLeft * scaleRatio - viewportElement.clientWidth / 2,
+        top: centerTop * scaleRatio - viewportElement.clientHeight / 2,
+      };
+    }
+
+    zoomScaleRef.current = nextScale;
+    setZoomScale(nextScale);
+  }
+
+  const scaledSvgStyle: CSSProperties = {
+    width: `${Math.round(svgSize.width * zoomScale)}px`,
+    height: `${Math.round(svgSize.height * zoomScale)}px`,
+  };
+
+  return (
+    <VisualizationZoomViewport
+      scale={zoomScale}
+      toolbarLabel="Tidy tree zoom controls"
+      viewportLabel="Scrollable Tidy tree viewport"
+      viewportRef={viewportRef}
+      onZoomIn={() => applyZoom("in")}
+      onZoomOut={() => applyZoom("out")}
+      onReset={() => applyZoom("reset")}
+    >
+      <svg ref={svgRef} className="tidy-tree-svg" role="img" aria-label="Tidy tree" style={scaledSvgStyle} />
+    </VisualizationZoomViewport>
+  );
 }
 
 function RadialTreeRenderer({ tree }: { tree: TidyTreeNode }) {

@@ -76,7 +76,7 @@ owned by `HexbinMapRenderer`.
 
 ## Phase 2: Prove shared zoom viewport with Tidy tree
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -116,6 +116,33 @@ chart-specific behavior that should stay explicit.
 - Hexbin-map behavior remains unchanged.
 - Radial tree and Tree of life continue to render as before.
 - `cd vedenemo-ux && npm run build` succeeds after implementation.
+
+### Completion Notes
+
+- Updated `TidyTreeRenderer` to render through the shared
+  `VisualizationZoomViewport` shell with visible zoom out, zoom in, reset, zoom
+  percentage, and focusable viewport affordances.
+- Kept Tidy tree hierarchy construction, D3 tree layout, link paths, node
+  rendering, and label rendering inside `TidyTreeRenderer`.
+- Scaled the rendered Tidy tree SVG dimensions from runtime-only React state so
+  nodes, links, and labels remain spatially aligned while browser scrollbars
+  reflect the zoomed content size.
+- Added viewport-centered toolbar zoom where practical, plus reset behavior
+  that returns to 100% scale and normalized scroll position.
+- Left Hexbin-map, Radial tree, Tree of life, backend, core, CLI, `.vdos`,
+  `.vdmp`, model data, and persisted visualization configuration unchanged.
+- Verified with `npm run build` in `vedenemo-ux`.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the frontend-only proving-case scope.
+- Summary: the shared viewport shell was reused by Tidy tree without adding a
+  generic D3 layout or transform engine.
+- Summary: Tidy tree zoom behavior remains chart-local and runtime-only, while
+  the D3 hierarchy and rendering code stayed explicit in `TidyTreeRenderer`.
+- Summary: Radial tree and Tree of life were intentionally left unchanged for
+  Phase 3, matching the out-of-scope boundary.
+- Summary: verification matched the planned frontend build check.
 
 ## Phase 3: Extend shared zoom viewport to radial tree charts
 

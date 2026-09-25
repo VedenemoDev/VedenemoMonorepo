@@ -13410,3 +13410,55 @@ Current status and next steps:
 - Added follow-up correction notes to `tasks/backlog.md` and
   `tasks/current-task.md`.
 - Verification passed: `npm run build` in `vedenemo-ux`.
+
+## 2026-09-25 22:34 EEST
+
+Session goal:
+
+- Execute Phase 2: prove the shared visualization zoom viewport with Tidy tree.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 160 SESSION.md`
+- `rg -n "Phase 2: Prove shared zoom viewport with Tidy tree|Planned vs\\. Executed" tasks/backlog.md`
+- `sed -n '70,160p' tasks/backlog.md`
+- `rg -n "Tidy|tidy|VisualizationZoomViewport|visualization-zoom|Tree" vedenemo-ux/src/App.tsx`
+- `rg -n "visualization-zoom|tidy|tree" vedenemo-ux/src/styles.css`
+- `git status --short --branch`
+- `sed -n` reads of the shared viewport, tree renderers, visualization canvas,
+  and relevant CSS sections
+- `npm run build` in `vedenemo-ux` twice
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx tasks/backlog.md tasks/current-task.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Updated `TidyTreeRenderer` to reuse `VisualizationZoomViewport` for visible
+  zoom controls, zoom percentage display, reset, and a focusable scroll
+  viewport.
+- Kept Tidy tree D3 hierarchy construction, layout sizing, link paths, node
+  rendering, and label rendering inside `TidyTreeRenderer`.
+- Added runtime-only Tidy tree zoom state by scaling the rendered SVG
+  dimensions, preserving alignment between labels, links, and nodes while
+  browser scrollbars reflect the zoomed content.
+- Added viewport-centered toolbar zoom where practical and reset behavior that
+  restores 100% scale with normalized scroll position.
+- Marked Phase 2 executed in `tasks/backlog.md`, added the required
+  `Planned vs. Executed Evaluation`, and updated `tasks/current-task.md`.
+- Verification passed: `npm run build` in `vedenemo-ux`.
+- Next planned execution slice is Phase 3: extend the shared zoom viewport to
+  Radial tree and Tree of life.
