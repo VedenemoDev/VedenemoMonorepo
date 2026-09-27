@@ -1,5 +1,183 @@
 # Backlog
 
+## Plan Editor Value sets tab
+
+Status: planned
+
+### Goal
+
+Add a new `Value sets` tab to the Editor so users can create model value sets
+and maintain existing value-set entries from the UI.
+
+The tab should support adding a new value set to the selected model, editing
+existing value set metadata, and adding, editing, or removing individual value
+set items.
+
+### Context
+
+The Entity data editor already consumes value-set metadata to render
+value-set-backed attributes as dropdowns. Value sets themselves are still
+authored outside the application flow, so maintaining alternatives such as
+`PuuLaji` requires editing model scripts or data manually.
+
+Value-set removal needs to account for loaded model instance data. Removing an
+entry whose technical value is already used by a loaded instance would
+immediately make existing loaded data inconsistent with the model metadata and
+could break editor dropdown behavior.
+
+Even when a value is not used by any currently loaded instance, removing it can
+still break older `.vdmp` model dumps or other external data that refer to the
+removed technical value.
+
+### Proposed Implementation Approach
+
+- Add pure core/model commands for value-set authoring if equivalent commands
+  do not already exist.
+- Keep value-set business rules in pure JDK modules.
+- Expose the commands through `vedenemo-web-api` endpoints and DTOs.
+- Keep JSON handling and HTTP DTO mapping in `vedenemo-web-api`.
+- Add an Editor `Value sets` tab in `vedenemo-ux`.
+- Show a list of value sets for the selected model and a detail editor for the
+  selected value set.
+- Allow creating a value set with technical name, visible name, and initial
+  entries.
+- Allow editing value-set visible metadata where supported by the model
+  command layer.
+- Allow adding and editing entries, including technical value and visible name.
+- Before enabling entry removal, inspect loaded model instances for attributes
+  bound to that value set and disable removal when the entry technical value is
+  currently used.
+- Show a confirmation warning for all entry removals explaining that older
+  model dumps or external data may still contain the removed value.
+- Refresh the API description and dependent editor dropdowns after successful
+  value-set changes.
+
+### Scope
+
+- Add value-set authoring to the Editor UI.
+- Support add/edit/remove for value-set entries.
+- Support creating new value sets for the selected model.
+- Enforce the "remove only if not used in loaded model instances" rule.
+- Preserve strict module boundaries: core/model rules stay pure, HTTP DTOs stay
+  in the web API, and the frontend remains an API client.
+
+### Out Of Scope
+
+- Deleting whole value sets that are still referenced by attributes.
+- Automatic migration of existing instance values.
+- Automatic migration of older `.vdmp` dumps.
+- Renaming technical values while preserving historical aliases.
+- Global value-set libraries shared across models.
+- Authentication, authorization, or multi-user editing controls.
+
+### Acceptance Criteria
+
+- The Editor has a `Value sets` tab.
+- A user can add a new value set to the selected model.
+- A user can add and edit value-set entries.
+- A user can remove an entry only when no loaded model instance uses that
+  entry's technical value through attributes bound to the value set.
+- The remove control is disabled or blocked with a clear reason when a loaded
+  instance uses the value.
+- Removal always shows a warning that older `.vdmp` model dumps or external
+  data may still refer to the removed value.
+- Entity data editor dropdowns reflect value-set changes after refresh.
+- `mvn clean verify` succeeds.
+- `cd vedenemo-ux && npm run build` succeeds.
+
+## Plan higher-confidence current-location capture
+
+Status: planned
+
+### Goal
+
+Improve the Entity data editor's `Use current location` behavior so captured
+`LOCATION` values are based on a fresher and more reliable browser/device fix,
+with enough feedback for users to decide whether the coordinate is good enough
+for the object they are recording.
+
+The motivating case is field capture for `Puu.lokaatio`, where the current
+single-read browser result may report an accuracy radius around 9-23 meters
+depending on conditions.
+
+### Context
+
+The current frontend implementation calls `navigator.geolocation.getCurrentPosition`
+once with `enableHighAccuracy: true`, `maximumAge: 30_000`, and
+`timeout: 10_000`. That is the best basic browser API path, but it accepts a
+recent cached result and does not wait for the device/browser to refine the fix.
+
+Browser geolocation can produce multiple readings over time through
+`watchPosition`. Later readings may improve as GPS/GNSS, Wi-Fi, and platform
+location services settle. The browser-provided `coords.accuracy` value is an
+estimated uncertainty radius in meters, not an independent Vedenemo
+measurement.
+
+### Proposed Implementation Approach
+
+- Keep the first version in `vedenemo-ux`.
+- Replace the one-shot capture with an explicit short capture session for
+  `LOCATION` editor fields.
+- Use `watchPosition` with `enableHighAccuracy: true`, `maximumAge: 0`, and a
+  bounded capture timeout.
+- Track each reading's latitude, longitude, reported accuracy, timestamp, and
+  whether it is the current best candidate.
+- Prefer the reading with the smallest reported accuracy radius, while showing
+  live progress to the user.
+- Let the user accept the current best reading before timeout when it is good
+  enough.
+- Stop watching promptly after accept, cancel, timeout, editor close, or field
+  change.
+- Display the accepted coordinate and accuracy radius near the field after
+  capture.
+
+### User Experience Notes
+
+- The button should start a short "measuring" state instead of immediately
+  filling the field from the first reading.
+- The UI should show progress such as latest accuracy, best accuracy, elapsed
+  time, and reading count.
+- The user should not need to understand GPS internals; the decision should be
+  phrased as whether the current accuracy is acceptable for this record.
+- A practical default could be to auto-accept once accuracy is at or below a
+  configured target such as 5 meters, otherwise offer the best reading after
+  the timeout.
+- A cancel action should return the field to its previous value.
+- For slow or poor conditions, the UI should explain that moving outdoors,
+  waiting briefly, or avoiding dense buildings/forest cover may improve the
+  reading.
+
+### Scope
+
+- Improve `LOCATION` attribute capture in the Entity data editor.
+- Preserve manual JSON editing for `LOCATION` values.
+- Keep backend, core, CLI, `.vdos`, and `.vdmp` behavior unchanged unless a
+  later task explicitly adds accuracy metadata to the data model.
+- Keep captured coordinates compatible with the existing `{latitude, longitude}`
+  shape.
+
+### Out Of Scope
+
+- Survey-grade positioning.
+- External GNSS/RTK receiver integration.
+- Background tracking after leaving the editor.
+- Persisting full measurement history in `.vdmp`.
+- Changing `LOCATION_LINE` or `LOCATION_AREA` editing.
+- Backend validation of reported accuracy thresholds.
+
+### Acceptance Criteria
+
+- `Use current location` starts a bounded repeated-read capture session for
+  `LOCATION` fields.
+- The UI shows at least latest accuracy, best accuracy, elapsed time, and a way
+  to accept or cancel.
+- The final field value uses the best accepted reading's latitude and
+  longitude.
+- The browser location watcher is always cleared on accept, cancel, timeout,
+  component cleanup, or capture replacement.
+- Manual `LOCATION` JSON editing still works.
+- `cd vedenemo-ux && npm run build` succeeds.
+
 ## Plan Entity data editor value-set dropdowns
 
 Status: executed

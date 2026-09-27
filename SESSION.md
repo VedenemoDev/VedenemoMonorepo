@@ -13879,3 +13879,103 @@ Current status and next steps:
 - Added the executed backlog item and its `Planned vs. Executed Evaluation`.
 - Verification passed: `npm run build` in `vedenemo-ux`.
 - Vite dev server started at `http://127.0.0.1:5173/`.
+
+## 2026-09-27 20:42 EEST
+
+Session goal:
+
+- Investigate whether Entity data editor `Use current location` is using the
+  best available browser location source and explain the observed 9-23 m
+  accuracy values.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg -n "current location|Use current location|geolocation|getCurrentPosition|watchPosition|enableHighAccuracy|accuracy|coords|LOCATION" vedenemo-ux/src`
+- `git status --short --branch`
+- `sed -n '920,980p' vedenemo-ux/src/App.tsx`
+- `sed -n '3880,3955p' vedenemo-ux/src/App.tsx`
+- `sed -n '4195,4240p' vedenemo-ux/src/App.tsx`
+- `sed -n '2665,2910p' vedenemo-ux/src/App.tsx`
+- `nl -ba vedenemo-ux/src/App.tsx | sed -n '940,955p'`
+- `nl -ba vedenemo-ux/src/App.tsx | sed -n '3900,3950p'`
+- `nl -ba vedenemo-ux/src/App.tsx | sed -n '4210,4235p'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Confirmed the UX uses `navigator.geolocation.getCurrentPosition` with
+  `enableHighAccuracy: true`, `maximumAge: 30_000`, and `timeout: 10_000`.
+- Confirmed the shown accuracy text comes directly from
+  `position.coords.accuracy`, rounded to whole meters.
+- No implementation changes were made beyond this session entry.
+
+## 2026-09-27 20:46 EEST
+
+Session goal:
+
+- Add a backlog planning item for improving `Use current location` accuracy
+  and explain the intended application behavior and realistic accuracy limits.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' tasks/backlog.md`
+- `tail -n 80 SESSION.md`
+- Web lookup for browser geolocation behavior and realistic GPS/geolocation
+  accuracy references.
+- `git diff -- tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `Plan higher-confidence current-location capture` at the beginning of
+  `tasks/backlog.md`.
+- The item plans a frontend repeated-read capture session using
+  `watchPosition`, `enableHighAccuracy: true`, `maximumAge: 0`, best-reading
+  selection, visible accuracy feedback, accept/cancel controls, and watcher
+  cleanup.
+- No product code was changed in this session.
+
+## 2026-09-27 21:16 EEST
+
+Session goal:
+
+- Add a backlog planning item for an Editor `Value sets` tab supporting
+  value-set creation and value-set entry add/edit/remove workflows.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,180p' tasks/backlog.md`
+- `tail -n 80 SESSION.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff -- tasks/backlog.md`
+- `git status --short`
+
+Current status and next steps:
+
+- Added `Plan Editor Value sets tab` at the beginning of `tasks/backlog.md`.
+- The plan covers creating value sets, editing metadata, adding/editing/removing
+  entries, checking loaded model instance usage before allowing entry removal,
+  warning about older `.vdmp` dump compatibility, refreshing dependent editor
+  dropdowns, and preserving module boundaries.
+- No product code was changed in this session.
