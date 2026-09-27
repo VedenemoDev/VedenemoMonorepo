@@ -2,7 +2,7 @@
 
 ## Plan Value sets tab UX refactor
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -85,6 +85,36 @@ before the user saves replacement metadata.
 - Dependent Entity data editor dropdowns still refresh after saved value-set
   changes.
 - `cd vedenemo-ux && npm run build` succeeds.
+
+### Completion Notes
+
+- Refactored the Editor `Value sets` tab in `vedenemo-ux` without backend,
+  core, CLI, `.vdos`, or `.vdmp` changes.
+- Added explicit selected-entry state for value-set entries.
+- Kept the existing value-set dropdown and added a selected-value-set summary
+  so the current target is visible before saving.
+- Replaced the inline all-entry editing grid with a value-item dropdown and a
+  labeled selected-entry editor.
+- Added a data-type-specific add-entry button such as `Add TEXT value`; the
+  newly created draft entry is selected immediately.
+- Preserved usage counts, loaded-instance removal blocking, removal warning on
+  save, and API metadata refresh after saving.
+- Verified with `npm run build` in `vedenemo-ux`.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the intended frontend-only scope and reused the
+  existing value-set replacement API.
+- Summary: the implementation chose a dropdown plus selected-entry detail
+  editor rather than a selectable table, because it directly addresses the
+  missing chooser and labeled-field problems with a small UI change.
+- Summary: the add-entry flow is data-type-specific in button text and selects
+  the new draft item immediately; no backend type-specific entry command was
+  needed.
+- Summary: existing removal safeguards and dependent dropdown refresh behavior
+  stayed in place.
+- Summary: verification matched the acceptance criteria with a successful
+  frontend build.
 
 ## Plan Editor Value sets tab
 

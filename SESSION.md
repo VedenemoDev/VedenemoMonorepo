@@ -14111,3 +14111,61 @@ Current status and next steps:
   labeled edit fields, and an explicit flow for adding a new `TEXT` item to an
   existing value set.
 - No product code was changed in this session.
+
+## 2026-09-27 22:59 EEST
+
+Session goal:
+
+- Execute the `Plan Value sets tab UX refactor` backlog item.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,120p' tasks/backlog.md`
+- `tail -n 100 SESSION.md`
+- `rg -n "Value sets|valueSet|value-set|value sets|selectedValueSet|entry" vedenemo-ux/src/App.tsx`
+- `sed -n '3600,4440p' vedenemo-ux/src/App.tsx`
+- `sed -n '1600,1920p' vedenemo-ux/src/styles.css`
+- `sed -n '4800,4945p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,120p' vedenemo-ux/src/App.tsx`
+- `sed -n '2880,3020p' vedenemo-ux/src/App.tsx`
+- `rg -n "type ValueSet|interface ValueSet|ValueSetDraft|ValueSetEntryDraft|emptyValueSetDraft|newValueSetEntryDraft" vedenemo-ux/src/App.tsx`
+- `sed -n '3560,3610p' vedenemo-ux/src/App.tsx`
+- `sed -n '3705,3760p' vedenemo-ux/src/App.tsx`
+- `sed -n '4075,4255p' vedenemo-ux/src/App.tsx`
+- `cat vedenemo-ux/tsconfig.json`
+- `npm run build` in `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `git status --short`
+- `sed -n '1,120p' tasks/backlog.md`
+- `sed -n '1,120p' tasks/current-task.md`
+- `sed -n '1,145p' tasks/backlog.md`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Refactored the Editor `Value sets` tab around explicit selected-entry state.
+- Existing value-set entries are selected through a `Value item` dropdown
+  before editing.
+- Entry editing now uses labeled `Technical value` and `Visible name` fields.
+- Adding a value uses a data-type-specific button such as `Add TEXT value` and
+  selects the new draft entry immediately.
+- Preserved usage counts, loaded-instance removal blocking, removal warning on
+  save, and API metadata refresh after save.
+- Updated `tasks/current-task.md` and marked the backlog item executed with a
+  `Planned vs. Executed Evaluation`.
+- Verification passed: `npm run build` in `vedenemo-ux`.

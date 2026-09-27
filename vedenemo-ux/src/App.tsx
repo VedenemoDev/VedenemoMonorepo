@@ -3590,6 +3590,7 @@ function EditorPage() {
   const [parentLinkError, setParentLinkError] = useState("");
   const [selectedValueSetAzName, setSelectedValueSetAzName] = useState("");
   const [valueSetDraft, setValueSetDraft] = useState<ValueSetDraft>(emptyValueSetDraft());
+  const [selectedValueSetEntryId, setSelectedValueSetEntryId] = useState("");
   const [valueSetUsage, setValueSetUsage] = useState<Record<string, number>>({});
   const [isLoadingValueSetUsage, setIsLoadingValueSetUsage] = useState(false);
   const [isSavingValueSet, setIsSavingValueSet] = useState(false);
@@ -3712,6 +3713,16 @@ function EditorPage() {
   const selectedRoot = roots.find((root) => root.instanceRootId === selectedRootId) ?? null;
   const selectedAssociation = apiDescription?.associations?.find((association) => association.azName === selectedAssociationAzName) ?? null;
   const selectedValueSet = apiDescription?.valueSets?.find((valueSet) => valueSet.azName === selectedValueSetAzName) ?? null;
+  const selectedValueSetEntry = valueSetDraft.entries.find((entry) => entry.id === selectedValueSetEntryId) ?? null;
+  const selectedValueSetEntryUsage = valueSetDraft.mode === "edit" && selectedValueSetEntry?.originalTechnicalValue !== undefined
+    ? valueSetEntryUsageCount(valueSetDraft.originalAzName ?? valueSetDraft.azName, selectedValueSetEntry.originalTechnicalValue)
+    : 0;
+  const selectedValueSetEntryRemoveDisabled = selectedValueSetEntry === null
+    || status === "loading"
+    || isSavingValueSet
+    || selectedValueSetEntryUsage > 0
+    || valueSetDraft.entries.length <= 1;
+  const isAddingValueSetEntry = selectedValueSetEntry !== null && selectedValueSetEntry.originalTechnicalValue === undefined;
   const selectedAssociationSourceEntity = selectedAssociation === null
     ? null
     : findEntity(apiDescription?.entities ?? [], selectedAssociation.sourceEntityAzName);
@@ -3736,7 +3747,9 @@ function EditorPage() {
   useEffect(() => {
     if (apiDescription === null) {
       setSelectedValueSetAzName("");
-      setValueSetDraft(emptyValueSetDraft());
+      const nextDraft = emptyValueSetDraft();
+      setValueSetDraft(nextDraft);
+      setSelectedValueSetEntryId(nextDraft.entries[0]?.id ?? "");
       return;
     }
     const valueSets = apiDescription.valueSets ?? [];
@@ -3744,9 +3757,21 @@ function EditorPage() {
       return;
     }
     const nextValueSet = valueSets.find((valueSet) => valueSet.azName === selectedValueSetAzName) ?? valueSets[0] ?? null;
+    const nextDraft = nextValueSet === null ? emptyValueSetDraft() : valueSetDraftFrom(nextValueSet);
     setSelectedValueSetAzName(nextValueSet?.azName ?? "");
-    setValueSetDraft(nextValueSet === null ? emptyValueSetDraft() : valueSetDraftFrom(nextValueSet));
+    setValueSetDraft(nextDraft);
+    setSelectedValueSetEntryId(nextDraft.entries[0]?.id ?? "");
   }, [apiDescription]);
+
+  useEffect(() => {
+    if (valueSetDraft.entries.length === 0) {
+      setSelectedValueSetEntryId("");
+      return;
+    }
+    if (!valueSetDraft.entries.some((entry) => entry.id === selectedValueSetEntryId)) {
+      setSelectedValueSetEntryId(valueSetDraft.entries[0]?.id ?? "");
+    }
+  }, [valueSetDraft.entries, selectedValueSetEntryId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -4087,7 +4112,9 @@ function EditorPage() {
     setCreatedParentAssociationLink(null);
     setParentLinkError("");
     setSelectedValueSetAzName("");
-    setValueSetDraft(emptyValueSetDraft());
+    const nextValueSetDraft = emptyValueSetDraft();
+    setValueSetDraft(nextValueSetDraft);
+    setSelectedValueSetEntryId(nextValueSetDraft.entries[0]?.id ?? "");
     setValueSetUsage({});
     setLoadedInstanceId("");
     setCreateCopy(false);
@@ -4168,14 +4195,18 @@ function EditorPage() {
 
   function selectValueSet(nextValueSetAzName: string) {
     const nextValueSet = apiDescription?.valueSets?.find((valueSet) => valueSet.azName === nextValueSetAzName) ?? null;
+    const nextDraft = nextValueSet === null ? emptyValueSetDraft() : valueSetDraftFrom(nextValueSet);
     setSelectedValueSetAzName(nextValueSetAzName);
-    setValueSetDraft(nextValueSet === null ? emptyValueSetDraft() : valueSetDraftFrom(nextValueSet));
+    setValueSetDraft(nextDraft);
+    setSelectedValueSetEntryId(nextDraft.entries[0]?.id ?? "");
     setStatusMessage(nextValueSet === null ? "New value set" : "Ready");
   }
 
   function startNewValueSet() {
+    const nextDraft = emptyValueSetDraft();
     setSelectedValueSetAzName("");
-    setValueSetDraft(emptyValueSetDraft());
+    setValueSetDraft(nextDraft);
+    setSelectedValueSetEntryId(nextDraft.entries[0]?.id ?? "");
     setStatus("ok");
     setStatusMessage("New value set");
   }
@@ -4188,10 +4219,13 @@ function EditorPage() {
   }
 
   function addValueSetEntry() {
+    const nextEntry = newValueSetEntryDraft();
     setValueSetDraft((current) => ({
       ...current,
-      entries: [...current.entries, newValueSetEntryDraft()],
+      entries: [...current.entries, nextEntry],
     }));
+    setSelectedValueSetEntryId(nextEntry.id);
+    setStatusMessage(`Adding ${valueSetDraft.dataType} value`);
   }
 
   function valueSetEntryUsageCount(valueSetAzName: string, technicalValue: string): number {
@@ -4203,6 +4237,22 @@ function EditorPage() {
       ...current,
       entries: current.entries.filter((entry) => entry.id !== entryId),
     }));
+    if (selectedValueSetEntryId === entryId) {
+      const nextEntry = valueSetDraft.entries.find((entry) => entry.id !== entryId) ?? null;
+      setSelectedValueSetEntryId(nextEntry?.id ?? "");
+    }
+  }
+
+  function cancelValueSetEntryEdit() {
+    if (selectedValueSetEntry === null) {
+      return;
+    }
+    if (selectedValueSetEntry.originalTechnicalValue === undefined && valueSetDraft.entries.length > 1) {
+      removeValueSetEntry(selectedValueSetEntry.id);
+      setStatusMessage("New value was cancelled");
+      return;
+    }
+    setStatusMessage("Entry ready");
   }
 
   async function submitValueSet(event: FormEvent<HTMLFormElement>) {
@@ -4241,9 +4291,11 @@ function EditorPage() {
         ? await createValueSet(apiBaseUrl, sessionId, valueSetDraft)
         : await replaceValueSet(apiBaseUrl, sessionId, valueSetDraft);
       const refreshedApi = await fetchModelInstanceApi(apiBaseUrl, selectedModelAzName);
+      const savedDraft = valueSetDraftFrom(saved);
       setApiDescription(refreshedApi);
       setSelectedValueSetAzName(saved.azName);
-      setValueSetDraft(valueSetDraftFrom(saved));
+      setValueSetDraft(savedDraft);
+      setSelectedValueSetEntryId(savedDraft.entries[0]?.id ?? "");
       setStatus("ok");
       setStatusMessage(valueSetDraft.mode === "create" ? `Created ${saved.azName}` : `Saved ${saved.azName}`);
     } catch (error) {
@@ -4849,9 +4901,18 @@ function EditorPage() {
               </div>
               <div className="editor-actions editor-actions-inline">
                 <button type="button" onClick={startNewValueSet} disabled={status === "loading" || isSavingValueSet}>
-                  New
+                  New value set
                 </button>
               </div>
+            </div>
+
+            <div className="value-set-current-target">
+              <span>Selected value set</span>
+              <strong>
+                {valueSetDraft.azName.trim() || selectedValueSet?.azName || "New value set"}
+                {" "}
+                ({valueSetDraft.dataType})
+              </strong>
             </div>
 
             <div className="editor-context-grid">
@@ -4880,50 +4941,87 @@ function EditorPage() {
               </div>
             </div>
 
-            <div className="value-set-entry-table">
-              <div className="value-set-entry-row value-set-entry-heading">
-                <span>Technical value</span>
-                <span>Visible name</span>
-                <span>Use</span>
-                <span>Action</span>
+            <div className="value-set-entry-editor">
+              <div className="editor-context-grid">
+                <div className="query-field">
+                  <label htmlFor="editor-value-set-entry">Value item</label>
+                  <select
+                    id="editor-value-set-entry"
+                    value={selectedValueSetEntryId}
+                    onChange={(event) => setSelectedValueSetEntryId(event.target.value)}
+                    disabled={status === "loading" || isSavingValueSet || valueSetDraft.entries.length === 0}
+                  >
+                    {valueSetDraft.entries.length === 0 ? (
+                      <option value="">No values</option>
+                    ) : valueSetDraft.entries.map((entry) => (
+                      <option key={entry.id} value={entry.id}>
+                        {entry.visName.trim() || "Unnamed"} ({entry.technicalValue.trim() || "no technical value"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="editor-actions editor-actions-inline">
+                  <button type="button" onClick={addValueSetEntry} disabled={status === "loading" || isSavingValueSet}>
+                    Add {valueSetDraft.dataType} value
+                  </button>
+                </div>
               </div>
-              {valueSetDraft.entries.map((entry) => {
-                const usageCount = valueSetDraft.mode === "edit" && entry.originalTechnicalValue !== undefined
-                  ? valueSetEntryUsageCount(valueSetDraft.originalAzName ?? valueSetDraft.azName, entry.originalTechnicalValue)
-                  : 0;
-                const removeDisabled = status === "loading" || isSavingValueSet || usageCount > 0 || valueSetDraft.entries.length <= 1;
-                return (
-                  <div key={entry.id} className="value-set-entry-row">
-                    <input
-                      value={entry.technicalValue}
-                      onChange={(event) => updateValueSetEntry(entry.id, { technicalValue: event.target.value })}
-                      disabled={status === "loading" || isSavingValueSet}
-                    />
-                    <input
-                      value={entry.visName}
-                      onChange={(event) => updateValueSetEntry(entry.id, { visName: event.target.value })}
-                      disabled={status === "loading" || isSavingValueSet}
-                    />
-                    <span className={usageCount > 0 ? "value-set-entry-used" : "value-set-entry-unused"}>
-                      {isLoadingValueSetUsage ? "Checking" : usageCount > 0 ? `${usageCount}` : "0"}
+
+              {selectedValueSetEntry === null ? (
+                <div className="value-set-entry-empty">Select a value item or add a new one.</div>
+              ) : (
+                <div className="value-set-entry-detail">
+                  <div className="value-set-entry-detail-heading">
+                    <div>
+                      <span>{isAddingValueSetEntry ? "Adding value item" : "Editing value item"}</span>
+                      <strong>{selectedValueSetEntry.visName.trim() || selectedValueSetEntry.technicalValue.trim() || "Unnamed value"}</strong>
+                    </div>
+                    <span className={selectedValueSetEntryUsage > 0 ? "value-set-entry-used" : "value-set-entry-unused"}>
+                      {isLoadingValueSetUsage ? "Checking usage" : `${selectedValueSetEntryUsage} in use`}
                     </span>
+                  </div>
+
+                  <div className="editor-context-grid">
+                    <div className="query-field">
+                      <label htmlFor="editor-value-set-entry-technical-value">Technical value</label>
+                      <input
+                        id="editor-value-set-entry-technical-value"
+                        value={selectedValueSetEntry.technicalValue}
+                        onChange={(event) => updateValueSetEntry(selectedValueSetEntry.id, { technicalValue: event.target.value })}
+                        disabled={status === "loading" || isSavingValueSet}
+                        placeholder={valueSetDraft.dataType === "TEXT" ? "e.g. manty" : undefined}
+                      />
+                    </div>
+                    <div className="query-field">
+                      <label htmlFor="editor-value-set-entry-visible-name">Visible name</label>
+                      <input
+                        id="editor-value-set-entry-visible-name"
+                        value={selectedValueSetEntry.visName}
+                        onChange={(event) => updateValueSetEntry(selectedValueSetEntry.id, { visName: event.target.value })}
+                        disabled={status === "loading" || isSavingValueSet}
+                        placeholder={valueSetDraft.dataType === "TEXT" ? "e.g. Manty" : undefined}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="editor-actions editor-actions-inline">
                     <button
                       type="button"
-                      onClick={() => removeValueSetEntry(entry.id)}
-                      disabled={removeDisabled}
-                      title={usageCount > 0 ? "Used by loaded model instance data" : undefined}
+                      onClick={() => removeValueSetEntry(selectedValueSetEntry.id)}
+                      disabled={selectedValueSetEntryRemoveDisabled}
+                      title={selectedValueSetEntryUsage > 0 ? "Used by loaded model instance data" : undefined}
                     >
-                      Remove
+                      Remove selected
+                    </button>
+                    <button type="button" onClick={cancelValueSetEntryEdit} disabled={status === "loading" || isSavingValueSet}>
+                      {isAddingValueSetEntry && valueSetDraft.entries.length > 1 ? "Cancel new value" : "Done"}
                     </button>
                   </div>
-                );
-              })}
+                </div>
+              )}
             </div>
 
             <div className="editor-actions">
-              <button type="button" onClick={addValueSetEntry} disabled={status === "loading" || isSavingValueSet}>
-                Add value
-              </button>
               <span className={`model-status model-status-${status}`}>{statusMessage}</span>
               <button type="submit" disabled={status === "loading" || isSavingValueSet || apiDescription === null}>
                 {valueSetDraft.mode === "create" ? "Create" : "Save"}

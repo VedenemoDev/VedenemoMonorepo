@@ -1,38 +1,33 @@
 # Current Task
 
-## Plan Editor Value sets tab
+## Plan Value sets tab UX refactor
 
 Status: executed
 
 ### Goal
 
-Add a new `Value sets` tab to the Editor so users can create model value sets
-and maintain existing value-set entries from the UI.
+Refactor the Editor `Value sets` tab so existing value sets and their entries
+can be discovered, selected, edited, and extended through obvious controls.
 
 ### Scope
 
-- Add value-set authoring to the Editor UI.
-- Support creating new value sets.
-- Support adding, editing, and removing value-set entries.
-- Block removal of entry technical values used by loaded model instance data.
-- Warn before removals because older `.vdmp` dumps or external data may still
-  refer to removed values.
+- Improve selection of existing value sets.
+- Improve selection and editing of existing value-set entries.
+- Add a clear, labeled flow for adding a new entry to an existing value set.
+- Preserve existing save, removal-safety, and metadata-refresh behavior.
 - Preserve strict module boundaries.
 
 ### Completion Notes
 
-- Added `ReplaceValueSetCommand` in pure core and wired execution, undo,
-  journal targeting, and `.vdos` import/export for `replace-value-set`.
-- Added `ModelRoot.replaceValueSet`.
-- Added `POST /sessions/{uuid}/commands/replace-value-set`.
-- The web API rejects replacement that removes a value currently used by loaded
-  model-instance data.
-- Added the Editor `Value sets` tab with create/edit entry workflows.
-- The tab disables entry removal when loaded instance usage is detected and
-  confirms removals for older dump/external-data compatibility.
-- The tab refreshes API metadata after save so Entity dropdowns see changes.
-- Updated `docs/architecture_doc.md`.
-- Marked the backlog item executed and added the required
-  `Planned vs. Executed Evaluation`.
-- Verified with `mvn clean verify`.
+- Refactored the Editor `Value sets` tab in `vedenemo-ux`.
+- Added explicit selected-entry state for value-set entries.
+- Kept the existing value-set selector and added a clear selected-value-set
+  summary.
+- Replaced the inline all-entry editing grid with a value-item selector and a
+  labeled selected-entry editor.
+- Added an explicit `Add TEXT value` / data-type-specific add-entry flow that
+  selects the new draft entry immediately.
+- Preserved loaded-instance removal blocking, usage count display, removal
+  warning on save, and metadata refresh after save.
+- Backend, core, CLI, `.vdos`, and `.vdmp` behavior were unchanged.
 - Verified with `npm run build` in `vedenemo-ux`.
