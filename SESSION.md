@@ -13825,3 +13825,57 @@ Current status and next steps:
 - Added the executed backlog item and its `Planned vs. Executed Evaluation`.
 - Verification passed: `npm run build` in `vedenemo-ux`.
 - Vite dev server started at `http://127.0.0.1:5173/`.
+
+## 2026-09-27 18:14 EEST
+
+Session goal:
+
+- Make Entity data editor fields backed by fixed value sets render as
+  dropdowns, using `Tontti.vdos` `Puu.laji` / `PuuLaji` as the proof case.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 140 SESSION.md`
+- `git status --short --branch`
+- `rg -n "Entity data editor|data editor|Data editor|ValueSet|value set|valueSet|valueset|fixed|option|enum|select|attribute" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css vedenemo-web-api/src vedenemo-model-api/src vedenemo-core/src`
+- `sed -n '1,260p' .vedenemo/Tontti.vdos`
+- `rg -n "Puu|laji|VALUE|VALUE_SET|value" .vedenemo/Tontti.vdos vedenemo-ux/src/App.tsx`
+- `sed -n '1,100p' vedenemo-ux/src/App.tsx`
+- `sed -n '2780,2885p' vedenemo-ux/src/App.tsx`
+- `sed -n '3880,4240p' vedenemo-ux/src/App.tsx`
+- `sed -n '1820,1875p' vedenemo-ux/src/styles.css`
+- `rg -n "function sameAzName|parseEditorFormValues\\(" vedenemo-ux/src/App.tsx`
+- `npm run build` in `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+- `git diff -- tasks/current-task.md tasks/backlog.md`
+- `npm run dev -- --host 127.0.0.1` in `vedenemo-ux`
+
+Current status and next steps:
+
+- Added frontend helpers to resolve an attribute's `valueSetAzName` against
+  the loaded API description's `valueSets`.
+- Entity data editor fields backed by a value set now render as dropdowns with
+  visible labels and technical values.
+- Added save-time validation so populated value-set fields must match one of
+  the declared technical values.
+- Preserved existing controls for non-value-set attributes, including `DATA`
+  textareas and `LOCATION` current-location handling.
+- Updated `tasks/current-task.md`.
+- Added the executed backlog item and its `Planned vs. Executed Evaluation`.
+- Verification passed: `npm run build` in `vedenemo-ux`.
+- Vite dev server started at `http://127.0.0.1:5173/`.

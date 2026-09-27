@@ -2810,6 +2810,20 @@ function formatEditableJson(value: unknown): string {
   return JSON.stringify(value, null, 2);
 }
 
+function valueSetForAttribute(
+  apiDescription: ApiDescriptionResponse | null,
+  attribute: AttributeDescription,
+): ValueSetDescription | null {
+  if (apiDescription === null || !attribute.valueSetAzName) {
+    return null;
+  }
+  return apiDescription.valueSets?.find((valueSet) => sameAzName(valueSet.azName, attribute.valueSetAzName ?? "")) ?? null;
+}
+
+function valueSetOptionValue(entry: ValueSetEntryDescription): string {
+  return formatInstanceValue(entry.technicalValue);
+}
+
 function absoluteApiUrl(apiBaseUrl: string, path: string): string {
   if (!apiBaseUrl) {
     return path;
@@ -2842,13 +2856,21 @@ function formValuesFromInstance(entity: EntityDescription, instance: EntityInsta
   ]));
 }
 
-function parseEditorFormValues(entity: EntityDescription, formValues: EditorFormValues): Record<string, unknown> {
+function parseEditorFormValues(
+  apiDescription: ApiDescriptionResponse | null,
+  entity: EntityDescription,
+  formValues: EditorFormValues,
+): Record<string, unknown> {
   const values: Record<string, unknown> = {};
   for (const attribute of entity.attributes) {
     const rawValue = formValues[attribute.azName] ?? "";
     const trimmedValue = rawValue.trim();
     if (!trimmedValue) {
       continue;
+    }
+    const valueSet = valueSetForAttribute(apiDescription, attribute);
+    if (valueSet !== null && !valueSet.entries.some((entry) => valueSetOptionValue(entry) === trimmedValue)) {
+      throw new Error(`${attribute.visName} must be selected from ${valueSet.azName}`);
     }
     if (attribute.dataType === "NUMERIC") {
       const numericValue = Number(trimmedValue);
@@ -3938,7 +3960,7 @@ function EditorPage() {
 
     let values: Record<string, unknown>;
     try {
-      values = parseEditorFormValues(selectedEntity, formValues);
+      values = parseEditorFormValues(apiDescription, selectedEntity, formValues);
     } catch (error) {
       setStatus("error");
       setStatusMessage(error instanceof Error ? error.message : "Invalid editor values");
@@ -4154,13 +4176,30 @@ function EditorPage() {
                 const locationMessage = locationFieldMessages[attribute.azName] ?? "";
                 const isLocatingAttribute = locatingAttributeAzName === attribute.azName;
                 const fieldDisabled = status === "loading" || isSaving;
+                const valueSet = valueSetForAttribute(apiDescription, attribute);
                 return (
                   <div key={attribute.azName} className="query-field">
                     <label htmlFor={fieldId}>
                       {attribute.visName}
                       {attribute.required ? " *" : ""}
                     </label>
-                    {attribute.dataType === "DATA" ? (
+                    {valueSet !== null ? (
+                      <select
+                        id={fieldId}
+                        value={formValues[attribute.azName] ?? ""}
+                        onChange={(event) => setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }))}
+                        disabled={fieldDisabled || valueSet.entries.length === 0}
+                      >
+                        <option value="">
+                          {valueSet.entries.length === 0 ? `No ${valueSet.azName} values` : `Select ${attribute.visName}`}
+                        </option>
+                        {valueSet.entries.map((entry) => (
+                          <option key={valueSetOptionValue(entry)} value={valueSetOptionValue(entry)}>
+                            {entry.visName} ({valueSetOptionValue(entry)})
+                          </option>
+                        ))}
+                      </select>
+                    ) : attribute.dataType === "DATA" ? (
                       <textarea
                         id={fieldId}
                         value={formValues[attribute.azName] ?? ""}

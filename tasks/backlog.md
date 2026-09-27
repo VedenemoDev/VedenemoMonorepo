@@ -1,5 +1,93 @@
 # Backlog
 
+## Plan Entity data editor value-set dropdowns
+
+Status: executed
+
+### Goal
+
+Improve the Entity data editor so attributes constrained by fixed value sets
+are selected from declared alternatives instead of being freely editable text
+fields.
+
+The concrete motivating case is the `Tontti.vdos` model, where the `Puu`
+entity has a required `laji` attribute bound to the `PuuLaji` value set.
+
+### Context
+
+The API description already exposes both sides of the metadata needed by the
+frontend:
+
+- attributes expose `valueSetAzName`;
+- models expose `valueSets` with entry technical values and visible names.
+
+The editor previously rendered ordinary non-`DATA`, non-`LOCATION` attributes
+as free inputs, so `Puu.laji` allowed arbitrary text even though valid data
+should be one of `PuuLaji`'s fixed alternatives.
+
+### Proposed Implementation Approach
+
+- Keep this as a frontend-only `vedenemo-ux` change.
+- Resolve an attribute's referenced value set from the current API
+  description.
+- Render value-set-backed Entity data editor fields as dropdowns.
+- Submit the selected entry's technical value through the existing editor
+  value parsing and save flow.
+- Validate populated value-set-backed fields before submit so stale or invalid
+  form state cannot bypass the dropdown.
+- Preserve existing controls for attributes without value sets.
+
+### Scope
+
+- Change Entity data editor attribute controls only.
+- Use `Tontti.vdos` `Puu.laji` / `PuuLaji` as the proof case.
+- Keep behavior generic for any attribute with `valueSetAzName`.
+- Keep backend, core, CLI, `.vdos`, and `.vdmp` files unchanged.
+
+### Out Of Scope
+
+- Query form value-set dropdowns.
+- Visualization binding value-set dropdowns.
+- Backend value-set command or validation changes.
+- Persistent editor defaults or richer value-set filtering.
+- Changing existing `.vdos` or `.vdmp` data.
+
+### Acceptance Criteria
+
+- `Puu.laji` in the Entity data editor renders as a dropdown when editing a
+  `Tontti.vdos` model instance.
+- The dropdown shows all `PuuLaji` alternatives from the model metadata.
+- The saved value uses the selected entry technical value.
+- Attributes without a fixed value set remain editable with their existing
+  control type.
+- `cd vedenemo-ux && npm run build` succeeds.
+
+### Completion Notes
+
+- Added frontend value-set lookup helpers for editor attributes.
+- Rendered value-set-backed Entity data editor fields as `<select>` controls
+  using the value-set entry visible name and technical value.
+- Added save-time validation that rejects populated value-set-backed fields
+  whose value is not one of the declared technical values.
+- Preserved existing `DATA`, `LOCATION`, numeric, date/time, and free text
+  editor behavior for attributes without value sets.
+- No backend, core, CLI, `.vdos`, or `.vdmp` changes were needed.
+- Verified with `npm run build` in `vedenemo-ux`.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the planned frontend-only scope.
+- Summary: the implementation reused existing API description metadata instead
+  of adding backend endpoints or model changes.
+- Summary: dropdown options preserve entry technical values for submission and
+  include visible labels for users.
+- Summary: save-time validation was added as a small guard against stale or
+  invalid form state.
+- Summary: query forms, visualization binding controls, persistent defaults,
+  and backend validation stayed out of scope.
+- Summary: verification matched the acceptance criteria with a successful
+  frontend build.
+
 ## Plan Hexbin-map lower zoom floor and legend reachability
 
 Status: executed

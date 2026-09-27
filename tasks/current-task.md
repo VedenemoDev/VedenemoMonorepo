@@ -1,38 +1,37 @@
 # Current Task
 
-## Plan Hexbin-map lower zoom floor and legend reachability
+## Plan Entity data editor value-set dropdowns
 
 Status: executed
 
 ### Goal
 
-Improve the Hexbin-map visualization viewport so dense point legends remain
-reachable and the map can zoom out below the previous 75% floor.
+Improve the Entity data editor so attributes constrained by a fixed value set
+are selected from the declared alternatives instead of being freely typed.
 
-The concrete proof case is loading `Tontti.vdos` with `RitosentieRandom.vdmp`
-or equivalent `Ritosentie` tree data, using `Puu.lokaatio` point markers and
-the generated point legend.
+The concrete proof case is the `Tontti.vdos` model, where `Puu.laji` is a
+required `TEXT` attribute bound to the `PuuLaji` value set.
 
 ### Scope
 
 - Keep the implementation in `vedenemo-ux`.
-- Lower the Hexbin-map minimum zoom percentage slightly below 75%.
-- Keep Hexbin-map zoom and scroll behavior runtime-only.
-- Make tall subregion or point legends part of the scrollable visualization
-  content so they are not clipped outside the SVG viewport.
+- Use existing API description metadata: `AttributeDescription.valueSetAzName`
+  and `ApiDescriptionResponse.valueSets`.
+- Render value-set-backed editor fields as dropdowns.
+- Preserve existing free text, numeric, date/time, `DATA`, and `LOCATION`
+  editor behavior for attributes without fixed value sets.
 - Keep backend, model, CLI, `.vdos`, and `.vdmp` data unchanged.
 
 ### Completion Notes
 
-- Lowered the Hexbin-map minimum zoom from 75% to 55%, adding one more useful
-  toolbar zoom-out step.
-- Sized the Hexbin-map SVG canvas from the larger of the map body, subregion
-  legend, and point legend heights.
-- Moved titles and legends into the same zoomed content layer as the map, so
-  zooming out scales the legend with the rest of the visualization instead of
-  clipping it at the fixed SVG edge.
-- Preserved existing point rendering, legend entries, warnings, D3 zoom, drag
-  pan, scroll synchronization, and reset controls.
+- Added a frontend helper that resolves an attribute's referenced value set
+  from the loaded API description.
+- Rendered value-set-backed Entity data editor attributes as `<select>`
+  controls with one option per value-set entry.
+- Added save-time validation so a populated value-set-backed field must match
+  one of the declared technical values.
+- Preserved ordinary editor controls for attributes without a value set,
+  including `DATA` textareas and `LOCATION` current-location support.
 - Marked the backlog item executed and added the required
   `Planned vs. Executed Evaluation`.
 - Verified with `npm run build` in `vedenemo-ux`.
