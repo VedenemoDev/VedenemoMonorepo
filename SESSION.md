@@ -13632,3 +13632,94 @@ Current status and next steps:
 - Updated Phase 4 task notes and backlog evaluation to document the intentional
   lower-bound difference between tree charts and Hexbin-map.
 - Verification passed: `npm run build` in `vedenemo-ux`.
+
+## 2026-09-27 16:06 EEST
+
+Session goal:
+
+- Create `.vedenemo/RitosentieDemo.vdmp` from `.vedenemo/Ritosentie.vdmp`
+  with root name `Ritosentie Demo` and random tree datapoints using every
+  `PuuLaji` value set option.
+
+Files changed:
+
+- `.vedenemo/RitosentieDemo.vdmp`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short --branch`
+- `rg --files -uu | rg '(^|/)Ritosentie|\\.vdmp$|\\.vdos$'`
+- `find .vedenemo -maxdepth 1 -type f | sort`
+- `find . -path './.git' -prune -o -name '*Ritosentie*' -print`
+- `jq` inspections of `.vedenemo/Ritosentie.vdmp`, `.vedenemo/Mikonmaa.vdmp`,
+  and `.vedenemo/Metsapalsta3.vdmp`
+- `sed -n '1,260p' .vedenemo/Tontti.vdos`
+- `wc -c .vedenemo/Ritosentie.vdmp .vedenemo/Tontti.vdos`
+- `node` point generation and point-in-polygon validation scripts
+- `jq -e` structural validation for `.vedenemo/RitosentieDemo.vdmp`
+- Local web-api + CLI smoke import of `.vedenemo/Tontti.vdos` and
+  `.vedenemo/RitosentieDemo.vdmp`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added `.vedenemo/RitosentieDemo.vdmp` with root `Ritosentie Demo`.
+- Preserved the original Ritosentie parcel `LOCATION_AREA` boundary.
+- Added 36 `Puu` records, cycling through all six `PuuLaji` value set options:
+  `KUUSI`, `LEHTIKUUSI`, `TUIJA`, `LUUMUPUU`, `OMENAPUU`, and `KOIVU`.
+- Added 36 `Tontti_omistaa_Puu` links from the demo parcel to the tree records.
+- Verified all tree `lokaatio` points are inside the parcel polygon with a
+  point-in-polygon check.
+- Verified import through the local web API and CLI: created 1 `Tontti`, 36
+  `Puu` records, and 36 association links.
+
+## 2026-09-27 16:32 EEST
+
+Session goal:
+
+- Add a new backlog planning item for Hexbin-map point overlays sourced
+  directly from an entity `LOCATION` attribute, using `Tontti` / `Puu.lokaatio`
+  as the motivating case.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 160 SESSION.md`
+- `sed -n '1,220p' tasks/backlog.md`
+- `rg -n "Hexbin|hexbin|lokaatio|Point overlay|point overlay|Metsapalsta|Tontti|Puu" tasks docs vedenemo-ux/src .vedenemo`
+- `sed -n '1,260p' .vedenemo/Tontti.vdos`
+- `sed -n '1,260p' .vedenemo/Metsapalsta.vdos`
+- `git status --short --branch`
+- `sed -n '960,1188p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '1,140p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+
+Current status and next steps:
+
+- Added `Plan Hexbin-map direct point attribute overlays` at the beginning of
+  `tasks/backlog.md`, preserving newest-first backlog order.
+- The planning item distinguishes associated point paths such as
+  `Puulaji -> Mittaus` from direct point attributes such as `Puu.lokaatio`.
+- The item keeps implementation, model changes, true hexbin aggregation, and
+  backend spatial/query work out of scope.
+- No build or test command was run because this was a documentation-only
+  backlog planning change.

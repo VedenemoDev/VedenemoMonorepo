@@ -1,0 +1,607 @@
+{
+  "format": "vedenemo-instance-dump",
+  "formatVersion": 1,
+  "savedAt": "2026-09-27T00:00:00Z",
+  "model": {
+    "azName": "Tontti",
+    "visName": "Tontti",
+    "version": "1.0.0"
+  },
+  "root": {
+    "sourceInstanceRootId": "00000000-0000-0000-0000-000000297026",
+    "visName": "Ritosentie Demo"
+  },
+  "entities": [
+    {
+      "entityAzName": "Tontti",
+      "records": [
+        {
+          "dumpId": "tontti-ritosentie-demo",
+          "values": {
+            "nimi": "Ritosentie Demo",
+            "tunnus": "297-17-2-29-DEMO",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 62.91534725,
+                  "longitude": 27.68277031
+                },
+                {
+                  "latitude": 62.91568089,
+                  "longitude": 27.68337195
+                },
+                {
+                  "latitude": 62.91558152,
+                  "longitude": 27.68385217
+                },
+                {
+                  "latitude": 62.91531379,
+                  "longitude": 27.6833896
+                },
+                {
+                  "latitude": 62.91503316,
+                  "longitude": 27.68290473
+                },
+                {
+                  "latitude": 62.91504767,
+                  "longitude": 27.68281217
+                },
+                {
+                  "latitude": 62.91526197,
+                  "longitude": 27.68318244
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "entityAzName": "Puu",
+      "records": [
+        {
+          "dumpId": "puu-ritosentie-demo-01",
+          "values": {
+            "laji": "KUUSI",
+            "lokaatio": {
+              "latitude": 62.91562191,
+              "longitude": 27.68342167
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-02",
+          "values": {
+            "laji": "LEHTIKUUSI",
+            "lokaatio": {
+              "latitude": 62.91530877,
+              "longitude": 27.68326171
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-03",
+          "values": {
+            "laji": "TUIJA",
+            "lokaatio": {
+              "latitude": 62.9154249,
+              "longitude": 27.68350834
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-04",
+          "values": {
+            "laji": "LUUMUPUU",
+            "lokaatio": {
+              "latitude": 62.91510023,
+              "longitude": 27.68300891
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-05",
+          "values": {
+            "laji": "OMENAPUU",
+            "lokaatio": {
+              "latitude": 62.9155695,
+              "longitude": 27.68364435
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-06",
+          "values": {
+            "laji": "KOIVU",
+            "lokaatio": {
+              "latitude": 62.91558073,
+              "longitude": 27.6833524
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-07",
+          "values": {
+            "laji": "KUUSI",
+            "lokaatio": {
+              "latitude": 62.91543762,
+              "longitude": 27.68322507
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-08",
+          "values": {
+            "laji": "LEHTIKUUSI",
+            "lokaatio": {
+              "latitude": 62.91555964,
+              "longitude": 27.68373633
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-09",
+          "values": {
+            "laji": "TUIJA",
+            "lokaatio": {
+              "latitude": 62.91542866,
+              "longitude": 27.683195
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-10",
+          "values": {
+            "laji": "LUUMUPUU",
+            "lokaatio": {
+              "latitude": 62.91551445,
+              "longitude": 27.68342775
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-11",
+          "values": {
+            "laji": "OMENAPUU",
+            "lokaatio": {
+              "latitude": 62.9155808,
+              "longitude": 27.68337338
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-12",
+          "values": {
+            "laji": "KOIVU",
+            "lokaatio": {
+              "latitude": 62.91536552,
+              "longitude": 27.68332961
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-13",
+          "values": {
+            "laji": "KUUSI",
+            "lokaatio": {
+              "latitude": 62.91547144,
+              "longitude": 27.68335478
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-14",
+          "values": {
+            "laji": "LEHTIKUUSI",
+            "lokaatio": {
+              "latitude": 62.91551598,
+              "longitude": 27.68338935
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-15",
+          "values": {
+            "laji": "TUIJA",
+            "lokaatio": {
+              "latitude": 62.91541549,
+              "longitude": 27.68322159
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-16",
+          "values": {
+            "laji": "LUUMUPUU",
+            "lokaatio": {
+              "latitude": 62.91547099,
+              "longitude": 27.68305201
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-17",
+          "values": {
+            "laji": "OMENAPUU",
+            "lokaatio": {
+              "latitude": 62.91527239,
+              "longitude": 27.68328492
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-18",
+          "values": {
+            "laji": "KOIVU",
+            "lokaatio": {
+              "latitude": 62.9155854,
+              "longitude": 27.68321123
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-19",
+          "values": {
+            "laji": "KUUSI",
+            "lokaatio": {
+              "latitude": 62.9156143,
+              "longitude": 27.68336943
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-20",
+          "values": {
+            "laji": "LEHTIKUUSI",
+            "lokaatio": {
+              "latitude": 62.91560149,
+              "longitude": 27.6832731
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-21",
+          "values": {
+            "laji": "TUIJA",
+            "lokaatio": {
+              "latitude": 62.91538059,
+              "longitude": 27.68320614
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-22",
+          "values": {
+            "laji": "LUUMUPUU",
+            "lokaatio": {
+              "latitude": 62.91534344,
+              "longitude": 27.68304476
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-23",
+          "values": {
+            "laji": "OMENAPUU",
+            "lokaatio": {
+              "latitude": 62.91533529,
+              "longitude": 27.68310243
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-24",
+          "values": {
+            "laji": "KOIVU",
+            "lokaatio": {
+              "latitude": 62.91564791,
+              "longitude": 27.68343018
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-25",
+          "values": {
+            "laji": "KUUSI",
+            "lokaatio": {
+              "latitude": 62.91562394,
+              "longitude": 27.68342573
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-26",
+          "values": {
+            "laji": "LEHTIKUUSI",
+            "lokaatio": {
+              "latitude": 62.91545224,
+              "longitude": 27.68335035
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-27",
+          "values": {
+            "laji": "TUIJA",
+            "lokaatio": {
+              "latitude": 62.91554774,
+              "longitude": 27.68365938
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-28",
+          "values": {
+            "laji": "LUUMUPUU",
+            "lokaatio": {
+              "latitude": 62.91543486,
+              "longitude": 27.68336204
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-29",
+          "values": {
+            "laji": "OMENAPUU",
+            "lokaatio": {
+              "latitude": 62.91529083,
+              "longitude": 27.68320695
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-30",
+          "values": {
+            "laji": "KOIVU",
+            "lokaatio": {
+              "latitude": 62.9155632,
+              "longitude": 27.68347704
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-31",
+          "values": {
+            "laji": "KUUSI",
+            "lokaatio": {
+              "latitude": 62.91556239,
+              "longitude": 27.68334962
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-32",
+          "values": {
+            "laji": "LEHTIKUUSI",
+            "lokaatio": {
+              "latitude": 62.91544366,
+              "longitude": 27.68317913
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-33",
+          "values": {
+            "laji": "TUIJA",
+            "lokaatio": {
+              "latitude": 62.91543823,
+              "longitude": 27.68328218
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-34",
+          "values": {
+            "laji": "LUUMUPUU",
+            "lokaatio": {
+              "latitude": 62.91558001,
+              "longitude": 27.68383373
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-35",
+          "values": {
+            "laji": "OMENAPUU",
+            "lokaatio": {
+              "latitude": 62.9155398,
+              "longitude": 27.68361523
+            }
+          }
+        },
+        {
+          "dumpId": "puu-ritosentie-demo-36",
+          "values": {
+            "laji": "KOIVU",
+            "lokaatio": {
+              "latitude": 62.91545479,
+              "longitude": 27.68309096
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-01"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-02"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-03"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-04"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-05"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-06"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-07"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-08"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-09"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-10"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-11"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-12"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-13"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-14"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-15"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-16"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-17"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-18"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-19"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-20"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-21"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-22"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-23"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-24"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-25"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-26"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-27"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-28"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-29"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-30"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-31"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-32"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-33"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-34"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-35"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "tontti-ritosentie-demo",
+      "targetDumpId": "puu-ritosentie-demo-36"
+    }
+  ]
+}

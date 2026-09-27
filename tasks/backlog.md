@@ -1,5 +1,104 @@
 # Backlog
 
+## Plan Hexbin-map direct point attribute overlays
+
+Status: planned
+
+### Goal
+
+Extend the `Hexbin-map` point overlay planning so point markers can be sourced
+directly from a selected entity's `LOCATION` attribute, not only from an
+associated descendant entity reached through a path such as
+`Puulaji -> Mittaus`.
+
+The concrete motivating case is the `Tontti` model:
+
+```text
+Tontti -> Puu
+```
+
+`Tontti.alue` provides the map extent, associated `Puu` instances provide
+tree records, and `Puu.lokaatio` should be selectable as the point location
+attribute directly on the point entity. This should sit beside the existing
+Metsapalsta-style path binding where `Mittaus.lokaatio` is reached through an
+association from `Puulaji`.
+
+### Context
+
+The current `Hexbin-map` point overlay flow was shaped around normalized
+Metsapalsta data:
+
+```text
+Metsapalsta -> Metsakuvio -> Puulaji -> Mittaus
+```
+
+That path is useful when point coordinates live on a measurement entity and
+styling comes from an upstream classification entity. It is too narrow for
+models where the visual point is the associated entity itself. In `Tontti.vdos`,
+`Puu` has both `laji` and `lokaatio`, so the binding should not require a
+second point association after selecting the `Tontti_omistaa_Puu` relationship.
+
+The useful general concept is two point overlay source modes:
+
+- associated point path: a context entity reaches a separate point entity
+  through an additional association path;
+- direct point attribute: the selected associated entity already has the
+  `LOCATION` attribute that should render as the point marker.
+
+### Proposed Implementation Approach
+
+- Keep this as a planning item first, then implement as a frontend-only
+  `vedenemo-ux` slice unless current API payloads prove insufficient.
+- In the `Hexbin-map` binding flow, discover eligible `LOCATION` attributes on
+  the currently selected overlay/context entity as direct point candidates.
+- Offer direct candidates as peers to associated point-path candidates, with
+  wording that makes the selected source mode clear.
+- For `Tontti`, allow `Tontti_omistaa_Puu` plus `Puu.lokaatio` to render point
+  markers without requiring a further child association.
+- Let direct point styling use attributes on the same point entity first, such
+  as `Puu.laji`, while still allowing existing path-context styling where the
+  associated point mode is used.
+- Reuse existing marker rendering, legend, duplicate handling, and outside-area
+  diagnostics where possible.
+- Keep true hexbin aggregation as a later step; this item is about raw point
+  overlay binding.
+
+### Scope
+
+- Plan support for direct `LOCATION` point attributes in the `Hexbin-map`
+  point overlay binding.
+- Use `Tontti.vdos` as the concrete proof case with `Puu.lokaatio` and
+  `Puu.laji`.
+- Preserve the existing Metsapalsta association-path behavior for
+  `Mittaus.lokaatio`.
+- Keep the behavior generic rather than hard-coding `Tontti`, `Puu`, or
+  `lokaatio`.
+- Identify the smallest later implementation slice.
+
+### Out Of Scope
+
+- Implementing the feature in this planning item.
+- Changing `Tontti.vdos` or `Metsapalsta.vdos` solely for visualization.
+- Replacing association-path point overlays.
+- True hexbin aggregation or density rendering.
+- Backend query language design, database-backed spatial queries, or GIS-grade
+  topology.
+- Persistent visualization configuration.
+
+### Acceptance Criteria
+
+- The plan captures the direct point attribute target behavior:
+  `Tontti.alue` as extent and `Puu.lokaatio` as directly selectable point
+  markers.
+- The plan distinguishes direct point attributes from associated point paths
+  such as `Puulaji -> Mittaus`.
+- The plan keeps existing Metsapalsta point overlay behavior in scope for
+  preservation, not replacement.
+- The plan allows direct point styling from attributes on the point entity,
+  such as `Puu.laji`.
+- The plan keeps the implementation expectation frontend-only unless current
+  API data is insufficient.
+
 ## Phase 1: Extract shared visualization zoom viewport shell
 
 Status: executed
