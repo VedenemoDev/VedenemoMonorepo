@@ -1,5 +1,91 @@
 # Backlog
 
+## Plan Value sets tab UX refactor
+
+Status: planned
+
+### Goal
+
+Refactor the Editor `Value sets` tab so existing value sets and their entries
+can be discovered, selected, edited, and extended through obvious controls
+instead of unlabeled blank text areas.
+
+The motivating case is adding a new `TEXT` value item to an existing value set:
+the user should be able to pick the value set, choose an existing entry to
+edit, or start a clearly labeled new-entry flow without guessing what each
+blank field means.
+
+### Context
+
+The initial `Value sets` tab added the necessary cross-layer model capability,
+but the resulting UX is not intuitive enough for normal model authoring. The
+current screen does not make selection state clear, does not provide a dropdown
+or similarly obvious chooser for existing value-set entries, and does not guide
+the user through adding a new entry to an existing value set.
+
+Value sets are structural model metadata, so accidental edits are more
+expensive than ordinary form-entry mistakes. The tab should make the current
+target value set, selected entry, edit mode, and pending unsaved changes clear
+before the user saves replacement metadata.
+
+### Proposed Implementation Approach
+
+- Keep this primarily as a `vedenemo-ux` refactor over the existing value-set
+  API.
+- Review the current `Value sets` tab flow with at least the concrete path
+  "open existing value set, add new `TEXT` entry, save, see dependent dropdowns
+  refresh".
+- Replace ambiguous blank text areas with labeled controls and helper text for
+  value-set metadata and entry metadata.
+- Add an explicit existing value-set selector if the current control does not
+  make selection clear enough.
+- Add an explicit existing entry selector, such as a dropdown/listbox/table
+  selection, before showing entry edit fields.
+- Separate "edit selected entry" from "add new entry" through clear buttons,
+  form state, and save/cancel behavior.
+- Make entry fields type-aware enough that a `TEXT` technical value and visible
+  name can be added without understanding the internal replacement payload.
+- Preserve the existing loaded-instance removal blocking and removal warning
+  behavior.
+- Keep backend, core, CLI, `.vdos`, and `.vdmp` behavior unchanged unless the
+  refactor reveals a concrete API gap that needs a follow-up task.
+
+### Scope
+
+- Refactor the Editor `Value sets` tab UX in `vedenemo-ux`.
+- Improve selection of existing value sets.
+- Improve selection and editing of existing value-set entries.
+- Add a clear, labeled flow for adding a new entry to an existing value set.
+- Preserve existing save, removal-safety, and metadata-refresh behavior.
+- Preserve strict module boundaries.
+
+### Out Of Scope
+
+- Changing value-set command semantics in core.
+- Adding per-entry backend commands unless a later execution task proves they
+  are necessary.
+- Whole value-set deletion.
+- Automatic data migration for renamed or removed values.
+- Global value-set libraries.
+- Authentication, authorization, or multi-user editing controls.
+
+### Acceptance Criteria
+
+- The `Value sets` tab clearly shows which value set is selected.
+- Existing value-set entries can be selected for editing through an obvious
+  chooser such as a dropdown, listbox, or selectable table.
+- Entry edit fields have visible labels and enough guidance to distinguish
+  technical value from visible name.
+- A user can add a new `TEXT` value item to an existing value set through a
+  clearly labeled add-entry flow.
+- The UI distinguishes add-new-entry state from edit-existing-entry state.
+- Save/cancel behavior does not silently discard or overwrite the wrong entry.
+- Loaded-instance removal blocking and removal compatibility warnings still
+  work.
+- Dependent Entity data editor dropdowns still refresh after saved value-set
+  changes.
+- `cd vedenemo-ux && npm run build` succeeds.
+
 ## Plan Editor Value sets tab
 
 Status: executed
