@@ -1,35 +1,41 @@
 # Current Task
 
-## Phase 4: Harmonize visualization zoom interaction behavior
+## Plan Hexbin-map direct point attribute overlays
 
 Status: executed
 
 ### Goal
 
-Review and harmonize the shared zoom/scroll interaction across Hexbin-map, Tidy
-tree, Radial tree, and Tree of life after all renderers use the shared viewport
-shell.
+Execute the Hexbin-map point overlay improvement so a selected associated
+entity can provide point markers directly through one of its own `LOCATION`
+attributes.
+
+The concrete proof case is the `Tontti` model: after selecting
+`Tontti_omistaa_Puu`, `Puu.lokaatio` should be selectable as the point
+location without requiring a second point association.
 
 ### Scope
 
 - Keep the implementation in `vedenemo-ux`.
-- Compare zoom increments, minimum and maximum zoom bounds, reset behavior,
-  focus styling, scroll behavior, and accessibility labels across chart types.
-- Align behavior where chart differences do not justify different UX.
-- Document any intentionally chart-specific interaction differences in code
-  comments only where the reason would otherwise be unclear.
-- Keep interaction state runtime-only.
+- Preserve existing Metsapalsta-style associated point paths such as
+  `Puulaji -> Mittaus`.
+- Keep the behavior generic and metadata-driven rather than hard-coding
+  `Tontti`, `Puu`, or `lokaatio`.
+- Reuse existing point marker rendering, legend, duplicate/conflict handling,
+  outside-area diagnostics, and optional unlinked-point diagnostics.
+- Keep true hexbin aggregation, backend query changes, model changes, and
+  persistent visualization configuration out of scope.
 
 ### Completion Notes
 
-- Added shared zoom constants for the visualization viewport interaction.
-- Harmonized the toolbar zoom step across Hexbin-map, Tidy tree, Radial tree,
-  and Tree of life.
-- Restored the tree chart lower zoom bound to 40% after follow-up review
-  because it gives a useful structure overview for all tree renderers.
-- Added consistent disabled states for zoom in, zoom out, and reset controls,
-  including an explicit reset accessibility label.
-- Kept Hexbin-map's 75% lower bound and deeper maximum zoom as intentional
-  chart-specific behavior for geographic overlay inspection with D3 pan/scroll.
-- Kept zoom and scroll state runtime-only.
+- Added a direct point source option to the `Hexbin-map` point overlay binding
+  when the selected point context entity has a `LOCATION` attribute.
+- Updated point binding validation and resolution so the selected context
+  entity itself can be the point entity.
+- Preserved associated point traversal resolution for normalized paths such as
+  `Puulaji -> Mittaus`.
+- Kept rendering, CSS, backend, core, CLI, `.vdos`, and `.vdmp` unchanged.
+- Marked the backlog item executed and added the required
+  `Planned vs. Executed Evaluation`.
 - Verified with `npm run build` in `vedenemo-ux`.
+- Verified with `mvn clean verify` from the repository root.

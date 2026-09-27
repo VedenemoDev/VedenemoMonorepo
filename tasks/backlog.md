@@ -2,7 +2,7 @@
 
 ## Plan Hexbin-map direct point attribute overlays
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -47,8 +47,8 @@ The useful general concept is two point overlay source modes:
 
 ### Proposed Implementation Approach
 
-- Keep this as a planning item first, then implement as a frontend-only
-  `vedenemo-ux` slice unless current API payloads prove insufficient.
+- Keep the implementation as a frontend-only `vedenemo-ux` slice unless
+  current API payloads prove insufficient.
 - In the `Hexbin-map` binding flow, discover eligible `LOCATION` attributes on
   the currently selected overlay/context entity as direct point candidates.
 - Offer direct candidates as peers to associated point-path candidates, with
@@ -65,19 +65,19 @@ The useful general concept is two point overlay source modes:
 
 ### Scope
 
-- Plan support for direct `LOCATION` point attributes in the `Hexbin-map`
-  point overlay binding.
+- Support direct `LOCATION` point attributes in the `Hexbin-map` point overlay
+  binding.
 - Use `Tontti.vdos` as the concrete proof case with `Puu.lokaatio` and
   `Puu.laji`.
 - Preserve the existing Metsapalsta association-path behavior for
   `Mittaus.lokaatio`.
 - Keep the behavior generic rather than hard-coding `Tontti`, `Puu`, or
   `lokaatio`.
-- Identify the smallest later implementation slice.
+- Keep the implementation slice small and focused on raw point overlay
+  binding.
 
 ### Out Of Scope
 
-- Implementing the feature in this planning item.
 - Changing `Tontti.vdos` or `Metsapalsta.vdos` solely for visualization.
 - Replacing association-path point overlays.
 - True hexbin aggregation or density rendering.
@@ -98,6 +98,40 @@ The useful general concept is two point overlay source modes:
   such as `Puu.laji`.
 - The plan keeps the implementation expectation frontend-only unless current
   API data is insufficient.
+
+### Completion Notes
+
+- Implemented the direct point attribute slice in `vedenemo-ux`.
+- Added a direct point source option to the `Hexbin-map` point overlay binding
+  when the selected point context entity has one or more `LOCATION`
+  attributes.
+- Kept the existing association-path behavior for normalized Metsapalsta-style
+  paths such as `Puulaji -> Mittaus`.
+- Reused the existing point marker rendering, legend, duplicate/conflict
+  handling, outside-area diagnostics, and optional unlinked-point diagnostics.
+- For the `Tontti` model, the `Tontti_omistaa_Puu` point context can now use
+  `Puu.lokaatio` directly as the point location and `Puu.laji` or another
+  `Puu` attribute as the point style source.
+- No backend, core, CLI, `.vdos`, `.vdmp`, CSS, or architecture document
+  changes were needed.
+- Verified with `npm run build` in `vedenemo-ux`.
+- Verified with `mvn clean verify` from the repository root.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution intentionally went beyond the original planning-only item
+  because the current task requested implementing the plan.
+- Summary: the implementation stayed frontend-only as expected; existing API
+  payloads were sufficient.
+- Summary: direct point attributes are generic and keyed by model metadata, not
+  hard-coded to `Tontti`, `Puu`, or `lokaatio`.
+- Summary: existing associated point paths remain supported for
+  Metsapalsta-style normalized data.
+- Summary: true hexbin aggregation, persistent visualization configuration,
+  backend query work, spatial database behavior, and model changes stayed out
+  of scope.
+- Summary: verification exceeded the original planning acceptance criteria by
+  running both the frontend build and full backend Maven verification.
 
 ## Phase 1: Extract shared visualization zoom viewport shell
 

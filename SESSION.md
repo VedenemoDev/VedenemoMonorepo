@@ -13723,3 +13723,55 @@ Current status and next steps:
   backend spatial/query work out of scope.
 - No build or test command was run because this was a documentation-only
   backlog planning change.
+
+## 2026-09-27 16:45 EEST
+
+Session goal:
+
+- Execute the Hexbin-map direct point attribute overlay backlog item as the
+  current task, verify the build, and mark the backlog item executed while
+  preserving it as history.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 180 SESSION.md`
+- `rg -n "Hexbin|hexbin|PointOverlay|point overlay|pointOverlay|Point|LOCATION|styleContext|diagnostic|Mittaus|Puulaji" vedenemo-ux/src/App.tsx`
+- `rg -n "hexbin|point|visualization" vedenemo-ux/src/styles.css`
+- `cat vedenemo-ux/package.json`
+- `sed -n` reads of relevant Hexbin-map types, binding helpers, point
+  resolver, binding panel, traversal helpers, and task/backlog sections
+- `npm run build` in `vedenemo-ux`
+- `mvn clean verify`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `git diff --stat`
+- `git status --short --branch`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented direct point attribute overlays in `vedenemo-ux`.
+- `Hexbin-map` now offers a direct point source option when the selected point
+  context entity has `LOCATION` attributes, allowing `Tontti_omistaa_Puu` plus
+  `Puu.lokaatio` without a second point association.
+- Preserved existing associated point path behavior for normalized paths such
+  as `Puulaji -> Mittaus`.
+- Reused the existing marker rendering, legends, duplicate/conflict handling,
+  outside-area warnings, and optional unlinked-point diagnostics.
+- Updated `tasks/current-task.md`.
+- Marked the backlog item executed in `tasks/backlog.md` and added the
+  required `Planned vs. Executed Evaluation`.
+- Verification passed: `npm run build` in `vedenemo-ux`.
+- Verification passed: `mvn clean verify` from the repository root.

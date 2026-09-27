@@ -489,6 +489,7 @@ const HEXBIN_MAP_CONFLICT_POINT_STYLE: HexbinMapPointStyle = {
   color: "#111827",
   shape: "cross",
 };
+const HEXBIN_MAP_DIRECT_POINT_SOURCE_VALUE = "__direct-point-attribute";
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
   const response = await fetch("/config.json", { cache: "no-store" });
@@ -1279,6 +1280,10 @@ function selectedHexbinMapPointTraversal(
     .find((option) => traversalOptionValue(option) === binding.pointTraversalValue) ?? null;
 }
 
+function isHexbinMapDirectPointSource(binding: HexbinMapBinding): boolean {
+  return binding.pointTraversalValue === HEXBIN_MAP_DIRECT_POINT_SOURCE_VALUE;
+}
+
 function hexbinMapPatternColorStyleForIndex(index: number): HexbinMapStyle {
   const pattern = HEXBIN_MAP_STYLE_PATTERNS[index % HEXBIN_MAP_STYLE_PATTERNS.length];
   const color = HEXBIN_MAP_STYLE_COLORS[Math.floor(index / HEXBIN_MAP_STYLE_PATTERNS.length) % HEXBIN_MAP_STYLE_COLORS.length];
@@ -1462,11 +1467,13 @@ function hexbinMapBindingValidationMessage(
     if (contextTraversal === null) {
       return "Select a valid point style context association.";
     }
-    const pointTraversal = selectedHexbinMapPointTraversal(apiDescription, contextTraversal, binding);
-    if (pointTraversal === null) {
+    const directPointSource = isHexbinMapDirectPointSource(binding);
+    const pointTraversal = directPointSource ? null : selectedHexbinMapPointTraversal(apiDescription, contextTraversal, binding);
+    if (!directPointSource && pointTraversal === null) {
       return "Select a valid point association.";
     }
-    const locationAttribute = pointTraversal.relatedEntity.attributes.find((candidate) => candidate.azName === binding.pointLocationAttributeAzName) ?? null;
+    const pointEntity = directPointSource ? contextTraversal.relatedEntity : pointTraversal?.relatedEntity ?? null;
+    const locationAttribute = pointEntity?.attributes.find((candidate) => candidate.azName === binding.pointLocationAttributeAzName) ?? null;
     if (locationAttribute === null || locationAttribute.dataType !== "LOCATION") {
       return "Select a point LOCATION attribute.";
     }
@@ -1600,18 +1607,25 @@ async function resolveHexbinMapPoints(
     return { points: [], legend: [], warnings: [] };
   }
   const contextTraversal = selectedHexbinMapPointContextTraversal(apiDescription, rootOption, overlayTraversal, binding);
-  const pointTraversal = selectedHexbinMapPointTraversal(apiDescription, contextTraversal, binding);
-  if (contextTraversal === null || pointTraversal === null) {
+  if (contextTraversal === null) {
     return { points: [], legend: [], warnings: [] };
   }
+  const directPointSource = isHexbinMapDirectPointSource(binding);
+  const pointTraversal = directPointSource ? null : selectedHexbinMapPointTraversal(apiDescription, contextTraversal, binding);
+  if (!directPointSource && pointTraversal === null) {
+    return { points: [], legend: [], warnings: [] };
+  }
+  const pointEntity = directPointSource ? contextTraversal.relatedEntity : pointTraversal?.relatedEntity ?? null;
   const styleAttribute = contextTraversal.relatedEntity.attributes.find((candidate) => candidate.azName === binding.pointStyleAttributeAzName) ?? null;
-  const locationAttribute = pointTraversal.relatedEntity.attributes.find((candidate) => candidate.azName === binding.pointLocationAttributeAzName) ?? null;
-  if (styleAttribute === null || locationAttribute === null || locationAttribute.dataType !== "LOCATION") {
+  const locationAttribute = pointEntity?.attributes.find((candidate) => candidate.azName === binding.pointLocationAttributeAzName) ?? null;
+  if (styleAttribute === null || pointEntity === null || locationAttribute === null || locationAttribute.dataType !== "LOCATION") {
     return { points: [], legend: [], warnings: [] };
   }
 
   const contextLinks = await fetchAssociationLinks(apiBaseUrl, modelAzName, instanceRootId, contextTraversal.association.azName);
-  const pointLinks = await fetchAssociationLinks(apiBaseUrl, modelAzName, instanceRootId, pointTraversal.association.azName);
+  const pointLinks = directPointSource || pointTraversal === null
+    ? []
+    : await fetchAssociationLinks(apiBaseUrl, modelAzName, instanceRootId, pointTraversal.association.azName);
   const containerById = new Map(containers.map((container) => [container.id, container]));
   const contextIdsByContainerId = new Map<string, Set<string>>();
   for (const container of containers) {
@@ -1632,23 +1646,31 @@ async function resolveHexbinMapPoints(
     [...contextIdsByContainerId.values()].flatMap((ids) => [...ids]),
   );
   const pointIdsByContextId = new Map<string, Set<string>>();
-  for (const contextId of contextInstancesById.keys()) {
-    for (const link of pointLinks) {
-      const pointId = relatedInstanceIdForLink(contextId, link, pointTraversal.direction);
-      if (pointId !== null) {
-        const ids = pointIdsByContextId.get(contextId) ?? new Set<string>();
-        ids.add(pointId);
-        pointIdsByContextId.set(contextId, ids);
+  if (directPointSource) {
+    for (const contextId of contextInstancesById.keys()) {
+      pointIdsByContextId.set(contextId, new Set([contextId]));
+    }
+  } else if (pointTraversal !== null) {
+    for (const contextId of contextInstancesById.keys()) {
+      for (const link of pointLinks) {
+        const pointId = relatedInstanceIdForLink(contextId, link, pointTraversal.direction);
+        if (pointId !== null) {
+          const ids = pointIdsByContextId.get(contextId) ?? new Set<string>();
+          ids.add(pointId);
+          pointIdsByContextId.set(contextId, ids);
+        }
       }
     }
   }
-  const pointInstancesById = await fetchEntityInstancesByIds(
-    apiBaseUrl,
-    modelAzName,
-    instanceRootId,
-    pointTraversal.relatedEntity,
-    [...pointIdsByContextId.values()].flatMap((ids) => [...ids]),
-  );
+  const pointInstancesById = directPointSource
+    ? contextInstancesById
+    : await fetchEntityInstancesByIds(
+      apiBaseUrl,
+      modelAzName,
+      instanceRootId,
+      pointEntity,
+      [...pointIdsByContextId.values()].flatMap((ids) => [...ids]),
+    );
 
   type PointPath = {
     container: HexbinMapPointContainer;
@@ -1679,7 +1701,7 @@ async function resolveHexbinMapPoints(
         }
         const location = parseLocationPoint(point.values[locationAttribute.azName]);
         if (location === null) {
-          warnings.push(`${entityInstanceLabel(pointTraversal.relatedEntity, point)} has no usable ${locationAttribute.visName} LOCATION value.`);
+          warnings.push(`${entityInstanceLabel(pointEntity, point)} has no usable ${locationAttribute.visName} LOCATION value.`);
           continue;
         }
         const styleValue = formatAttributeValue(styleAttribute, context.values[styleAttribute.azName]) || "n/a";
@@ -1727,19 +1749,19 @@ async function resolveHexbinMapPoints(
     const firstPath = paths[0];
     if (conflict) {
       if (styleKeys.size > 1) {
-        warnings.push(`${entityInstanceLabel(pointTraversal.relatedEntity, firstPath.point)} is reached through multiple ${contextTraversal.relatedEntity.visName} style values.`);
+        warnings.push(`${entityInstanceLabel(pointEntity, firstPath.point)} is reached through multiple ${contextTraversal.relatedEntity.visName} style values.`);
       }
       if (containerIds.size > 1) {
-        warnings.push(`${entityInstanceLabel(pointTraversal.relatedEntity, firstPath.point)} is reached through multiple areas.`);
+        warnings.push(`${entityInstanceLabel(pointEntity, firstPath.point)} is reached through multiple areas.`);
       }
     }
     for (const path of conflict ? [firstPath] : paths) {
       if (!locationPointInsideBoundary(path.location, path.container.boundary)) {
-        warnings.push(`${entityInstanceLabel(pointTraversal.relatedEntity, path.point)} is outside associated area ${path.container.label}.`);
+        warnings.push(`${entityInstanceLabel(pointEntity, path.point)} is outside associated area ${path.container.label}.`);
       }
       points.push({
         id: path.point.id,
-        label: entityInstanceLabel(pointTraversal.relatedEntity, path.point),
+        label: entityInstanceLabel(pointEntity, path.point),
         location: path.location,
         styleKey: conflict ? "__conflict" : path.styleKey,
         styleLabel: conflict ? "Conflicting path" : path.styleLabel,
@@ -1751,7 +1773,7 @@ async function resolveHexbinMapPoints(
 
   if (binding.showUnlinkedPointDiagnostics) {
     const linkedPointIds = new Set(pointInstancesById.keys());
-    const allPointInstances = await queryEntityInstances(apiBaseUrl, modelAzName, instanceRootId, pointTraversal.relatedEntity.azName, {});
+    const allPointInstances = await queryEntityInstances(apiBaseUrl, modelAzName, instanceRootId, pointEntity.azName, {});
     for (const point of allPointInstances) {
       if (linkedPointIds.has(point.id)) {
         continue;
@@ -1762,7 +1784,7 @@ async function resolveHexbinMapPoints(
       }
       const containingContainer = containers.find((container) => locationPointInsideBoundary(location, container.boundary)) ?? null;
       if (containingContainer !== null) {
-        warnings.push(`${entityInstanceLabel(pointTraversal.relatedEntity, point)} is geometrically inside ${containingContainer.label} but is not linked through the selected point path.`);
+        warnings.push(`${entityInstanceLabel(pointEntity, point)} is geometrically inside ${containingContainer.label} but is not linked through the selected point path.`);
       }
     }
   }
@@ -5491,8 +5513,15 @@ function HexbinMapBindingPanel({
   const selectedPointContextTraversal = selectedHexbinMapPointContextTraversal(apiDescription, selectedRootOption, selectedOverlayTraversal, binding);
   const pointTraversalOptions = hexbinMapPointTraversalOptions(apiDescription, selectedPointContextTraversal);
   const selectedPointTraversal = selectedHexbinMapPointTraversal(apiDescription, selectedPointContextTraversal, binding);
-  const pointLocationAttributes = selectedPointTraversal === null ? [] : locationAttributes(selectedPointTraversal.relatedEntity);
+  const usesDirectPointSource = isHexbinMapDirectPointSource(binding);
+  const directPointLocationAttributes = selectedPointContextTraversal === null ? [] : locationAttributes(selectedPointContextTraversal.relatedEntity);
+  const pointSourceEntity = usesDirectPointSource
+    ? selectedPointContextTraversal?.relatedEntity ?? null
+    : selectedPointTraversal?.relatedEntity ?? null;
+  const pointLocationAttributes = pointSourceEntity === null ? [] : locationAttributes(pointSourceEntity);
   const pointStyleAttributes = selectedPointContextTraversal === null ? [] : selectedPointContextTraversal.relatedEntity.attributes;
+  const hasDirectPointSource = directPointLocationAttributes.length > 0;
+  const hasSelectablePointSource = hasDirectPointSource || pointTraversalOptions.length > 0;
   const hasNoSelectableOverlayAssociation = selectedRootOption !== null
     && selectedRootOption.disabledReason === undefined
     && overlayTraversalOptions.length === 0;
@@ -5537,13 +5566,18 @@ function HexbinMapBindingPanel({
 
   function selectPointContextTraversal(traversalValue: string) {
     const nextTraversal = pointContextTraversalOptions.find((option) => traversalOptionValue(option) === traversalValue) ?? null;
-    const nextPointTraversal = hexbinMapPointTraversalOptions(apiDescription, nextTraversal)[0] ?? null;
-    const nextLocationAttribute = nextPointTraversal === null ? null : locationAttributes(nextPointTraversal.relatedEntity)[0] ?? null;
+    const nextDirectLocationAttribute = nextTraversal === null ? null : locationAttributes(nextTraversal.relatedEntity)[0] ?? null;
+    const nextPointTraversal = nextDirectLocationAttribute === null
+      ? hexbinMapPointTraversalOptions(apiDescription, nextTraversal)[0] ?? null
+      : null;
+    const nextLocationAttribute = nextDirectLocationAttribute ?? (nextPointTraversal === null ? null : locationAttributes(nextPointTraversal.relatedEntity)[0] ?? null);
     const nextStyleAttribute = nextTraversal?.relatedEntity.attributes[0] ?? null;
     onBindingChange({
       ...binding,
       pointContextTraversalValue: traversalValue,
-      pointTraversalValue: nextPointTraversal === null ? "" : traversalOptionValue(nextPointTraversal),
+      pointTraversalValue: nextDirectLocationAttribute !== null
+        ? HEXBIN_MAP_DIRECT_POINT_SOURCE_VALUE
+        : nextPointTraversal === null ? "" : traversalOptionValue(nextPointTraversal),
       pointLocationAttributeAzName: nextLocationAttribute?.azName ?? "",
       pointStyleAttributeAzName: nextStyleAttribute?.azName ?? "",
       pointLegendLabelTemplate: nextStyleAttribute === null ? "{id}" : `{${nextStyleAttribute.azName}}`,
@@ -5551,8 +5585,11 @@ function HexbinMapBindingPanel({
   }
 
   function selectPointTraversal(traversalValue: string) {
-    const nextTraversal = pointTraversalOptions.find((option) => traversalOptionValue(option) === traversalValue) ?? null;
-    const nextLocationAttribute = nextTraversal === null ? null : locationAttributes(nextTraversal.relatedEntity)[0] ?? null;
+    const directPointSource = traversalValue === HEXBIN_MAP_DIRECT_POINT_SOURCE_VALUE;
+    const nextTraversal = directPointSource ? null : pointTraversalOptions.find((option) => traversalOptionValue(option) === traversalValue) ?? null;
+    const nextLocationAttribute = directPointSource
+      ? directPointLocationAttributes[0] ?? null
+      : nextTraversal === null ? null : locationAttributes(nextTraversal.relatedEntity)[0] ?? null;
     onBindingChange({
       ...binding,
       pointTraversalValue: traversalValue,
@@ -5767,7 +5804,7 @@ function HexbinMapBindingPanel({
       <section className="hexbin-overlay-binding" aria-labelledby="visualize-hexbin-points">
         <header>
           <h3 id="visualize-hexbin-points">Point Overlay</h3>
-          <span>Optional markers from linked LOCATION instances</span>
+          <span>Optional markers from direct or linked LOCATION instances</span>
         </header>
         <div className="binding-grid binding-grid-two">
           <label className="query-field query-field-wide">
@@ -5794,13 +5831,22 @@ function HexbinMapBindingPanel({
             >
               {selectedPointContextTraversal === null ? (
                 <option value="">Select a style context</option>
-              ) : pointTraversalOptions.length === 0 ? (
-                <option value="">No linked LOCATION point entity</option>
-              ) : pointTraversalOptions.map((option) => (
-                <option key={traversalOptionValue(option)} value={traversalOptionValue(option)}>
-                  {traversalLabel(option)}
-                </option>
-              ))}
+              ) : !hasSelectablePointSource ? (
+                <option value="">No direct or linked LOCATION point entity</option>
+              ) : (
+                <>
+                  {hasDirectPointSource && (
+                    <option value={HEXBIN_MAP_DIRECT_POINT_SOURCE_VALUE}>
+                      Direct LOCATION on {selectedPointContextTraversal.relatedEntity.visName}
+                    </option>
+                  )}
+                  {pointTraversalOptions.map((option) => (
+                    <option key={traversalOptionValue(option)} value={traversalOptionValue(option)}>
+                      {traversalLabel(option)}
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
           </label>
           <label className="query-field">
@@ -5808,10 +5854,10 @@ function HexbinMapBindingPanel({
             <select
               value={binding.pointLocationAttributeAzName}
               onChange={(event) => onBindingChange({ ...binding, pointLocationAttributeAzName: event.target.value })}
-              disabled={selectedPointTraversal === null}
+              disabled={pointSourceEntity === null}
             >
-              {selectedPointTraversal === null ? (
-                <option value="">Select a point association</option>
+              {pointSourceEntity === null ? (
+                <option value="">Select a point source</option>
               ) : pointLocationAttributes.map((attribute) => (
                 <option key={attribute.azName} value={attribute.azName}>
                   {attribute.visName} ({attribute.azName})
@@ -5853,7 +5899,7 @@ function HexbinMapBindingPanel({
               type="checkbox"
               checked={binding.showUnlinkedPointDiagnostics}
               onChange={(event) => onBindingChange({ ...binding, showUnlinkedPointDiagnostics: event.target.checked })}
-              disabled={selectedPointTraversal === null}
+              disabled={pointSourceEntity === null}
             />
             {selectedOverlayTraversal === null ? "Find unlinked points inside root area" : "Find unlinked points inside subregions"}
           </label>
