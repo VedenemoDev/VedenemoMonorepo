@@ -1,5 +1,92 @@
 # Backlog
 
+## Plan Hexbin-map lower zoom floor and legend reachability
+
+Status: executed
+
+### Goal
+
+Improve the `Hexbin-map` visualization viewport so users can zoom out below
+the previous 75% floor and can reach the whole legend when point styling
+creates a tall legend.
+
+The concrete motivating case is loading `Tontti.vdos` with
+`RitosentieRandom.vdmp` or equivalent `Ritosentie` tree data, selecting
+`Puu.lokaatio` as the point source, and showing the `Puu.laji` legend.
+
+### Context
+
+The Hexbin-map point overlay flow can now render direct point attributes such
+as `Puu.lokaatio`. With many legend entries, the point legend may exceed the
+available fixed SVG height. Because the legend is drawn inside the SVG, browser
+scrollbars cannot reveal portions that are clipped outside that SVG canvas.
+
+The previous Hexbin-map minimum zoom was also 75%, which left users with less
+overview room than the tree visualizations and did not fully compensate for a
+tall legend.
+
+### Proposed Implementation Approach
+
+- Keep this as a frontend-only `vedenemo-ux` adjustment.
+- Lower the Hexbin-map minimum zoom enough to provide one more useful zoom-out
+  step without matching the tree chart 40% floor.
+- Compute the Hexbin-map SVG height from the map body and legend heights so
+  tall legends have scrollable canvas space.
+- Scale titles and legends together with the map content so zoom-out behavior
+  preserves the visible overview.
+- Preserve existing D3 zoom, drag pan, scroll synchronization, point rendering,
+  warnings, and reset behavior.
+
+### Scope
+
+- Lower the Hexbin-map minimum zoom below 75%.
+- Make tall subregion and point legends reachable in the scrollable viewport.
+- Use `Tontti.vdos` plus `Ritosentie` point data as the proof case.
+- Keep implementation, state, and behavior runtime-only in the frontend.
+
+### Out Of Scope
+
+- Backend, core, CLI, `.vdos`, or `.vdmp` changes.
+- Persistent visualization settings.
+- True hexbin aggregation or density rendering.
+- Redesigning the legend as an external docked panel.
+- Changing tree chart zoom ranges.
+
+### Acceptance Criteria
+
+- Hexbin-map zoom controls allow zooming out below 75%.
+- A tall point legend is not clipped outside the SVG canvas.
+- Vertical scrolling can reach the full legend when the legend is taller than
+  the visible viewport.
+- Existing map point rendering, legend labels, warnings, drag pan, scroll
+  synchronization, and reset controls still work.
+- `cd vedenemo-ux && npm run build` succeeds.
+
+### Completion Notes
+
+- Lowered the Hexbin-map minimum zoom from 75% to 55%.
+- Added one additional useful toolbar zoom-out step while keeping the tree
+  chart 40% minimum unchanged.
+- Sized the Hexbin-map SVG canvas from the larger of the base map body,
+  subregion legend height, and point legend height.
+- Moved titles and legends into the same scaled content layer as the map
+  geometry so zooming out also scales the legend instead of clipping it.
+- Preserved frontend-only scope; no backend, CLI, model, `.vdos`, or `.vdmp`
+  changes were needed.
+- Verified with `npm run build` in `vedenemo-ux`.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the planned frontend-only scope.
+- Summary: the zoom floor changed to 55%, giving one more zoom-out click from
+  75% with the existing 1.35 zoom step.
+- Summary: the implementation fixed legend reachability by expanding and
+  scaling the SVG content rather than redesigning the legend UI.
+- Summary: no backend, model, CLI, data file, persistent settings, or tree
+  chart zoom changes were made.
+- Summary: verification matched the acceptance criteria with a successful
+  frontend build.
+
 ## Plan Hexbin-map direct point attribute overlays
 
 Status: executed

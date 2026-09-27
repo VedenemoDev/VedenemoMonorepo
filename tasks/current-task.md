@@ -1,41 +1,38 @@
 # Current Task
 
-## Plan Hexbin-map direct point attribute overlays
+## Plan Hexbin-map lower zoom floor and legend reachability
 
 Status: executed
 
 ### Goal
 
-Execute the Hexbin-map point overlay improvement so a selected associated
-entity can provide point markers directly through one of its own `LOCATION`
-attributes.
+Improve the Hexbin-map visualization viewport so dense point legends remain
+reachable and the map can zoom out below the previous 75% floor.
 
-The concrete proof case is the `Tontti` model: after selecting
-`Tontti_omistaa_Puu`, `Puu.lokaatio` should be selectable as the point
-location without requiring a second point association.
+The concrete proof case is loading `Tontti.vdos` with `RitosentieRandom.vdmp`
+or equivalent `Ritosentie` tree data, using `Puu.lokaatio` point markers and
+the generated point legend.
 
 ### Scope
 
 - Keep the implementation in `vedenemo-ux`.
-- Preserve existing Metsapalsta-style associated point paths such as
-  `Puulaji -> Mittaus`.
-- Keep the behavior generic and metadata-driven rather than hard-coding
-  `Tontti`, `Puu`, or `lokaatio`.
-- Reuse existing point marker rendering, legend, duplicate/conflict handling,
-  outside-area diagnostics, and optional unlinked-point diagnostics.
-- Keep true hexbin aggregation, backend query changes, model changes, and
-  persistent visualization configuration out of scope.
+- Lower the Hexbin-map minimum zoom percentage slightly below 75%.
+- Keep Hexbin-map zoom and scroll behavior runtime-only.
+- Make tall subregion or point legends part of the scrollable visualization
+  content so they are not clipped outside the SVG viewport.
+- Keep backend, model, CLI, `.vdos`, and `.vdmp` data unchanged.
 
 ### Completion Notes
 
-- Added a direct point source option to the `Hexbin-map` point overlay binding
-  when the selected point context entity has a `LOCATION` attribute.
-- Updated point binding validation and resolution so the selected context
-  entity itself can be the point entity.
-- Preserved associated point traversal resolution for normalized paths such as
-  `Puulaji -> Mittaus`.
-- Kept rendering, CSS, backend, core, CLI, `.vdos`, and `.vdmp` unchanged.
+- Lowered the Hexbin-map minimum zoom from 75% to 55%, adding one more useful
+  toolbar zoom-out step.
+- Sized the Hexbin-map SVG canvas from the larger of the map body, subregion
+  legend, and point legend heights.
+- Moved titles and legends into the same zoomed content layer as the map, so
+  zooming out scales the legend with the rest of the visualization instead of
+  clipping it at the fixed SVG edge.
+- Preserved existing point rendering, legend entries, warnings, D3 zoom, drag
+  pan, scroll synchronization, and reset controls.
 - Marked the backlog item executed and added the required
   `Planned vs. Executed Evaluation`.
 - Verified with `npm run build` in `vedenemo-ux`.
-- Verified with `mvn clean verify` from the repository root.

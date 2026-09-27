@@ -6773,8 +6773,27 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     }
 
     const width = 960;
-    const height = 640;
+    const mapCanvasHeight = 640;
     const padding = 48;
+    const subregionLegendEntrySpacing = 30;
+    const pointLegendEntrySpacing = 28;
+    const legendEntryTop = 48;
+    const legendBottomPadding = 18;
+    const legendContentBottom = 18;
+    const subregionLegendHeight = data.subregions.length > 0
+      ? legendEntryTop + Math.max(0, data.subregions.length - 1) * subregionLegendEntrySpacing + legendContentBottom + legendBottomPadding
+      : 0;
+    const pointLegendEntries = data.points.some((point) => point.conflict)
+      ? [...data.pointLegend, { key: "__conflict", label: "Conflicting path", style: HEXBIN_MAP_CONFLICT_POINT_STYLE }]
+      : data.pointLegend;
+    const pointLegendHeight = pointLegendEntries.length > 0
+      ? legendEntryTop + Math.max(0, pointLegendEntries.length - 1) * pointLegendEntrySpacing + legendContentBottom + legendBottomPadding
+      : 0;
+    const height = Math.max(
+      mapCanvasHeight,
+      subregionLegendHeight + padding * 2,
+      pointLegendHeight + padding * 2,
+    );
     const allBoundaries = [data.boundary, ...data.subregions.map((subregion) => subregion.boundary)];
     const allPoints = [...allBoundaries.flat(), ...data.points.map((point) => point.location)];
     const longitudes = allPoints.map((point) => point.longitude);
@@ -6787,11 +6806,11 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     const maxLatitude = latitudeExtent[1] ?? minLatitude;
     const longitudeSpan = Math.max(maxLongitude - minLongitude, 0.000001);
     const latitudeSpan = Math.max(maxLatitude - minLatitude, 0.000001);
-    const scale = Math.min((width - padding * 2) / longitudeSpan, (height - padding * 2) / latitudeSpan);
+    const scale = Math.min((width - padding * 2) / longitudeSpan, (mapCanvasHeight - padding * 2) / latitudeSpan);
     const mapWidth = longitudeSpan * scale;
-    const mapHeight = latitudeSpan * scale;
+    const projectedMapHeight = latitudeSpan * scale;
     const offsetX = (width - mapWidth) / 2;
-    const offsetY = (height - mapHeight) / 2;
+    const offsetY = (mapCanvasHeight - projectedMapHeight) / 2;
     const projectPoint = (point: LocationPoint): [number, number] => [
       offsetX + (point.longitude - minLongitude) * scale,
       offsetY + (maxLatitude - point.latitude) * scale,
@@ -6931,7 +6950,10 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .attr("width", width)
       .attr("height", height);
 
-    const mapLayer = svg.append("g")
+    const contentLayer = svg.append("g")
+      .attr("class", "hexbin-map-content-layer");
+
+    const mapLayer = contentLayer.append("g")
       .attr("class", "hexbin-map-zoom-layer");
 
     mapLayer.append("path")
@@ -6991,7 +7013,7 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       svg.select<SVGRectElement>(".hexbin-map-background")
         .attr("width", nextWidth)
         .attr("height", nextHeight);
-      mapLayer.attr("transform", `scale(${nextScale})`);
+      contentLayer.attr("transform", `scale(${nextScale})`);
 
       if (viewportElement === null || syncingScrollRef.current) {
         return;
@@ -7031,20 +7053,20 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     };
     viewportElement?.addEventListener("scroll", syncZoomToScroll);
 
-    svg.append("text")
+    contentLayer.append("text")
       .attr("class", "hexbin-map-title")
       .attr("x", padding)
       .attr("y", 34)
       .text(data.title);
 
-    svg.append("text")
+    contentLayer.append("text")
       .attr("class", "hexbin-map-detail")
       .attr("x", padding)
       .attr("y", 56)
       .text(data.detail);
 
     if (data.overlayNotice) {
-      svg.append("text")
+      contentLayer.append("text")
         .attr("class", "hexbin-map-notice")
         .attr("x", padding)
         .attr("y", 78)
@@ -7054,11 +7076,8 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     if (data.subregions.length > 0) {
       const legendWidth = 268;
       const legendTitleY = 25;
-      const legendEntryTop = 48;
-      const legendEntrySpacing = 30;
-      const legendBottomPadding = 18;
-      const legendHeight = legendEntryTop + Math.max(0, data.subregions.length - 1) * legendEntrySpacing + 18 + legendBottomPadding;
-      const legend = svg.append("g")
+      const legendHeight = subregionLegendHeight;
+      const legend = contentLayer.append("g")
         .attr("class", "hexbin-map-legend")
         .attr("transform", `translate(${width - legendWidth - padding}, ${padding})`);
       legend.append("rect")
@@ -7075,7 +7094,7 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
         .selectAll("g")
         .data(data.subregions)
         .join("g")
-        .attr("transform", (_subregion, index) => `translate(0, ${index * legendEntrySpacing})`);
+        .attr("transform", (_subregion, index) => `translate(0, ${index * subregionLegendEntrySpacing})`);
       entries.append("rect")
         .attr("width", 18)
         .attr("height", 18)
@@ -7088,17 +7107,11 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
         .text((subregion) => subregion.label);
     }
 
-    if (data.pointLegend.length > 0 || data.points.some((point) => point.conflict)) {
-      const entriesData = data.points.some((point) => point.conflict)
-        ? [...data.pointLegend, { key: "__conflict", label: "Conflicting path", style: HEXBIN_MAP_CONFLICT_POINT_STYLE }]
-        : data.pointLegend;
+    if (pointLegendEntries.length > 0) {
       const legendWidth = 268;
       const legendTitleY = 25;
-      const legendEntryTop = 48;
-      const legendEntrySpacing = 28;
-      const legendBottomPadding = 18;
-      const legendHeight = legendEntryTop + Math.max(0, entriesData.length - 1) * legendEntrySpacing + 18 + legendBottomPadding;
-      const legend = svg.append("g")
+      const legendHeight = pointLegendHeight;
+      const legend = contentLayer.append("g")
         .attr("class", "hexbin-map-legend hexbin-map-point-legend")
         .attr("transform", `translate(${padding}, ${height - legendHeight - padding})`);
       legend.append("rect")
@@ -7113,9 +7126,9 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       const entries = legend.append("g")
         .attr("transform", `translate(23, ${legendEntryTop + 8})`)
         .selectAll("g")
-        .data(entriesData)
+        .data(pointLegendEntries)
         .join("g")
-        .attr("transform", (_entry, index) => `translate(0, ${index * legendEntrySpacing})`);
+        .attr("transform", (_entry, index) => `translate(0, ${index * pointLegendEntrySpacing})`);
       entries.append("path")
         .attr("d", (entry) => symbolPathForStyle(entry.style, 72))
         .attr("fill", (entry) => entry.style.color)
@@ -7242,7 +7255,7 @@ const VISUALIZATION_ZOOM_STEP = 1.35;
 const VISUALIZATION_ZOOM_EPSILON = 0.001;
 const VISUALIZATION_TREE_ZOOM_MIN = 0.4;
 const VISUALIZATION_TREE_ZOOM_MAX = 3.5;
-const VISUALIZATION_HEXBIN_ZOOM_MIN = 0.75;
+const VISUALIZATION_HEXBIN_ZOOM_MIN = 0.55;
 // Hexbin-map keeps a deeper D3 zoom range because users inspect geographic
 // overlays and synchronized pan/scroll detail, while tree charts scale labels.
 const VISUALIZATION_HEXBIN_ZOOM_MAX = 12;

@@ -13775,3 +13775,53 @@ Current status and next steps:
   required `Planned vs. Executed Evaluation`.
 - Verification passed: `npm run build` in `vedenemo-ux`.
 - Verification passed: `mvn clean verify` from the repository root.
+
+## 2026-09-27 17:43 EEST
+
+Session goal:
+
+- Execute the Hexbin-map lower zoom floor and legend reachability item so
+  `Puu.lokaatio` point legends remain reachable for `Tontti` / `Ritosentie`
+  data and the map can zoom out below 75%.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 160 SESSION.md`
+- `git status --short`
+- `rg -n "ZOOM|zoom|min|legend|Hexbin|hexbin|visualization" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `sed -n '1,180p' tasks/backlog.md`
+- `find .vedenemo -maxdepth 1 -type f | sort`
+- `sed -n '6750,7175p' vedenemo-ux/src/App.tsx`
+- `sed -n '1070,1230p' vedenemo-ux/src/styles.css`
+- `sed -n '7175,7265p' vedenemo-ux/src/App.tsx`
+- `npm run build` in `vedenemo-ux`
+- `git diff -- vedenemo-ux/src/App.tsx`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git diff --stat`
+- `git diff -- tasks/current-task.md tasks/backlog.md`
+- `npm run dev -- --host 127.0.0.1` in `vedenemo-ux`
+
+Current status and next steps:
+
+- Lowered `Hexbin-map` minimum zoom from 75% to 55%, adding one more useful
+  zoom-out step with the existing toolbar scale factor.
+- Made the Hexbin-map SVG canvas account for tall subregion and point legends.
+- Moved titles and legends into the same scaled content layer as the map so
+  zooming out no longer clips them at the fixed SVG edge.
+- Updated `tasks/current-task.md`.
+- Added the executed backlog item and its `Planned vs. Executed Evaluation`.
+- Verification passed: `npm run build` in `vedenemo-ux`.
+- Vite dev server started at `http://127.0.0.1:5173/`.
