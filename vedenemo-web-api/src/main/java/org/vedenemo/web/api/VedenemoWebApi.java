@@ -115,7 +115,7 @@ public final class VedenemoWebApi {
             ModelInstanceService instanceService = new ModelInstanceService(modelRegistry, new ModelInstanceRegistry());
             modelChangeBroadcaster.register(javalinConfig.routes);
             new ModelsResource(modelRegistry, commandJournal, modelChangeBroadcaster).register(javalinConfig.routes);
-            new SessionResource(sessionManager, modelRegistry, modelChangeBroadcaster).register(javalinConfig.routes);
+            new SessionResource(sessionManager, modelRegistry, instanceService, modelChangeBroadcaster).register(javalinConfig.routes);
             new InstanceDataResource(instanceService, dumpStore, dumpScope, clock).register(javalinConfig.routes);
             new ConsoleResource(WebConsoleSessionRegistryFactory.create(
                     sessionManager,

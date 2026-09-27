@@ -18,7 +18,7 @@ type ModelLoadState = "idle" | "loading" | "ok" | "error";
 type ModelConnectionState = "disconnected" | "connecting" | "connected" | "error";
 type ConsoleStatus = "loading" | "ready" | "error";
 type ActiveTab = "models" | "modelInstances";
-type EditorTab = "entity" | "associations";
+type EditorTab = "entity" | "associations" | "valueSets";
 type ModelInstanceLoadState = "idle" | "loading" | "ok" | "error";
 type QueryOperator = "=" | "<" | ">" | "contains";
 
@@ -80,6 +80,22 @@ type ValueSetDescription = {
 type ValueSetEntryDescription = {
   technicalValue: unknown;
   visName: string;
+};
+
+type ValueSetEntryDraft = {
+  id: string;
+  technicalValue: string;
+  visName: string;
+  originalTechnicalValue?: string;
+};
+
+type ValueSetDraft = {
+  mode: "create" | "edit";
+  originalAzName?: string;
+  originalEntries: string[];
+  azName: string;
+  dataType: string;
+  entries: ValueSetEntryDraft[];
 };
 
 type AssociationDescription = {
@@ -612,6 +628,83 @@ async function renameModelInstanceRoot(apiBaseUrl: string, modelAzName: string, 
   }
 
   return response.json() as Promise<ModelInstanceRootResponse>;
+}
+
+async function startBackendSession(apiBaseUrl: string): Promise<string> {
+  const response = await fetch(`${apiBaseUrl}/sessions/start`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+
+  const body = (await response.json()) as { sessionId: string };
+  return body.sessionId;
+}
+
+async function endBackendSession(apiBaseUrl: string, sessionId: string): Promise<void> {
+  await fetch(`${apiBaseUrl}/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" });
+}
+
+async function selectBackendSessionModel(apiBaseUrl: string, sessionId: string, modelAzName: string): Promise<void> {
+  const response = await fetch(`${apiBaseUrl}/sessions/${encodeURIComponent(sessionId)}/selected-model`, {
+    method: "PUT",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ azName: modelAzName }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+}
+
+async function createValueSet(
+  apiBaseUrl: string,
+  sessionId: string,
+  valueSet: ValueSetDraft,
+): Promise<ValueSetDescription> {
+  const response = await fetch(`${apiBaseUrl}/sessions/${encodeURIComponent(sessionId)}/commands/create-value-set`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(valueSetCommandBody(valueSet)),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+
+  return response.json() as Promise<ValueSetDescription>;
+}
+
+async function replaceValueSet(
+  apiBaseUrl: string,
+  sessionId: string,
+  valueSet: ValueSetDraft,
+): Promise<ValueSetDescription> {
+  const response = await fetch(`${apiBaseUrl}/sessions/${encodeURIComponent(sessionId)}/commands/replace-value-set`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(valueSetCommandBody(valueSet)),
+  });
+
+  if (!response.ok) {
+    throw new Error(await readErrorMessage(response));
+  }
+
+  return response.json() as Promise<ValueSetDescription>;
 }
 
 async function queryEntityInstances(
@@ -2824,6 +2917,91 @@ function valueSetOptionValue(entry: ValueSetEntryDescription): string {
   return formatInstanceValue(entry.technicalValue);
 }
 
+function valueSetDraftFrom(valueSet: ValueSetDescription): ValueSetDraft {
+  return {
+    mode: "edit",
+    originalAzName: valueSet.azName,
+    originalEntries: valueSet.entries.map(valueSetOptionValue),
+    azName: valueSet.azName,
+    dataType: valueSet.dataType,
+    entries: valueSet.entries.map((entry, index) => {
+      const technicalValue = valueSetOptionValue(entry);
+      return {
+        id: `${valueSet.azName}-${index}-${technicalValue}`,
+        technicalValue,
+        visName: entry.visName,
+        originalTechnicalValue: technicalValue,
+      };
+    }),
+  };
+}
+
+function emptyValueSetDraft(): ValueSetDraft {
+  return {
+    mode: "create",
+    originalEntries: [],
+    azName: "",
+    dataType: "TEXT",
+    entries: [newValueSetEntryDraft()],
+  };
+}
+
+function newValueSetEntryDraft(): ValueSetEntryDraft {
+  return {
+    id: crypto.randomUUID(),
+    technicalValue: "",
+    visName: "",
+  };
+}
+
+function valueSetCommandBody(valueSet: ValueSetDraft): {
+  valueSetAzName: string;
+  dataType: string;
+  entries: Array<{ technicalValue: string; visName: string }>;
+} {
+  return {
+    valueSetAzName: valueSet.azName.trim(),
+    dataType: valueSet.dataType,
+    entries: valueSet.entries.map((entry) => ({
+      technicalValue: entry.technicalValue.trim(),
+      visName: entry.visName.trim(),
+    })),
+  };
+}
+
+function valueSetDraftValidationMessage(valueSet: ValueSetDraft): string | null {
+  if (!valueSet.azName.trim()) {
+    return "Value set technical name is required";
+  }
+  if (valueSet.entries.length === 0) {
+    return "Add at least one value";
+  }
+  const seenValues = new Set<string>();
+  for (const entry of valueSet.entries) {
+    const technicalValue = entry.technicalValue.trim();
+    if (!technicalValue) {
+      return "Each value needs a technical value";
+    }
+    if (!entry.visName.trim()) {
+      return "Each value needs a visible name";
+    }
+    const key = technicalValue.toLocaleLowerCase();
+    if (seenValues.has(key)) {
+      return "Value technical values must be unique";
+    }
+    seenValues.add(key);
+  }
+  return null;
+}
+
+function removedValueSetDraftValues(valueSet: ValueSetDraft): string[] {
+  if (valueSet.mode !== "edit") {
+    return [];
+  }
+  const nextValues = new Set(valueSet.entries.map((entry) => entry.technicalValue.trim()));
+  return valueSet.originalEntries.filter((value) => !nextValues.has(value));
+}
+
 function absoluteApiUrl(apiBaseUrl: string, path: string): string {
   if (!apiBaseUrl) {
     return path;
@@ -3410,6 +3588,11 @@ function EditorPage() {
   const [selectedParentInstanceId, setSelectedParentInstanceId] = useState("");
   const [createdParentAssociationLink, setCreatedParentAssociationLink] = useState<AssociationLinkResponse | null>(null);
   const [parentLinkError, setParentLinkError] = useState("");
+  const [selectedValueSetAzName, setSelectedValueSetAzName] = useState("");
+  const [valueSetDraft, setValueSetDraft] = useState<ValueSetDraft>(emptyValueSetDraft());
+  const [valueSetUsage, setValueSetUsage] = useState<Record<string, number>>({});
+  const [isLoadingValueSetUsage, setIsLoadingValueSetUsage] = useState(false);
+  const [isSavingValueSet, setIsSavingValueSet] = useState(false);
   const [status, setStatus] = useState<ModelInstanceLoadState>("loading");
   const [statusMessage, setStatusMessage] = useState("Loading editor...");
   const [isSaving, setIsSaving] = useState(false);
@@ -3528,6 +3711,7 @@ function EditorPage() {
   const selectedEntity = apiDescription?.entities.find((entity) => entity.azName === selectedEntityAzName) ?? null;
   const selectedRoot = roots.find((root) => root.instanceRootId === selectedRootId) ?? null;
   const selectedAssociation = apiDescription?.associations?.find((association) => association.azName === selectedAssociationAzName) ?? null;
+  const selectedValueSet = apiDescription?.valueSets?.find((valueSet) => valueSet.azName === selectedValueSetAzName) ?? null;
   const selectedAssociationSourceEntity = selectedAssociation === null
     ? null
     : findEntity(apiDescription?.entities ?? [], selectedAssociation.sourceEntityAzName);
@@ -3548,6 +3732,81 @@ function EditorPage() {
   const selectedParentContextOption = parentContextOptions.find((option) => option.association.azName === selectedParentContextAssociationAzName) ?? null;
   const showParentLinkSection = parentAssociationOptions.length > 0
     && (willCreate || parentLinkError.length > 0 || createdParentAssociationLink !== null);
+
+  useEffect(() => {
+    if (apiDescription === null) {
+      setSelectedValueSetAzName("");
+      setValueSetDraft(emptyValueSetDraft());
+      return;
+    }
+    const valueSets = apiDescription.valueSets ?? [];
+    if (valueSetDraft.mode === "create") {
+      return;
+    }
+    const nextValueSet = valueSets.find((valueSet) => valueSet.azName === selectedValueSetAzName) ?? valueSets[0] ?? null;
+    setSelectedValueSetAzName(nextValueSet?.azName ?? "");
+    setValueSetDraft(nextValueSet === null ? emptyValueSetDraft() : valueSetDraftFrom(nextValueSet));
+  }, [apiDescription]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadValueSetUsage() {
+      if (
+        activeEditorTab !== "valueSets"
+        || apiDescription === null
+        || !apiBaseUrl
+        || !selectedModelAzName
+        || roots.length === 0
+      ) {
+        setValueSetUsage({});
+        setIsLoadingValueSetUsage(false);
+        return;
+      }
+
+      setIsLoadingValueSetUsage(true);
+      try {
+        const nextUsage: Record<string, number> = {};
+        const boundAttributes = apiDescription.entities.flatMap((entity) => (
+          entity.attributes
+            .filter((attribute) => attribute.valueSetAzName)
+            .map((attribute) => ({ entity, attribute }))
+        ));
+        await Promise.all(roots.map(async (root) => {
+          await Promise.all(boundAttributes.map(async ({ entity, attribute }) => {
+            const instances = await queryEntityInstances(apiBaseUrl, selectedModelAzName, root.instanceRootId, entity.azName, {});
+            for (const instance of instances) {
+              const value = instance.values[attribute.azName];
+              if (value === undefined || value === null) {
+                continue;
+              }
+              const key = `${attribute.valueSetAzName ?? ""}\u0000${formatInstanceValue(value)}`;
+              nextUsage[key] = (nextUsage[key] ?? 0) + 1;
+            }
+          }));
+        }));
+        if (!cancelled) {
+          setValueSetUsage(nextUsage);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setValueSetUsage({});
+          setStatus("error");
+          setStatusMessage(error instanceof Error ? error.message : "Value set usage load failed");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingValueSetUsage(false);
+        }
+      }
+    }
+
+    void loadValueSetUsage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeEditorTab, apiBaseUrl, selectedModelAzName, roots, apiDescription]);
 
   useEffect(() => {
     let cancelled = false;
@@ -3827,6 +4086,9 @@ function EditorPage() {
     setSelectedParentInstanceId("");
     setCreatedParentAssociationLink(null);
     setParentLinkError("");
+    setSelectedValueSetAzName("");
+    setValueSetDraft(emptyValueSetDraft());
+    setValueSetUsage({});
     setLoadedInstanceId("");
     setCreateCopy(false);
     setLocatingAttributeAzName("");
@@ -3870,6 +4132,7 @@ function EditorPage() {
     setSelectedParentInstanceId("");
     setCreatedParentAssociationLink(null);
     setParentLinkError("");
+    setValueSetUsage({});
   }
 
   function selectAssociation(nextAssociationAzName: string) {
@@ -3901,6 +4164,97 @@ function EditorPage() {
     setSelectedParentInstanceId("");
     setCreatedParentAssociationLink(null);
     setParentLinkError("");
+  }
+
+  function selectValueSet(nextValueSetAzName: string) {
+    const nextValueSet = apiDescription?.valueSets?.find((valueSet) => valueSet.azName === nextValueSetAzName) ?? null;
+    setSelectedValueSetAzName(nextValueSetAzName);
+    setValueSetDraft(nextValueSet === null ? emptyValueSetDraft() : valueSetDraftFrom(nextValueSet));
+    setStatusMessage(nextValueSet === null ? "New value set" : "Ready");
+  }
+
+  function startNewValueSet() {
+    setSelectedValueSetAzName("");
+    setValueSetDraft(emptyValueSetDraft());
+    setStatus("ok");
+    setStatusMessage("New value set");
+  }
+
+  function updateValueSetEntry(entryId: string, patch: Partial<Pick<ValueSetEntryDraft, "technicalValue" | "visName">>) {
+    setValueSetDraft((current) => ({
+      ...current,
+      entries: current.entries.map((entry) => entry.id === entryId ? { ...entry, ...patch } : entry),
+    }));
+  }
+
+  function addValueSetEntry() {
+    setValueSetDraft((current) => ({
+      ...current,
+      entries: [...current.entries, newValueSetEntryDraft()],
+    }));
+  }
+
+  function valueSetEntryUsageCount(valueSetAzName: string, technicalValue: string): number {
+    return valueSetUsage[`${valueSetAzName}\u0000${technicalValue}`] ?? 0;
+  }
+
+  function removeValueSetEntry(entryId: string) {
+    setValueSetDraft((current) => ({
+      ...current,
+      entries: current.entries.filter((entry) => entry.id !== entryId),
+    }));
+  }
+
+  async function submitValueSet(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!apiBaseUrl || !selectedModelAzName || apiDescription === null) {
+      setStatus("error");
+      setStatusMessage("Select a model");
+      return;
+    }
+
+    const validationMessage = valueSetDraftValidationMessage(valueSetDraft);
+    if (validationMessage !== null) {
+      setStatus("error");
+      setStatusMessage(validationMessage);
+      return;
+    }
+    const removedValues = removedValueSetDraftValues(valueSetDraft);
+    const blockedValue = removedValues.find((value) => valueSetEntryUsageCount(valueSetDraft.originalAzName ?? valueSetDraft.azName, value) > 0);
+    if (blockedValue !== undefined) {
+      setStatus("error");
+      setStatusMessage(`${blockedValue} is used by loaded model instance data`);
+      return;
+    }
+    if (removedValues.length > 0 && !window.confirm("Removing value-set values may break older .vdmp model dumps or external data that still use those values.")) {
+      return;
+    }
+
+    setIsSavingValueSet(true);
+    setStatus("loading");
+    setStatusMessage(valueSetDraft.mode === "create" ? "Creating value set..." : "Saving value set...");
+    let sessionId = "";
+    try {
+      sessionId = await startBackendSession(apiBaseUrl);
+      await selectBackendSessionModel(apiBaseUrl, sessionId, selectedModelAzName);
+      const saved = valueSetDraft.mode === "create"
+        ? await createValueSet(apiBaseUrl, sessionId, valueSetDraft)
+        : await replaceValueSet(apiBaseUrl, sessionId, valueSetDraft);
+      const refreshedApi = await fetchModelInstanceApi(apiBaseUrl, selectedModelAzName);
+      setApiDescription(refreshedApi);
+      setSelectedValueSetAzName(saved.azName);
+      setValueSetDraft(valueSetDraftFrom(saved));
+      setStatus("ok");
+      setStatusMessage(valueSetDraft.mode === "create" ? `Created ${saved.azName}` : `Saved ${saved.azName}`);
+    } catch (error) {
+      setStatus("error");
+      setStatusMessage(error instanceof Error ? error.message : "Value set save failed");
+    } finally {
+      if (sessionId) {
+        void endBackendSession(apiBaseUrl, sessionId);
+      }
+      setIsSavingValueSet(false);
+    }
   }
 
   function useCurrentLocation(attribute: AttributeDescription) {
@@ -4126,6 +4480,15 @@ function EditorPage() {
             aria-selected={activeEditorTab === "associations"}
           >
             Associations
+          </button>
+          <button
+            type="button"
+            className={activeEditorTab === "valueSets" ? "editor-tab editor-tab-active" : "editor-tab"}
+            onClick={() => setActiveEditorTab("valueSets")}
+            role="tab"
+            aria-selected={activeEditorTab === "valueSets"}
+          >
+            Value sets
           </button>
         </div>
 
@@ -4379,7 +4742,7 @@ function EditorPage() {
               </button>
             </div>
           </form>
-        ) : (
+        ) : activeEditorTab === "associations" ? (
           <form className="editor-form" onSubmit={(event) => void submitAssociation(event)}>
             <div className="query-field">
               <label htmlFor="editor-association">Association type</label>
@@ -4461,6 +4824,109 @@ function EditorPage() {
                 }
               >
                 Create
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form className="editor-form" onSubmit={(event) => void submitValueSet(event)}>
+            <div className="editor-context-grid">
+              <div className="query-field">
+                <label htmlFor="editor-value-set">Value set</label>
+                <select
+                  id="editor-value-set"
+                  value={selectedValueSetAzName}
+                  onChange={(event) => selectValueSet(event.target.value)}
+                  disabled={status === "loading" || apiDescription === null || (apiDescription.valueSets?.length ?? 0) === 0}
+                >
+                  {(apiDescription?.valueSets?.length ?? 0) === 0 ? (
+                    <option value="">No value sets</option>
+                  ) : apiDescription?.valueSets?.map((valueSet) => (
+                    <option key={valueSet.azName} value={valueSet.azName}>
+                      {valueSet.azName} ({valueSet.dataType})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="editor-actions editor-actions-inline">
+                <button type="button" onClick={startNewValueSet} disabled={status === "loading" || isSavingValueSet}>
+                  New
+                </button>
+              </div>
+            </div>
+
+            <div className="editor-context-grid">
+              <div className="query-field">
+                <label htmlFor="editor-value-set-az-name">Technical name</label>
+                <input
+                  id="editor-value-set-az-name"
+                  value={valueSetDraft.azName}
+                  onChange={(event) => setValueSetDraft((current) => ({ ...current, azName: event.target.value }))}
+                  disabled={status === "loading" || isSavingValueSet || valueSetDraft.mode === "edit"}
+                />
+              </div>
+              <div className="query-field">
+                <label htmlFor="editor-value-set-data-type">Data type</label>
+                <select
+                  id="editor-value-set-data-type"
+                  value={valueSetDraft.dataType}
+                  onChange={(event) => setValueSetDraft((current) => ({ ...current, dataType: event.target.value }))}
+                  disabled={status === "loading" || isSavingValueSet || valueSetDraft.mode === "edit"}
+                >
+                  <option value="TEXT">TEXT</option>
+                  <option value="NUMERIC">NUMERIC</option>
+                  <option value="DATE">DATE</option>
+                  <option value="TIME">TIME</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="value-set-entry-table">
+              <div className="value-set-entry-row value-set-entry-heading">
+                <span>Technical value</span>
+                <span>Visible name</span>
+                <span>Use</span>
+                <span>Action</span>
+              </div>
+              {valueSetDraft.entries.map((entry) => {
+                const usageCount = valueSetDraft.mode === "edit" && entry.originalTechnicalValue !== undefined
+                  ? valueSetEntryUsageCount(valueSetDraft.originalAzName ?? valueSetDraft.azName, entry.originalTechnicalValue)
+                  : 0;
+                const removeDisabled = status === "loading" || isSavingValueSet || usageCount > 0 || valueSetDraft.entries.length <= 1;
+                return (
+                  <div key={entry.id} className="value-set-entry-row">
+                    <input
+                      value={entry.technicalValue}
+                      onChange={(event) => updateValueSetEntry(entry.id, { technicalValue: event.target.value })}
+                      disabled={status === "loading" || isSavingValueSet}
+                    />
+                    <input
+                      value={entry.visName}
+                      onChange={(event) => updateValueSetEntry(entry.id, { visName: event.target.value })}
+                      disabled={status === "loading" || isSavingValueSet}
+                    />
+                    <span className={usageCount > 0 ? "value-set-entry-used" : "value-set-entry-unused"}>
+                      {isLoadingValueSetUsage ? "Checking" : usageCount > 0 ? `${usageCount}` : "0"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeValueSetEntry(entry.id)}
+                      disabled={removeDisabled}
+                      title={usageCount > 0 ? "Used by loaded model instance data" : undefined}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="editor-actions">
+              <button type="button" onClick={addValueSetEntry} disabled={status === "loading" || isSavingValueSet}>
+                Add value
+              </button>
+              <span className={`model-status model-status-${status}`}>{statusMessage}</span>
+              <button type="submit" disabled={status === "loading" || isSavingValueSet || apiDescription === null}>
+                {valueSetDraft.mode === "create" ? "Create" : "Save"}
               </button>
             </div>
           </form>

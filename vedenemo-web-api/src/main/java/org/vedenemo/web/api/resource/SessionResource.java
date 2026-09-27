@@ -8,17 +8,26 @@ import org.vedenemo.core.command.CreateAssociationCommand;
 import org.vedenemo.core.command.CreateAttributeCommand;
 import org.vedenemo.core.command.CreateEntityCommand;
 import org.vedenemo.core.command.CreateValueSetCommand;
+import org.vedenemo.core.command.ReplaceValueSetCommand;
 import org.vedenemo.core.command.SetAttributeValueSetCommand;
 import org.vedenemo.core.command.UndoResult;
+import org.vedenemo.core.instance.EntityInstance;
+import org.vedenemo.core.instance.ModelInstanceRoot;
+import org.vedenemo.core.instance.ModelInstanceService;
 import org.vedenemo.core.model.AssociationKind;
 import org.vedenemo.core.model.Cardinality;
 import org.vedenemo.core.model.DataType;
+import org.vedenemo.core.model.ModelRoot;
+import org.vedenemo.core.model.VAttribute;
+import org.vedenemo.core.model.VEntity;
+import org.vedenemo.core.model.ValueSet;
 import org.vedenemo.core.model.ValueSetEntry;
 import org.vedenemo.core.registry.ModelRegistry;
 import org.vedenemo.core.session.Session;
 import org.vedenemo.core.session.SessionManager;
 import org.vedenemo.web.api.events.ModelChangeBroadcaster;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.List;
@@ -28,11 +37,12 @@ public final class SessionResource {
 
     private final SessionManager sessionManager;
     private final ModelRegistry modelRegistry;
+    private final ModelInstanceService instanceService;
     private final ModelChangeBroadcaster modelChangeBroadcaster;
     private final ObjectMapper objectMapper;
 
     public SessionResource(SessionManager sessionManager, ModelRegistry modelRegistry) {
-        this(sessionManager, modelRegistry, new ModelChangeBroadcaster());
+        this(sessionManager, modelRegistry, new ModelInstanceService(modelRegistry, new org.vedenemo.core.instance.ModelInstanceRegistry()), new ModelChangeBroadcaster());
     }
 
     public SessionResource(
@@ -40,8 +50,18 @@ public final class SessionResource {
             ModelRegistry modelRegistry,
             ModelChangeBroadcaster modelChangeBroadcaster
     ) {
+        this(sessionManager, modelRegistry, new ModelInstanceService(modelRegistry, new org.vedenemo.core.instance.ModelInstanceRegistry()), modelChangeBroadcaster);
+    }
+
+    public SessionResource(
+            SessionManager sessionManager,
+            ModelRegistry modelRegistry,
+            ModelInstanceService instanceService,
+            ModelChangeBroadcaster modelChangeBroadcaster
+    ) {
         this.sessionManager = Objects.requireNonNull(sessionManager, "sessionManager must not be null");
         this.modelRegistry = Objects.requireNonNull(modelRegistry, "modelRegistry must not be null");
+        this.instanceService = Objects.requireNonNull(instanceService, "instanceService must not be null");
         this.modelChangeBroadcaster = Objects.requireNonNull(modelChangeBroadcaster, "modelChangeBroadcaster must not be null");
         this.objectMapper = new ObjectMapper();
     }
@@ -225,6 +245,50 @@ public final class SessionResource {
             }
             writeJson(context, 200, new ValueSetResponse(request.valueSetAzName(), dataType.name(), request.entries()));
         });
+        routes.post("/sessions/{uuid}/commands/replace-value-set", context -> {
+            UUID sessionId = parseSessionId(context.pathParam("uuid"));
+            if (sessionId == null) {
+                writeJson(context, 400, new ErrorResponse("session uuid is invalid"));
+                return;
+            }
+            Optional<CommandExecutor> executor = sessionManager.findExecutor(sessionId);
+            if (executor.isEmpty()) {
+                writeJson(context, 404, new ErrorResponse("session not found"));
+                return;
+            }
+            Optional<String> selectedModelAzName = executor.orElseThrow().session().selectedModelAzName();
+            if (selectedModelAzName.isEmpty()) {
+                writeJson(context, 400, new ErrorResponse("no selected model"));
+                return;
+            }
+            ReplaceValueSetRequest request;
+            DataType dataType;
+            ValueSet currentValueSet;
+            List<ValueSetEntry> nextEntries;
+            try {
+                request = objectMapper.readValue(context.body(), ReplaceValueSetRequest.class);
+                dataType = parseDataType(request.dataType());
+                ModelRoot modelRoot = modelRegistry.find(selectedModelAzName.orElseThrow())
+                        .orElseThrow(() -> new IllegalStateException("selected model not found"));
+                currentValueSet = modelRoot.findValueSet(request.valueSetAzName())
+                        .orElseThrow(() -> new IllegalArgumentException("ValueSet not found: " + request.valueSetAzName()));
+                nextEntries = valueSetEntries(request.entries());
+                ValueSet nextValueSet = new ValueSet(request.valueSetAzName(), dataType, nextEntries);
+                rejectRemovedLoadedValues(modelRoot, currentValueSet, nextValueSet);
+                executor.orElseThrow().execute(new ReplaceValueSetCommand(
+                        selectedModelAzName.orElseThrow(),
+                        request.valueSetAzName(),
+                        dataType,
+                        nextEntries,
+                        currentValueSet.entries()
+                ));
+                modelChangeBroadcaster.broadcastModelChanged(selectedModelAzName.orElseThrow());
+            } catch (JsonProcessingException | IllegalArgumentException | IllegalStateException | NullPointerException exception) {
+                writeJson(context, 400, new ErrorResponse(exception.getMessage()));
+                return;
+            }
+            writeJson(context, 200, new ValueSetResponse(request.valueSetAzName(), dataType.name(), request.entries()));
+        });
         routes.post("/sessions/{uuid}/commands/set-attribute-value-set", context -> {
             UUID sessionId = parseSessionId(context.pathParam("uuid"));
             if (sessionId == null) {
@@ -394,6 +458,9 @@ public final class SessionResource {
     private record CreateValueSetRequest(String valueSetAzName, String dataType, List<ValueSetEntryRequest> entries) {
     }
 
+    private record ReplaceValueSetRequest(String valueSetAzName, String dataType, List<ValueSetEntryRequest> entries) {
+    }
+
     private record SetAttributeValueSetRequest(String entityAzName, String attributeAzName, String valueSetAzName) {
     }
 
@@ -487,5 +554,43 @@ public final class SessionResource {
             return null;
         }
         return Cardinality.parse(value);
+    }
+
+    private static List<ValueSetEntry> valueSetEntries(List<ValueSetEntryRequest> entries) {
+        return Objects.requireNonNull(entries, "entries must not be null").stream()
+                .map(entry -> new ValueSetEntry(entry.technicalValue(), entry.visName()))
+                .toList();
+    }
+
+    private void rejectRemovedLoadedValues(ModelRoot modelRoot, ValueSet currentValueSet, ValueSet nextValueSet) {
+        if (currentValueSet.type() != nextValueSet.type()) {
+            throw new IllegalArgumentException("ValueSet dataType cannot be changed");
+        }
+        List<ValueSetEntry> removedEntries = currentValueSet.entries().stream()
+                .filter(entry -> !nextValueSet.containsTechnicalValue(entry.technicalValue()))
+                .toList();
+        if (removedEntries.isEmpty()) {
+            return;
+        }
+        for (ValueSetEntry removedEntry : removedEntries) {
+            ValueSet singleRemovedValue = new ValueSet(currentValueSet.azName(), currentValueSet.type(), List.of(removedEntry));
+            for (VEntity entity : modelRoot.entities()) {
+                for (VAttribute attribute : entity.attributes()) {
+                    if (attribute.valueSetAzName() == null
+                            || !ValueSet.uniquenessKey(attribute.valueSetAzName()).equals(ValueSet.uniquenessKey(currentValueSet.azName()))) {
+                        continue;
+                    }
+                    for (ModelInstanceRoot root : instanceService.listRoots(modelRoot.azName())) {
+                        for (EntityInstance instance : instanceService.listEntityInstances(modelRoot.azName(), root.instanceRootId(), entity.azName(), Map.of())) {
+                            org.vedenemo.core.instance.InstanceValue value = instance.values().get(attribute.azName());
+                            if (value != null && singleRemovedValue.containsTechnicalValue(value.value())) {
+                                throw new IllegalStateException("ValueSet value is used by loaded instance " + instance.id().value()
+                                        + " in " + entity.azName() + "." + attribute.azName());
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

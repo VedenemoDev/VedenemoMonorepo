@@ -65,6 +65,16 @@ public final class ModelRoot {
         return Optional.ofNullable(valueSetsByAzName.remove(ModelTextRules.uniquenessKey(azName)));
     }
 
+    public synchronized ValueSet replaceValueSet(ValueSet valueSet) {
+        Objects.requireNonNull(valueSet, "valueSet must not be null");
+        String key = ValueSet.uniquenessKey(valueSet.azName());
+        if (!valueSetsByAzName.containsKey(key)) {
+            throw new IllegalArgumentException("ValueSet not found");
+        }
+        valueSetsByAzName.put(key, valueSet);
+        return valueSet;
+    }
+
     public synchronized Optional<ValueSet> findValueSet(String azName) {
         return Optional.ofNullable(valueSetsByAzName.get(ValueSet.uniquenessKey(azName)));
     }

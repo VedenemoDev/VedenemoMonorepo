@@ -2,7 +2,7 @@
 
 ## Plan Editor Value sets tab
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -84,6 +84,41 @@ removed technical value.
 - Entity data editor dropdowns reflect value-set changes after refresh.
 - `mvn clean verify` succeeds.
 - `cd vedenemo-ux && npm run build` succeeds.
+
+### Completion Notes
+
+- Added `ModelRoot.replaceValueSet`.
+- Added pure core `ReplaceValueSetCommand` and wired it through
+  `CommandExecutor`, undo, `ModelCommandJournal`, and `.vdos`
+  `replace-value-set` import/export.
+- Added `POST /sessions/{uuid}/commands/replace-value-set` to the web API.
+- The web API checks loaded model-instance roots before replacement and rejects
+  removal of values currently used through attributes bound to the value set.
+- Added an Editor `Value sets` tab with value-set selection, new value-set
+  creation, entry add/edit/remove controls, loaded usage counts, and metadata
+  refresh after save.
+- Removal is disabled for values used by loaded instance data and confirmed
+  with a `.vdmp` / external-data compatibility warning when allowed.
+- Updated `docs/architecture_doc.md` for the new command, endpoint, and Editor
+  flow.
+- Verified with `mvn clean verify`.
+- Verified with `npm run build` in `vedenemo-ux`.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the planned cross-layer scope while preserving
+  pure core/model rules, web API DTO handling, and frontend-as-client
+  boundaries.
+- Summary: the implementation uses an atomic whole-value-set replacement
+  command for edits rather than separate add/edit/remove item commands.
+- Summary: the loaded-instance removal rule is enforced both in the frontend
+  UX and at the web API boundary using `ModelInstanceService`.
+- Summary: whole value-set deletion, automatic data migration, historical
+  aliases, and dump migration stayed out of scope.
+- Summary: architecture documentation was updated because command, endpoint,
+  script, and Editor runtime flows changed.
+- Summary: verification matched the acceptance criteria with successful
+  backend and frontend builds.
 
 ## Plan higher-confidence current-location capture
 

@@ -65,6 +65,17 @@ public record UndoResult(
         );
     }
 
+    public static UndoResult undoneReplaceValueSet(String modelAzName, String valueSetAzName) {
+        return new UndoResult(
+                Status.UNDONE,
+                "replace-value-set",
+                modelAzName,
+                null,
+                Objects.requireNonNull(valueSetAzName, "valueSetAzName must not be null"),
+                null
+        );
+    }
+
     public static UndoResult undoneSetAttributeValueSet(String modelAzName, String entityAzName, String attributeAzName) {
         return new UndoResult(
                 Status.UNDONE,

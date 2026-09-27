@@ -68,6 +68,9 @@ public final class ModelCommandJournal {
         if (command instanceof CreateValueSetCommand createValueSetCommand) {
             return createValueSetCommand.modelAzName();
         }
+        if (command instanceof ReplaceValueSetCommand replaceValueSetCommand) {
+            return replaceValueSetCommand.modelAzName();
+        }
         if (command instanceof SetAttributeValueSetCommand setAttributeValueSetCommand) {
             return setAttributeValueSetCommand.modelAzName();
         }

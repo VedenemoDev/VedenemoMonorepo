@@ -21,7 +21,7 @@ subgraph UX["Frontend"]
     UXPlantUml["PlantUmlModelAdapter<br/>model-to-PlantUML source"]
     UXPlantUmlRenderer["PlantUmlDiagramRendererAdapter<br/>lazy PlantUML SVG renderer"]
     UXInstanceTree["Model instances tab<br/>runtime entity count tree"]
-    UXEntityEditor["Data editor<br/>/editor entity and association tabs"]
+    UXEntityEditor["Data editor<br/>/editor entity, association, and value-set tabs"]
     UXApiDocs["Model instance API docs<br/>/modelInstanceApi docs and try-it controls"]
     UXVisualizer["Visualization wizard<br/>/visualizeWizard runtime D3 charts"]
     UXConsole["browser virtual CLI<br/>/console and embedded pane"]
@@ -67,13 +67,13 @@ ViteUX -->|fetch model data| UXPlantUml
 ViteUX -->|connect/disconnect| UXModelEvents
 ViteUX -->|lazy render diagram| UXPlantUmlRenderer
 ViteUX -->|fetch runtime instance counts| UXInstanceTree
-ViteUX -->|create/update runtime entity data and links| UXEntityEditor
+ViteUX -->|create/update runtime entity data, links, and value sets| UXEntityEditor
 ViteUX -->|render and execute root-scoped API docs| UXApiDocs
 ViteUX -->|bind and render runtime instance data| UXVisualizer
 ViteUX --> UXConsole
 UXPlantUml -->|GET model/entity/attribute APIs| WebApi
 UXInstanceTree -->|GET /models/list and /data APIs| WebApi
-UXEntityEditor -->|GET/POST/PUT /data APIs| WebApi
+UXEntityEditor -->|GET/POST/PUT /data and session command APIs| WebApi
 UXApiDocs -->|GET metadata and execute root-scoped /data APIs| WebApi
 UXVisualizer -->|GET metadata, entity data, and association links| WebApi
 UXModelEvents -->|WebSocket /models/events| WebApi
@@ -96,6 +96,7 @@ ModelsResource --> ScriptService
 ModelsResource --> ModelEvents
 SessionResource --> SessionManager
 SessionResource --> ModelRegistry
+SessionResource --> InstanceService
 SessionResource --> ModelEvents
 InstanceDataResource --> InstanceService
 InstanceDataResource --> DumpService
@@ -202,7 +203,8 @@ Dependencies:
 
 Core command module. It currently contains a sealed `Command` marker interface,
 `NoOpCommand`, `CreateEntityCommand`, `CreateAttributeCommand`,
-`CreateValueSetCommand`, `SetAttributeValueSetCommand`,
+`CreateValueSetCommand`, `ReplaceValueSetCommand`,
+`SetAttributeValueSetCommand`,
 `CreateAssociationCommand`, internal `DeleteEntityCommand`,
 `DeleteAttributeCommand`, `DeleteValueSetCommand`,
 `ClearAttributeValueSetCommand`, and `DeleteAssociationCommand` counterparts,
@@ -227,8 +229,8 @@ in the model journal.
 
 `CommandExecutor` is bound to exactly one active `Session` and the process-local
 `ModelRegistry`. It can execute `CreateEntityCommand` against the selected
-model, `CreateValueSetCommand` against the selected model,
-`CreateAttributeCommand` against an entity in the selected model,
+model, `CreateValueSetCommand` and `ReplaceValueSetCommand` against the
+selected model, `CreateAttributeCommand` against an entity in the selected model,
 `SetAttributeValueSetCommand` against an existing compatible attribute, and
 `CreateAssociationCommand` against the selected model. `CreateAssociationCommand`
 creates directed ownership/reference associations or bidirectional relations
@@ -238,8 +240,10 @@ commands are not recorded. Undo is stack-based and only applies to the latest
 successful command: create-entity is undone through the internal
 `DeleteEntityCommand` inverse, create-attribute is undone through the internal
 `DeleteAttributeCommand` inverse, create-value-set is undone through the
-internal `DeleteValueSetCommand` inverse, set-attribute-value-set is undone
-through the internal `ClearAttributeValueSetCommand` inverse, and
+internal `DeleteValueSetCommand` inverse, replace-value-set is undone by
+restoring the previous entry list carried by the command,
+set-attribute-value-set is undone through the internal
+`ClearAttributeValueSetCommand` inverse, and
 create-association is undone through the internal `DeleteAssociationCommand`
 inverse. Undo removes the original command
 from active session command history and from the model-level command journal,
@@ -253,7 +257,8 @@ format. The format is UTF-8 text with:
 - `vedenemo-script 1` header
 - one model metadata line
 - a `commands` section using stable command slugs such as `create-entity`,
-  `create-attribute`, and `create-association`
+  `create-attribute`, `create-value-set`, `replace-value-set`, and
+  `create-association`
 - a `snapshot` section containing the final entity/attribute tree, attribute
   required/optional metadata, model-level associations, and lifecycle version
   metadata including `activeSince`, `deprecatedSince`, and optional
@@ -562,6 +567,11 @@ and exposes:
 - `POST /sessions/{uuid}/commands/create-value-set`, which creates a
   model-level `ValueSet` in the session's selected model through
   `CommandExecutor`
+- `POST /sessions/{uuid}/commands/replace-value-set`, which replaces the entry
+  list for an existing same-typed model-level `ValueSet`; before execution the
+  web API checks loaded model-instance roots through `ModelInstanceService` and
+  rejects removal of a technical value that is currently used by an attribute
+  bound to that value set
 - `POST /sessions/{uuid}/commands/set-attribute-value-set`, which attaches a
   compatible model-level `ValueSet` to an existing attribute in the session's
   selected model through `CommandExecutor`
@@ -681,15 +691,20 @@ Current user-facing behavior:
   updated alias is persisted in the process-local backend dataset metadata
 - opens `/editor` from the model-instance root node menu to create entity
   instances and association links for that model-instance root
-- exposes `/editor` as a dynamic schema-driven data editor with separate entity
-  and association tabs; the entity tab uses URL parameters `modelAzName`,
-  `instanceRootId`, optional `entityAzName`, and optional `instanceId`; omitted
-  `instanceId` means create mode, while a present `instanceId` loads that entity
-  instance for edit
+- exposes `/editor` as a dynamic schema-driven data editor with separate entity,
+  association, and value-set tabs; the entity tab uses URL parameters
+  `modelAzName`, `instanceRootId`, optional `entityAzName`, and optional
+  `instanceId`; omitted `instanceId` means create mode, while a present
+  `instanceId` loads that entity instance for edit
 - supports editor copy mode for loaded instances by submitting the current form
   values through the create endpoint so the backend assigns a new instance id
 - lets the association editor tab create source/target instance links by
   selecting a modeled association and existing endpoint entity instances
+- lets the value-set editor tab create model-level value sets and replace
+  existing value-set entries through ephemeral backend sessions; the tab
+  disables removal for entry technical values used by loaded model-instance
+  data and confirms removals because older `.vdmp` dumps or external data may
+  still refer to removed values
 - exposes `/queryConsole` for a model-instance root and lets entity-shaped
   query results open in `/editor` edit mode from the result node menu
 - exposes `/modelInstanceApi` from the model-instance root node menu as a
@@ -1069,6 +1084,17 @@ sequenceDiagram
         API-->>UX: target endpoint instances
         UX->>API: POST /data/{modelAzName}/roots/{instanceRootId}/_links/{associationAzName}
         API-->>UX: created association link
+    else value-set tab
+        UX->>API: query loaded roots/entities for value-set usage
+        API-->>UX: loaded instance values
+        UX->>API: POST /sessions/start
+        API-->>UX: backend session id
+        UX->>API: PUT /sessions/{uuid}/selected-model
+        API-->>UX: 204 selected
+        UX->>API: POST /sessions/{uuid}/commands/create-value-set or replace-value-set
+        API-->>UX: saved value-set definition
+        UX->>API: DELETE /sessions/{uuid}
+        API-->>UX: 204 removed
     end
 ```
 

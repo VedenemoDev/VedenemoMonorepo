@@ -1,37 +1,38 @@
 # Current Task
 
-## Plan Entity data editor value-set dropdowns
+## Plan Editor Value sets tab
 
 Status: executed
 
 ### Goal
 
-Improve the Entity data editor so attributes constrained by a fixed value set
-are selected from the declared alternatives instead of being freely typed.
-
-The concrete proof case is the `Tontti.vdos` model, where `Puu.laji` is a
-required `TEXT` attribute bound to the `PuuLaji` value set.
+Add a new `Value sets` tab to the Editor so users can create model value sets
+and maintain existing value-set entries from the UI.
 
 ### Scope
 
-- Keep the implementation in `vedenemo-ux`.
-- Use existing API description metadata: `AttributeDescription.valueSetAzName`
-  and `ApiDescriptionResponse.valueSets`.
-- Render value-set-backed editor fields as dropdowns.
-- Preserve existing free text, numeric, date/time, `DATA`, and `LOCATION`
-  editor behavior for attributes without fixed value sets.
-- Keep backend, model, CLI, `.vdos`, and `.vdmp` data unchanged.
+- Add value-set authoring to the Editor UI.
+- Support creating new value sets.
+- Support adding, editing, and removing value-set entries.
+- Block removal of entry technical values used by loaded model instance data.
+- Warn before removals because older `.vdmp` dumps or external data may still
+  refer to removed values.
+- Preserve strict module boundaries.
 
 ### Completion Notes
 
-- Added a frontend helper that resolves an attribute's referenced value set
-  from the loaded API description.
-- Rendered value-set-backed Entity data editor attributes as `<select>`
-  controls with one option per value-set entry.
-- Added save-time validation so a populated value-set-backed field must match
-  one of the declared technical values.
-- Preserved ordinary editor controls for attributes without a value set,
-  including `DATA` textareas and `LOCATION` current-location support.
+- Added `ReplaceValueSetCommand` in pure core and wired execution, undo,
+  journal targeting, and `.vdos` import/export for `replace-value-set`.
+- Added `ModelRoot.replaceValueSet`.
+- Added `POST /sessions/{uuid}/commands/replace-value-set`.
+- The web API rejects replacement that removes a value currently used by loaded
+  model-instance data.
+- Added the Editor `Value sets` tab with create/edit entry workflows.
+- The tab disables entry removal when loaded instance usage is detected and
+  confirms removals for older dump/external-data compatibility.
+- The tab refreshes API metadata after save so Entity dropdowns see changes.
+- Updated `docs/architecture_doc.md`.
 - Marked the backlog item executed and added the required
   `Planned vs. Executed Evaluation`.
+- Verified with `mvn clean verify`.
 - Verified with `npm run build` in `vedenemo-ux`.

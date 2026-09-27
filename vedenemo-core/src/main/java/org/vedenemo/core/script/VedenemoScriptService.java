@@ -6,6 +6,7 @@ import org.vedenemo.core.command.CreateAttributeCommand;
 import org.vedenemo.core.command.CreateEntityCommand;
 import org.vedenemo.core.command.CreateValueSetCommand;
 import org.vedenemo.core.command.ModelCommandJournal;
+import org.vedenemo.core.command.ReplaceValueSetCommand;
 import org.vedenemo.core.command.SetAttributeValueSetCommand;
 import org.vedenemo.core.model.Association;
 import org.vedenemo.core.model.AssociationKind;
@@ -146,6 +147,14 @@ public final class VedenemoScriptService {
                     + valueSetEntryFields(valueSet)
                     + " activeSince=" + modelVersion;
         }
+        if (command instanceof ReplaceValueSetCommand replaceValueSetCommand) {
+            ValueSet valueSet = new ValueSet(replaceValueSetCommand.valueSetAzName(), replaceValueSetCommand.dataType(), replaceValueSetCommand.entries());
+            return "replace-value-set model=" + replaceValueSetCommand.modelAzName()
+                    + " valueSet=" + replaceValueSetCommand.valueSetAzName()
+                    + " dataType=" + replaceValueSetCommand.dataType().name()
+                    + valueSetEntryFields(valueSet)
+                    + " activeSince=" + modelVersion;
+        }
         if (command instanceof SetAttributeValueSetCommand setAttributeValueSetCommand) {
             return "set-attribute-value-set model=" + setAttributeValueSetCommand.modelAzName()
                     + " entity=" + setAttributeValueSetCommand.entityAzName()
@@ -190,6 +199,14 @@ public final class VedenemoScriptService {
                     createValueSetCommand.valueSetAzName(),
                     createValueSetCommand.dataType(),
                     createValueSetCommand.entries()
+            );
+        }
+        if (command instanceof ReplaceValueSetCommand replaceValueSetCommand) {
+            return new ReplaceValueSetCommand(
+                    modelAzName,
+                    replaceValueSetCommand.valueSetAzName(),
+                    replaceValueSetCommand.dataType(),
+                    replaceValueSetCommand.entries()
             );
         }
         if (command instanceof SetAttributeValueSetCommand setAttributeValueSetCommand) {
@@ -242,6 +259,19 @@ public final class VedenemoScriptService {
                     createValueSetCommand.valueSetAzName(),
                     createValueSetCommand.dataType(),
                     createValueSetCommand.entries()
+            ));
+            return;
+        }
+        if (command instanceof ReplaceValueSetCommand replaceValueSetCommand) {
+            ValueSet current = modelRoot.findValueSet(replaceValueSetCommand.valueSetAzName())
+                    .orElseThrow(() -> new IllegalArgumentException("ValueSet not found: " + replaceValueSetCommand.valueSetAzName()));
+            if (current.type() != replaceValueSetCommand.dataType()) {
+                throw new IllegalArgumentException("ValueSet dataType cannot be changed");
+            }
+            modelRoot.replaceValueSet(new ValueSet(
+                    replaceValueSetCommand.valueSetAzName(),
+                    replaceValueSetCommand.dataType(),
+                    replaceValueSetCommand.entries()
             ));
             return;
         }
@@ -323,6 +353,12 @@ public final class VedenemoScriptService {
                     values.get("valueSet")
             );
             case "create-value-set" -> new CreateValueSetCommand(
+                    required(values, "model", lineIndex),
+                    required(values, "valueSet", lineIndex),
+                    DataType.valueOf(required(values, "dataType", lineIndex)),
+                    parseValueSetEntries(DataType.valueOf(required(values, "dataType", lineIndex)), values, lineIndex)
+            );
+            case "replace-value-set" -> new ReplaceValueSetCommand(
                     required(values, "model", lineIndex),
                     required(values, "valueSet", lineIndex),
                     DataType.valueOf(required(values, "dataType", lineIndex)),

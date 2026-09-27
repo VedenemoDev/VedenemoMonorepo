@@ -13979,3 +13979,98 @@ Current status and next steps:
   warning about older `.vdmp` dump compatibility, refreshing dependent editor
   dropdowns, and preserving module boundaries.
 - No product code was changed in this session.
+
+## 2026-09-27 22:03 EEST
+
+Session goal:
+
+- Execute the `Plan Editor Value sets tab` backlog item.
+
+Files changed:
+
+- `vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/Command.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/ModelCommandJournal.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/ReplaceValueSetCommand.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/command/UndoResult.java`
+- `vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `docs/architecture_doc.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,240p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 140 SESSION.md`
+- `sed -n '1,140p' tasks/backlog.md`
+- `rg -n "ValueSet|valueSet|VALUE_SET|value set|valueset" vedenemo-model-api vedenemo-core vedenemo-web-api vedenemo-cli vedenemo-ux/src .vedenemo scripts`
+- `rg -n "Create.*Command|Command|undo|journal|execute|ModelCommand|Entity|Attribute" vedenemo-core/src/main/java vedenemo-web-api/src/main/java | head -n 240`
+- `rg -n "Editor|editor|tab|selected.*Tab|Entity data|Model editor|editorTabs|active" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `find vedenemo-core/src/main/java vedenemo-model-api/src/main/java vedenemo-web-api/src/main/java -type f | sort`
+- `sed -n '1,180p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ValueSet.java`
+- `sed -n '1,130p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java`
+- `sed -n '1,280p' vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `sed -n '1,120p' vedenemo-core/src/main/java/org/vedenemo/core/command/Command.java`
+- `sed -n '1,80p' vedenemo-core/src/main/java/org/vedenemo/core/command/CreateValueSetCommand.java`
+- `sed -n '1,380p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `sed -n '1,360p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '1,240p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/VedenemoWebApi.java`
+- `sed -n '1,260p' vedenemo-core/src/main/java/org/vedenemo/core/command/ModelCommandJournal.java`
+- `sed -n '360,760p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/SessionResource.java`
+- `sed -n '660,760p' vedenemo-web-api/src/main/java/org/vedenemo/web/api/resource/InstanceDataResource.java`
+- `sed -n '3380,4070p' vedenemo-ux/src/App.tsx`
+- `sed -n '4070,4465p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,240p' vedenemo-ux/src/App.tsx`
+- `rg -n "async function .*Session|startSession|selected-model|create-value-set|fetch\\(|httpJson|requestJson|api" vedenemo-ux/src/App.tsx | head -n 260`
+- `sed -n '2320,2605p' vedenemo-ux/src/App.tsx`
+- `sed -n '1640,1890p' vedenemo-ux/src/styles.css`
+- `sed -n '480,755p' vedenemo-ux/src/App.tsx`
+- `sed -n '120,360p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '580,640p' vedenemo-core/src/main/java/org/vedenemo/core/script/VedenemoScriptService.java`
+- `sed -n '1,120p' vedenemo-core/src/main/java/org/vedenemo/core/instance/EntityInstanceQuery.java`
+- `rg -n "listRoots|listEntityInstances|describeApi" vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,130p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '130,230p' vedenemo-core/src/main/java/org/vedenemo/core/instance/ModelInstanceService.java`
+- `sed -n '1,80p' vedenemo-core/src/main/java/org/vedenemo/core/instance/EntityInstance.java`
+- `sed -n '1,60p' vedenemo-core/src/main/java/org/vedenemo/core/instance/InstanceValue.java`
+- `sed -n '1,110p' vedenemo-core/src/main/java/org/vedenemo/core/command/UndoResult.java`
+- `cat vedenemo-ux/tsconfig.json`
+- `mvn -q -DskipTests compile`
+- `npm run build` in `vedenemo-ux`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `sed -n '1,260p' docs/architecture_doc.md`
+- `rg -n "value set|ValueSet|Editor|command|SessionResource|data editor|API" docs/architecture_doc.md`
+- `sed -n '200,275p' docs/architecture_doc.md`
+- `sed -n '540,575p' docs/architecture_doc.md`
+- `sed -n '675,705p' docs/architecture_doc.md`
+- `sed -n '1040,1078p' docs/architecture_doc.md`
+- `mvn clean verify`
+- `npm run build` in `vedenemo-ux`
+- `sed -n '1,120p' tasks/backlog.md`
+- `git diff --stat`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `git status --short`
+- `sed -n '1,125p' tasks/current-task.md`
+- `sed -n '1,135p' tasks/backlog.md`
+
+Current status and next steps:
+
+- Added value-set replacement support in pure core and `.vdos` import/export.
+- Added web API replacement endpoint with loaded-instance removal safety checks.
+- Added the Editor `Value sets` tab with create/edit entry workflows, usage
+  counts, removal blocking, removal warning, and API metadata refresh.
+- Updated `docs/architecture_doc.md`, `tasks/current-task.md`, and
+  `tasks/backlog.md`.
+- Verification passed: `mvn clean verify`.
+- Verification passed: `npm run build` in `vedenemo-ux`.

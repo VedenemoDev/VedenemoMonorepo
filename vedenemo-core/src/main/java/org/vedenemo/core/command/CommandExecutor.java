@@ -92,6 +92,18 @@ public final class CommandExecutor {
             apply(new DeleteValueSetCommand(createValueSetCommand.modelAzName(), createValueSetCommand.valueSetAzName()));
             return UndoResult.undoneCreateValueSet(createValueSetCommand.modelAzName(), createValueSetCommand.valueSetAzName());
         }
+        if (command instanceof ReplaceValueSetCommand replaceValueSetCommand) {
+            if (replaceValueSetCommand.previousEntries().isEmpty()) {
+                throw new IllegalStateException("replace-value-set command has no previous entries");
+            }
+            apply(new ReplaceValueSetCommand(
+                    replaceValueSetCommand.modelAzName(),
+                    replaceValueSetCommand.valueSetAzName(),
+                    replaceValueSetCommand.dataType(),
+                    replaceValueSetCommand.previousEntries()
+            ));
+            return UndoResult.undoneReplaceValueSet(replaceValueSetCommand.modelAzName(), replaceValueSetCommand.valueSetAzName());
+        }
         if (command instanceof SetAttributeValueSetCommand setAttributeValueSetCommand) {
             apply(new ClearAttributeValueSetCommand(
                     setAttributeValueSetCommand.modelAzName(),
@@ -114,6 +126,8 @@ public final class CommandExecutor {
             applyCreateAttribute(createAttributeCommand);
         } else if (command instanceof CreateValueSetCommand createValueSetCommand) {
             applyCreateValueSet(createValueSetCommand);
+        } else if (command instanceof ReplaceValueSetCommand replaceValueSetCommand) {
+            applyReplaceValueSet(replaceValueSetCommand);
         } else if (command instanceof SetAttributeValueSetCommand setAttributeValueSetCommand) {
             applySetAttributeValueSet(setAttributeValueSetCommand);
         } else if (command instanceof CreateAssociationCommand createAssociationCommand) {
@@ -158,6 +172,16 @@ public final class CommandExecutor {
     private void applyCreateValueSet(CreateValueSetCommand command) {
         ModelRoot modelRoot = selectedModel(command.modelAzName());
         modelRoot.addValueSet(new ValueSet(command.valueSetAzName(), command.dataType(), command.entries()));
+    }
+
+    private void applyReplaceValueSet(ReplaceValueSetCommand command) {
+        ModelRoot modelRoot = selectedModel(command.modelAzName());
+        ValueSet current = modelRoot.findValueSet(command.valueSetAzName())
+                .orElseThrow(() -> new IllegalStateException("ValueSet not found"));
+        if (current.type() != command.dataType()) {
+            throw new IllegalArgumentException("ValueSet dataType cannot be changed");
+        }
+        modelRoot.replaceValueSet(new ValueSet(command.valueSetAzName(), command.dataType(), command.entries()));
     }
 
     private void applySetAttributeValueSet(SetAttributeValueSetCommand command) {
