@@ -14169,3 +14169,54 @@ Current status and next steps:
 - Updated `tasks/current-task.md` and marked the backlog item executed with a
   `Planned vs. Executed Evaluation`.
 - Verification passed: `npm run build` in `vedenemo-ux`.
+
+## 2026-09-30 23:28 EEST
+
+Session goal:
+
+- Plan a reboot backlog item for value-set editing after the earlier Editor
+  tab tasks proved conceptually misplaced.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,260p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `rg -n "Value set|value set|valueSet|valueSets|valueset|ValueSet|VALUE_SET|allowed" . -g '!target' -g '!node_modules'`
+- `sed -n '1,220p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ValueSet.java`
+- `sed -n '1,180p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ValueSetEntry.java`
+- `sed -n '1,260p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelRoot.java`
+- `sed -n '1,180p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/VAttribute.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/command/CreateValueSetCommand.java`
+- `sed -n '1,240p' vedenemo-core/src/main/java/org/vedenemo/core/command/ReplaceValueSetCommand.java`
+- `sed -n '1,220p' vedenemo-core/src/main/java/org/vedenemo/core/command/SetAttributeValueSetCommand.java`
+- `rg -n "CreateValueSetCommand|ReplaceValueSetCommand|SetAttributeValueSetCommand|valueSetAzName|findValueSet" vedenemo-core/src/main/java/org/vedenemo/core/command -S`
+- `sed -n '150,285p' vedenemo-core/src/main/java/org/vedenemo/core/command/CommandExecutor.java`
+- `sed -n '1,180p' tasks/backlog.md`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `sed -n '1,150p' tasks/backlog.md`
+- `git diff -- tasks/backlog.md`
+- `tail -n 40 SESSION.md`
+
+Current status and next steps:
+
+- Added the new planned backlog item `Value set editing reboot` at the top of
+  `tasks/backlog.md`.
+- Captured the agreed model-level placement: value-set editing belongs under
+  selected model `Model tools`, not model-instance editing.
+- Scoped the first slice to adding new values to existing value sets, with
+  visible-name-first input and automatically derived `azName`-style technical
+  values.
+- Explicitly kept creating, editing, renaming, removing, `DATE`/`TIME`
+  exposure, and data migration out of scope.
+- No product code was changed and no build was run.

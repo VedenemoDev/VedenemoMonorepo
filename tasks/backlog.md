@@ -1,5 +1,106 @@
 # Backlog
 
+## Value set editing reboot
+
+Status: planned
+
+### Goal
+
+Reboot value-set editing around the correct model-level concept and implement
+the first narrow authoring slice: adding new visible values to existing
+model-level value sets from the selected model context.
+
+### Context
+
+The previous `Editor` tab placement treated value-set maintenance as if it
+belonged beside model-instance editing. That was technically convenient, but it
+is conceptually wrong. A `ValueSet` belongs to the model definition. Attributes
+may reference a compatible model-local value set, and the value set's data type
+must match the attribute's data type.
+
+The common early use case is not broad value-set administration. It is adding a
+new allowed option to an existing value set so bound attribute dropdowns can
+offer the new choice. Removing values, renaming technical values, fixing typos
+in existing values, and creating brand-new value sets all require more careful
+domain and data-migration semantics and are intentionally outside this first
+reboot slice.
+
+### Proposed Implementation Approach
+
+- Move the value-set editing entry point out of the model-instance `Editor`
+  flow and into the selected model's context.
+- Add a `Model tools` area in the `Models` view. Initially it may expose only
+  `Value sets`, but it should naturally allow later tools such as `Entities`,
+  `Attributes`, and `Associations`.
+- On wide layouts, open `Value sets` as a right-side model tool/editor panel
+  while keeping the model visualization visible.
+- On narrow layouts, open `Value sets` as the primary content view with an
+  explicit way back to the model overview/visualization.
+- In the first slice, support only adding values to existing value sets.
+- Start from a selector for the current model's existing value sets.
+- After a value set is selected, show its existing values as a read-only list.
+- Show where the selected value set is used by listing the model attributes
+  bound to it.
+- Provide one user-facing input for the new value's visible name.
+- Derive the entry technical value automatically from the visible name using a
+  deterministic `azName`-style ASCII identifier rule.
+- Show the derived technical value as read-only preview when helpful, especially
+  for validation or duplicate-value feedback.
+- Validate that the derived technical value is valid for the selected value
+  set's type and does not duplicate an existing entry.
+- Treat the add action as the save action: pressing `Add` immediately updates
+  and persists the selected value set, then refreshes model metadata and any
+  dependent dropdowns.
+- Restrict the first UX slice to value-set types where fixed choices are
+  clearly useful, especially `TEXT`; do not expose `DATE` or `TIME` value-set
+  editing in this reboot slice.
+
+### Scope
+
+- Add a model-level `Model tools` entry point for value-set editing in
+  `vedenemo-ux`.
+- Implement an add-only value-set editor for existing model-level value sets.
+- Prioritize visible-name input and derive hidden/read-only technical values.
+- Show selected value-set usage by bound model attributes.
+- Preserve strict module boundaries and use the existing backend value-set
+  replacement capability unless a small API adjustment is proven necessary.
+
+### Out Of Scope
+
+- Creating new value sets.
+- Editing or renaming existing value-set entries.
+- Removing value-set entries.
+- Changing value-set data types.
+- Whole value-set deletion.
+- Automatic data migration for renamed or removed technical values.
+- Exposing `DATE` or `TIME` value-set editing in the UX.
+- Global value-set libraries.
+- Moving value-set semantics into model-instance editing.
+- Authentication, authorization, or multi-user editing controls.
+
+### Acceptance Criteria
+
+- The value-set editing entry point is available from the selected model's
+  `Model tools` context, not from the model-instance `Editor` tab.
+- Wide layouts keep the model visualization visible while the value-set tool is
+  open in a side panel.
+- Narrow layouts present the value-set tool as the primary content view and
+  provide a clear return path to the model overview.
+- A user can select an existing value set from the current model.
+- Existing values are displayed read-only in the first slice.
+- Bound model attributes using the selected value set are listed.
+- A user can enter a new visible name and add it to the selected value set with
+  a single add action.
+- The technical value is derived automatically as an `azName`-style ASCII
+  identifier and is not the primary user-facing input.
+- Duplicate derived technical values are rejected before or during save with a
+  clear error.
+- Successful addition refreshes the selected value set, model metadata, and
+  dependent value-set-backed dropdowns.
+- Existing broader create/edit/remove behavior is removed from or hidden in the
+  rebooted model-tools flow.
+- `cd vedenemo-ux && npm run build` succeeds.
+
 ## Plan Value sets tab UX refactor
 
 Status: executed
