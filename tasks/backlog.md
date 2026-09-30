@@ -2,7 +2,7 @@
 
 ## Value set editing reboot
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -100,6 +100,38 @@ reboot slice.
 - Existing broader create/edit/remove behavior is removed from or hidden in the
   rebooted model-tools flow.
 - `cd vedenemo-ux && npm run build` succeeds.
+
+### Completion Notes
+
+- Added a `Model tools` panel to the `Models` view and exposed `Value sets`
+  there as the first model-level tool.
+- Kept the model visualization visible beside the tool on wide layouts.
+- On narrow layouts, the open value-set tool becomes the primary content and
+  includes a `Back to overview` return path.
+- Removed the visible `Value sets` tab from the model-instance `/editor` flow.
+- Implemented add-only editing for existing `TEXT` value sets.
+- Existing values are displayed read-only and bound model attributes are listed
+  for the selected value set.
+- The add flow takes a visible name, derives an `azName`-style ASCII technical
+  value automatically, previews it, and blocks duplicate derived values.
+- Pressing `Add` immediately persists the updated value set through the
+  existing backend replace-value-set endpoint and refreshes model metadata.
+- Backend, core, CLI, `.vdos`, and `.vdmp` behavior were unchanged.
+- Verified with `npm run build` in `vedenemo-ux`.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the agreed reboot direction by moving the visible
+  entry point from model-instance editing to selected-model `Model tools`.
+- Summary: execution kept the first slice add-only and restricted the exposed
+  UX to `TEXT` value sets; broader create/edit/remove behavior is not exposed
+  in the rebooted flow.
+- Summary: the implementation reused the existing value-set replacement API
+  instead of adding a narrower backend append command.
+- Summary: duplicate checking is performed in the UI before save based on the
+  derived technical value; backend validation remains the final authority.
+- Summary: verification matched the acceptance criteria with a successful
+  frontend build.
 
 ## Plan Value sets tab UX refactor
 

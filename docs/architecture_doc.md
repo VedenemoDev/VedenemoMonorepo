@@ -21,7 +21,8 @@ subgraph UX["Frontend"]
     UXPlantUml["PlantUmlModelAdapter<br/>model-to-PlantUML source"]
     UXPlantUmlRenderer["PlantUmlDiagramRendererAdapter<br/>lazy PlantUML SVG renderer"]
     UXInstanceTree["Model instances tab<br/>runtime entity count tree"]
-    UXEntityEditor["Data editor<br/>/editor entity, association, and value-set tabs"]
+    UXModelTools["Model tools<br/>Models tab value-set editing"]
+    UXEntityEditor["Data editor<br/>/editor entity and association tabs"]
     UXApiDocs["Model instance API docs<br/>/modelInstanceApi docs and try-it controls"]
     UXVisualizer["Visualization wizard<br/>/visualizeWizard runtime D3 charts"]
     UXConsole["browser virtual CLI<br/>/console and embedded pane"]
@@ -67,12 +68,14 @@ ViteUX -->|fetch model data| UXPlantUml
 ViteUX -->|connect/disconnect| UXModelEvents
 ViteUX -->|lazy render diagram| UXPlantUmlRenderer
 ViteUX -->|fetch runtime instance counts| UXInstanceTree
-ViteUX -->|create/update runtime entity data, links, and value sets| UXEntityEditor
+ViteUX -->|add values to model-level value sets| UXModelTools
+ViteUX -->|create/update runtime entity data and links| UXEntityEditor
 ViteUX -->|render and execute root-scoped API docs| UXApiDocs
 ViteUX -->|bind and render runtime instance data| UXVisualizer
 ViteUX --> UXConsole
 UXPlantUml -->|GET model/entity/attribute APIs| WebApi
 UXInstanceTree -->|GET /models/list and /data APIs| WebApi
+UXModelTools -->|GET model metadata and session command APIs| WebApi
 UXEntityEditor -->|GET/POST/PUT /data and session command APIs| WebApi
 UXApiDocs -->|GET metadata and execute root-scoped /data APIs| WebApi
 UXVisualizer -->|GET metadata, entity data, and association links| WebApi
@@ -679,6 +682,13 @@ Current user-facing behavior:
 - shows transient diagram rendering status below the diagram viewport
 - shows the existing model selection, PlantUML diagram, model-event connection,
   and embedded console split only under the `Models` tab
+- shows a `Model tools` panel under the `Models` tab; its current `Value sets`
+  tool lists existing `TEXT` value sets for the selected model, shows existing
+  entries and bound attributes, and adds new visible values through ephemeral
+  backend sessions using the existing replace-value-set command endpoint
+- keeps the selected model diagram visible beside the open model tool on wide
+  layouts and switches the open model tool to primary content with a back path
+  on narrow layouts
 - shows a `Model instances` tab that automatically refreshes on entry and also
   has an explicit Refresh model instances button
 - renders a three-level model-instance tree:
@@ -691,8 +701,8 @@ Current user-facing behavior:
   updated alias is persisted in the process-local backend dataset metadata
 - opens `/editor` from the model-instance root node menu to create entity
   instances and association links for that model-instance root
-- exposes `/editor` as a dynamic schema-driven data editor with separate entity,
-  association, and value-set tabs; the entity tab uses URL parameters
+- exposes `/editor` as a dynamic schema-driven data editor with separate entity
+  and association tabs; the entity tab uses URL parameters
   `modelAzName`, `instanceRootId`, optional `entityAzName`, and optional
   `instanceId`; omitted `instanceId` means create mode, while a present
   `instanceId` loads that entity instance for edit
@@ -700,11 +710,6 @@ Current user-facing behavior:
   values through the create endpoint so the backend assigns a new instance id
 - lets the association editor tab create source/target instance links by
   selecting a modeled association and existing endpoint entity instances
-- lets the value-set editor tab create model-level value sets and replace
-  existing value-set entries through ephemeral backend sessions; the tab
-  disables removal for entry technical values used by loaded model-instance
-  data and confirms removals because older `.vdmp` dumps or external data may
-  still refer to removed values
 - exposes `/queryConsole` for a model-instance root and lets entity-shaped
   query results open in `/editor` edit mode from the result node menu
 - exposes `/modelInstanceApi` from the model-instance root node menu as a

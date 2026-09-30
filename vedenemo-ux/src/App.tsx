@@ -19,6 +19,7 @@ type ModelConnectionState = "disconnected" | "connecting" | "connected" | "error
 type ConsoleStatus = "loading" | "ready" | "error";
 type ActiveTab = "models" | "modelInstances";
 type EditorTab = "entity" | "associations" | "valueSets";
+type ModelTool = "valueSets";
 type ModelInstanceLoadState = "idle" | "loading" | "ok" | "error";
 type QueryOperator = "=" | "<" | ">" | "contains";
 
@@ -3002,6 +3003,44 @@ function removedValueSetDraftValues(valueSet: ValueSetDraft): string[] {
   return valueSet.originalEntries.filter((value) => !nextValues.has(value));
 }
 
+function technicalValueFromVisibleName(visName: string): string {
+  const ascii = visName
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .replace(/_+/g, "_");
+  if (!ascii) {
+    return "";
+  }
+  return /^[A-Za-z]/.test(ascii) ? ascii : `Value_${ascii}`;
+}
+
+function technicalValueError(value: string): string | null {
+  if (!value) {
+    return "Visible name must produce a technical value";
+  }
+  if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(value)) {
+    return "Technical value must use azName-style ASCII letters, digits, and underscores";
+  }
+  return null;
+}
+
+function attributesBoundToValueSet(apiDescription: ApiDescriptionResponse | null, valueSetAzName: string): Array<{
+  entity: EntityDescription;
+  attribute: AttributeDescription;
+}> {
+  if (apiDescription === null || !valueSetAzName) {
+    return [];
+  }
+  return apiDescription.entities.flatMap((entity) => (
+    entity.attributes
+      .filter((attribute) => attribute.valueSetAzName !== null && attribute.valueSetAzName !== undefined && sameAzName(attribute.valueSetAzName, valueSetAzName))
+      .map((attribute) => ({ entity, attribute }))
+  ));
+}
+
 function absoluteApiUrl(apiBaseUrl: string, path: string): string {
   if (!apiBaseUrl) {
     return path;
@@ -4532,15 +4571,6 @@ function EditorPage() {
             aria-selected={activeEditorTab === "associations"}
           >
             Associations
-          </button>
-          <button
-            type="button"
-            className={activeEditorTab === "valueSets" ? "editor-tab editor-tab-active" : "editor-tab"}
-            onClick={() => setActiveEditorTab("valueSets")}
-            role="tab"
-            aria-selected={activeEditorTab === "valueSets"}
-          >
-            Value sets
           </button>
         </div>
 
@@ -8864,6 +8894,13 @@ export function App() {
   const [modelConnectionState, setModelConnectionState] = useState<ModelConnectionState>("disconnected");
   const [diagramHasContent, setDiagramHasContent] = useState(false);
   const [diagramMessage, setDiagramMessage] = useState(DIAGRAM_EMPTY_MESSAGE);
+  const [activeModelTool, setActiveModelTool] = useState<ModelTool | null>(null);
+  const [modelToolApiDescription, setModelToolApiDescription] = useState<ApiDescriptionResponse | null>(null);
+  const [selectedToolValueSetAzName, setSelectedToolValueSetAzName] = useState("");
+  const [newValueSetVisibleName, setNewValueSetVisibleName] = useState("");
+  const [modelToolMessage, setModelToolMessage] = useState("Select a model tool");
+  const [isLoadingModelTool, setIsLoadingModelTool] = useState(false);
+  const [isAddingModelToolValue, setIsAddingModelToolValue] = useState(false);
   const [isConsolePaneOpen, setIsConsolePaneOpen] = useState(false);
   const [consolePaneHeight, setConsolePaneHeight] = useState(readConsolePaneHeight);
   const [activeTab, setActiveTab] = useState<ActiveTab>(readInitialActiveTab);
@@ -8878,6 +8915,58 @@ export function App() {
   useEffect(() => {
     selectedModelAzNameRef.current = selectedModelAzName;
   }, [selectedModelAzName]);
+
+  useEffect(() => {
+    setModelToolApiDescription(null);
+    setSelectedToolValueSetAzName("");
+    setNewValueSetVisibleName("");
+    if (activeModelTool !== null) {
+      setModelToolMessage(selectedModelAzName ? "Loading model tool..." : "Select a model");
+    }
+  }, [selectedModelAzName, activeModelTool]);
+
+  useEffect(() => {
+    if (activeModelTool !== "valueSets" || !apiBaseUrl || !selectedModelAzName) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadModelToolApi() {
+      setIsLoadingModelTool(true);
+      setModelToolMessage("Loading value sets...");
+      try {
+        const nextApiDescription = await fetchModelInstanceApi(apiBaseUrl, selectedModelAzName);
+        if (cancelled) {
+          return;
+        }
+        const textValueSets = (nextApiDescription.valueSets ?? []).filter((valueSet) => valueSet.dataType === "TEXT");
+        setModelToolApiDescription(nextApiDescription);
+        setSelectedToolValueSetAzName((current) => (
+          textValueSets.some((valueSet) => sameAzName(valueSet.azName, current))
+            ? current
+            : textValueSets[0]?.azName ?? ""
+        ));
+        setModelToolMessage(textValueSets.length === 0 ? "No TEXT value sets available" : "Ready");
+      } catch (error) {
+        if (!cancelled) {
+          setModelToolApiDescription(null);
+          setSelectedToolValueSetAzName("");
+          setModelToolMessage(error instanceof Error ? error.message : "Value sets load failed");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingModelTool(false);
+        }
+      }
+    }
+
+    void loadModelToolApi();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeModelTool, apiBaseUrl, selectedModelAzName]);
 
   useEffect(() => {
     let cancelled = false;
@@ -9220,6 +9309,90 @@ export function App() {
   const workspaceStyle = {
     "--console-pane-height": `${consolePaneHeight}px`,
   } as CSSProperties;
+  const modelToolValueSets = (modelToolApiDescription?.valueSets ?? []).filter((valueSet) => valueSet.dataType === "TEXT");
+  const selectedToolValueSet = modelToolValueSets.find((valueSet) => sameAzName(valueSet.azName, selectedToolValueSetAzName)) ?? null;
+  const newValueSetTechnicalValue = technicalValueFromVisibleName(newValueSetVisibleName);
+  const newValueSetTechnicalError = newValueSetVisibleName.trim()
+    ? technicalValueError(newValueSetTechnicalValue)
+    : null;
+  const hasDuplicateNewValue = selectedToolValueSet !== null && selectedToolValueSet.entries.some((entry) => (
+    valueSetOptionValue(entry).toLocaleLowerCase() === newValueSetTechnicalValue.toLocaleLowerCase()
+  ));
+  const selectedToolValueSetUsage = attributesBoundToValueSet(modelToolApiDescription, selectedToolValueSet?.azName ?? "");
+
+  function selectMainModel(nextModelAzName: string) {
+    setSelectedModelAzName(nextModelAzName);
+    setModelToolApiDescription(null);
+    setSelectedToolValueSetAzName("");
+    setNewValueSetVisibleName("");
+    setDiagramHasContent(false);
+    setDiagramMessage(DIAGRAM_EMPTY_MESSAGE);
+  }
+
+  function openModelTool(tool: ModelTool) {
+    if (activeModelTool === tool) {
+      setActiveModelTool(null);
+      setModelToolMessage("Select a model tool");
+      setNewValueSetVisibleName("");
+      return;
+    }
+    setActiveModelTool(tool);
+    setModelToolMessage(tool === "valueSets" ? "Loading value sets..." : "Select a model tool");
+    setNewValueSetVisibleName("");
+  }
+
+  async function addModelToolValueSetEntry(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!apiBaseUrl || !selectedModelAzName || selectedToolValueSet === null) {
+      setModelToolMessage("Select a value set");
+      return;
+    }
+    const visName = newValueSetVisibleName.trim();
+    if (!visName) {
+      setModelToolMessage("Visible name is required");
+      return;
+    }
+    if (newValueSetTechnicalError !== null) {
+      setModelToolMessage(newValueSetTechnicalError);
+      return;
+    }
+    if (hasDuplicateNewValue) {
+      setModelToolMessage(`Technical value ${newValueSetTechnicalValue} already exists`);
+      return;
+    }
+
+    const nextDraft = valueSetDraftFrom(selectedToolValueSet);
+    nextDraft.entries = [
+      ...nextDraft.entries,
+      {
+        id: crypto.randomUUID(),
+        technicalValue: newValueSetTechnicalValue,
+        visName,
+      },
+    ];
+
+    setIsAddingModelToolValue(true);
+    setModelToolMessage("Adding value...");
+    let sessionId = "";
+    try {
+      sessionId = await startBackendSession(apiBaseUrl);
+      await selectBackendSessionModel(apiBaseUrl, sessionId, selectedModelAzName);
+      await replaceValueSet(apiBaseUrl, sessionId, nextDraft);
+      const refreshedApi = await fetchModelInstanceApi(apiBaseUrl, selectedModelAzName);
+      setModelToolApiDescription(refreshedApi);
+      setSelectedToolValueSetAzName(selectedToolValueSet.azName);
+      setNewValueSetVisibleName("");
+      setModelToolMessage(`Added ${visName}`);
+      await renderSelectedModel(selectedModelAzName);
+    } catch (error) {
+      setModelToolMessage(error instanceof Error ? error.message : "Value add failed");
+    } finally {
+      if (sessionId) {
+        void endBackendSession(apiBaseUrl, sessionId);
+      }
+      setIsAddingModelToolValue(false);
+    }
+  }
 
   function resizeConsolePane(event: PointerEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -9253,7 +9426,7 @@ export function App() {
             Model instances
           </button>
         </nav>
-        <section className="card">
+        <section className={isModelsTab ? "card card-wide" : "card"}>
           {isModelsTab ? (
             <div className="model-panel">
               <label htmlFor="model-select">Select model</label>
@@ -9261,7 +9434,7 @@ export function App() {
                 <select
                   id="model-select"
                   value={selectedModelAzName}
-                  onChange={(event) => setSelectedModelAzName(event.target.value)}
+                  onChange={(event) => selectMainModel(event.target.value)}
                   disabled={modelLoadState === "loading" || models.length === 0}
                 >
                   {models.length === 0 ? (
@@ -9287,13 +9460,143 @@ export function App() {
                 </button>
               </div>
               <span className={`model-status model-status-${modelLoadState}`}>{modelMessage}</span>
-              <div className="diagram-viewport" aria-label="PlantUML class diagram">
-                <div id={PLANTUML_TARGET_ID} className="diagram-svg" />
-                {showDiagramPlaceholder && (
-                  <div className="diagram-placeholder">{DIAGRAM_EMPTY_MESSAGE}</div>
-                )}
+              <div className={activeModelTool !== null ? "model-workspace model-workspace-tool-open" : "model-workspace"}>
+                <div className="model-diagram-area">
+                  <div className="diagram-viewport" aria-label="PlantUML class diagram">
+                    <div id={PLANTUML_TARGET_ID} className="diagram-svg" />
+                    {showDiagramPlaceholder && (
+                      <div className="diagram-placeholder">{DIAGRAM_EMPTY_MESSAGE}</div>
+                    )}
+                  </div>
+                  {footerDiagramMessage && <span className="diagram-status">{footerDiagramMessage}</span>}
+                </div>
+                <aside className="model-tools-panel" aria-label="Model tools">
+                  <div className="model-tools-header">
+                    <h2>Model tools</h2>
+                    {activeModelTool !== null && (
+                      <button type="button" onClick={() => setActiveModelTool(null)}>
+                        Back to overview
+                      </button>
+                    )}
+                  </div>
+                  <div className="model-tools-actions">
+                    <button
+                      type="button"
+                      className={activeModelTool === "valueSets" ? "model-tool-button model-tool-button-active" : "model-tool-button"}
+                      onClick={() => openModelTool("valueSets")}
+                      disabled={!selectedModelAzName || modelLoadState === "loading"}
+                    >
+                      Value sets
+                    </button>
+                  </div>
+
+                  {activeModelTool === "valueSets" && (
+                    <form className="model-tool-value-sets" onSubmit={(event) => void addModelToolValueSetEntry(event)}>
+                      <div className="query-field">
+                        <label htmlFor="model-tool-value-set">Value set</label>
+                        <select
+                          id="model-tool-value-set"
+                          value={selectedToolValueSetAzName}
+                          onChange={(event) => {
+                            setSelectedToolValueSetAzName(event.target.value);
+                            setNewValueSetVisibleName("");
+                            setModelToolMessage(event.target.value ? "Ready" : "Select a value set");
+                          }}
+                          disabled={isLoadingModelTool || isAddingModelToolValue || modelToolValueSets.length === 0}
+                        >
+                          {modelToolValueSets.length === 0 ? (
+                            <option value="">No TEXT value sets</option>
+                          ) : modelToolValueSets.map((valueSet) => (
+                            <option key={valueSet.azName} value={valueSet.azName}>
+                              {valueSet.azName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {selectedToolValueSet === null ? (
+                        <div className="model-tool-empty">No editable TEXT value set selected.</div>
+                      ) : (
+                        <>
+                          <div className="value-set-current-target">
+                            <span>Selected value set</span>
+                            <strong>{selectedToolValueSet.azName} ({selectedToolValueSet.dataType})</strong>
+                          </div>
+
+                          <section className="model-tool-section" aria-labelledby="model-tool-values-heading">
+                            <h3 id="model-tool-values-heading">Current values</h3>
+                            <ul className="model-tool-value-list">
+                              {selectedToolValueSet.entries.map((entry) => (
+                                <li key={valueSetOptionValue(entry)}>
+                                  <span>{entry.visName}</span>
+                                  <code>{valueSetOptionValue(entry)}</code>
+                                </li>
+                              ))}
+                            </ul>
+                          </section>
+
+                          <section className="model-tool-section" aria-labelledby="model-tool-usage-heading">
+                            <h3 id="model-tool-usage-heading">Bound attributes</h3>
+                            {selectedToolValueSetUsage.length === 0 ? (
+                              <div className="model-tool-empty">No attributes use this value set.</div>
+                            ) : (
+                              <ul className="model-tool-usage-list">
+                                {selectedToolValueSetUsage.map(({ entity, attribute }) => (
+                                  <li key={`${entity.azName}-${attribute.azName}`}>
+                                    <span>{entity.visName}.{attribute.visName}</span>
+                                    <code>{entity.azName}.{attribute.azName}</code>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </section>
+
+                          <section className="model-tool-section" aria-labelledby="model-tool-add-heading">
+                            <h3 id="model-tool-add-heading">Add value</h3>
+                            <div className="query-field">
+                              <label htmlFor="model-tool-new-value">Visible name</label>
+                              <input
+                                id="model-tool-new-value"
+                                value={newValueSetVisibleName}
+                                onChange={(event) => setNewValueSetVisibleName(event.target.value)}
+                                disabled={isLoadingModelTool || isAddingModelToolValue}
+                                placeholder="Manty"
+                              />
+                            </div>
+                            {newValueSetVisibleName.trim() && (
+                              <div className={hasDuplicateNewValue || newValueSetTechnicalError !== null ? "model-tool-derived model-tool-derived-error" : "model-tool-derived"}>
+                                <span>Technical value</span>
+                                <code>{newValueSetTechnicalValue || "not available"}</code>
+                                {newValueSetTechnicalError !== null && <span>{newValueSetTechnicalError}</span>}
+                                {newValueSetTechnicalError === null && hasDuplicateNewValue && <span>Already exists in this value set</span>}
+                              </div>
+                            )}
+                          </section>
+                        </>
+                      )}
+
+                      <div className="editor-actions">
+                        <span className={`model-status ${modelToolMessage.toLocaleLowerCase().includes("failed") || modelToolMessage.toLocaleLowerCase().includes("required") || modelToolMessage.toLocaleLowerCase().includes("already exists") ? "model-status-error" : "model-status-ok"}`}>
+                          {modelToolMessage}
+                        </span>
+                        <button
+                          type="submit"
+                          disabled={
+                            isLoadingModelTool
+                            || isAddingModelToolValue
+                            || selectedToolValueSet === null
+                            || !newValueSetVisibleName.trim()
+                            || newValueSetTechnicalError !== null
+                            || hasDuplicateNewValue
+                          }
+                        >
+                          {isAddingModelToolValue ? "Adding..." : "Add"}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </aside>
               </div>
-              {footerDiagramMessage && <span className="diagram-status">{footerDiagramMessage}</span>}
             </div>
           ) : (
             <div className="model-instances-panel">

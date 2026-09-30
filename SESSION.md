@@ -14220,3 +14220,97 @@ Current status and next steps:
 - Explicitly kept creating, editing, renaming, removing, `DATE`/`TIME`
   exposure, and data migration out of scope.
 - No product code was changed and no build was run.
+
+## 2026-09-30 23:39 EEST
+
+Session goal:
+
+- Execute the `Value set editing reboot` backlog item.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `docs/architecture_doc.md`
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,260p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `sed -n '1,140p' tasks/backlog.md`
+- `tail -n 110 SESSION.md`
+- `git status --short`
+- `sed -n '1,220p' docs/architecture_doc_instructions.md`
+- `rg -n "Value sets|valueSet|value-set|value sets|selectedValueSet|Editor|Models|model visualization|activeEditorTab|activeView" vedenemo-ux/src/App.tsx`
+- `rg -n "Value sets|value set|Editor|Models|model tools|value-set editor" docs/architecture_doc.md README.md docs/cli-reference.md tasks/current-task.md tasks/backlog.md`
+- `sed -n '1,260p' vedenemo-ux/src/App.tsx`
+- `sed -n '640,720p' vedenemo-ux/src/App.tsx`
+- `sed -n '2880,3025p' vedenemo-ux/src/App.tsx`
+- `sed -n '3550,4315p' vedenemo-ux/src/App.tsx`
+- `sed -n '4480,5045p' vedenemo-ux/src/App.tsx`
+- `sed -n '8840,9505p' vedenemo-ux/src/App.tsx`
+- `sed -n '1,240p' vedenemo-ux/src/styles.css`
+- `sed -n '1500,1850p' vedenemo-ux/src/styles.css`
+- `sed -n '1850,2045p' vedenemo-ux/src/styles.css`
+- `rg -n "function fetchModelInstanceApi|async function fetchModelInstanceApi|function sameAzName|function formatInstanceValue|function inputTypeFor|function readErrorMessage|function modelInstanceApiUrl|editorUrl" vedenemo-ux/src/App.tsx`
+- `sed -n '520,620p' vedenemo-ux/src/App.tsx`
+- `sed -n '880,920p' vedenemo-ux/src/App.tsx`
+- `sed -n '990,1085p' vedenemo-ux/src/App.tsx`
+- `rg -n "replace-value-set|value-sets|commands/create-value-set|commands/replace-value-set" vedenemo-web-api/src/main/java vedenemo-web-api/src/test/java -S`
+- `sed -n '1,180p' vedenemo-model-api/src/main/java/org/vedenemo/core/model/ModelTextRules.java`
+- `rg -n "requireAzName|azName" vedenemo-model-api/src/test/java vedenemo-core/src/test/java -S`
+- `sed -n '560,590p' docs/architecture_doc.md`
+- `sed -n '660,710p' docs/architecture_doc.md`
+- `cat vedenemo-ux/tsconfig.json`
+- `cat vedenemo-ux/package.json`
+- `rg -n "noUnused|strict|jsx" vedenemo-ux/tsconfig*`
+- `rg -n "crypto.randomUUID|randomUUID" vedenemo-ux/src/App.tsx`
+- `sed -n '9250,9315p' vedenemo-ux/src/App.tsx`
+- `sed -n '9350,9440p' vedenemo-ux/src/App.tsx`
+- `sed -n '9440,9515p' vedenemo-ux/src/App.tsx`
+- `npm run build` in `vedenemo-ux`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx | sed -n '1,260p'`
+- `git diff -- vedenemo-ux/src/styles.css | sed -n '1,260p'`
+- `sed -n '1,130p' tasks/backlog.md`
+- `sed -n '1,90p' docs/architecture_doc.md`
+- `sed -n '670,708p' docs/architecture_doc.md`
+- `sed -n '220,250p' docs/architecture_doc.md`
+- `sed -n '480,495p' docs/architecture_doc.md`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `nl -ba vedenemo-ux/src/App.tsx | sed -n '3000,3045p'`
+- `nl -ba vedenemo-ux/src/App.tsx | sed -n '8910,8980p'`
+- `nl -ba vedenemo-ux/src/App.tsx | sed -n '9305,9515p'`
+- `nl -ba vedenemo-ux/src/styles.css | sed -n '45,230p'`
+- `git status --short`
+- `sed -n '1,90p' tasks/current-task.md`
+- `sed -n '1,150p' tasks/backlog.md`
+- `npm run dev -- --host 127.0.0.1` in `vedenemo-ux`
+
+Current status and next steps:
+
+- Added a `Model tools` panel to the `Models` view with `Value sets` as the
+  first model-level tool.
+- Implemented an add-only `TEXT` value-set flow: select existing value set,
+  view read-only entries, view bound attributes, enter visible name, preview
+  derived `azName`-style technical value, and add immediately through the
+  existing replace-value-set endpoint.
+- Removed the visible value-set entry point from the model-instance `/editor`
+  tab list.
+- Added responsive behavior: wide layouts keep the diagram beside the model
+  tool, narrow layouts hide the diagram while the tool is open and expose
+  `Back to overview`.
+- Updated `docs/architecture_doc.md`, `tasks/current-task.md`, and
+  `tasks/backlog.md`.
+- Verification passed: `npm run build` in `vedenemo-ux` (run twice after the
+  frontend changes).
+- Verification passed: `git diff --check`.
+- Local Vite dev server is running at `http://127.0.0.1:5173/`.
