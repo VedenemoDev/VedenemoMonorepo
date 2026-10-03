@@ -14695,3 +14695,59 @@ Current status and next steps:
   area-overlap/crossing pairs; six pairs touch only along shared boundaries.
 - Verification passed: JSON validation, count checks, `git diff --check`, and
   full local API/CLI import smoke.
+
+## 2026-10-03 16:13 EEST
+
+Session goal:
+
+- Create a concise owner-harmonized Markdown bullet list of Mikonmaa forest
+  stand descriptions without the excluded-figure note.
+
+Files changed:
+
+- `../misc_notes/mikonmaa_omistaja_kuviokuvaukset.md`
+- `SESSION.md`
+
+Commands run:
+
+- Python generation of `../misc_notes/mikonmaa_omistaja_kuviokuvaukset.md` from
+  `.vedenemo/Mikonmaa_omistaja_harmonisoitu.vdmp`
+- `sed -n '1,12p' ../misc_notes/mikonmaa_omistaja_kuviokuvaukset.md`
+- `wc -l ../misc_notes/mikonmaa_omistaja_kuviokuvaukset.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Saved the Markdown note with one heading and eight bullet-list entries.
+- Removed the harmonization/geometria note from each description so the file
+  contains only the requested figure descriptions.
+
+## 2026-10-03 16:17 EEST
+
+Session goal:
+
+- Persist the corrected owner-harmonized forest-stand descriptions back into
+  the `.vdmp` data.
+
+Files changed:
+
+- `.vedenemo/Mikonmaa_omistaja_harmonisoitu.vdmp`
+- `SESSION.md`
+
+Commands run:
+
+- Python update of `.vedenemo/Mikonmaa_omistaja_harmonisoitu.vdmp` to remove the
+  harmonization/geometria note from every `Metsakuvio.kuvaus` value
+- `jq empty .vedenemo/Mikonmaa_omistaja_harmonisoitu.vdmp`
+- `rg -n "kuvio 1|jätettiin|jatettiin|146-421-1-212|Geometria on harmonisoitu" .vedenemo/Mikonmaa_omistaja_harmonisoitu.vdmp`
+- `jq -r '.entities[] | select(.entityAzName=="Metsakuvio") | .records[] | [.values.tunnus, (.values.kuvaus | length)] | @tsv' .vedenemo/Mikonmaa_omistaja_harmonisoitu.vdmp`
+- Local Vedenemo API/CLI smoke import:
+  `--mload .vedenemo/MetsapalstaKuvauksilla.vdos --dload .vedenemo/Mikonmaa_omistaja_harmonisoitu.vdmp`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Updated all eight `Metsakuvio.kuvaus` values in the harmonized dump.
+- Verification passed: JSON validation, forbidden-phrase search returned no
+  matches, all eight descriptions remain non-empty, and full local API/CLI
+  import smoke succeeded.
