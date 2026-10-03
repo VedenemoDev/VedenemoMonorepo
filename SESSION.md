@@ -14587,3 +14587,111 @@ Current status and next steps:
   validation.
 - Verification passed: JSON validation, count checks, `git diff --check`, and
   full local API/CLI import smoke.
+
+## 2026-10-03 14:57 EEST
+
+Session goal:
+
+- Save the Mikonmaa forest-stand description bullet list as a Markdown note in
+  `../misc_notes`.
+
+Files changed:
+
+- `../misc_notes/mikonmaa_metsakuviot_kuvaukset.md`
+- `SESSION.md`
+
+Commands run:
+
+- `ls -la ../misc_notes`
+- `jq -r '.entities[] | select(.entityAzName=="Metsakuvio") | .records[] | "- \\(.values.tunnus): \\(.values.kuvaus)"' .vedenemo/Mikonmaa_metsakuviot_kuvauksilla.vdmp`
+- Wrote `/tmp/mikonmaa_metsakuviot_kuvaukset.md` and installed it to
+  `../misc_notes/mikonmaa_metsakuviot_kuvaukset.md`
+- `ls -l ../misc_notes/mikonmaa_metsakuviot_kuvaukset.md`
+- `wc -l ../misc_notes/mikonmaa_metsakuviot_kuvaukset.md`
+- `sed -n '1,8p' ../misc_notes/mikonmaa_metsakuviot_kuvaukset.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Markdown note saved successfully with a heading and twelve bullet-list
+  entries generated from `.vedenemo/Mikonmaa_metsakuviot_kuvauksilla.vdmp`.
+
+## 2026-10-03 15:02 EEST
+
+Session goal:
+
+- Check whether the Mikonmaa `Metsakuvio` polygons in the saved `.vdmp` overlap
+  spatially.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- Python geometry inspection of `.vedenemo/Mikonmaa_metsakuviot_kuvauksilla.vdmp`
+  for self-intersections, proper pairwise edge crossings, strict vertex
+  containment, and touch-only shared boundaries
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- The saved twelve `Metsakuvio` polygons have no detected area-overlap pairs
+  and no detected self-intersecting polygon rings.
+- Seventeen polygon pairs touch only along shared points or boundary segments,
+  which can make the visualization look crowded or ambiguous without implying
+  area overlap.
+
+## 2026-10-03 15:58 EEST
+
+Session goal:
+
+- Compare the owner-facing downloadable forest-stand PDF against the open API
+  data and create a harmonized Mikonmaa dump using the clearer owner numbering
+  and descriptions.
+
+Files changed:
+
+- `.vedenemo/Mikonmaa_omistaja_harmonisoitu.vdmp`
+- `../misc_notes/mikonmaa_omistaja_harmonisointi.md`
+- `SESSION.md`
+
+Generated local artifacts:
+
+- `/tmp/mikonmaa-owner-data`
+- `/tmp/mikonmaa-owner-data.txt`
+- `/tmp/mikonmaa-owner-image-000.png`
+
+Commands run:
+
+- Downloaded the Google Drive file with `curl`
+- `file /tmp/mikonmaa-owner-data`
+- `pdfinfo /tmp/mikonmaa-owner-data`
+- `pdftotext /tmp/mikonmaa-owner-data /tmp/mikonmaa-owner-data.txt`
+- `pdfimages -list /tmp/mikonmaa-owner-data`
+- `pdfimages -png /tmp/mikonmaa-owner-data /tmp/mikonmaa-owner-image`
+- visual inspection of `/tmp/mikonmaa-owner-image-000.png`
+- Python generation of `.vedenemo/Mikonmaa_omistaja_harmonisoitu.vdmp`
+- `jq` validation and count checks for the harmonized dump
+- Python topology check for self-intersections, overlap/crossing pairs, and
+  touch-only boundary pairs
+- Local Vedenemo API/CLI smoke import:
+  `--mload .vedenemo/MetsapalstaKuvauksilla.vdos --dload .vedenemo/Mikonmaa_omistaja_harmonisoitu.vdmp`
+- `git status --short`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- The owner PDF contains a map and stand records for owner-facing figures
+  `2`, `2.1`, `3`, `4`, `5`, `6`, `7`, and `8` on Mikonmaa
+  `146-421-1-135`.
+- Figure `1` is shown on the PDF map as belonging to `MIKONMAA II`
+  `146-421-1-212` and was excluded.
+- Created `.vedenemo/Mikonmaa_omistaja_harmonisoitu.vdmp` with eight
+  `Metsakuvio` records using owner numbering, owner PDF areas/descriptions, and
+  matching open-API WFS stand geometries.
+- Topology check on the harmonized dump found no self-intersections and no
+  area-overlap/crossing pairs; six pairs touch only along shared boundaries.
+- Verification passed: JSON validation, count checks, `git diff --check`, and
+  full local API/CLI import smoke.

@@ -1,0 +1,2727 @@
+{
+  "format": "vedenemo-instance-dump",
+  "formatVersion": 1,
+  "savedAt": "2026-10-03T12:56:39Z",
+  "model": {
+    "azName": "MetsapalstaKuvauksilla",
+    "visName": "Metsäpalsta kuvauksilla",
+    "version": "1.0.0"
+  },
+  "root": {
+    "sourceInstanceRootId": "00000000-0000-0000-0000-000000001462",
+    "visName": "Mikonmaa omistaja-aineistolla harmonisoitu"
+  },
+  "entities": [
+    {
+      "entityAzName": "Metsapalsta",
+      "records": [
+        {
+          "dumpId": "palsta-mikonmaa",
+          "values": {
+            "nimi": "Mikonmaa",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 62.54424298,
+                  "longitude": 31.23622455
+                },
+                {
+                  "latitude": 62.54310278,
+                  "longitude": 31.24763608
+                },
+                {
+                  "latitude": 62.54220502,
+                  "longitude": 31.24683665
+                },
+                {
+                  "latitude": 62.54265021,
+                  "longitude": 31.2424529
+                },
+                {
+                  "latitude": 62.54309284,
+                  "longitude": 31.23809296
+                },
+                {
+                  "latitude": 62.54295126,
+                  "longitude": 31.23708146
+                },
+                {
+                  "latitude": 62.5432844,
+                  "longitude": 31.23685754
+                }
+              ]
+            },
+            "hehtaarit": 6.0
+          }
+        }
+      ]
+    },
+    {
+      "entityAzName": "Metsakuvio",
+      "records": [
+        {
+          "dumpId": "metsakuvio-omistaja-2",
+          "values": {
+            "tunnus": "2",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 62.54343144,
+                  "longitude": 31.23917425
+                },
+                {
+                  "latitude": 62.543465,
+                  "longitude": 31.2390947
+                },
+                {
+                  "latitude": 62.54346899,
+                  "longitude": 31.23908525
+                },
+                {
+                  "latitude": 62.5434701,
+                  "longitude": 31.23908644
+                },
+                {
+                  "latitude": 62.54347254,
+                  "longitude": 31.23908861
+                },
+                {
+                  "latitude": 62.54347551,
+                  "longitude": 31.23909079
+                },
+                {
+                  "latitude": 62.54347804,
+                  "longitude": 31.23909228
+                },
+                {
+                  "latitude": 62.54348111,
+                  "longitude": 31.23909361
+                },
+                {
+                  "latitude": 62.54348463,
+                  "longitude": 31.23909462
+                },
+                {
+                  "latitude": 62.54348476,
+                  "longitude": 31.23909464
+                },
+                {
+                  "latitude": 62.54348548,
+                  "longitude": 31.23909478
+                },
+                {
+                  "latitude": 62.54348633,
+                  "longitude": 31.23909486
+                },
+                {
+                  "latitude": 62.54348988,
+                  "longitude": 31.23909486
+                },
+                {
+                  "latitude": 62.54349301,
+                  "longitude": 31.23909441
+                },
+                {
+                  "latitude": 62.54349561,
+                  "longitude": 31.23909365
+                },
+                {
+                  "latitude": 62.54349868,
+                  "longitude": 31.23909234
+                },
+                {
+                  "latitude": 62.54350123,
+                  "longitude": 31.23909087
+                },
+                {
+                  "latitude": 62.54350418,
+                  "longitude": 31.2390887
+                },
+                {
+                  "latitude": 62.54350748,
+                  "longitude": 31.23908576
+                },
+                {
+                  "latitude": 62.54350759,
+                  "longitude": 31.23908564
+                },
+                {
+                  "latitude": 62.54350824,
+                  "longitude": 31.239085
+                },
+                {
+                  "latitude": 62.54350922,
+                  "longitude": 31.23908389
+                },
+                {
+                  "latitude": 62.54350977,
+                  "longitude": 31.23908325
+                },
+                {
+                  "latitude": 62.54351186,
+                  "longitude": 31.23908072
+                },
+                {
+                  "latitude": 62.54354413,
+                  "longitude": 31.23904001
+                },
+                {
+                  "latitude": 62.54354549,
+                  "longitude": 31.23903824
+                },
+                {
+                  "latitude": 62.54354904,
+                  "longitude": 31.23903312
+                },
+                {
+                  "latitude": 62.543551,
+                  "longitude": 31.23902985
+                },
+                {
+                  "latitude": 62.54355337,
+                  "longitude": 31.23902536
+                },
+                {
+                  "latitude": 62.54355522,
+                  "longitude": 31.23902138
+                },
+                {
+                  "latitude": 62.54355729,
+                  "longitude": 31.23901624
+                },
+                {
+                  "latitude": 62.54355946,
+                  "longitude": 31.23901017
+                },
+                {
+                  "latitude": 62.54355953,
+                  "longitude": 31.23900996
+                },
+                {
+                  "latitude": 62.54355994,
+                  "longitude": 31.23900864
+                },
+                {
+                  "latitude": 62.5435604,
+                  "longitude": 31.23900709
+                },
+                {
+                  "latitude": 62.54356218,
+                  "longitude": 31.23900043
+                },
+                {
+                  "latitude": 62.54356356,
+                  "longitude": 31.23899436
+                },
+                {
+                  "latitude": 62.54356457,
+                  "longitude": 31.23898909
+                },
+                {
+                  "latitude": 62.54356557,
+                  "longitude": 31.23898265
+                },
+                {
+                  "latitude": 62.54356626,
+                  "longitude": 31.23897716
+                },
+                {
+                  "latitude": 62.54356687,
+                  "longitude": 31.23897051
+                },
+                {
+                  "latitude": 62.54356734,
+                  "longitude": 31.23896289
+                },
+                {
+                  "latitude": 62.54356735,
+                  "longitude": 31.23896261
+                },
+                {
+                  "latitude": 62.54356741,
+                  "longitude": 31.23896105
+                },
+                {
+                  "latitude": 62.54356744,
+                  "longitude": 31.2389592
+                },
+                {
+                  "latitude": 62.54356745,
+                  "longitude": 31.23895151
+                },
+                {
+                  "latitude": 62.54356724,
+                  "longitude": 31.23894475
+                },
+                {
+                  "latitude": 62.54356689,
+                  "longitude": 31.23893911
+                },
+                {
+                  "latitude": 62.54356629,
+                  "longitude": 31.23893246
+                },
+                {
+                  "latitude": 62.54356561,
+                  "longitude": 31.23892693
+                },
+                {
+                  "latitude": 62.54356461,
+                  "longitude": 31.23892052
+                },
+                {
+                  "latitude": 62.54356319,
+                  "longitude": 31.23891315
+                },
+                {
+                  "latitude": 62.5435629,
+                  "longitude": 31.23891175
+                },
+                {
+                  "latitude": 62.54356238,
+                  "longitude": 31.23890963
+                },
+                {
+                  "latitude": 62.5435621,
+                  "longitude": 31.2389085
+                },
+                {
+                  "latitude": 62.54356086,
+                  "longitude": 31.23890373
+                },
+                {
+                  "latitude": 62.54353777,
+                  "longitude": 31.23881781
+                },
+                {
+                  "latitude": 62.54353694,
+                  "longitude": 31.23881487
+                },
+                {
+                  "latitude": 62.54353458,
+                  "longitude": 31.23880713
+                },
+                {
+                  "latitude": 62.54353307,
+                  "longitude": 31.23880289
+                },
+                {
+                  "latitude": 62.543531,
+                  "longitude": 31.23879776
+                },
+                {
+                  "latitude": 62.54352915,
+                  "longitude": 31.23879376
+                },
+                {
+                  "latitude": 62.54352679,
+                  "longitude": 31.23878926
+                },
+                {
+                  "latitude": 62.54352389,
+                  "longitude": 31.23878443
+                },
+                {
+                  "latitude": 62.54352328,
+                  "longitude": 31.23878352
+                },
+                {
+                  "latitude": 62.54352256,
+                  "longitude": 31.23878254
+                },
+                {
+                  "latitude": 62.54351949,
+                  "longitude": 31.23877868
+                },
+                {
+                  "latitude": 62.54351668,
+                  "longitude": 31.23877569
+                },
+                {
+                  "latitude": 62.54351424,
+                  "longitude": 31.23877351
+                },
+                {
+                  "latitude": 62.54351128,
+                  "longitude": 31.23877134
+                },
+                {
+                  "latitude": 62.54350874,
+                  "longitude": 31.23876985
+                },
+                {
+                  "latitude": 62.54350567,
+                  "longitude": 31.23876853
+                },
+                {
+                  "latitude": 62.54350397,
+                  "longitude": 31.23876804
+                },
+                {
+                  "latitude": 62.54349638,
+                  "longitude": 31.23874501
+                },
+                {
+                  "latitude": 62.54344572,
+                  "longitude": 31.23870407
+                },
+                {
+                  "latitude": 62.54339504,
+                  "longitude": 31.23866313
+                },
+                {
+                  "latitude": 62.54339427,
+                  "longitude": 31.23854463
+                },
+                {
+                  "latitude": 62.54339579,
+                  "longitude": 31.2385412
+                },
+                {
+                  "latitude": 62.5433974,
+                  "longitude": 31.23853764
+                },
+                {
+                  "latitude": 62.54342646,
+                  "longitude": 31.23847266
+                },
+                {
+                  "latitude": 62.54346594,
+                  "longitude": 31.23835542
+                },
+                {
+                  "latitude": 62.54348595,
+                  "longitude": 31.23835274
+                },
+                {
+                  "latitude": 62.54348908,
+                  "longitude": 31.23835173
+                },
+                {
+                  "latitude": 62.5434931,
+                  "longitude": 31.23835074
+                },
+                {
+                  "latitude": 62.54349419,
+                  "longitude": 31.23835006
+                },
+                {
+                  "latitude": 62.54349523,
+                  "longitude": 31.23834972
+                },
+                {
+                  "latitude": 62.54349812,
+                  "longitude": 31.23834764
+                },
+                {
+                  "latitude": 62.54350167,
+                  "longitude": 31.23834542
+                },
+                {
+                  "latitude": 62.54350291,
+                  "longitude": 31.23834416
+                },
+                {
+                  "latitude": 62.54350412,
+                  "longitude": 31.23834328
+                },
+                {
+                  "latitude": 62.54350666,
+                  "longitude": 31.23834029
+                },
+                {
+                  "latitude": 62.54350972,
+                  "longitude": 31.23833713
+                },
+                {
+                  "latitude": 62.54351105,
+                  "longitude": 31.23833512
+                },
+                {
+                  "latitude": 62.54351236,
+                  "longitude": 31.23833357
+                },
+                {
+                  "latitude": 62.54351448,
+                  "longitude": 31.23832992
+                },
+                {
+                  "latitude": 62.54351702,
+                  "longitude": 31.23832608
+                },
+                {
+                  "latitude": 62.5436205,
+                  "longitude": 31.23813988
+                },
+                {
+                  "latitude": 62.54362177,
+                  "longitude": 31.23813751
+                },
+                {
+                  "latitude": 62.54374249,
+                  "longitude": 31.23790617
+                },
+                {
+                  "latitude": 62.54377786,
+                  "longitude": 31.23784767
+                },
+                {
+                  "latitude": 62.54386384,
+                  "longitude": 31.2377296
+                },
+                {
+                  "latitude": 62.54397878,
+                  "longitude": 31.23760333
+                },
+                {
+                  "latitude": 62.54398216,
+                  "longitude": 31.23759927
+                },
+                {
+                  "latitude": 62.54409364,
+                  "longitude": 31.23745407
+                },
+                {
+                  "latitude": 62.54409772,
+                  "longitude": 31.23744819
+                },
+                {
+                  "latitude": 62.54409991,
+                  "longitude": 31.23744453
+                },
+                {
+                  "latitude": 62.54412567,
+                  "longitude": 31.23739903
+                },
+                {
+                  "latitude": 62.54395759,
+                  "longitude": 31.23908175
+                },
+                {
+                  "latitude": 62.54386073,
+                  "longitude": 31.23905551
+                },
+                {
+                  "latitude": 62.54380462,
+                  "longitude": 31.23919369
+                },
+                {
+                  "latitude": 62.54364453,
+                  "longitude": 31.23950816
+                },
+                {
+                  "latitude": 62.54339274,
+                  "longitude": 31.23976463
+                },
+                {
+                  "latitude": 62.54310715,
+                  "longitude": 31.23993755
+                },
+                {
+                  "latitude": 62.5430579,
+                  "longitude": 31.24010781
+                },
+                {
+                  "latitude": 62.54302484,
+                  "longitude": 31.24006252
+                },
+                {
+                  "latitude": 62.54299828,
+                  "longitude": 31.2400703
+                },
+                {
+                  "latitude": 62.54292762,
+                  "longitude": 31.24017742
+                },
+                {
+                  "latitude": 62.54288317,
+                  "longitude": 31.24015844
+                },
+                {
+                  "latitude": 62.54288374,
+                  "longitude": 31.24015286
+                },
+                {
+                  "latitude": 62.54289179,
+                  "longitude": 31.24007357
+                },
+                {
+                  "latitude": 62.54297602,
+                  "longitude": 31.23924377
+                },
+                {
+                  "latitude": 62.54302815,
+                  "longitude": 31.23929107
+                },
+                {
+                  "latitude": 62.54307865,
+                  "longitude": 31.23933762
+                },
+                {
+                  "latitude": 62.54313255,
+                  "longitude": 31.2392722
+                },
+                {
+                  "latitude": 62.54318645,
+                  "longitude": 31.23920681
+                },
+                {
+                  "latitude": 62.54326161,
+                  "longitude": 31.23929622
+                },
+                {
+                  "latitude": 62.54333948,
+                  "longitude": 31.23929608
+                },
+                {
+                  "latitude": 62.54338545,
+                  "longitude": 31.23923516
+                }
+              ]
+            },
+            "hehtaarit": 0.65,
+            "kuvaus": "Omistaja-aineiston kuvio 2 on Mikonmaan kiinteistöön 146-421-1-135 kuuluva varttunut kasvatusmetsikkö. Pääpuulaji on lehtipuu, pinta-ala 0.65 ha, kokonaistilavuus 151 m3 kuviolla ja keskitilavuus 232 m3/ha. Kasvupaikka on tuore kangas, vastaava suo ja mustikkaturvekangas, maapohja metsämaa ja maalaji keskikarkea tai karkea kangasmaa. Korjuukelpoisuus: Normaali kesä, kivennäismaa. Metsänhoidon ehdotus on harvennus ajankohdalle 2026. Arvioitu tulo tai meno: 1 800 euroa. Kuviolle ei ole asetettu luonnonhoidon tavoitteita. Geometria on harmonisoitu Metsäkeskuksen avoimen rajapinnan standid 19780292 -kuviosta; kuvio 1 jätettiin pois, koska se kuuluu eri kiinteistöön."
+          }
+        },
+        {
+          "dumpId": "metsakuvio-omistaja-2-1",
+          "values": {
+            "tunnus": "2.1",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 62.54349326,
+                  "longitude": 31.24124056
+                },
+                {
+                  "latitude": 62.54338879,
+                  "longitude": 31.24109074
+                },
+                {
+                  "latitude": 62.54330738,
+                  "longitude": 31.24086553
+                },
+                {
+                  "latitude": 62.54326315,
+                  "longitude": 31.24087183
+                },
+                {
+                  "latitude": 62.54328082,
+                  "longitude": 31.24081011
+                },
+                {
+                  "latitude": 62.54328408,
+                  "longitude": 31.24070303
+                },
+                {
+                  "latitude": 62.54326186,
+                  "longitude": 31.24061476
+                },
+                {
+                  "latitude": 62.54325467,
+                  "longitude": 31.24055791
+                },
+                {
+                  "latitude": 62.54322959,
+                  "longitude": 31.24053503
+                },
+                {
+                  "latitude": 62.54314126,
+                  "longitude": 31.24040784
+                },
+                {
+                  "latitude": 62.54311991,
+                  "longitude": 31.24030507
+                },
+                {
+                  "latitude": 62.54314848,
+                  "longitude": 31.2402092
+                },
+                {
+                  "latitude": 62.54315904,
+                  "longitude": 31.24015489
+                },
+                {
+                  "latitude": 62.54308075,
+                  "longitude": 31.2401391
+                },
+                {
+                  "latitude": 62.5430579,
+                  "longitude": 31.24010781
+                },
+                {
+                  "latitude": 62.54310715,
+                  "longitude": 31.23993755
+                },
+                {
+                  "latitude": 62.54339274,
+                  "longitude": 31.23976463
+                },
+                {
+                  "latitude": 62.54364453,
+                  "longitude": 31.23950816
+                },
+                {
+                  "latitude": 62.54380462,
+                  "longitude": 31.23919369
+                },
+                {
+                  "latitude": 62.54386073,
+                  "longitude": 31.23905551
+                },
+                {
+                  "latitude": 62.54395759,
+                  "longitude": 31.23908175
+                },
+                {
+                  "latitude": 62.54372644,
+                  "longitude": 31.2413955
+                },
+                {
+                  "latitude": 62.54364526,
+                  "longitude": 31.24136341
+                }
+              ]
+            },
+            "hehtaarit": 0.6,
+            "kuvaus": "Omistaja-aineiston kuvio 2.1 on Mikonmaan kiinteistöön 146-421-1-135 kuuluva uudistuskypsä metsikkö. Pääpuulaji on mänty, pinta-ala 0.60 ha, kokonaistilavuus 142 m3 kuviolla ja keskitilavuus 236 m3/ha. Kasvupaikka on tuore kangas, vastaava suo ja mustikkaturvekangas, maapohja metsämaa ja maalaji keskikarkea tai karkea kangasmaa. Korjuukelpoisuus: Normaali kesä, kivennäismaa. Metsänhoidon ehdotus on avohakkuu ajankohdalle 2026. Arvioitu tulo tai meno: 8 400 euroa. Kuviolle ei ole asetettu luonnonhoidon tavoitteita. Geometria on harmonisoitu Metsäkeskuksen avoimen rajapinnan standid 19780294 -kuviosta; kuvio 1 jätettiin pois, koska se kuuluu eri kiinteistöön."
+          }
+        },
+        {
+          "dumpId": "metsakuvio-omistaja-3",
+          "values": {
+            "tunnus": "3",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 62.54361881,
+                  "longitude": 31.24247267
+                },
+                {
+                  "latitude": 62.5435975,
+                  "longitude": 31.24268599
+                },
+                {
+                  "latitude": 62.54359545,
+                  "longitude": 31.24270649
+                },
+                {
+                  "latitude": 62.54359509,
+                  "longitude": 31.24271006
+                },
+                {
+                  "latitude": 62.54353398,
+                  "longitude": 31.24332163
+                },
+                {
+                  "latitude": 62.54353285,
+                  "longitude": 31.24333299
+                },
+                {
+                  "latitude": 62.543503,
+                  "longitude": 31.24363169
+                },
+                {
+                  "latitude": 62.54350134,
+                  "longitude": 31.24364826
+                },
+                {
+                  "latitude": 62.54345703,
+                  "longitude": 31.24362786
+                },
+                {
+                  "latitude": 62.54344224,
+                  "longitude": 31.24362661
+                },
+                {
+                  "latitude": 62.54339371,
+                  "longitude": 31.24367393
+                },
+                {
+                  "latitude": 62.5433417,
+                  "longitude": 31.24361067
+                },
+                {
+                  "latitude": 62.54328272,
+                  "longitude": 31.24365626
+                },
+                {
+                  "latitude": 62.54323856,
+                  "longitude": 31.24356238
+                },
+                {
+                  "latitude": 62.54323673,
+                  "longitude": 31.24351479
+                },
+                {
+                  "latitude": 62.54323248,
+                  "longitude": 31.2434623
+                },
+                {
+                  "latitude": 62.54315101,
+                  "longitude": 31.24325736
+                },
+                {
+                  "latitude": 62.5431483,
+                  "longitude": 31.24320998
+                },
+                {
+                  "latitude": 62.54317455,
+                  "longitude": 31.2431944
+                },
+                {
+                  "latitude": 62.54319127,
+                  "longitude": 31.24271467
+                },
+                {
+                  "latitude": 62.54321303,
+                  "longitude": 31.24266423
+                },
+                {
+                  "latitude": 62.54326266,
+                  "longitude": 31.24266181
+                },
+                {
+                  "latitude": 62.54327323,
+                  "longitude": 31.24260749
+                },
+                {
+                  "latitude": 62.54330059,
+                  "longitude": 31.24252629
+                },
+                {
+                  "latitude": 62.54329701,
+                  "longitude": 31.24246873
+                },
+                {
+                  "latitude": 62.54326899,
+                  "longitude": 31.24243059
+                },
+                {
+                  "latitude": 62.54301975,
+                  "longitude": 31.24239506
+                },
+                {
+                  "latitude": 62.54296361,
+                  "longitude": 31.24244441
+                },
+                {
+                  "latitude": 62.5428844,
+                  "longitude": 31.24233856
+                },
+                {
+                  "latitude": 62.54288,
+                  "longitude": 31.24223733
+                },
+                {
+                  "latitude": 62.54289298,
+                  "longitude": 31.24216521
+                },
+                {
+                  "latitude": 62.54293494,
+                  "longitude": 31.24207702
+                },
+                {
+                  "latitude": 62.54295691,
+                  "longitude": 31.24207307
+                },
+                {
+                  "latitude": 62.5429656,
+                  "longitude": 31.2417643
+                },
+                {
+                  "latitude": 62.54295636,
+                  "longitude": 31.24169625
+                },
+                {
+                  "latitude": 62.54293289,
+                  "longitude": 31.24168025
+                },
+                {
+                  "latitude": 62.54292571,
+                  "longitude": 31.2416234
+                },
+                {
+                  "latitude": 62.54290936,
+                  "longitude": 31.24156007
+                },
+                {
+                  "latitude": 62.54293901,
+                  "longitude": 31.24145404
+                },
+                {
+                  "latitude": 62.54294232,
+                  "longitude": 31.24137007
+                },
+                {
+                  "latitude": 62.54294049,
+                  "longitude": 31.24132248
+                },
+                {
+                  "latitude": 62.54291305,
+                  "longitude": 31.24125748
+                },
+                {
+                  "latitude": 62.54291122,
+                  "longitude": 31.24120988
+                },
+                {
+                  "latitude": 62.54287245,
+                  "longitude": 31.24120272
+                },
+                {
+                  "latitude": 62.54285181,
+                  "longitude": 31.24117653
+                },
+                {
+                  "latitude": 62.5428354,
+                  "longitude": 31.24108582
+                },
+                {
+                  "latitude": 62.54279145,
+                  "longitude": 31.24106192
+                },
+                {
+                  "latitude": 62.54279276,
+                  "longitude": 31.24104898
+                },
+                {
+                  "latitude": 62.54279325,
+                  "longitude": 31.24104417
+                },
+                {
+                  "latitude": 62.54279384,
+                  "longitude": 31.2410383
+                },
+                {
+                  "latitude": 62.54279434,
+                  "longitude": 31.2410334
+                },
+                {
+                  "latitude": 62.54280239,
+                  "longitude": 31.24095416
+                },
+                {
+                  "latitude": 62.54281151,
+                  "longitude": 31.24086426
+                },
+                {
+                  "latitude": 62.54281617,
+                  "longitude": 31.24081843
+                },
+                {
+                  "latitude": 62.54281644,
+                  "longitude": 31.24081569
+                },
+                {
+                  "latitude": 62.54281726,
+                  "longitude": 31.24080766
+                },
+                {
+                  "latitude": 62.54284925,
+                  "longitude": 31.24049255
+                },
+                {
+                  "latitude": 62.5428624,
+                  "longitude": 31.24036304
+                },
+                {
+                  "latitude": 62.5428626,
+                  "longitude": 31.24036101
+                },
+                {
+                  "latitude": 62.54286321,
+                  "longitude": 31.24035504
+                },
+                {
+                  "latitude": 62.54287936,
+                  "longitude": 31.24019596
+                },
+                {
+                  "latitude": 62.54287985,
+                  "longitude": 31.24019116
+                },
+                {
+                  "latitude": 62.54288188,
+                  "longitude": 31.2401711
+                },
+                {
+                  "latitude": 62.54288317,
+                  "longitude": 31.24015844
+                },
+                {
+                  "latitude": 62.54292762,
+                  "longitude": 31.24017742
+                },
+                {
+                  "latitude": 62.54299828,
+                  "longitude": 31.2400703
+                },
+                {
+                  "latitude": 62.54302484,
+                  "longitude": 31.24006252
+                },
+                {
+                  "latitude": 62.5430579,
+                  "longitude": 31.24010781
+                },
+                {
+                  "latitude": 62.54308075,
+                  "longitude": 31.2401391
+                },
+                {
+                  "latitude": 62.54315904,
+                  "longitude": 31.24015489
+                },
+                {
+                  "latitude": 62.54314848,
+                  "longitude": 31.2402092
+                },
+                {
+                  "latitude": 62.54311991,
+                  "longitude": 31.24030507
+                },
+                {
+                  "latitude": 62.54314126,
+                  "longitude": 31.24040784
+                },
+                {
+                  "latitude": 62.54322959,
+                  "longitude": 31.24053503
+                },
+                {
+                  "latitude": 62.54325467,
+                  "longitude": 31.24055791
+                },
+                {
+                  "latitude": 62.54326186,
+                  "longitude": 31.24061476
+                },
+                {
+                  "latitude": 62.54328408,
+                  "longitude": 31.24070303
+                },
+                {
+                  "latitude": 62.54328082,
+                  "longitude": 31.24081011
+                },
+                {
+                  "latitude": 62.54326315,
+                  "longitude": 31.24087183
+                },
+                {
+                  "latitude": 62.54330738,
+                  "longitude": 31.24086553
+                },
+                {
+                  "latitude": 62.54338879,
+                  "longitude": 31.24109074
+                },
+                {
+                  "latitude": 62.54349326,
+                  "longitude": 31.24124056
+                },
+                {
+                  "latitude": 62.54364526,
+                  "longitude": 31.24136341
+                },
+                {
+                  "latitude": 62.54372644,
+                  "longitude": 31.2413955
+                },
+                {
+                  "latitude": 62.54369721,
+                  "longitude": 31.24168802
+                },
+                {
+                  "latitude": 62.54369504,
+                  "longitude": 31.24170981
+                },
+                {
+                  "latitude": 62.54369474,
+                  "longitude": 31.24171276
+                }
+              ]
+            },
+            "hehtaarit": 1.01,
+            "kuvaus": "Omistaja-aineiston kuvio 3 on Mikonmaan kiinteistöön 146-421-1-135 kuuluva varttunut kasvatusmetsikkö. Pääpuulaji on lehtipuu, pinta-ala 1.01 ha, kokonaistilavuus 189 m3 kuviolla ja keskitilavuus 186 m3/ha. Kasvupaikka on tuore kangas, vastaava suo ja mustikkaturvekangas, maapohja metsämaa ja maalaji keskikarkea tai karkea kangasmaa. Korjuukelpoisuus: Normaali kesä, kivennäismaa. Metsänhoidon ehdotus on harvennus ajankohdalle 2030. Arvioitu tulo tai meno: Ei tulo- tai menoarviota. Kuviolle ei ole asetettu luonnonhoidon tavoitteita. Geometria on harmonisoitu Metsäkeskuksen avoimen rajapinnan standid 19780293 -kuviosta; kuvio 1 jätettiin pois, koska se kuuluu eri kiinteistöön."
+          }
+        },
+        {
+          "dumpId": "metsakuvio-omistaja-4",
+          "values": {
+            "tunnus": "4",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 62.54342413,
+                  "longitude": 31.24442096
+                },
+                {
+                  "latitude": 62.54337981,
+                  "longitude": 31.24440066
+                },
+                {
+                  "latitude": 62.543376,
+                  "longitude": 31.24440083
+                },
+                {
+                  "latitude": 62.54333774,
+                  "longitude": 31.24445219
+                },
+                {
+                  "latitude": 62.54327556,
+                  "longitude": 31.24467369
+                },
+                {
+                  "latitude": 62.54326536,
+                  "longitude": 31.24479439
+                },
+                {
+                  "latitude": 62.54323683,
+                  "longitude": 31.2448698
+                },
+                {
+                  "latitude": 62.54315731,
+                  "longitude": 31.24494424
+                },
+                {
+                  "latitude": 62.54311914,
+                  "longitude": 31.24501668
+                },
+                {
+                  "latitude": 62.54298307,
+                  "longitude": 31.24513897
+                },
+                {
+                  "latitude": 62.54295176,
+                  "longitude": 31.24524916
+                },
+                {
+                  "latitude": 62.54284036,
+                  "longitude": 31.24526568
+                },
+                {
+                  "latitude": 62.54282304,
+                  "longitude": 31.24531833
+                },
+                {
+                  "latitude": 62.54281973,
+                  "longitude": 31.2454023
+                },
+                {
+                  "latitude": 62.54281243,
+                  "longitude": 31.24557185
+                },
+                {
+                  "latitude": 62.54277975,
+                  "longitude": 31.24567867
+                },
+                {
+                  "latitude": 62.54276341,
+                  "longitude": 31.24582585
+                },
+                {
+                  "latitude": 62.54271778,
+                  "longitude": 31.24592584
+                },
+                {
+                  "latitude": 62.54269581,
+                  "longitude": 31.24592977
+                },
+                {
+                  "latitude": 62.54269156,
+                  "longitude": 31.24587728
+                },
+                {
+                  "latitude": 62.54266533,
+                  "longitude": 31.24584918
+                },
+                {
+                  "latitude": 62.54262656,
+                  "longitude": 31.24584201
+                },
+                {
+                  "latitude": 62.54260081,
+                  "longitude": 31.24581784
+                },
+                {
+                  "latitude": 62.54259311,
+                  "longitude": 31.24575936
+                },
+                {
+                  "latitude": 62.54255731,
+                  "longitude": 31.24575426
+                },
+                {
+                  "latitude": 62.5424857,
+                  "longitude": 31.24574404
+                },
+                {
+                  "latitude": 62.54247831,
+                  "longitude": 31.24579487
+                },
+                {
+                  "latitude": 62.54246601,
+                  "longitude": 31.24580011
+                },
+                {
+                  "latitude": 62.54243141,
+                  "longitude": 31.2457553
+                },
+                {
+                  "latitude": 62.54239781,
+                  "longitude": 31.24579781
+                },
+                {
+                  "latitude": 62.54235757,
+                  "longitude": 31.24593854
+                },
+                {
+                  "latitude": 62.54234446,
+                  "longitude": 31.24592049
+                },
+                {
+                  "latitude": 62.54230029,
+                  "longitude": 31.24589871
+                },
+                {
+                  "latitude": 62.54230174,
+                  "longitude": 31.24588441
+                },
+                {
+                  "latitude": 62.54230276,
+                  "longitude": 31.24587432
+                },
+                {
+                  "latitude": 62.54230279,
+                  "longitude": 31.24587407
+                },
+                {
+                  "latitude": 62.54234242,
+                  "longitude": 31.24548383
+                },
+                {
+                  "latitude": 62.54235578,
+                  "longitude": 31.24535231
+                },
+                {
+                  "latitude": 62.54238212,
+                  "longitude": 31.24509294
+                },
+                {
+                  "latitude": 62.5423893,
+                  "longitude": 31.24502224
+                },
+                {
+                  "latitude": 62.54239003,
+                  "longitude": 31.24501512
+                },
+                {
+                  "latitude": 62.54240266,
+                  "longitude": 31.2448907
+                },
+                {
+                  "latitude": 62.54240692,
+                  "longitude": 31.24484881
+                },
+                {
+                  "latitude": 62.54241937,
+                  "longitude": 31.24472616
+                },
+                {
+                  "latitude": 62.54241942,
+                  "longitude": 31.24472568
+                },
+                {
+                  "latitude": 62.54241957,
+                  "longitude": 31.24472426
+                },
+                {
+                  "latitude": 62.54242009,
+                  "longitude": 31.24471911
+                },
+                {
+                  "latitude": 62.5424438,
+                  "longitude": 31.24448559
+                },
+                {
+                  "latitude": 62.54245716,
+                  "longitude": 31.24435407
+                },
+                {
+                  "latitude": 62.54248085,
+                  "longitude": 31.2441208
+                },
+                {
+                  "latitude": 62.54248154,
+                  "longitude": 31.24411398
+                },
+                {
+                  "latitude": 62.54248206,
+                  "longitude": 31.24410886
+                },
+                {
+                  "latitude": 62.54248263,
+                  "longitude": 31.24410322
+                },
+                {
+                  "latitude": 62.54248472,
+                  "longitude": 31.24408266
+                },
+                {
+                  "latitude": 62.54248983,
+                  "longitude": 31.2440324
+                },
+                {
+                  "latitude": 62.54249924,
+                  "longitude": 31.24393971
+                },
+                {
+                  "latitude": 62.54250404,
+                  "longitude": 31.24389246
+                },
+                {
+                  "latitude": 62.54251552,
+                  "longitude": 31.24377934
+                },
+                {
+                  "latitude": 62.54252797,
+                  "longitude": 31.24365677
+                },
+                {
+                  "latitude": 62.54252842,
+                  "longitude": 31.24365239
+                },
+                {
+                  "latitude": 62.54252863,
+                  "longitude": 31.2436503
+                },
+                {
+                  "latitude": 62.54252885,
+                  "longitude": 31.24364813
+                },
+                {
+                  "latitude": 62.54252951,
+                  "longitude": 31.2436416
+                },
+                {
+                  "latitude": 62.54253125,
+                  "longitude": 31.24362446
+                },
+                {
+                  "latitude": 62.54254518,
+                  "longitude": 31.24348734
+                },
+                {
+                  "latitude": 62.54255175,
+                  "longitude": 31.24342257
+                },
+                {
+                  "latitude": 62.54255853,
+                  "longitude": 31.2433558
+                },
+                {
+                  "latitude": 62.54259967,
+                  "longitude": 31.2429507
+                },
+                {
+                  "latitude": 62.54260108,
+                  "longitude": 31.24293681
+                },
+                {
+                  "latitude": 62.54260553,
+                  "longitude": 31.24289298
+                },
+                {
+                  "latitude": 62.54260613,
+                  "longitude": 31.24288708
+                },
+                {
+                  "latitude": 62.5426068,
+                  "longitude": 31.24288044
+                },
+                {
+                  "latitude": 62.54260688,
+                  "longitude": 31.24287971
+                },
+                {
+                  "latitude": 62.54260693,
+                  "longitude": 31.24287923
+                },
+                {
+                  "latitude": 62.54260753,
+                  "longitude": 31.2428733
+                },
+                {
+                  "latitude": 62.54260845,
+                  "longitude": 31.24286424
+                },
+                {
+                  "latitude": 62.54260956,
+                  "longitude": 31.24285333
+                },
+                {
+                  "latitude": 62.54261046,
+                  "longitude": 31.24284444
+                },
+                {
+                  "latitude": 62.54262979,
+                  "longitude": 31.24265411
+                },
+                {
+                  "latitude": 62.54263021,
+                  "longitude": 31.24264995
+                },
+                {
+                  "latitude": 62.54263053,
+                  "longitude": 31.24264675
+                },
+                {
+                  "latitude": 62.54263177,
+                  "longitude": 31.24263454
+                },
+                {
+                  "latitude": 62.54263231,
+                  "longitude": 31.24262926
+                },
+                {
+                  "latitude": 62.54263262,
+                  "longitude": 31.24262615
+                },
+                {
+                  "latitude": 62.54263466,
+                  "longitude": 31.24260612
+                },
+                {
+                  "latitude": 62.54264524,
+                  "longitude": 31.24250191
+                },
+                {
+                  "latitude": 62.54264654,
+                  "longitude": 31.24248908
+                },
+                {
+                  "latitude": 62.54265022,
+                  "longitude": 31.24245291
+                },
+                {
+                  "latitude": 62.5426599,
+                  "longitude": 31.24235754
+                },
+                {
+                  "latitude": 62.54269258,
+                  "longitude": 31.24203566
+                },
+                {
+                  "latitude": 62.54270103,
+                  "longitude": 31.24195244
+                },
+                {
+                  "latitude": 62.54271418,
+                  "longitude": 31.24182296
+                },
+                {
+                  "latitude": 62.54271439,
+                  "longitude": 31.2418209
+                },
+                {
+                  "latitude": 62.54274504,
+                  "longitude": 31.24151897
+                },
+                {
+                  "latitude": 62.54274607,
+                  "longitude": 31.2415088
+                },
+                {
+                  "latitude": 62.54274638,
+                  "longitude": 31.24150579
+                },
+                {
+                  "latitude": 62.54274834,
+                  "longitude": 31.2414865
+                },
+                {
+                  "latitude": 62.54275112,
+                  "longitude": 31.24145914
+                },
+                {
+                  "latitude": 62.54275115,
+                  "longitude": 31.24145881
+                },
+                {
+                  "latitude": 62.5427512,
+                  "longitude": 31.24145829
+                },
+                {
+                  "latitude": 62.5427577,
+                  "longitude": 31.24139434
+                },
+                {
+                  "latitude": 62.54275777,
+                  "longitude": 31.24139365
+                },
+                {
+                  "latitude": 62.54275788,
+                  "longitude": 31.24139256
+                },
+                {
+                  "latitude": 62.54276278,
+                  "longitude": 31.24134421
+                },
+                {
+                  "latitude": 62.54276352,
+                  "longitude": 31.24133694
+                },
+                {
+                  "latitude": 62.54277704,
+                  "longitude": 31.24120379
+                },
+                {
+                  "latitude": 62.54277801,
+                  "longitude": 31.24119423
+                },
+                {
+                  "latitude": 62.54279145,
+                  "longitude": 31.24106192
+                },
+                {
+                  "latitude": 62.5428354,
+                  "longitude": 31.24108582
+                },
+                {
+                  "latitude": 62.54285181,
+                  "longitude": 31.24117653
+                },
+                {
+                  "latitude": 62.54287245,
+                  "longitude": 31.24120272
+                },
+                {
+                  "latitude": 62.54291122,
+                  "longitude": 31.24120988
+                },
+                {
+                  "latitude": 62.54291305,
+                  "longitude": 31.24125748
+                },
+                {
+                  "latitude": 62.54294049,
+                  "longitude": 31.24132248
+                },
+                {
+                  "latitude": 62.54294232,
+                  "longitude": 31.24137007
+                },
+                {
+                  "latitude": 62.54293901,
+                  "longitude": 31.24145404
+                },
+                {
+                  "latitude": 62.54290936,
+                  "longitude": 31.24156007
+                },
+                {
+                  "latitude": 62.54292571,
+                  "longitude": 31.2416234
+                },
+                {
+                  "latitude": 62.54293289,
+                  "longitude": 31.24168025
+                },
+                {
+                  "latitude": 62.54295636,
+                  "longitude": 31.24169625
+                },
+                {
+                  "latitude": 62.5429656,
+                  "longitude": 31.2417643
+                },
+                {
+                  "latitude": 62.54295691,
+                  "longitude": 31.24207307
+                },
+                {
+                  "latitude": 62.54293494,
+                  "longitude": 31.24207702
+                },
+                {
+                  "latitude": 62.54289298,
+                  "longitude": 31.24216521
+                },
+                {
+                  "latitude": 62.54288,
+                  "longitude": 31.24223733
+                },
+                {
+                  "latitude": 62.5428844,
+                  "longitude": 31.24233856
+                },
+                {
+                  "latitude": 62.54296361,
+                  "longitude": 31.24244441
+                },
+                {
+                  "latitude": 62.54301975,
+                  "longitude": 31.24239506
+                },
+                {
+                  "latitude": 62.54326899,
+                  "longitude": 31.24243059
+                },
+                {
+                  "latitude": 62.54329701,
+                  "longitude": 31.24246873
+                },
+                {
+                  "latitude": 62.54330059,
+                  "longitude": 31.24252629
+                },
+                {
+                  "latitude": 62.54327323,
+                  "longitude": 31.24260749
+                },
+                {
+                  "latitude": 62.54326266,
+                  "longitude": 31.24266181
+                },
+                {
+                  "latitude": 62.54321303,
+                  "longitude": 31.24266423
+                },
+                {
+                  "latitude": 62.54319127,
+                  "longitude": 31.24271467
+                },
+                {
+                  "latitude": 62.54317455,
+                  "longitude": 31.2431944
+                },
+                {
+                  "latitude": 62.5431483,
+                  "longitude": 31.24320998
+                },
+                {
+                  "latitude": 62.54315101,
+                  "longitude": 31.24325736
+                },
+                {
+                  "latitude": 62.54323248,
+                  "longitude": 31.2434623
+                },
+                {
+                  "latitude": 62.54323673,
+                  "longitude": 31.24351479
+                },
+                {
+                  "latitude": 62.54323856,
+                  "longitude": 31.24356238
+                },
+                {
+                  "latitude": 62.54328272,
+                  "longitude": 31.24365626
+                },
+                {
+                  "latitude": 62.5433417,
+                  "longitude": 31.24361067
+                },
+                {
+                  "latitude": 62.54339371,
+                  "longitude": 31.24367393
+                },
+                {
+                  "latitude": 62.54344224,
+                  "longitude": 31.24362661
+                },
+                {
+                  "latitude": 62.54345703,
+                  "longitude": 31.24362786
+                },
+                {
+                  "latitude": 62.54350134,
+                  "longitude": 31.24364826
+                },
+                {
+                  "latitude": 62.5434518,
+                  "longitude": 31.24414408
+                },
+                {
+                  "latitude": 62.54343699,
+                  "longitude": 31.24429228
+                },
+                {
+                  "latitude": 62.5434346,
+                  "longitude": 31.24431616
+                },
+                {
+                  "latitude": 62.54343435,
+                  "longitude": 31.24431868
+                },
+                {
+                  "latitude": 62.54342689,
+                  "longitude": 31.24439331
+                },
+                {
+                  "latitude": 62.54342643,
+                  "longitude": 31.24439792
+                },
+                {
+                  "latitude": 62.54342635,
+                  "longitude": 31.24439875
+                }
+              ]
+            },
+            "hehtaarit": 1.55,
+            "kuvaus": "Omistaja-aineiston kuvio 4 on Mikonmaan kiinteistöön 146-421-1-135 kuuluva varttunut kasvatusmetsikkö. Pääpuulaji on mänty, pinta-ala 1.55 ha, kokonaistilavuus 290 m3 kuviolla ja keskitilavuus 187 m3/ha. Kasvupaikka on tuore kangas, vastaava suo ja mustikkaturvekangas, maapohja metsämaa ja maalaji keskikarkea tai karkea kangasmaa. Korjuukelpoisuus: Normaali kesä, kivennäismaa. Metsänhoidon ehdotus on harvennus ajankohdalle 2028. Arvioitu tulo tai meno: 3 000 euroa. Kuviolle ei ole asetettu luonnonhoidon tavoitteita. Geometria on harmonisoitu Metsäkeskuksen avoimen rajapinnan standid 19780290 -kuviosta; kuvio 1 jätettiin pois, koska se kuuluu eri kiinteistöön."
+          }
+        },
+        {
+          "dumpId": "metsakuvio-omistaja-5",
+          "values": {
+            "tunnus": "5",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 62.54220895,
+                  "longitude": 31.24679801
+                },
+                {
+                  "latitude": 62.54221083,
+                  "longitude": 31.2467795
+                },
+                {
+                  "latitude": 62.54221271,
+                  "longitude": 31.24676098
+                },
+                {
+                  "latitude": 62.54221459,
+                  "longitude": 31.24674244
+                },
+                {
+                  "latitude": 62.54221646,
+                  "longitude": 31.24672401
+                },
+                {
+                  "latitude": 62.54221837,
+                  "longitude": 31.24670524
+                },
+                {
+                  "latitude": 62.54222024,
+                  "longitude": 31.24668684
+                },
+                {
+                  "latitude": 62.54222212,
+                  "longitude": 31.24666832
+                },
+                {
+                  "latitude": 62.542224,
+                  "longitude": 31.24664978
+                },
+                {
+                  "latitude": 62.54222588,
+                  "longitude": 31.24663124
+                },
+                {
+                  "latitude": 62.54222777,
+                  "longitude": 31.2466127
+                },
+                {
+                  "latitude": 62.54222965,
+                  "longitude": 31.24659418
+                },
+                {
+                  "latitude": 62.54223153,
+                  "longitude": 31.24657565
+                },
+                {
+                  "latitude": 62.54223341,
+                  "longitude": 31.24655713
+                },
+                {
+                  "latitude": 62.54224697,
+                  "longitude": 31.24642367
+                },
+                {
+                  "latitude": 62.54224763,
+                  "longitude": 31.24641718
+                },
+                {
+                  "latitude": 62.54224939,
+                  "longitude": 31.24639987
+                },
+                {
+                  "latitude": 62.54225591,
+                  "longitude": 31.24633558
+                },
+                {
+                  "latitude": 62.54225605,
+                  "longitude": 31.24633424
+                },
+                {
+                  "latitude": 62.54225756,
+                  "longitude": 31.24631935
+                },
+                {
+                  "latitude": 62.54228792,
+                  "longitude": 31.24602048
+                },
+                {
+                  "latitude": 62.54229705,
+                  "longitude": 31.24593059
+                },
+                {
+                  "latitude": 62.54230029,
+                  "longitude": 31.24589871
+                },
+                {
+                  "latitude": 62.54234446,
+                  "longitude": 31.24592049
+                },
+                {
+                  "latitude": 62.54235757,
+                  "longitude": 31.24593854
+                },
+                {
+                  "latitude": 62.54239781,
+                  "longitude": 31.24579781
+                },
+                {
+                  "latitude": 62.54243141,
+                  "longitude": 31.2457553
+                },
+                {
+                  "latitude": 62.54246601,
+                  "longitude": 31.24580011
+                },
+                {
+                  "latitude": 62.54247831,
+                  "longitude": 31.24579487
+                },
+                {
+                  "latitude": 62.5424857,
+                  "longitude": 31.24574404
+                },
+                {
+                  "latitude": 62.54255731,
+                  "longitude": 31.24575426
+                },
+                {
+                  "latitude": 62.54259311,
+                  "longitude": 31.24575936
+                },
+                {
+                  "latitude": 62.54260081,
+                  "longitude": 31.24581784
+                },
+                {
+                  "latitude": 62.54262656,
+                  "longitude": 31.24584201
+                },
+                {
+                  "latitude": 62.54266533,
+                  "longitude": 31.24584918
+                },
+                {
+                  "latitude": 62.54269156,
+                  "longitude": 31.24587728
+                },
+                {
+                  "latitude": 62.54269581,
+                  "longitude": 31.24592977
+                },
+                {
+                  "latitude": 62.54271778,
+                  "longitude": 31.24592584
+                },
+                {
+                  "latitude": 62.54276341,
+                  "longitude": 31.24582585
+                },
+                {
+                  "latitude": 62.54277975,
+                  "longitude": 31.24567867
+                },
+                {
+                  "latitude": 62.54281243,
+                  "longitude": 31.24557185
+                },
+                {
+                  "latitude": 62.54281973,
+                  "longitude": 31.2454023
+                },
+                {
+                  "latitude": 62.54282304,
+                  "longitude": 31.24531833
+                },
+                {
+                  "latitude": 62.54284036,
+                  "longitude": 31.24526568
+                },
+                {
+                  "latitude": 62.54295176,
+                  "longitude": 31.24524916
+                },
+                {
+                  "latitude": 62.54298307,
+                  "longitude": 31.24513897
+                },
+                {
+                  "latitude": 62.54311914,
+                  "longitude": 31.24501668
+                },
+                {
+                  "latitude": 62.54315731,
+                  "longitude": 31.24494424
+                },
+                {
+                  "latitude": 62.54323683,
+                  "longitude": 31.2448698
+                },
+                {
+                  "latitude": 62.54326536,
+                  "longitude": 31.24479439
+                },
+                {
+                  "latitude": 62.54327556,
+                  "longitude": 31.24467369
+                },
+                {
+                  "latitude": 62.54333774,
+                  "longitude": 31.24445219
+                },
+                {
+                  "latitude": 62.543376,
+                  "longitude": 31.24440083
+                },
+                {
+                  "latitude": 62.54337981,
+                  "longitude": 31.24440066
+                },
+                {
+                  "latitude": 62.54342413,
+                  "longitude": 31.24442096
+                },
+                {
+                  "latitude": 62.54314996,
+                  "longitude": 31.24716407
+                },
+                {
+                  "latitude": 62.54314807,
+                  "longitude": 31.24718298
+                },
+                {
+                  "latitude": 62.54310278,
+                  "longitude": 31.24763608
+                },
+                {
+                  "latitude": 62.54287319,
+                  "longitude": 31.24743163
+                },
+                {
+                  "latitude": 62.54286693,
+                  "longitude": 31.24742606
+                },
+                {
+                  "latitude": 62.54286529,
+                  "longitude": 31.2474246
+                },
+                {
+                  "latitude": 62.54241174,
+                  "longitude": 31.24702072
+                },
+                {
+                  "latitude": 62.5424097,
+                  "longitude": 31.2470189
+                },
+                {
+                  "latitude": 62.54240527,
+                  "longitude": 31.24701496
+                },
+                {
+                  "latitude": 62.54224743,
+                  "longitude": 31.24687441
+                },
+                {
+                  "latitude": 62.54223666,
+                  "longitude": 31.24686481
+                },
+                {
+                  "latitude": 62.54223568,
+                  "longitude": 31.24686395
+                },
+                {
+                  "latitude": 62.54223398,
+                  "longitude": 31.24686244
+                },
+                {
+                  "latitude": 62.54222875,
+                  "longitude": 31.24685778
+                },
+                {
+                  "latitude": 62.54222084,
+                  "longitude": 31.24685073
+                },
+                {
+                  "latitude": 62.54221293,
+                  "longitude": 31.24684369
+                },
+                {
+                  "latitude": 62.54220502,
+                  "longitude": 31.24683665
+                },
+                {
+                  "latitude": 62.54220693,
+                  "longitude": 31.24681788
+                },
+                {
+                  "latitude": 62.54220706,
+                  "longitude": 31.24681655
+                }
+              ]
+            },
+            "hehtaarit": 1.05,
+            "kuvaus": "Omistaja-aineiston kuvio 5 on Mikonmaan kiinteistöön 146-421-1-135 kuuluva nuori kasvatusmetsikkö. Pääpuulaji on kuusi, pinta-ala 1.05 ha, kokonaistilavuus 81 m3 kuviolla ja keskitilavuus 77 m3/ha. Kasvupaikka on tuore kangas, vastaava suo ja mustikkaturvekangas, maapohja metsämaa ja maalaji keskikarkea tai karkea kangasmaa. Korjuukelpoisuus: Normaali kesä, kivennäismaa. Omistaja-aineistossa ei ole kuviolle erillistä metsänhoidon toimenpide-ehdotusta. Kuviolle ei ole asetettu luonnonhoidon tavoitteita. Geometria on harmonisoitu Metsäkeskuksen avoimen rajapinnan standid 19780289 -kuviosta; kuvio 1 jätettiin pois, koska se kuuluu eri kiinteistöön."
+          }
+        },
+        {
+          "dumpId": "metsakuvio-omistaja-6",
+          "values": {
+            "tunnus": "6",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 62.54403487,
+                  "longitude": 31.23725857
+                },
+                {
+                  "latitude": 62.54392835,
+                  "longitude": 31.23739732
+                },
+                {
+                  "latitude": 62.54381285,
+                  "longitude": 31.23752421
+                },
+                {
+                  "latitude": 62.54380837,
+                  "longitude": 31.23752972
+                },
+                {
+                  "latitude": 62.54377936,
+                  "longitude": 31.23756956
+                },
+                {
+                  "latitude": 62.54376506,
+                  "longitude": 31.23745911
+                },
+                {
+                  "latitude": 62.5437635,
+                  "longitude": 31.23744902
+                },
+                {
+                  "latitude": 62.54371258,
+                  "longitude": 31.23716443
+                },
+                {
+                  "latitude": 62.54371067,
+                  "longitude": 31.23715501
+                },
+                {
+                  "latitude": 62.54370991,
+                  "longitude": 31.23715179
+                },
+                {
+                  "latitude": 62.54367657,
+                  "longitude": 31.23701612
+                },
+                {
+                  "latitude": 62.54367229,
+                  "longitude": 31.23700144
+                },
+                {
+                  "latitude": 62.54366705,
+                  "longitude": 31.23698831
+                },
+                {
+                  "latitude": 62.54366097,
+                  "longitude": 31.23697701
+                },
+                {
+                  "latitude": 62.54360177,
+                  "longitude": 31.23688266
+                },
+                {
+                  "latitude": 62.54359634,
+                  "longitude": 31.23687505
+                },
+                {
+                  "latitude": 62.54359054,
+                  "longitude": 31.23686891
+                },
+                {
+                  "latitude": 62.54358443,
+                  "longitude": 31.23686432
+                },
+                {
+                  "latitude": 62.5434759,
+                  "longitude": 31.23679826
+                },
+                {
+                  "latitude": 62.54346769,
+                  "longitude": 31.23679472
+                },
+                {
+                  "latitude": 62.54345932,
+                  "longitude": 31.236794
+                },
+                {
+                  "latitude": 62.54336963,
+                  "longitude": 31.23680126
+                },
+                {
+                  "latitude": 62.54337117,
+                  "longitude": 31.23680025
+                },
+                {
+                  "latitude": 62.54350612,
+                  "longitude": 31.23671113
+                },
+                {
+                  "latitude": 62.54363718,
+                  "longitude": 31.23662459
+                },
+                {
+                  "latitude": 62.54364249,
+                  "longitude": 31.23662108
+                },
+                {
+                  "latitude": 62.54367254,
+                  "longitude": 31.23660124
+                },
+                {
+                  "latitude": 62.54367774,
+                  "longitude": 31.2365978
+                },
+                {
+                  "latitude": 62.54368266,
+                  "longitude": 31.2366814
+                },
+                {
+                  "latitude": 62.5437089,
+                  "longitude": 31.23677256
+                },
+                {
+                  "latitude": 62.54371497,
+                  "longitude": 31.23684092
+                },
+                {
+                  "latitude": 62.54372847,
+                  "longitude": 31.23687981
+                },
+                {
+                  "latitude": 62.54374898,
+                  "longitude": 31.23689965
+                },
+                {
+                  "latitude": 62.54376862,
+                  "longitude": 31.23689875
+                },
+                {
+                  "latitude": 62.54378456,
+                  "longitude": 31.23688312
+                },
+                {
+                  "latitude": 62.54380698,
+                  "longitude": 31.23683542
+                },
+                {
+                  "latitude": 62.54382464,
+                  "longitude": 31.23682656
+                },
+                {
+                  "latitude": 62.54386395,
+                  "longitude": 31.23687339
+                },
+                {
+                  "latitude": 62.54391933,
+                  "longitude": 31.23688686
+                },
+                {
+                  "latitude": 62.54395229,
+                  "longitude": 31.2369249
+                },
+                {
+                  "latitude": 62.54397706,
+                  "longitude": 31.23693775
+                },
+                {
+                  "latitude": 62.54399059,
+                  "longitude": 31.23696802
+                },
+                {
+                  "latitude": 62.54403032,
+                  "longitude": 31.23717153
+                },
+                {
+                  "latitude": 62.5440535,
+                  "longitude": 31.23722565
+                },
+                {
+                  "latitude": 62.54403786,
+                  "longitude": 31.23725327
+                }
+              ]
+            },
+            "hehtaarit": 0.13,
+            "kuvaus": "Omistaja-aineiston kuvio 6 on Mikonmaan kiinteistöön 146-421-1-135 kuuluva varttunut kasvatusmetsikkö. Pääpuulaji on kuusi, pinta-ala 0.13 ha, kokonaistilavuus 23 m3 kuviolla ja keskitilavuus 182 m3/ha. Kasvupaikka on tuore kangas, vastaava suo ja mustikkaturvekangas, maapohja metsämaa ja maalaji keskikarkea tai karkea kangasmaa. Korjuukelpoisuus: Normaali kesä, kivennäismaa. Omistaja-aineistossa ei ole kuviolle erillistä metsänhoidon toimenpide-ehdotusta. Kuviolle ei ole asetettu luonnonhoidon tavoitteita. Geometria on harmonisoitu Metsäkeskuksen avoimen rajapinnan standid 73243550 -kuviosta; kuvio 1 jätettiin pois, koska se kuuluu eri kiinteistöön."
+          }
+        },
+        {
+          "dumpId": "metsakuvio-omistaja-7",
+          "values": {
+            "tunnus": "7",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 62.54311321,
+                  "longitude": 31.2372853
+                },
+                {
+                  "latitude": 62.54311579,
+                  "longitude": 31.23729094
+                },
+                {
+                  "latitude": 62.54311599,
+                  "longitude": 31.23729134
+                },
+                {
+                  "latitude": 62.54311914,
+                  "longitude": 31.23729732
+                },
+                {
+                  "latitude": 62.54312251,
+                  "longitude": 31.23730294
+                },
+                {
+                  "latitude": 62.54312318,
+                  "longitude": 31.23730395
+                },
+                {
+                  "latitude": 62.54312408,
+                  "longitude": 31.23730531
+                },
+                {
+                  "latitude": 62.543125,
+                  "longitude": 31.23730661
+                },
+                {
+                  "latitude": 62.54312569,
+                  "longitude": 31.23730754
+                },
+                {
+                  "latitude": 62.54312937,
+                  "longitude": 31.23731213
+                },
+                {
+                  "latitude": 62.54313315,
+                  "longitude": 31.23731618
+                },
+                {
+                  "latitude": 62.54313339,
+                  "longitude": 31.2373164
+                },
+                {
+                  "latitude": 62.54313677,
+                  "longitude": 31.23731942
+                },
+                {
+                  "latitude": 62.54314082,
+                  "longitude": 31.23732239
+                },
+                {
+                  "latitude": 62.54314435,
+                  "longitude": 31.23732447
+                },
+                {
+                  "latitude": 62.54314462,
+                  "longitude": 31.2373246
+                },
+                {
+                  "latitude": 62.54314873,
+                  "longitude": 31.23732638
+                },
+                {
+                  "latitude": 62.54315294,
+                  "longitude": 31.23732758
+                },
+                {
+                  "latitude": 62.54315375,
+                  "longitude": 31.23732775
+                },
+                {
+                  "latitude": 62.54315485,
+                  "longitude": 31.23732795
+                },
+                {
+                  "latitude": 62.54315595,
+                  "longitude": 31.23732807
+                },
+                {
+                  "latitude": 62.54315675,
+                  "longitude": 31.23732812
+                },
+                {
+                  "latitude": 62.543161,
+                  "longitude": 31.23732812
+                },
+                {
+                  "latitude": 62.54316519,
+                  "longitude": 31.23732753
+                },
+                {
+                  "latitude": 62.54316547,
+                  "longitude": 31.23732748
+                },
+                {
+                  "latitude": 62.54316909,
+                  "longitude": 31.23732641
+                },
+                {
+                  "latitude": 62.54317329,
+                  "longitude": 31.23732462
+                },
+                {
+                  "latitude": 62.54317682,
+                  "longitude": 31.23732259
+                },
+                {
+                  "latitude": 62.54317707,
+                  "longitude": 31.23732243
+                },
+                {
+                  "latitude": 62.54318062,
+                  "longitude": 31.23731982
+                },
+                {
+                  "latitude": 62.54319982,
+                  "longitude": 31.23730906
+                },
+                {
+                  "latitude": 62.54321956,
+                  "longitude": 31.23730451
+                },
+                {
+                  "latitude": 62.54323938,
+                  "longitude": 31.23730632
+                },
+                {
+                  "latitude": 62.54325886,
+                  "longitude": 31.23731441
+                },
+                {
+                  "latitude": 62.54326182,
+                  "longitude": 31.23731614
+                },
+                {
+                  "latitude": 62.54326494,
+                  "longitude": 31.2373175
+                },
+                {
+                  "latitude": 62.54326846,
+                  "longitude": 31.2373185
+                },
+                {
+                  "latitude": 62.54326859,
+                  "longitude": 31.23731852
+                },
+                {
+                  "latitude": 62.54326931,
+                  "longitude": 31.23731866
+                },
+                {
+                  "latitude": 62.54327016,
+                  "longitude": 31.23731875
+                },
+                {
+                  "latitude": 62.54327371,
+                  "longitude": 31.23731875
+                },
+                {
+                  "latitude": 62.54327684,
+                  "longitude": 31.23731829
+                },
+                {
+                  "latitude": 62.54327944,
+                  "longitude": 31.23731754
+                },
+                {
+                  "latitude": 62.54328251,
+                  "longitude": 31.23731622
+                },
+                {
+                  "latitude": 62.54328506,
+                  "longitude": 31.23731475
+                },
+                {
+                  "latitude": 62.54328847,
+                  "longitude": 31.23731226
+                },
+                {
+                  "latitude": 62.54329066,
+                  "longitude": 31.23731035
+                },
+                {
+                  "latitude": 62.54333012,
+                  "longitude": 31.23727395
+                },
+                {
+                  "latitude": 62.54333231,
+                  "longitude": 31.23727183
+                },
+                {
+                  "latitude": 62.54333347,
+                  "longitude": 31.23727063
+                },
+                {
+                  "latitude": 62.54333418,
+                  "longitude": 31.23726984
+                },
+                {
+                  "latitude": 62.54333725,
+                  "longitude": 31.23726601
+                },
+                {
+                  "latitude": 62.54333987,
+                  "longitude": 31.23726222
+                },
+                {
+                  "latitude": 62.54334194,
+                  "longitude": 31.23725878
+                },
+                {
+                  "latitude": 62.5433443,
+                  "longitude": 31.23725428
+                },
+                {
+                  "latitude": 62.54334615,
+                  "longitude": 31.2372503
+                },
+                {
+                  "latitude": 62.54334823,
+                  "longitude": 31.23724517
+                },
+                {
+                  "latitude": 62.54335039,
+                  "longitude": 31.23723909
+                },
+                {
+                  "latitude": 62.54335046,
+                  "longitude": 31.23723888
+                },
+                {
+                  "latitude": 62.54335088,
+                  "longitude": 31.23723756
+                },
+                {
+                  "latitude": 62.54335133,
+                  "longitude": 31.23723601
+                },
+                {
+                  "latitude": 62.54335311,
+                  "longitude": 31.23722935
+                },
+                {
+                  "latitude": 62.54335449,
+                  "longitude": 31.23722328
+                },
+                {
+                  "latitude": 62.5433555,
+                  "longitude": 31.23721799
+                },
+                {
+                  "latitude": 62.5433565,
+                  "longitude": 31.23721157
+                },
+                {
+                  "latitude": 62.54335719,
+                  "longitude": 31.23720608
+                },
+                {
+                  "latitude": 62.54335781,
+                  "longitude": 31.23719943
+                },
+                {
+                  "latitude": 62.54335827,
+                  "longitude": 31.23719181
+                },
+                {
+                  "latitude": 62.54335828,
+                  "longitude": 31.23719154
+                },
+                {
+                  "latitude": 62.54335567,
+                  "longitude": 31.2370357
+                },
+                {
+                  "latitude": 62.54345491,
+                  "longitude": 31.23702765
+                },
+                {
+                  "latitude": 62.54354586,
+                  "longitude": 31.23708301
+                },
+                {
+                  "latitude": 62.5435873,
+                  "longitude": 31.23714905
+                },
+                {
+                  "latitude": 62.54361337,
+                  "longitude": 31.23725516
+                },
+                {
+                  "latitude": 62.54366219,
+                  "longitude": 31.23752801
+                },
+                {
+                  "latitude": 62.54368539,
+                  "longitude": 31.23770728
+                },
+                {
+                  "latitude": 62.54367562,
+                  "longitude": 31.23772342
+                },
+                {
+                  "latitude": 62.54367261,
+                  "longitude": 31.23772877
+                },
+                {
+                  "latitude": 62.54355106,
+                  "longitude": 31.23796171
+                },
+                {
+                  "latitude": 62.54346175,
+                  "longitude": 31.23812241
+                },
+                {
+                  "latitude": 62.54331324,
+                  "longitude": 31.23814233
+                },
+                {
+                  "latitude": 62.54331191,
+                  "longitude": 31.23814253
+                },
+                {
+                  "latitude": 62.54315604,
+                  "longitude": 31.23817184
+                },
+                {
+                  "latitude": 62.54308472,
+                  "longitude": 31.23817302
+                },
+                {
+                  "latitude": 62.54309284,
+                  "longitude": 31.23809297
+                },
+                {
+                  "latitude": 62.54295126,
+                  "longitude": 31.23708147
+                },
+                {
+                  "latitude": 62.54295286,
+                  "longitude": 31.23708039
+                },
+                {
+                  "latitude": 62.54305509,
+                  "longitude": 31.23701167
+                },
+                {
+                  "latitude": 62.54305646,
+                  "longitude": 31.23701076
+                },
+                {
+                  "latitude": 62.54305512,
+                  "longitude": 31.23701184
+                },
+                {
+                  "latitude": 62.54310418,
+                  "longitude": 31.23725876
+                },
+                {
+                  "latitude": 62.54310525,
+                  "longitude": 31.23726261
+                },
+                {
+                  "latitude": 62.54310561,
+                  "longitude": 31.23726389
+                },
+                {
+                  "latitude": 62.54310796,
+                  "longitude": 31.23727149
+                },
+                {
+                  "latitude": 62.54310815,
+                  "longitude": 31.23727206
+                },
+                {
+                  "latitude": 62.5431104,
+                  "longitude": 31.23727836
+                }
+              ]
+            },
+            "hehtaarit": 0.33,
+            "kuvaus": "Omistaja-aineiston kuvio 7 on Mikonmaan kiinteistöön 146-421-1-135 kuuluva varttunut kasvatusmetsikkö. Pääpuulaji on lehtipuu, pinta-ala 0.33 ha, kokonaistilavuus 48 m3 kuviolla ja keskitilavuus 146 m3/ha. Kasvupaikka on lehtomainen kangas, vastaava suo ja ruohoturvekangas, maapohja metsämaa ja maalaji keskikarkea tai karkea kangasmaa. Korjuukelpoisuus: Normaali kesä, kivennäismaa. Omistaja-aineistossa ei ole kuviolle erillistä metsänhoidon toimenpide-ehdotusta. Kuviolle ei ole asetettu luonnonhoidon tavoitteita. Geometria on harmonisoitu Metsäkeskuksen avoimen rajapinnan standid 73243554 -kuviosta; kuvio 1 jätettiin pois, koska se kuuluu eri kiinteistöön."
+          }
+        },
+        {
+          "dumpId": "metsakuvio-omistaja-8",
+          "values": {
+            "tunnus": "8",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 62.54424298,
+                  "longitude": 31.23622455
+                },
+                {
+                  "latitude": 62.54420279,
+                  "longitude": 31.23662694
+                },
+                {
+                  "latitude": 62.54416293,
+                  "longitude": 31.23702602
+                },
+                {
+                  "latitude": 62.54411388,
+                  "longitude": 31.23711902
+                },
+                {
+                  "latitude": 62.5440535,
+                  "longitude": 31.23722565
+                },
+                {
+                  "latitude": 62.54403032,
+                  "longitude": 31.23717153
+                },
+                {
+                  "latitude": 62.54399059,
+                  "longitude": 31.23696802
+                },
+                {
+                  "latitude": 62.54397706,
+                  "longitude": 31.23693775
+                },
+                {
+                  "latitude": 62.54395229,
+                  "longitude": 31.2369249
+                },
+                {
+                  "latitude": 62.54391933,
+                  "longitude": 31.23688686
+                },
+                {
+                  "latitude": 62.54386395,
+                  "longitude": 31.23687339
+                },
+                {
+                  "latitude": 62.54382464,
+                  "longitude": 31.23682656
+                },
+                {
+                  "latitude": 62.54380698,
+                  "longitude": 31.23683542
+                },
+                {
+                  "latitude": 62.54378456,
+                  "longitude": 31.23688312
+                },
+                {
+                  "latitude": 62.54376862,
+                  "longitude": 31.23689875
+                },
+                {
+                  "latitude": 62.54374898,
+                  "longitude": 31.23689965
+                },
+                {
+                  "latitude": 62.54372847,
+                  "longitude": 31.23687981
+                },
+                {
+                  "latitude": 62.54371497,
+                  "longitude": 31.23684092
+                },
+                {
+                  "latitude": 62.5437089,
+                  "longitude": 31.23677256
+                },
+                {
+                  "latitude": 62.54368266,
+                  "longitude": 31.2366814
+                },
+                {
+                  "latitude": 62.54367774,
+                  "longitude": 31.2365978
+                },
+                {
+                  "latitude": 62.54373076,
+                  "longitude": 31.23656279
+                },
+                {
+                  "latitude": 62.54396993,
+                  "longitude": 31.23640486
+                },
+                {
+                  "latitude": 62.54424285,
+                  "longitude": 31.23622463
+                }
+              ]
+            },
+            "hehtaarit": 0.16,
+            "kuvaus": "Omistaja-aineiston kuvio 8 on Mikonmaan kiinteistöön 146-421-1-135 kuuluva nuori kasvatusmetsikkö. Pääpuulaji on mänty, pinta-ala 0.16 ha, kokonaistilavuus 5 m3 kuviolla ja keskitilavuus 32 m3/ha. Kasvupaikka on lehtomainen kangas, vastaava suo ja ruohoturvekangas, maapohja metsämaa ja maalaji keskikarkea tai karkea kangasmaa. Korjuukelpoisuus: Normaali kesä, kivennäismaa. Omistaja-aineistossa ei ole kuviolle erillistä metsänhoidon toimenpide-ehdotusta. Kuviolle ei ole asetettu luonnonhoidon tavoitteita. Geometria on harmonisoitu Metsäkeskuksen avoimen rajapinnan standid 73243555 -kuviosta; kuvio 1 jätettiin pois, koska se kuuluu eri kiinteistöön."
+          }
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "associationAzName": "Metsapalsta_koostuu_Metsakuvio",
+      "sourceDumpId": "palsta-mikonmaa",
+      "targetDumpId": "metsakuvio-omistaja-2"
+    },
+    {
+      "associationAzName": "Metsapalsta_koostuu_Metsakuvio",
+      "sourceDumpId": "palsta-mikonmaa",
+      "targetDumpId": "metsakuvio-omistaja-2-1"
+    },
+    {
+      "associationAzName": "Metsapalsta_koostuu_Metsakuvio",
+      "sourceDumpId": "palsta-mikonmaa",
+      "targetDumpId": "metsakuvio-omistaja-3"
+    },
+    {
+      "associationAzName": "Metsapalsta_koostuu_Metsakuvio",
+      "sourceDumpId": "palsta-mikonmaa",
+      "targetDumpId": "metsakuvio-omistaja-4"
+    },
+    {
+      "associationAzName": "Metsapalsta_koostuu_Metsakuvio",
+      "sourceDumpId": "palsta-mikonmaa",
+      "targetDumpId": "metsakuvio-omistaja-5"
+    },
+    {
+      "associationAzName": "Metsapalsta_koostuu_Metsakuvio",
+      "sourceDumpId": "palsta-mikonmaa",
+      "targetDumpId": "metsakuvio-omistaja-6"
+    },
+    {
+      "associationAzName": "Metsapalsta_koostuu_Metsakuvio",
+      "sourceDumpId": "palsta-mikonmaa",
+      "targetDumpId": "metsakuvio-omistaja-7"
+    },
+    {
+      "associationAzName": "Metsapalsta_koostuu_Metsakuvio",
+      "sourceDumpId": "palsta-mikonmaa",
+      "targetDumpId": "metsakuvio-omistaja-8"
+    }
+  ]
+}
