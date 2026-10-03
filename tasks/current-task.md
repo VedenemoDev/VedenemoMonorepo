@@ -1,40 +1,39 @@
 # Current Task
 
-## Value set editing reboot
+## Higher-confidence current-location capture
 
 Status: executed
 
 ### Goal
 
-Reboot value-set editing around the correct model-level concept and implement
-the first narrow authoring slice: adding new visible values to existing
-model-level value sets from the selected model context.
+Improve the Entity data editor's `Use current location` behavior so captured
+`LOCATION` values come from a bounded repeated-read browser location session
+instead of a single cached-or-immediate reading.
 
 ### Scope
 
-- Add a model-level `Model tools` entry point for value-set editing in
-  `vedenemo-ux`.
-- Implement an add-only value-set editor for existing model-level value sets.
-- Prioritize visible-name input and derive hidden/read-only technical values.
-- Show selected value-set usage by bound model attributes.
-- Preserve strict module boundaries and use the existing backend value-set
-  replacement capability.
+- Keep the implementation in `vedenemo-ux`.
+- Replace one-shot `getCurrentPosition` capture with a short `watchPosition`
+  capture session for single-point `LOCATION` fields.
+- Track latest reading, best reading, reported accuracy, elapsed time, and
+  reading count.
+- Let the user accept the best reading or cancel the capture.
+- Preserve manual JSON editing and the existing `{latitude, longitude}` saved
+  value shape.
+- Leave backend, core, CLI, `.vdos`, and `.vdmp` behavior unchanged.
 
 ### Completion Notes
 
-- Added a `Model tools` panel to the `Models` view with a `Value sets` tool.
-- Kept the model diagram visible beside the tool on wide layouts.
-- Made the value-set tool the primary content on narrow layouts while it is
-  open, with a `Back to overview` return path.
-- Removed the visible `Value sets` tab entry point from the model-instance
-  `/editor` flow.
-- Implemented add-only editing for existing `TEXT` value sets.
-- Displayed existing values as read-only rows and listed model attributes bound
-  to the selected value set.
-- Used a visible-name-first add flow and derived an `azName`-style ASCII
-  technical value automatically.
-- Rejected duplicate derived technical values in the UI before save.
-- Reused the existing backend value-set replacement endpoint through ephemeral
-  backend sessions; backend, core, CLI, `.vdos`, and `.vdmp` behavior were
-  unchanged.
+- Added structured current-location capture state for Entity data editor
+  `LOCATION` fields.
+- `Use current location` now starts a bounded high-accuracy `watchPosition`
+  session with `maximumAge: 0`.
+- The editor shows latest accuracy, best accuracy, elapsed time, reading count,
+  guidance text, and `Accept best` / `Cancel` actions.
+- Accepting writes the best reading as the existing compact
+  `{latitude, longitude}` JSON value; cancelling restores the previous field
+  value.
+- Watchers and timers are cleared on accept, cancel, timeout, manual field
+  change, model/entity/root replacement, and component cleanup.
+- Manual `LOCATION` JSON editing and validation remain unchanged.
 - Verified with `npm run build` in `vedenemo-ux`.

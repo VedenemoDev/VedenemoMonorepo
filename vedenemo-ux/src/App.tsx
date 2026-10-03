@@ -340,6 +340,25 @@ type LocationFormValue = {
   longitude: number;
 };
 
+type CurrentLocationReading = {
+  latitude: number;
+  longitude: number;
+  accuracyMeters: number | null;
+  timestamp: number;
+};
+
+type CurrentLocationCapture = {
+  attributeAzName: string;
+  previousValue: string;
+  startedAt: number;
+  elapsedMs: number;
+  readingCount: number;
+  latestReading: CurrentLocationReading | null;
+  bestReading: CurrentLocationReading | null;
+  status: "capturing" | "ended";
+  message: string;
+};
+
 type HexbinMapBinding = {
   rootEntityAzName: string;
   rootInstanceId: string;
@@ -473,6 +492,8 @@ const DIAGRAM_RENDERED_MESSAGE = "Diagram rendered";
 const DEFAULT_CONSOLE_PANE_HEIGHT = 360;
 const MIN_CONSOLE_PANE_HEIGHT = 256;
 const MAX_CONSOLE_PANE_VIEWPORT_RATIO = 0.75;
+const CURRENT_LOCATION_CAPTURE_TIMEOUT_MS = 15_000;
+const CURRENT_LOCATION_CAPTURE_TARGET_ACCURACY_METERS = 5;
 const TIDY_TREE_CHART_ID = "tidy-tree";
 const RADIAL_TREE_CHART_ID = "radial-tree";
 const TREE_OF_LIFE_CHART_ID = "tree-of-life";
@@ -1037,6 +1058,49 @@ function inputStepFor(attribute: AttributeDescription | null | undefined): strin
 
 function roundLocationCoordinate(value: number): number {
   return Math.round(value * 10_000_000) / 10_000_000;
+}
+
+function locationReadingFrom(position: GeolocationPosition): CurrentLocationReading {
+  return {
+    latitude: roundLocationCoordinate(position.coords.latitude),
+    longitude: roundLocationCoordinate(position.coords.longitude),
+    accuracyMeters: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : null,
+    timestamp: position.timestamp,
+  };
+}
+
+function betterLocationReading(
+  currentBest: CurrentLocationReading | null,
+  candidate: CurrentLocationReading,
+): CurrentLocationReading {
+  if (currentBest === null) {
+    return candidate;
+  }
+  if (candidate.accuracyMeters === null) {
+    return currentBest;
+  }
+  if (currentBest.accuracyMeters === null || candidate.accuracyMeters < currentBest.accuracyMeters) {
+    return candidate;
+  }
+  return currentBest;
+}
+
+function formatAccuracy(accuracyMeters: number | null): string {
+  if (accuracyMeters === null) {
+    return "unknown";
+  }
+  return `${Math.round(accuracyMeters)} m`;
+}
+
+function formatElapsedTime(elapsedMs: number): string {
+  return `${Math.max(0, Math.round(elapsedMs / 1_000))} s`;
+}
+
+function locationReadingFormValue(reading: CurrentLocationReading): string {
+  return JSON.stringify({
+    latitude: reading.latitude,
+    longitude: reading.longitude,
+  });
 }
 
 function geolocationErrorMessage(error: GeolocationPositionError): string {
@@ -3611,7 +3675,7 @@ function EditorPage() {
   const [loadedInstanceId, setLoadedInstanceId] = useState(initialInstanceId);
   const [createCopy, setCreateCopy] = useState(false);
   const [formValues, setFormValues] = useState<EditorFormValues>({});
-  const [locatingAttributeAzName, setLocatingAttributeAzName] = useState("");
+  const [currentLocationCapture, setCurrentLocationCapture] = useState<CurrentLocationCapture | null>(null);
   const [locationFieldMessages, setLocationFieldMessages] = useState<Record<string, string>>({});
   const [selectedAssociationAzName, setSelectedAssociationAzName] = useState("");
   const [sourceInstances, setSourceInstances] = useState<EntityInstanceResponse[]>([]);
@@ -3639,6 +3703,9 @@ function EditorPage() {
   const [isSavingAssociation, setIsSavingAssociation] = useState(false);
   const [isLoadingParentInstances, setIsLoadingParentInstances] = useState(false);
   const [isLoadingParentContextInstances, setIsLoadingParentContextInstances] = useState(false);
+  const locationWatchIdRef = useRef<number | null>(null);
+  const locationCaptureTimeoutRef = useRef<number | null>(null);
+  const locationCaptureTickRef = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -3714,7 +3781,7 @@ function EditorPage() {
           ? selectedAssociationAzName
           : nextApiDescription.associations?.[0]?.azName ?? "";
         setFormValues(emptyEditorValues(nextEntity));
-        setLocatingAttributeAzName("");
+        endCurrentLocationCapture();
         setLocationFieldMessages({});
         setSelectedAssociationAzName(nextAssociationAzName);
         setSourceInstances([]);
@@ -3782,6 +3849,30 @@ function EditorPage() {
   const selectedParentContextOption = parentContextOptions.find((option) => option.association.azName === selectedParentContextAssociationAzName) ?? null;
   const showParentLinkSection = parentAssociationOptions.length > 0
     && (willCreate || parentLinkError.length > 0 || createdParentAssociationLink !== null);
+
+  function clearCurrentLocationWatch() {
+    if (locationWatchIdRef.current !== null && "geolocation" in navigator) {
+      navigator.geolocation.clearWatch(locationWatchIdRef.current);
+      locationWatchIdRef.current = null;
+    }
+    if (locationCaptureTimeoutRef.current !== null) {
+      window.clearTimeout(locationCaptureTimeoutRef.current);
+      locationCaptureTimeoutRef.current = null;
+    }
+    if (locationCaptureTickRef.current !== null) {
+      window.clearInterval(locationCaptureTickRef.current);
+      locationCaptureTickRef.current = null;
+    }
+  }
+
+  function endCurrentLocationCapture() {
+    clearCurrentLocationWatch();
+    setCurrentLocationCapture(null);
+  }
+
+  useEffect(() => () => {
+    clearCurrentLocationWatch();
+  }, []);
 
   useEffect(() => {
     if (apiDescription === null) {
@@ -4157,7 +4248,7 @@ function EditorPage() {
     setValueSetUsage({});
     setLoadedInstanceId("");
     setCreateCopy(false);
-    setLocatingAttributeAzName("");
+    endCurrentLocationCapture();
     setLocationFieldMessages({});
     window.history.replaceState(null, "", "/editor");
   }
@@ -4168,7 +4259,7 @@ function EditorPage() {
     setLoadedInstanceId("");
     setCreateCopy(false);
     setFormValues(emptyEditorValues(nextEntity));
-    setLocatingAttributeAzName("");
+    endCurrentLocationCapture();
     setLocationFieldMessages({});
     setSelectedParentAssociationAzName("");
     setSelectedParentContextAssociationAzName("");
@@ -4186,7 +4277,7 @@ function EditorPage() {
     setLoadedInstanceId("");
     setCreateCopy(false);
     setFormValues(emptyEditorValues(selectedEntity));
-    setLocatingAttributeAzName("");
+    endCurrentLocationCapture();
     setLocationFieldMessages({});
     setSourceInstances([]);
     setTargetInstances([]);
@@ -4357,42 +4448,152 @@ function EditorPage() {
       return;
     }
 
-    setLocatingAttributeAzName(attribute.azName);
-    setLocationFieldMessages((current) => ({ ...current, [attribute.azName]: "Requesting current location..." }));
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const locationValue = {
-          latitude: roundLocationCoordinate(position.coords.latitude),
-          longitude: roundLocationCoordinate(position.coords.longitude),
-        };
-        const accuracy = Number.isFinite(position.coords.accuracy)
-          ? ` Accuracy about ${Math.round(position.coords.accuracy)} m.`
-          : "";
-        setFormValues((current) => ({
+    clearCurrentLocationWatch();
+    const previousValue = formValues[attribute.azName] ?? "";
+    const startedAt = Date.now();
+    setCurrentLocationCapture({
+      attributeAzName: attribute.azName,
+      previousValue,
+      startedAt,
+      elapsedMs: 0,
+      readingCount: 0,
+      latestReading: null,
+      bestReading: null,
+      status: "capturing",
+      message: "Measuring current location...",
+    });
+    setLocationFieldMessages((current) => ({
+      ...current,
+      [attribute.azName]: "Measuring current location. Accept the best reading when it is good enough for this record.",
+    }));
+    setStatus("ok");
+    setStatusMessage(`Measuring ${attribute.visName} current location`);
+
+    locationCaptureTickRef.current = window.setInterval(() => {
+      setCurrentLocationCapture((current) => (
+        current === null || current.attributeAzName !== attribute.azName
+          ? current
+          : { ...current, elapsedMs: Date.now() - current.startedAt }
+      ));
+    }, 500);
+
+    locationCaptureTimeoutRef.current = window.setTimeout(() => {
+      clearCurrentLocationWatch();
+      setCurrentLocationCapture((current) => {
+        if (current === null || current.attributeAzName !== attribute.azName) {
+          return current;
+        }
+        const message = current.bestReading === null
+          ? "Location measurement ended without a usable reading. Move outdoors, wait briefly, or try away from dense buildings or forest cover."
+          : "Location measurement ended. Accept the best reading, or cancel and try again if the accuracy is not good enough.";
+        return {
           ...current,
-          [attribute.azName]: JSON.stringify(locationValue),
-        }));
+          status: "ended",
+          elapsedMs: CURRENT_LOCATION_CAPTURE_TIMEOUT_MS,
+          message,
+        };
+      });
+      setLocationFieldMessages((current) => ({
+        ...current,
+        [attribute.azName]: "Location measurement ended.",
+      }));
+    }, CURRENT_LOCATION_CAPTURE_TIMEOUT_MS);
+
+    locationWatchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const reading = locationReadingFrom(position);
+        setCurrentLocationCapture((current) => {
+          if (current === null || current.attributeAzName !== attribute.azName) {
+            return current;
+          }
+          const nextBest = betterLocationReading(current.bestReading, reading);
+          const nextReadingCount = current.readingCount + 1;
+          const bestAccuracy = formatAccuracy(nextBest.accuracyMeters);
+          const message = nextBest.accuracyMeters !== null && nextBest.accuracyMeters <= CURRENT_LOCATION_CAPTURE_TARGET_ACCURACY_METERS
+            ? `Best accuracy is ${bestAccuracy}, which meets the ${CURRENT_LOCATION_CAPTURE_TARGET_ACCURACY_METERS} m target.`
+            : `Best accuracy is ${bestAccuracy}. Wait a little longer if this record needs a tighter position.`;
+          return {
+            ...current,
+            elapsedMs: Date.now() - current.startedAt,
+            readingCount: nextReadingCount,
+            latestReading: reading,
+            bestReading: nextBest,
+            message,
+          };
+        });
         setLocationFieldMessages((current) => ({
           ...current,
-          [attribute.azName]: `Current location captured.${accuracy}`,
+          [attribute.azName]: `Latest location reading received with accuracy ${formatAccuracy(reading.accuracyMeters)}.`,
         }));
-        setLocatingAttributeAzName("");
-        setStatus("ok");
-        setStatusMessage(`Filled ${attribute.visName} from current location`);
       },
       (error) => {
         const message = geolocationErrorMessage(error);
+        clearCurrentLocationWatch();
+        setCurrentLocationCapture((current) => {
+          if (current === null || current.attributeAzName !== attribute.azName) {
+            return current;
+          }
+          return {
+            ...current,
+            status: "ended",
+            elapsedMs: Date.now() - current.startedAt,
+            message: current.bestReading === null
+              ? `${message} Move outdoors, wait briefly, or try away from dense buildings or forest cover.`
+              : `${message} You can still accept the best reading received so far.`,
+          };
+        });
         setLocationFieldMessages((current) => ({ ...current, [attribute.azName]: message }));
-        setLocatingAttributeAzName("");
         setStatus("error");
         setStatusMessage(message);
       },
       {
         enableHighAccuracy: true,
-        maximumAge: 30_000,
+        maximumAge: 0,
         timeout: 10_000,
       },
     );
+  }
+
+  function acceptCurrentLocation(attribute: AttributeDescription) {
+    if (currentLocationCapture === null || currentLocationCapture.attributeAzName !== attribute.azName) {
+      return;
+    }
+    const reading = currentLocationCapture.bestReading;
+    if (reading === null) {
+      return;
+    }
+    endCurrentLocationCapture();
+    setFormValues((current) => ({
+      ...current,
+      [attribute.azName]: locationReadingFormValue(reading),
+    }));
+    const accuracy = formatAccuracy(reading.accuracyMeters);
+    setLocationFieldMessages((current) => ({
+      ...current,
+      [attribute.azName]: `Current location captured. Accuracy about ${accuracy}.`,
+    }));
+    setStatus("ok");
+    setStatusMessage(`Filled ${attribute.visName} from current location`);
+  }
+
+  function cancelCurrentLocation(attribute: AttributeDescription, restorePreviousValue: boolean) {
+    if (currentLocationCapture === null || currentLocationCapture.attributeAzName !== attribute.azName) {
+      return;
+    }
+    const previousValue = currentLocationCapture.previousValue;
+    endCurrentLocationCapture();
+    if (restorePreviousValue) {
+      setFormValues((current) => ({
+        ...current,
+        [attribute.azName]: previousValue,
+      }));
+    }
+    setLocationFieldMessages((current) => ({
+      ...current,
+      [attribute.azName]: restorePreviousValue ? "Current location capture cancelled." : "",
+    }));
+    setStatus("ok");
+    setStatusMessage("Current location capture cancelled");
   }
 
   async function submitEditor(event: FormEvent<HTMLFormElement>) {
@@ -4619,7 +4820,10 @@ function EditorPage() {
               ) : selectedEntity.attributes.map((attribute) => {
                 const fieldId = `editor-${attribute.azName}`;
                 const locationMessage = locationFieldMessages[attribute.azName] ?? "";
-                const isLocatingAttribute = locatingAttributeAzName === attribute.azName;
+                const locationCapture = currentLocationCapture?.attributeAzName === attribute.azName
+                  ? currentLocationCapture
+                  : null;
+                const isCapturingLocation = locationCapture?.status === "capturing";
                 const fieldDisabled = status === "loading" || isSaving;
                 const valueSet = valueSetForAttribute(apiDescription, attribute);
                 return (
@@ -4660,20 +4864,54 @@ function EditorPage() {
                             type={inputTypeFor(attribute)}
                             step={inputStepFor(attribute)}
                             onChange={(event) => {
+                              if (locationCapture !== null) {
+                                cancelCurrentLocation(attribute, false);
+                              }
                               setFormValues((current) => ({ ...current, [attribute.azName]: event.target.value }));
                               setLocationFieldMessages((current) => ({ ...current, [attribute.azName]: "" }));
                             }}
                             disabled={fieldDisabled}
-                            aria-describedby={locationMessage ? `${fieldId}-message` : undefined}
+                            aria-describedby={[
+                              locationMessage ? `${fieldId}-message` : "",
+                              locationCapture !== null ? `${fieldId}-capture` : "",
+                            ].filter(Boolean).join(" ") || undefined}
                           />
                           <button
                             type="button"
                             onClick={() => useCurrentLocation(attribute)}
-                            disabled={fieldDisabled || isLocatingAttribute}
+                            disabled={fieldDisabled || isCapturingLocation}
                           >
-                            {isLocatingAttribute ? "Locating..." : "Use current location"}
+                            {isCapturingLocation ? "Measuring..." : "Use current location"}
                           </button>
                         </div>
+                        {locationCapture !== null && (
+                          <div id={`${fieldId}-capture`} className="location-capture-panel">
+                            <div className="location-capture-metrics" aria-live="polite">
+                              <span>Latest accuracy: {formatAccuracy(locationCapture.latestReading?.accuracyMeters ?? null)}</span>
+                              <span>Best accuracy: {formatAccuracy(locationCapture.bestReading?.accuracyMeters ?? null)}</span>
+                              <span>Elapsed: {formatElapsedTime(locationCapture.elapsedMs)}</span>
+                              <span>Readings: {locationCapture.readingCount}</span>
+                            </div>
+                            <p>{locationCapture.message}</p>
+                            <div className="location-capture-actions">
+                              <button
+                                type="button"
+                                onClick={() => acceptCurrentLocation(attribute)}
+                                disabled={fieldDisabled || locationCapture.bestReading === null}
+                              >
+                                Accept best
+                              </button>
+                              <button
+                                type="button"
+                                className="secondary-button"
+                                onClick={() => cancelCurrentLocation(attribute, true)}
+                                disabled={fieldDisabled}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
                         {locationMessage && (
                           <span id={`${fieldId}-message`} className="editor-field-message">
                             {locationMessage}

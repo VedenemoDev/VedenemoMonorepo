@@ -371,7 +371,7 @@ removed technical value.
 
 ## Plan higher-confidence current-location capture
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -461,6 +461,39 @@ measurement.
   component cleanup, or capture replacement.
 - Manual `LOCATION` JSON editing still works.
 - `cd vedenemo-ux && npm run build` succeeds.
+
+### Completion Notes
+
+- Implemented the slice in `vedenemo-ux` only.
+- Replaced the Entity data editor's one-shot `getCurrentPosition` call with a
+  bounded high-accuracy `watchPosition` capture session for `LOCATION`
+  attributes.
+- Tracked latest reading, best reading, reported accuracy, elapsed time, and
+  reading count in editor state.
+- Added a compact capture panel with live metrics, guidance, `Accept best`,
+  and `Cancel` controls.
+- Accepting writes the best reading's rounded latitude and longitude into the
+  existing JSON field shape; cancelling restores the previous value.
+- Cleared geolocation watchers and timers on accept, cancel, timeout, manual
+  field change, model/entity/root replacement, and editor cleanup.
+- Left backend, core, CLI, `.vdos`, and `.vdmp` behavior unchanged.
+- `npm run build` succeeded in `vedenemo-ux`.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the planned frontend-only scope and preserved the
+  existing `{latitude, longitude}` `LOCATION` value shape.
+- Summary: the implementation uses explicit user acceptance rather than
+  auto-accepting at the target accuracy, keeping the user in control for field
+  capture.
+- Summary: timeout ends the browser watcher but keeps the best received
+  candidate available for acceptance, matching the planned bounded-session
+  behavior.
+- Summary: no backend validation threshold, persisted accuracy metadata,
+  `LOCATION_LINE`, or `LOCATION_AREA` changes were added.
+- Summary: verification matched the acceptance criteria with a successful
+  `npm run build`; actual geolocation accuracy still depends on browser,
+  device, permission, and field conditions.
 
 ## Plan Entity data editor value-set dropdowns
 

@@ -14314,3 +14314,118 @@ Current status and next steps:
   frontend changes).
 - Verification passed: `git diff --check`.
 - Local Vite dev server is running at `http://127.0.0.1:5173/`.
+## 2026-10-03 11:27 EEST
+
+Session goal:
+
+- Review readiness of backlog item `Plan higher-confidence current-location capture`.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `rg -n "Plan higher-confidence current-location capture|current-location|location capture|higher-confidence" tasks/backlog.md`
+- `tail -n 180 SESSION.md`
+- `git status --short`
+- `sed -n '340,520p' tasks/backlog.md`
+- `sed -n '1320,1485p' tasks/backlog.md`
+- `rg -n "LOCATION|Location|location|current position|current-location|geolocation|accuracy|Entity data|EntityData|instance" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css vedenemo-web-api/src/main/java vedenemo-model-api/src/main/java vedenemo-core/src/main/java tasks/current-task.md docs/architecture_doc.md README.md -S`
+- `rg -n "geolocation|getCurrentPosition|Use current location|locationCapture|capture|accuracy|LOCATION" vedenemo-ux/src/App.tsx`
+- `sed -n '300,380p' vedenemo-ux/src/App.tsx`
+- `sed -n '740,860p' vedenemo-ux/src/App.tsx`
+- `sed -n '2920,3065p' vedenemo-ux/src/App.tsx`
+- `sed -n '9300,9445p' vedenemo-ux/src/App.tsx`
+- `sed -n '1820,1915p' vedenemo-ux/src/styles.css`
+- `sed -n '1020,1065p' vedenemo-ux/src/App.tsx`
+- `sed -n '3070,3145p' vedenemo-ux/src/App.tsx`
+- `sed -n '4260,4405p' vedenemo-ux/src/App.tsx`
+- `sed -n '4615,4695p' vedenemo-ux/src/App.tsx`
+- `sed -n '2650,2725p' vedenemo-ux/src/App.tsx`
+- `sed -n '2780,2820p' vedenemo-ux/src/App.tsx`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- The backlog item is implementation-ready.
+- Existing code has a frontend-only `LOCATION` field action using
+  `navigator.geolocation.getCurrentPosition`; the planned change can replace
+  that with a bounded `watchPosition` capture session in `vedenemo-ux`.
+- Backend, core, CLI, `.vdos`, and `.vdmp` behavior do not need changes for
+  this slice.
+- Next implementation should update `tasks/current-task.md`, implement the
+  frontend capture lifecycle and UI, run `npm run build` in `vedenemo-ux`, and
+  then mark the backlog item executed with a `Planned vs. Executed Evaluation`.
+
+## 2026-10-03 11:36 EEST
+
+Session goal:
+
+- Implement backlog item `Plan higher-confidence current-location capture`.
+
+Files changed:
+
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `tasks/current-task.md`
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,220p' tasks/current-task.md`
+- `tail -n 220 SESSION.md`
+- `sed -n '360,500p' tasks/backlog.md`
+- `sed -n '1,120p' vedenemo-ux/src/App.tsx`
+- `sed -n '3880,4420p' vedenemo-ux/src/App.tsx`
+- `sed -n '4610,4705p' vedenemo-ux/src/App.tsx`
+- `git status --short`
+- `rg -n "function Editor|function .*Editor|const \\[.*location|locatingAttributeAzName|locationFieldMessages|formValues|setFormValues" vedenemo-ux/src/App.tsx`
+- `sed -n '3440,3895p' vedenemo-ux/src/App.tsx`
+- `cat vedenemo-ux/tsconfig.json`
+- `cat vedenemo-ux/package.json`
+- `sed -n '450,510p' vedenemo-ux/src/App.tsx`
+- `rg -n "locatingAttributeAzName|setLocatingAttributeAzName|getCurrentPosition|watchPosition" vedenemo-ux/src/App.tsx`
+- `sed -n '3768,3792p' vedenemo-ux/src/App.tsx`
+- `sed -n '4236,4288p' vedenemo-ux/src/App.tsx`
+- `sed -n '4808,4865p' vedenemo-ux/src/App.tsx`
+- `npm run build` in `vedenemo-ux`
+- `rg -n "locatingAttributeAzName|setLocatingAttributeAzName|getCurrentPosition|watchPosition|CurrentLocationCapture|location-capture" vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx | sed -n '1,260p'`
+- `git diff -- vedenemo-ux/src/styles.css | sed -n '1,220p'`
+- `sed -n '4490,4565p' vedenemo-ux/src/App.tsx`
+- `npm run build` in `vedenemo-ux`
+- `git diff --check`
+- `sed -n '360,475p' tasks/backlog.md`
+- `sed -n '1,120p' tasks/current-task.md`
+- `sed -n '475,535p' tasks/backlog.md`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Implemented frontend-only higher-confidence current-location capture for
+  Entity data editor `LOCATION` fields.
+- `Use current location` now starts a bounded `watchPosition` session with
+  `enableHighAccuracy: true`, `maximumAge: 0`, live latest/best accuracy,
+  elapsed time, reading count, and explicit `Accept best` / `Cancel` controls.
+- The accepted value keeps the existing compact `{latitude, longitude}` JSON
+  shape, while manual JSON editing and validation continue to work.
+- Watchers and timers are cleared on accept, cancel, timeout, manual field
+  edit, model/entity/root change, capture replacement, and component cleanup.
+- Updated `tasks/current-task.md` and marked the backlog item executed with a
+  `Planned vs. Executed Evaluation`.
+- Verification passed: `npm run build` in `vedenemo-ux` and
+  `git diff --check`.

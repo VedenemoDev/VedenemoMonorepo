@@ -1863,6 +1863,61 @@ body {
   font-size: 0.8rem;
 }
 
+.location-capture-panel {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.75rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.375rem;
+  color: #1e3a8a;
+  background: #eff6ff;
+}
+
+.location-capture-panel p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.location-capture-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.location-capture-metrics span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.location-capture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.location-capture-actions button {
+  min-height: 2.25rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #1e3a8a;
+  border-radius: 0.375rem;
+  color: #fff;
+  background: #1e3a8a;
+  font: inherit;
+  cursor: pointer;
+}
+
+.location-capture-actions button.secondary-button {
+  color: #1e3a8a;
+  background: #fff;
+}
+
+.location-capture-actions button:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
 .editor-copy-toggle {
   min-height: 0;
 }
