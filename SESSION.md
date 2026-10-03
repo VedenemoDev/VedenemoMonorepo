@@ -14751,3 +14751,43 @@ Current status and next steps:
 - Verification passed: JSON validation, forbidden-phrase search returned no
   matches, all eight descriptions remain non-empty, and full local API/CLI
   import smoke succeeded.
+
+## 2026-10-03 16:29 EEST
+
+Session goal:
+
+- Add API-derived mean diameter and mean height attributes to a new
+  owner-harmonized Metsapalsta model/dump variant.
+
+Files changed:
+
+- `.vedenemo/MetsapalstaKuvauksillaPuustolla.vdos`
+- `.vedenemo/Mikonmaa_omistaja_harmonisoitu_puustolla.vdmp`
+- `SESSION.md`
+
+Commands run:
+
+- `tail -n 120 SESSION.md`
+- `sed -n '1,120p' .vedenemo/MetsapalstaKuvauksilla.vdos`
+- `jq` metadata/count inspection of `.vedenemo/Mikonmaa_omistaja_harmonisoitu.vdmp`
+- `jq` extraction of source WFS `meandiameter` and `meanheight` by `standid`
+- Python generation of `.vedenemo/MetsapalstaKuvauksillaPuustolla.vdos`
+- Python generation of `.vedenemo/Mikonmaa_omistaja_harmonisoitu_puustolla.vdmp`
+- `rg -n "model azName=|keskilapimitta_cm|keskipituus_m" .vedenemo/MetsapalstaKuvauksillaPuustolla.vdos`
+- `jq empty .vedenemo/Mikonmaa_omistaja_harmonisoitu_puustolla.vdmp`
+- `jq` count/value checks for the new dump
+- Local Vedenemo API/CLI smoke import:
+  `--mload .vedenemo/MetsapalstaKuvauksillaPuustolla.vdos --dload .vedenemo/Mikonmaa_omistaja_harmonisoitu_puustolla.vdmp`
+- `git status --short`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added a new model variant `MetsapalstaKuvauksillaPuustolla` with optional
+  numeric `Metsakuvio` attributes `keskilapimitta_cm` and `keskipituus_m`.
+- Added a matching owner-harmonized dump with all eight figures populated from
+  the original WFS stand `meandiameter` and `meanheight` values.
+- Verification passed: JSON validation, value checks, `git diff --check`, and
+  full local API/CLI import smoke. The smoke created one `Metsapalsta`, eight
+  `Metsakuvio` records, and eight association links.
