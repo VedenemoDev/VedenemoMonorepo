@@ -14508,3 +14508,37 @@ Current status and next steps:
 - JSON validation passed.
 - The dump contains one `Metsapalsta` record, twelve `Metsakuvio` records, and
   twelve `Metsapalsta_koostuu_Metsakuvio` links.
+
+## 2026-10-03 12:41 EEST
+
+Session goal:
+
+- Assess whether Metsakeskus forest stand data includes stand-level general
+  descriptions and generate AI-assisted descriptions from available attributes.
+
+Files changed:
+
+- `SESSION.md`
+
+Generated local artifacts:
+
+- `/tmp/mikonmaa-kuviokohtaiset-yleiskuvaukset.json`
+- `/tmp/mikonmaa-kuviokohtaiset-yleiskuvaukset.md`
+
+Commands run:
+
+- `rg -n "Description|Kuvaus|Description|StandBasicData|Special|restriction|Operation|Soil|Fertility|Development|MainGroup|SubGroup|Text|Additional|Note|Selite" /tmp/mikonmaa-mvrest.xml | head -n 120`
+- `jq -r '.subregions[] | [.tunnus, .standid, .properties.maingroup, .properties.subgroup, .properties.fertilityclass, .properties.soiltype, .properties.drainagestate, .properties.developmentclass, .properties.maintreespecies, .properties.meanage, .properties.volume, .properties.cuttingtype, .properties.silviculturetype] | @tsv' /tmp/mikonmaa-metsakuviot-subregions.json`
+- Python XML inspection of `/tmp/mikonmaa-mvrest.xml`
+- Web lookups for Metsakeskus/Metsätietostandardi code explanations
+- Python generation of AI-assisted Mikonmaa stand descriptions
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- No free-text stand description or official boundary-reason field was found in
+  the WFS/REST data inspected.
+- Generated stand-level general descriptions from species, site type, soil,
+  development class, age, height, diameter, basal area, volume, and clipped
+  area. The descriptions are explicitly interpretive summaries, not official
+  Metsakeskus boundary rationales.
