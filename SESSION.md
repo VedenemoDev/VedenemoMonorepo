@@ -14791,3 +14791,94 @@ Current status and next steps:
 - Verification passed: JSON validation, value checks, `git diff --check`, and
   full local API/CLI import smoke. The smoke created one `Metsapalsta`, eight
   `Metsakuvio` records, and eight association links.
+## 2026-10-03 18:29 EEST
+
+Session goal:
+
+- Evaluate visualization options for long `Metsakuvio.kuvaus` text in the
+  Metsapalsta model.
+
+Files changed:
+
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,240p' docs/architecture/module-map.md`
+- `sed -n '1,240p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,240p' tasks/current-task.md`
+- `tail -n 160 SESSION.md`
+- `find vedenemo-ux -maxdepth 2 -type f | sort | sed -n '1,120p'`
+- `sed -n '1,220p' vedenemo-ux/package.json`
+- `rg -n "d3|chart|PlantUML|svg|visual" vedenemo-ux/src docs README.md tasks -S`
+- `sed -n '1,280p' docs/visualizations.md`
+- `sed -n '7400,8060p' vedenemo-ux/src/App.tsx`
+- `sed -n '1200,1320p' vedenemo-ux/src/styles.css`
+- Web research of current D3, Observable Plot, VisX, and tooltip options
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- No implementation changes were made.
+- Recommended keeping long description rendering as a frontend-only
+  visualization concern, preferably by pairing the existing D3 `Hexbin-map`
+  geometry with a selected-stand detail panel or accessible popover rather than
+  placing long text labels directly inside the SVG chart.
+
+## 2026-10-03 18:39 EEST
+
+Session goal:
+
+- Implement the recommended `Hexbin-map` selected-subregion detail panel for
+  long `Metsakuvio.kuvaus` style descriptions.
+
+Files changed:
+
+- `README.md`
+- `docs/architecture_doc.md`
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,180p' tasks/backlog.md`
+- `sed -n '1,140p' docs/architecture_doc_instructions.md`
+- `rg -n "type HexbinMap|interface HexbinMap|HexbinMapData|HexbinMapSubregion|subregion" vedenemo-ux/src/App.tsx`
+- `rg -n "Hexbin-map|visualize|kuvaus|description|detail pane|Subregions" README.md docs/visualizations.md docs/architecture_doc.md vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css`
+- `sed -n '300,510p' vedenemo-ux/src/App.tsx`
+- `sed -n '1450,2055p' vedenemo-ux/src/App.tsx`
+- `sed -n '400,430p' README.md`
+- `sed -n '720,755p' docs/architecture_doc.md`
+- `rg -n "function formatAttributeValue|type AttributeDescription|interface AttributeDescription|function entityInstanceLabel" vedenemo-ux/src/App.tsx`
+- `sed -n '50,90p' vedenemo-ux/src/App.tsx`
+- `sed -n '910,950p' vedenemo-ux/src/App.tsx`
+- `sed -n '3318,3338p' vedenemo-ux/src/App.tsx`
+- `sed -n '7620,8138p' vedenemo-ux/src/App.tsx`
+- `sed -n '1290,1425p' vedenemo-ux/src/styles.css`
+- `sed -n '2260,2318p' vedenemo-ux/src/styles.css`
+- `npm run build` in `vedenemo-ux`
+- `sed -n '176,205p' docs/visualizations.md`
+- `sed -n '408,422p' README.md`
+- `sed -n '736,748p' docs/architecture_doc.md`
+- `git diff --check`
+- `git status --short`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css docs/visualizations.md README.md docs/architecture_doc.md tasks/backlog.md | sed -n '1,260p'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+- `tail -n 40 SESSION.md`
+
+Current status and next steps:
+
+- Added a planned-and-executed backlog item at the top of `tasks/backlog.md`.
+- Implemented frontend-only `Hexbin-map` subregion selection with visible
+  selected-polygon feedback and a detail panel.
+- The detail panel includes a dropdown fallback, selected subregion identity,
+  modeled attribute values, compact LOCATION/LOCATION_AREA summaries, and
+  scrollable wrapped long text fields.
+- Updated README, visualization docs, and current architecture documentation.
+- Verification passed: `npm run build` in `vedenemo-ux` and `git diff --check`.

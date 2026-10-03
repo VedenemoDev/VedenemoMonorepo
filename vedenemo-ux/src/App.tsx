@@ -425,6 +425,7 @@ type HexbinMapResolvedSubregion = {
   label: string;
   boundary: LocationPoint[];
   instance: EntityInstanceResponse;
+  entity: EntityDescription;
 };
 
 type HexbinMapSubregion = {
@@ -432,6 +433,7 @@ type HexbinMapSubregion = {
   label: string;
   boundary: LocationPoint[];
   instance: EntityInstanceResponse;
+  entity: EntityDescription;
   style: HexbinMapStyle;
 };
 
@@ -482,6 +484,13 @@ type HexbinMapData = {
   pointLegend: HexbinMapPointLegendEntry[];
   warnings: string[];
   overlayNotice?: string;
+};
+
+type HexbinMapDetailField = {
+  key: string;
+  label: string;
+  value: string;
+  long: boolean;
 };
 
 const PLANTUML_TARGET_ID = "plantuml-diagram";
@@ -1723,6 +1732,7 @@ async function resolveHexbinMapSubregions(
       label: renderLabelTemplate(traversal.relatedEntity, instance, labelTemplate),
       boundary,
       instance,
+      entity: traversal.relatedEntity,
     });
   }
 
@@ -1952,6 +1962,25 @@ async function resolveHexbinMapPoints(
     legend,
     warnings: [...new Set(warnings)],
   };
+}
+
+function hexbinMapDetailFields(subregion: HexbinMapSubregion): HexbinMapDetailField[] {
+  return subregion.entity.attributes.map((attribute) => {
+    const rawValue = subregion.instance.values[attribute.azName];
+    const areaBoundary = attribute.dataType === "LOCATION_AREA" ? parseLocationAreaBoundary(rawValue) : null;
+    const location = attribute.dataType === "LOCATION" ? parseLocationPoint(rawValue) : null;
+    const value = areaBoundary !== null
+      ? `${areaBoundary.length} boundary point${areaBoundary.length === 1 ? "" : "s"}`
+      : location !== null
+        ? `${location.latitude}, ${location.longitude}`
+        : formatAttributeValue(attribute, rawValue);
+    return {
+      key: attribute.azName,
+      label: `${attribute.visName} (${attribute.azName})`,
+      value,
+      long: value.length > 120 || value.includes("\n"),
+    };
+  });
 }
 
 async function buildHexbinMapData(
@@ -7635,6 +7664,15 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
   const zoomScaleRef = useRef(1);
   const syncingScrollRef = useRef(false);
   const [zoomScale, setZoomScale] = useState(1);
+  const [selectedSubregionId, setSelectedSubregionId] = useState("");
+
+  useEffect(() => {
+    setSelectedSubregionId((current) => (
+      current && data.subregions.some((subregion) => subregion.id === current)
+        ? current
+        : data.subregions[0]?.id ?? ""
+    ));
+  }, [data]);
 
   useEffect(() => {
     const viewportElement = viewportRef.current;
@@ -7840,9 +7878,25 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .selectAll("path")
       .data(projectedSubregions)
       .join("path")
+      .attr("class", "hexbin-map-subregion")
+      .attr("data-subregion-id", (projectedSubregion) => projectedSubregion.subregion.id)
+      .attr("tabindex", 0)
+      .attr("role", "button")
+      .attr("aria-label", (projectedSubregion) => `Select ${projectedSubregion.subregion.label}`)
       .attr("d", (projectedSubregion) => line(closeBoundary(projectedSubregion.boundary)))
       .attr("fill", (projectedSubregion, index) => projectedSubregion.subregion.style.fillMode === "none" ? "transparent" : `url(#hexbin-pattern-${index})`)
-      .attr("stroke", (projectedSubregion) => projectedSubregion.subregion.style.color);
+      .attr("stroke", (projectedSubregion) => projectedSubregion.subregion.style.color)
+      .on("click", (_event, projectedSubregion) => {
+        setSelectedSubregionId(projectedSubregion.subregion.id);
+      })
+      .on("keydown", (event, projectedSubregion) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          setSelectedSubregionId(projectedSubregion.subregion.id);
+        }
+      })
+      .append("title")
+      .text((projectedSubregion) => projectedSubregion.subregion.label);
 
     mapLayer.append("g")
       .attr("class", "hexbin-map-shared-borders")
@@ -8016,6 +8070,21 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     };
   }, [data]);
 
+  useEffect(() => {
+    const svgElement = svgRef.current;
+    if (svgElement === null) {
+      return;
+    }
+    d3.select(svgElement)
+      .selectAll<SVGPathElement, unknown>(".hexbin-map-subregion")
+      .classed("hexbin-map-subregion-selected", function () {
+        return this.dataset.subregionId === selectedSubregionId;
+      })
+      .attr("aria-pressed", function () {
+        return this.dataset.subregionId === selectedSubregionId ? "true" : "false";
+      });
+  }, [selectedSubregionId]);
+
   function applyZoom(action: "in" | "out" | "reset") {
     const svgElement = svgRef.current;
     const zoomBehavior = zoomBehaviorRef.current;
@@ -8035,19 +8104,28 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
 
   return (
     <>
-      <VisualizationZoomViewport
-        scale={zoomScale}
-        minScale={VISUALIZATION_HEXBIN_ZOOM_MIN}
-        maxScale={VISUALIZATION_HEXBIN_ZOOM_MAX}
-        toolbarLabel="Hexbin-map zoom controls"
-        viewportLabel="Scrollable Hexbin-map viewport"
-        viewportRef={viewportRef}
-        onZoomIn={() => applyZoom("in")}
-        onZoomOut={() => applyZoom("out")}
-        onReset={() => applyZoom("reset")}
-      >
-        <svg ref={svgRef} className="hexbin-map-svg" role="img" aria-label="Hexbin-map boundary" />
-      </VisualizationZoomViewport>
+      <div className="hexbin-map-layout">
+        <div className="hexbin-map-viewer">
+          <VisualizationZoomViewport
+            scale={zoomScale}
+            minScale={VISUALIZATION_HEXBIN_ZOOM_MIN}
+            maxScale={VISUALIZATION_HEXBIN_ZOOM_MAX}
+            toolbarLabel="Hexbin-map zoom controls"
+            viewportLabel="Scrollable Hexbin-map viewport"
+            viewportRef={viewportRef}
+            onZoomIn={() => applyZoom("in")}
+            onZoomOut={() => applyZoom("out")}
+            onReset={() => applyZoom("reset")}
+          >
+            <svg ref={svgRef} className="hexbin-map-svg" role="img" aria-label="Hexbin-map boundary" />
+          </VisualizationZoomViewport>
+        </div>
+        <HexbinMapDetailPanel
+          subregions={data.subregions}
+          selectedSubregionId={selectedSubregionId}
+          onSelectedSubregionIdChange={setSelectedSubregionId}
+        />
+      </div>
       {data.warnings.length > 0 && (
         <div className="hexbin-map-warnings" aria-label="Hexbin-map data warnings">
           <h3>Data warnings</h3>
@@ -8059,6 +8137,62 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
         </div>
       )}
     </>
+  );
+}
+
+function HexbinMapDetailPanel({
+  subregions,
+  selectedSubregionId,
+  onSelectedSubregionIdChange,
+}: {
+  subregions: HexbinMapSubregion[];
+  selectedSubregionId: string;
+  onSelectedSubregionIdChange: (subregionId: string) => void;
+}) {
+  if (subregions.length === 0) {
+    return (
+      <aside className="hexbin-map-detail-panel" aria-label="Hexbin-map selected subregion details">
+        <h3>Subregion Details</h3>
+        <p className="hexbin-map-detail-empty">No subregion overlay selected.</p>
+      </aside>
+    );
+  }
+
+  const selectedSubregion = subregions.find((subregion) => subregion.id === selectedSubregionId) ?? subregions[0];
+  const detailFields = hexbinMapDetailFields(selectedSubregion);
+
+  return (
+    <aside className="hexbin-map-detail-panel" aria-label="Hexbin-map selected subregion details">
+      <h3>Subregion Details</h3>
+      <label className="hexbin-map-detail-selector">
+        <span>Selected subregion</span>
+        <select
+          value={selectedSubregion.id}
+          onChange={(event) => onSelectedSubregionIdChange(event.target.value)}
+        >
+          {subregions.map((subregion) => (
+            <option key={subregion.id} value={subregion.id}>
+              {subregion.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="hexbin-map-detail-heading">
+        <strong>{selectedSubregion.label}</strong>
+        <span>{selectedSubregion.entity.visName} - {selectedSubregion.id}</span>
+      </div>
+      <dl className="hexbin-map-detail-fields">
+        {detailFields.map((field) => (
+          <div
+            key={field.key}
+            className={field.long ? "hexbin-map-detail-field hexbin-map-detail-field-long" : "hexbin-map-detail-field"}
+          >
+            <dt>{field.label}</dt>
+            <dd>{field.value || <span className="hexbin-map-detail-empty">No value</span>}</dd>
+          </div>
+        ))}
+      </dl>
+    </aside>
   );
 }
 

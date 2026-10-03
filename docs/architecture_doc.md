@@ -745,7 +745,10 @@ Current user-facing behavior:
   runtime automatic or manual subregion overlay styles, and renders the
   boundary plus a matching subregion legend as a plain SVG map, including a
   dual-color overlay for exact shared subregion boundary segments and
-  runtime-only SVG zoom/pan controls for inspecting fitted maps
+  runtime-only SVG zoom/pan controls for inspecting fitted maps; rendered
+  subregions can be selected to highlight the polygon and populate a
+  frontend-only detail panel with the selected subregion instance's modeled
+  attribute values, including long wrapped text values
 - exposes the browser virtual CLI both as a separate full-page `/console` route
   and as an embedded lower pane opened from the main model view's bottom-left
   toggle

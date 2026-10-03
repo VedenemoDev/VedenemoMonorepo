@@ -1,5 +1,92 @@
 # Backlog
 
+## Add Hexbin-map selected subregion detail panel
+
+Status: executed
+
+### Goal
+
+Make long descriptive attributes, especially `Metsakuvio.kuvaus`, usable in
+the runtime `Hexbin-map` visualization without forcing long text into SVG map
+labels.
+
+### Context
+
+The Metsapalsta model now has a `Metsakuvio` `kuvaus` attribute with long
+owner-facing stand descriptions. Current chart labels and legends truncate or
+visually crowd this kind of text, and showing full descriptions directly inside
+tree or map labels would make the visualizations harder to inspect.
+
+The map should remain a geographic selection surface. Long textual content
+belongs in a separate readable detail surface tied to the selected map region.
+
+### Proposed Implementation Approach
+
+- Keep the change frontend-only in `vedenemo-ux`.
+- Reuse the existing D3-backed `Hexbin-map` renderer; do not add a new chart
+  library for this first slice.
+- Make rendered subregion polygons selectable by click and keyboard-friendly
+  controls where practical.
+- Add a detail panel next to or below the map that shows the selected
+  subregion's label, id, and modeled attribute values.
+- Render long text values in a scrollable/pre-wrapped detail field so
+  `Metsakuvio.kuvaus` can be read without clipping.
+- Keep visualization bindings runtime-only.
+
+### Scope
+
+- Add selected-subregion state and visual selection feedback to `Hexbin-map`.
+- Add a `Hexbin-map` detail panel for selected subregion instance attributes.
+- Include a selector/list fallback so users can choose a subregion without
+  relying only on the map shape hit target.
+- Update user-facing visualization documentation.
+
+### Out Of Scope
+
+- Backend, core, CLI, `.vdos`, or `.vdmp` changes.
+- Persistent visualization configuration.
+- Adding Floating UI, Observable Plot, VisX, or another visualization/UI
+  dependency in this first slice.
+- Rich text/Markdown rendering for descriptions.
+- Editing description values from the visualization.
+
+### Acceptance Criteria
+
+- A `Hexbin-map` with subregion overlays lets the user select one rendered
+  subregion.
+- The selected subregion has visible map feedback.
+- The detail panel shows the selected subregion's label and modeled attribute
+  values.
+- Long text attribute values wrap and can be read without clipping.
+- Existing map zoom, point overlays, warnings, and legends continue to work.
+- `cd vedenemo-ux && npm run build` succeeds.
+
+### Completion Notes
+
+- Added frontend-only selected-subregion state to `Hexbin-map`.
+- Rendered subregion polygons are clickable and keyboard-selectable with
+  visible selected-state feedback.
+- Added a side detail panel with a subregion selector fallback, selected
+  subregion identity, and all modeled attribute values from the selected
+  subregion instance.
+- Long attribute values wrap and scroll in the detail panel instead of being
+  drawn as map labels.
+- Updated README, visualization documentation, and current implementation
+  architecture documentation.
+- Verified with `npm run build` in `vedenemo-ux`.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the frontend-only scope and reused the existing
+  D3 `Hexbin-map` renderer without adding a new dependency.
+- Summary: the detail panel shows all modeled subregion attributes rather than
+  binding specifically to `kuvaus`, which keeps the feature model-agnostic
+  while satisfying the long-description use case.
+- Summary: map selection was implemented with click and keyboard handling, and
+  the panel dropdown provides a fallback for small or hard-to-click polygons.
+- Summary: backend, core, CLI, `.vdos`, `.vdmp`, and persistent visualization
+  configuration remained unchanged.
+
 ## Value set editing reboot
 
 Status: executed

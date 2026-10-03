@@ -417,6 +417,9 @@ eligible association to linked subregion instances, render their
 a user-entered label template. Subregion borders are drawn above the main
 region outline so overlapping edges keep the subregion color, and exact shared
 subregion boundary segments are overlaid with both neighboring colors.
+Selecting a rendered subregion highlights it and shows a detail panel with the
+subregion instance's modeled attribute values, including long wrapped text such
+as forest-stand descriptions.
 Subregion styles can be automatic patterned fills, automatic border-only
 colors, manual border-only colors, or manual pattern/color pairs. The rendered
 map can be zoomed with visible controls, mouse wheel, and browser-supported
