@@ -14542,3 +14542,48 @@ Current status and next steps:
   development class, age, height, diameter, basal area, volume, and clipped
   area. The descriptions are explicitly interpretive summaries, not official
   Metsakeskus boundary rationales.
+
+## 2026-10-03 13:45 EEST
+
+Session goal:
+
+- Create a Metsapalsta model variant with a `Metsakuvio.kuvaus` attribute and a
+  Mikonmaa `.vdmp` dump containing the AI-assisted forest-stand descriptions.
+
+Files changed:
+
+- `.vedenemo/MetsapalstaKuvauksilla.vdos`
+- `.vedenemo/Mikonmaa_metsakuviot_kuvauksilla.vdmp`
+- `SESSION.md`
+
+Commands run:
+
+- `sed -n '1,220p' .vedenemo/Metsapalsta.vdos`
+- `jq` inspections of `.vedenemo/Mikonmaa_metsakuviot.vdmp` and
+  `/tmp/mikonmaa-kuviokohtaiset-yleiskuvaukset.json`
+- `rg -n "version=1.1.0|attribute=kuvaus|azName=kuvaus" .vedenemo/MetsapalstaKuvauksilla.vdos`
+- Python generation of `.vedenemo/Mikonmaa_metsakuviot_kuvauksilla.vdmp`
+- `jq empty .vedenemo/Mikonmaa_metsakuviot_kuvauksilla.vdmp`
+- `jq` count checks for model metadata, `Metsakuvio` records, descriptions, and
+  links
+- Local Vedenemo API/CLI smoke import:
+  `--mload .vedenemo/MetsapalstaKuvauksilla.vdos --dload .vedenemo/Mikonmaa_metsakuviot_kuvauksilla.vdmp`
+- `git status --short`
+- `git diff --stat`
+- `git diff --check`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added a loadable model variant `MetsapalstaKuvauksilla` with the same
+  entities and associations as `Metsapalsta`, plus optional text attribute
+  `Metsakuvio.kuvaus`.
+- Added `.vedenemo/Mikonmaa_metsakuviot_kuvauksilla.vdmp` with one
+  `Metsapalsta`, twelve `Metsakuvio` records, twelve ownership links, and a
+  non-empty `kuvaus` value for every `Metsakuvio`.
+- Chose a parallel model `azName` instead of a historical `1.1.0` update because
+  the current `.vdos` import replay applies the script model version to all
+  replayed entities/attributes, so a mixed `1.0.0`/`1.1.0` snapshot fails
+  validation.
+- Verification passed: JSON validation, count checks, `git diff --check`, and
+  full local API/CLI import smoke.
