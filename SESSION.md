@@ -14429,3 +14429,82 @@ Current status and next steps:
   `Planned vs. Executed Evaluation`.
 - Verification passed: `npm run build` in `vedenemo-ux` and
   `git diff --check`.
+
+## 2026-10-03 12:11 EEST
+
+Session goal:
+
+- Find Metsakeskus forest stand subregion polygons and identifiers for the
+  area stored in `.vedenemo/Mikonmaa.vdmp`.
+
+Files changed:
+
+- `SESSION.md`
+
+Generated local artifacts:
+
+- `/tmp/mikonmaa-stands.geojson`
+- `/tmp/mikonmaa-mvrest.xml`
+- `/tmp/mikonmaa-metsakuviot-subregions.json`
+- `/tmp/Mikonmaa_metsakuviot.vdmp`
+
+Commands run:
+
+- `sed -n '1,220p' docs/architecture/dependency-boundaries.md`
+- `sed -n '1,220p' docs/architecture/module-map.md`
+- `sed -n '1,220p' docs/architecture/coding-rules.md`
+- `sed -n '1,220p' docs/architecture/testing-strategy.md`
+- `sed -n '1,220p' docs/roadmap/current-milestone.md`
+- `sed -n '1,260p' tasks/current-task.md`
+- `tail -n 120 SESSION.md`
+- `git status --short`
+- `find .vedenemo -maxdepth 1 -type f -print | sort`
+- `sed -n '1,220p' docs/model-instance-dump-format.md`
+- `sed -n '1,220p' .vedenemo/Metsapalsta.vdos`
+- `jq` inspections of `.vedenemo/Mikonmaa.vdmp`
+- `curl` requests to Metsakeskus WFS `v2:stand` and REST `FRStandData/v1/ByPolygon`
+- Python transformations for EPSG:4326/EPSG:3067 conversion, Mikonmaa polygon
+  triangulation, stand clipping, subregion JSON generation, and derived `.vdmp`
+  generation
+- `jq empty /tmp/mikonmaa-metsakuviot-subregions.json`
+- `jq empty /tmp/Mikonmaa_metsakuviot.vdmp`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Metsakeskus WFS returned 15 stands intersecting the Mikonmaa query polygon.
+- Local clipping to the Mikonmaa boundary produced 8 distinct stand ids and 12
+  Vedenemo-compatible `LOCATION_AREA` subregion polygons because two stand ids
+  split into multiple polygons inside the property boundary.
+- The clipped subregion area sum is about 5.4865 ha versus the Mikonmaa
+  boundary area of about 6.021 ha; the remaining area was not represented by
+  clipped `stand` polygons from this query.
+- The original `.vedenemo/Mikonmaa.vdmp` was left unchanged. A derived importable
+  dump is available at `/tmp/Mikonmaa_metsakuviot.vdmp`.
+
+## 2026-10-03 12:18 EEST
+
+Session goal:
+
+- Save the derived Mikonmaa forest-stand `.vdmp` dump into the repository's
+  `.vedenemo` directory.
+
+Files changed:
+
+- `.vedenemo/Mikonmaa_metsakuviot.vdmp`
+- `SESSION.md`
+
+Commands run:
+
+- `cp /tmp/Mikonmaa_metsakuviot.vdmp .vedenemo/Mikonmaa_metsakuviot.vdmp`
+- `jq empty .vedenemo/Mikonmaa_metsakuviot.vdmp`
+- `jq '{path:".vedenemo/Mikonmaa_metsakuviot.vdmp", entities: [.entities[] | {entity: .entityAzName, records: (.records | length)}], links: (.links | length)}' .vedenemo/Mikonmaa_metsakuviot.vdmp`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Saved `.vedenemo/Mikonmaa_metsakuviot.vdmp`.
+- JSON validation passed.
+- The dump contains one `Metsapalsta` record, twelve `Metsakuvio` records, and
+  twelve `Metsapalsta_koostuu_Metsakuvio` links.
