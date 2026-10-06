@@ -1,0 +1,155 @@
+{
+  "format": "vedenemo-instance-dump",
+  "formatVersion": 1,
+  "savedAt": "2026-10-06T19:45:00Z",
+  "model": {
+    "azName": "Tontti",
+    "visName": "Tontti",
+    "version": "1.0.0"
+  },
+  "root": {
+    "sourceInstanceRootId": "d3145435-f382-48a1-abfa-f2053ea69591",
+    "visName": "Ritosentie 26"
+  },
+  "entities": [
+    {
+      "entityAzName": "Tontti",
+      "records": [
+        {
+          "dumpId": "db0f3e32-b670-4f4f-9179-314688ce69b0",
+          "values": {
+            "nimi": "Ritosentie 26",
+            "tunnus": "297-17-2-29",
+            "alue": {
+              "boundary": [
+                {
+                  "latitude": 62.91534725,
+                  "longitude": 27.68277031
+                },
+                {
+                  "latitude": 62.91568089,
+                  "longitude": 27.68337195
+                },
+                {
+                  "latitude": 62.91558152,
+                  "longitude": 27.68385217
+                },
+                {
+                  "latitude": 62.91531379,
+                  "longitude": 27.6833896
+                },
+                {
+                  "latitude": 62.91503316,
+                  "longitude": 27.68290473
+                },
+                {
+                  "latitude": 62.91504767,
+                  "longitude": 27.68281217
+                },
+                {
+                  "latitude": 62.91526197,
+                  "longitude": 27.68318244
+                }
+              ],
+              "topDownProjection": {
+                "projection": "local-equirectangular-top-down",
+                "view": "orthogonal-birds-eye",
+                "center": {
+                  "latitude": 62.91532375,
+                  "longitude": 27.68318334
+                },
+                "metersPerDegree": {
+                  "latitude": 111460.261942,
+                  "longitude": 50819.519684
+                },
+                "note": "boundary remains the authoritative geographic LOCATION_AREA; boundaryMeters is a local metric top-down display projection derived from the same points",
+                "boundaryMeters": [
+                  {
+                    "xMetersEast": -20.99,
+                    "yMetersNorth": 2.619,
+                    "sourceLatitude": 62.91534725,
+                    "sourceLongitude": 27.68277031
+                  },
+                  {
+                    "xMetersEast": 9.585,
+                    "yMetersNorth": 39.807,
+                    "sourceLatitude": 62.91568089,
+                    "sourceLongitude": 27.68337195
+                  },
+                  {
+                    "xMetersEast": 33.99,
+                    "yMetersNorth": 28.731,
+                    "sourceLatitude": 62.91558152,
+                    "sourceLongitude": 27.68385217
+                  },
+                  {
+                    "xMetersEast": 10.482,
+                    "yMetersNorth": -1.11,
+                    "sourceLatitude": 62.91531379,
+                    "sourceLongitude": 27.6833896
+                  },
+                  {
+                    "xMetersEast": -14.159,
+                    "yMetersNorth": -32.389,
+                    "sourceLatitude": 62.91503316,
+                    "sourceLongitude": 27.68290473
+                  },
+                  {
+                    "xMetersEast": -18.863,
+                    "yMetersNorth": -30.772,
+                    "sourceLatitude": 62.91504767,
+                    "sourceLongitude": 27.68281217
+                  },
+                  {
+                    "xMetersEast": -0.046,
+                    "yMetersNorth": -6.886,
+                    "sourceLatitude": 62.91526197,
+                    "sourceLongitude": 27.68318244
+                  }
+                ]
+              }
+            },
+            "hehtaarit": null
+          }
+        }
+      ]
+    },
+    {
+      "entityAzName": "Puu",
+      "records": [
+        {
+          "dumpId": "d039e38a-bb62-4409-a4ab-ed298351a283",
+          "values": {
+            "laji": "LEHTIKUUSI",
+            "lokaatio": {
+              "latitude": 62.9155213,
+              "longitude": 27.6835087
+            }
+          }
+        },
+        {
+          "dumpId": "72edc2a7-1baf-410c-8211-070da17359e1",
+          "values": {
+            "laji": "KUUSI",
+            "lokaatio": {
+              "latitude": 62.915652,
+              "longitude": 27.6837013
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "db0f3e32-b670-4f4f-9179-314688ce69b0",
+      "targetDumpId": "d039e38a-bb62-4409-a4ab-ed298351a283"
+    },
+    {
+      "associationAzName": "Tontti_omistaa_Puu",
+      "sourceDumpId": "db0f3e32-b670-4f4f-9179-314688ce69b0",
+      "targetDumpId": "72edc2a7-1baf-410c-8211-070da17359e1"
+    }
+  ]
+}

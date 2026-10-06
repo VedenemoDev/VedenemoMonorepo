@@ -14931,3 +14931,34 @@ Current status and next steps:
   Google Drive upload connector or authenticated Drive CLI was available in the
   sandbox; `gcloud` could not initialize credentials because its config
   directory is read-only.
+
+## 2026-10-06 22:18 EEST
+
+Session goal:
+
+- Create a new Ritosentie 26 Tontti `.vdmp` variant carrying an explicit orthogonal top-down projection while preserving authoritative `LOCATION_AREA` latitude/longitude boundary points.
+
+Files changed:
+
+- `.vedenemo/Tontti_Ritosentie_26_v1_0_0_2026_10_06_kohtisuora.vdmp`
+- `SESSION.md`
+
+Commands run:
+
+- Required project/session document reads with `sed` and `tail`
+- `rg --files -g 'Tontti*' -g '*.vdos' -g '*.vdmp' .vedenemo`
+- `jq` inspection of `.vedenemo/Tontti_Ritosentie_26_v1_0_0_2026_10_06.vdmp`
+- `rg -n "LOCATION_AREA|boundary|project|projection|latitude|longitude" .vedenemo docs vedenemo-ux/src vedenemo-web-api vedenemo-cli vedenemo-core -S`
+- `sed` inspection of `Tontti.vdos`, visualization code, and dump import/export code
+- Node-based generation of the orthogonal top-down projection metadata
+- `jq empty .vedenemo/Tontti_Ritosentie_26_v1_0_0_2026_10_06_kohtisuora.vdmp`
+- `diff -u` comparison of original and new `alue.boundary` values
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Created the new `.vdmp` file with original `alue.boundary` unchanged.
+- Added `alue.topDownProjection` metadata containing a local equirectangular metric birds-eye projection derived from the same boundary points.
+- Verified the new file is valid JSON and that the authoritative geographic boundary is byte-equivalent after normalized JSON comparison.
+- Current Vedenemo UX does not yet consume `topDownProjection`; a future UX change would be needed for automatic use of this metadata in rendering.
