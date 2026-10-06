@@ -1,5 +1,144 @@
 # Backlog
 
+## Add Hexbin-map point location correction mode
+
+Status: planned
+
+### Goal
+
+Let users correct GPS-inaccurate `LOCATION` point overlay data directly from the
+`Hexbin-map` visualization by entering an explicit edit mode, selecting one
+rendered point, nudging it with D-pad controls, previewing the adjusted
+location, and saving the corrected coordinates back to the model instance.
+
+### Context
+
+Browser/device GPS readings can place real-world point data outside the modeled
+area even when the intended object belongs inside it. GPS inaccuracy can also
+affect points that already render inside the area, so the feature should not be
+limited to out-of-bound points only.
+
+The current `Hexbin-map` point overlay already knows enough to render point
+instances from direct or linked `LOCATION` attributes. The UX and web API also
+already have entity-instance update flow available through `PUT
+/data/{modelAzName}/roots/{instanceRootId}/{entityAzName}/{instanceId}`. A
+first slice should reuse that existing model-instance update capability instead
+of introducing a new backend command, provided the whole instance value map can
+be safely submitted with only the selected `LOCATION` value changed.
+
+This edit behavior should be opt-in. Keeping point selection/dragging active all
+the time would make ordinary map inspection easier to disrupt, and it could add
+unnecessary event handling and visual noise to normal visualization use.
+
+### Proposed Implementation Approach
+
+- Keep the first implementation frontend-only in `vedenemo-ux` if the existing
+  `updateEntityInstance` helper and `PUT` endpoint are sufficient.
+- Add a map-level `Edit points` mode toggle in the rendered `Hexbin-map`
+  viewer controls.
+- Keep the default mode as view-only:
+  - point markers show their existing titles/labels;
+  - point clicks do not start correction;
+  - no D-pad dialog is visible.
+- In edit mode:
+  - make rendered point overlay markers selectable by click and keyboard;
+  - visually highlight the selected point;
+  - open a correction dialog/panel for the selected point.
+- The correction dialog should show:
+  - point label and source entity/instance identity;
+  - edited `LOCATION` attribute name;
+  - original latitude/longitude;
+  - current adjusted latitude/longitude;
+  - selected projection mode context if relevant;
+  - D-pad controls for north/south/east/west nudging;
+  - step-size controls, for example 0.1 m, 0.5 m, 1 m, 5 m, 10 m;
+  - `Reset`, `Cancel`, and `Save`.
+- D-pad behavior should operate in local metric space:
+  - north/south changes latitude by meters divided by meters-per-degree
+    latitude;
+  - east/west changes longitude by meters divided by meters-per-degree
+    longitude at the map/point latitude;
+  - the preview marker should update immediately using the same selected map
+    projection as the rest of the visualization.
+- On `Save`:
+  - build the updated entity instance values from the selected point instance;
+  - replace only the selected `LOCATION` attribute value with the adjusted
+    `{latitude, longitude}` object;
+  - submit through the existing `updateEntityInstance(...)` / `PUT` endpoint;
+  - update the loaded visualization data in memory so the corrected marker is
+    shown immediately without requiring a full page refresh;
+  - show a clear success message that the process-local model instance changed
+    and the user must save/export a `.vdmp` dump before unloading the instance
+    if they want the correction preserved outside the current runtime.
+- On `Cancel`, leave data unchanged and close the dialog.
+- On `Reset`, return the preview to the original point location without saving.
+
+### Scope
+
+- Add a runtime point-edit mode to rendered `Hexbin-map`.
+- Add selectable point overlay markers only while edit mode is active.
+- Add one-point-at-a-time D-pad correction UI.
+- Support correction of both inside-area and outside-area point overlay markers.
+- Save corrected point coordinates to the selected point entity instance through
+  existing instance update APIs.
+- Refresh or patch the current visualization state so the saved correction is
+  visible immediately.
+- Update visualization documentation.
+
+### Out Of Scope
+
+- Backend, core, CLI, `.vdos`, or `.vdmp` format changes unless implementation
+  proves the existing update endpoint cannot safely persist the corrected
+  instance value.
+- Automatic GPS accuracy radius modeling.
+- Drag-to-move editing in the first slice.
+- Bulk point correction.
+- Undo/redo beyond dialog `Cancel` and `Reset`.
+- Persistent storage beyond the current process-local instance state; users
+  still need to save/export a `.vdmp` dump to preserve corrections outside the
+  running backend process.
+- Editing `LOCATION_AREA` boundaries, `LOCATION_LINE` values, or subregion
+  polygons.
+- Snapping points to boundaries, subregions, roads, trees, or other geometry.
+- Multi-user conflict handling.
+
+### Acceptance Criteria
+
+- Hexbin-map has a view-only default mode and an explicit point-edit mode.
+- In view-only mode, point overlays cannot accidentally be selected for
+  correction.
+- In point-edit mode, a rendered point overlay can be selected by pointer and,
+  where practical, keyboard interaction.
+- Selecting a point opens a correction dialog/panel with original coordinates,
+  adjusted coordinates, nudge controls, step-size controls, `Reset`, `Cancel`,
+  and `Save`.
+- D-pad nudges update the previewed point position in the active map projection.
+- Saving updates only the selected point instance's chosen `LOCATION`
+  attribute, preserving the rest of the instance values.
+- After save, the rendered map shows the corrected point location without
+  requiring a page reload.
+- The UI communicates that the correction is in the process-local model
+  instance and must be preserved by saving/exporting a `.vdmp` dump before
+  unload.
+- Maps with no point overlay binding do not show usable point-edit controls.
+- `cd vedenemo-ux && npm run build` succeeds.
+
+### Open Implementation Checks
+
+- Confirm that all values from a point instance can be resubmitted through the
+  existing `PUT` endpoint without losing null/omitted optional attributes.
+- Confirm whether direct point overlays and linked point overlays both retain
+  enough metadata in `HexbinMapPoint` to identify the editable entity,
+  instance id, and `LOCATION` attribute; if not, extend the frontend data shape.
+- Decide whether saved corrections should reload full Hexbin-map data or patch
+  the current `HexbinMapData` object in memory after a successful save. Prefer a
+  local patch for responsiveness if it stays simple and safe.
+- Verify that point selection remains usable when zoomed or when multiple
+  markers share the same or nearly same rendered position.
+- Decide whether the first slice should expose the edit dialog as a modal or a
+  side/bottom panel; prefer a compact dialog/panel that does not permanently
+  consume map width.
+
 ## Add collapsible Hexbin-map subregion details panel
 
 Status: executed

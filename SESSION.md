@@ -15076,3 +15076,36 @@ Current status and next steps:
 - Existing selected-subregion detail rendering is preserved when the panel is
   open.
 - Verification passed with `npm run build` and `git diff --check`.
+
+## 2026-10-06 23:21 EEST
+
+Session goal:
+
+- Plan a future `Hexbin-map` point location correction mode for adjusting
+  GPS-inaccurate `LOCATION` point overlay data from the visualization.
+
+Files changed:
+
+- `tasks/backlog.md`
+- `SESSION.md`
+
+Commands run:
+
+- Required project/session document reads with `sed` and `tail`
+- `git status --short`
+- `rg` and `sed` inspection of existing entity instance update APIs, point
+  overlay data flow, and `Hexbin-map` rendering code
+- `git diff -- tasks/backlog.md | sed -n '1,260p'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added a new planned backlog item for explicit `Hexbin-map` point edit mode.
+- The plan keeps normal map use view-only by default and makes point correction
+  an opt-in edit mode.
+- The planned correction UI uses one selected point at a time, D-pad nudging,
+  local metric movement, preview, reset/cancel/save, and existing model
+  instance update APIs when sufficient.
+- The plan calls out implementation checks around safe full-instance `PUT`
+  updates, point metadata, immediate map refresh/patching, overlapping markers,
+  and dialog/panel placement.
