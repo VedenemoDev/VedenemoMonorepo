@@ -195,16 +195,20 @@ order, the renderer draws a shared-border overlay with two thin parallel strokes
 so both neighboring subregion colors remain visible. Each shared-border stroke
 is offset toward its matched subregion's own polygon interior. The shared-border
 pass does not split partial overlaps or conflate near-identical/tolerance-based
-segments. The map also includes a selected-subregion detail panel. Selecting a
+segments. The map also includes an on-demand selected-subregion detail panel
+that is hidden by default. When subregion overlay data exists, the rendered map
+viewer exposes a details toggle; opening the panel lets the user select a
+subregion from a dropdown while keeping map click selection active. Selecting a
 rendered subregion from the map, or selecting it from the panel's dropdown,
 highlights the polygon and shows the subregion instance's modeled attribute
-values. Long text values wrap and scroll in the detail panel instead of being
-used as crowded SVG labels. The rendered map starts fitted to the available SVG
-area and supports runtime-only zooming with visible zoom-out, zoom-in, and reset
-controls, plus mouse-wheel and browser-supported pinch zoom on the SVG map
-surface. Titles, details, legends, warnings, and the detail panel remain
-unscaled while the map boundary, subregion, shared-border, and point layers
-transform together. It does not yet generate hexbin cells.
+values. Maps without subregion overlay data do not render an empty right-side
+details pane. Long text values wrap and scroll in the detail panel instead of
+being used as crowded SVG labels. The rendered map starts fitted to the
+available SVG area and supports runtime-only zooming with visible zoom-out,
+zoom-in, and reset controls, plus mouse-wheel and browser-supported pinch zoom
+on the SVG map surface. Titles, details, legends, warnings, and the detail panel
+remain unscaled while the map boundary, subregion, shared-border, and point
+layers transform together. It does not yet generate hexbin cells.
 
 Use `Refresh` to reload backend data without losing the current runtime binding.
 

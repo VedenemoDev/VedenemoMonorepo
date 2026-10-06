@@ -7685,6 +7685,8 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
   const [zoomScale, setZoomScale] = useState(1);
   const [selectedSubregionId, setSelectedSubregionId] = useState("");
   const [projectionMode, setProjectionMode] = useState<HexbinMapProjectionMode>(data.projectionMode);
+  const [detailPanelOpen, setDetailPanelOpen] = useState(false);
+  const hasSubregionDetails = data.subregions.length > 0;
 
   useEffect(() => {
     setSelectedSubregionId((current) => (
@@ -7696,6 +7698,10 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
 
   useEffect(() => {
     setProjectionMode(data.projectionMode);
+  }, [data]);
+
+  useEffect(() => {
+    setDetailPanelOpen(false);
   }, [data]);
 
   useEffect(() => {
@@ -8149,7 +8155,7 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
 
   return (
     <>
-      <div className="hexbin-map-layout">
+      <div className={detailPanelOpen && hasSubregionDetails ? "hexbin-map-layout hexbin-map-layout-details-open" : "hexbin-map-layout"}>
         <div className="hexbin-map-viewer">
           <div className="hexbin-map-viewer-controls">
             <label className="query-field">
@@ -8162,6 +8168,17 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
                 <option value="topDownLocalMetric">Top-down</option>
               </select>
             </label>
+            <button
+              type="button"
+              className="hexbin-map-detail-toggle"
+              onClick={() => setDetailPanelOpen(true)}
+              disabled={!hasSubregionDetails || detailPanelOpen}
+              title={hasSubregionDetails ? "Show subregion details" : "No subregion details available"}
+              aria-expanded={detailPanelOpen}
+            >
+              <span aria-hidden="true">&lt;&lt;</span>
+              <span>Details</span>
+            </button>
           </div>
           <VisualizationZoomViewport
             scale={zoomScale}
@@ -8177,11 +8194,14 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
             <svg ref={svgRef} className="hexbin-map-svg" role="img" aria-label="Hexbin-map boundary" />
           </VisualizationZoomViewport>
         </div>
-        <HexbinMapDetailPanel
-          subregions={data.subregions}
-          selectedSubregionId={selectedSubregionId}
-          onSelectedSubregionIdChange={setSelectedSubregionId}
-        />
+        {detailPanelOpen && hasSubregionDetails && (
+          <HexbinMapDetailPanel
+            subregions={data.subregions}
+            selectedSubregionId={selectedSubregionId}
+            onSelectedSubregionIdChange={setSelectedSubregionId}
+            onClose={() => setDetailPanelOpen(false)}
+          />
+        )}
       </div>
       {data.warnings.length > 0 && (
         <div className="hexbin-map-warnings" aria-label="Hexbin-map data warnings">
@@ -8201,26 +8221,30 @@ function HexbinMapDetailPanel({
   subregions,
   selectedSubregionId,
   onSelectedSubregionIdChange,
+  onClose,
 }: {
   subregions: HexbinMapSubregion[];
   selectedSubregionId: string;
   onSelectedSubregionIdChange: (subregionId: string) => void;
+  onClose: () => void;
 }) {
-  if (subregions.length === 0) {
-    return (
-      <aside className="hexbin-map-detail-panel" aria-label="Hexbin-map selected subregion details">
-        <h3>Subregion Details</h3>
-        <p className="hexbin-map-detail-empty">No subregion overlay selected.</p>
-      </aside>
-    );
-  }
-
   const selectedSubregion = subregions.find((subregion) => subregion.id === selectedSubregionId) ?? subregions[0];
   const detailFields = hexbinMapDetailFields(selectedSubregion);
 
   return (
     <aside className="hexbin-map-detail-panel" aria-label="Hexbin-map selected subregion details">
-      <h3>Subregion Details</h3>
+      <header className="hexbin-map-detail-panel-header">
+        <h3>Subregion Details</h3>
+        <button
+          type="button"
+          className="hexbin-map-detail-toggle"
+          onClick={onClose}
+          title="Hide subregion details"
+          aria-label="Hide subregion details"
+        >
+          <span aria-hidden="true">&gt;&gt;</span>
+        </button>
+      </header>
       <label className="hexbin-map-detail-selector">
         <span>Selected subregion</span>
         <select

@@ -1,5 +1,87 @@
 # Backlog
 
+## Add collapsible Hexbin-map subregion details panel
+
+Status: executed
+
+### Goal
+
+Keep the `Hexbin-map` visual area primary on desktop by hiding the subregion
+details panel by default and letting users open it only when they need modeled
+subregion attributes.
+
+### Context
+
+The selected-subregion detail panel is useful when a map has subregion overlay
+data and the user wants to inspect long descriptive attributes. With maps that
+do not have a subregion overlay, the panel currently renders only an empty
+message and consumes desktop screen space that should belong to the map.
+
+Even when subregion overlay data exists, users often first need to inspect the
+visual map. Details should be an on-demand companion panel rather than a
+default desktop layout cost.
+
+### Proposed Implementation Approach
+
+- Keep the change frontend-only in `vedenemo-ux`.
+- Hide the `Hexbin-map` subregion details panel by default.
+- Add a visible map-viewer control for opening the details panel.
+- Disable the details control when no subregion overlay data exists.
+- Add a close control inside the details panel.
+- Preserve existing subregion selection and detail rendering when the panel is
+  open.
+
+### Scope
+
+- Add local open/closed state for the rendered `Hexbin-map` details panel.
+- Render the details panel only when it is open and subregion data exists.
+- Update layout styling so the map uses the available width while details are
+  hidden.
+- Update visualization documentation.
+
+### Out Of Scope
+
+- Backend, core, CLI, `.vdos`, or `.vdmp` changes.
+- Persistent user preferences for panel open/closed state.
+- Reworking subregion selection semantics or detail field contents.
+- Adding a new UI dependency.
+
+### Acceptance Criteria
+
+- The rendered `Hexbin-map` details panel is hidden by default.
+- Maps without subregion overlays do not show an empty right-side details pane.
+- A visible control opens the details panel when subregion data exists.
+- A visible control closes the details panel again.
+- Existing selected-subregion details still render when the panel is open.
+- `cd vedenemo-ux && npm run build` succeeds.
+
+### Completion Notes
+
+- Added frontend-only open/closed state for the rendered `Hexbin-map`
+  subregion details panel.
+- The panel is hidden by default and the map viewer uses the full available
+  width while details are hidden.
+- Added a `<< Details` viewer control that opens the panel when subregion data
+  exists.
+- Disabled the details control when no subregion overlay data exists instead of
+  rendering an empty right-side panel.
+- Added a `>>` close control inside the details panel.
+- Preserved existing subregion selection and attribute rendering when the panel
+  is open.
+- Updated visualization documentation.
+- Verified with `npm run build` in `vedenemo-ux`.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the planned frontend-only scope and did not change
+  backend, core, CLI, `.vdos`, `.vdmp`, or stored instance data.
+- Summary: the empty `No subregion overlay selected` pane is no longer rendered
+  for maps without subregion overlay data.
+- Summary: the panel is hidden by default for all rendered maps and can be
+  opened or closed with visible controls.
+- Summary: verification matched the acceptance criteria with a successful
+  `npm run build` in `vedenemo-ux`.
+
 ## Add Hexbin-map runtime projection mode selector
 
 Status: executed

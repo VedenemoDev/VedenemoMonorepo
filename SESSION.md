@@ -15037,3 +15037,42 @@ Current status and next steps:
 - The binding-step selector still establishes the initial rendered projection.
 - Updated backlog completion notes and visualization documentation.
 - Verification passed with `npm run build` and `git diff --check`.
+
+## 2026-10-06 22:58 EEST
+
+Session goal:
+
+- Add a backlog item and implement an on-demand collapsible `Hexbin-map`
+  subregion details panel so empty details no longer consume desktop map space.
+
+Files changed:
+
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `SESSION.md`
+
+Commands run:
+
+- Required project/session document reads with `sed` and `tail`
+- `git status --short`
+- `sed` and `rg` inspection of the `Hexbin-map` detail panel and CSS
+- `npm run build` in `vedenemo-ux`
+- `git diff --check`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css docs/visualizations.md tasks/backlog.md | sed -n '1,320p'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added and executed the newest backlog item for a collapsible `Hexbin-map`
+  subregion details panel.
+- The detail panel is now hidden by default.
+- Maps without subregion overlays no longer render an empty right-side details
+  pane.
+- Added a disabled/enabled `<< Details` viewer control and a `>>` close control
+  inside the panel.
+- Existing selected-subregion detail rendering is preserved when the panel is
+  open.
+- Verification passed with `npm run build` and `git diff --check`.
