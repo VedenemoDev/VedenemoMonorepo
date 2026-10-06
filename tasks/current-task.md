@@ -1,39 +1,42 @@
 # Current Task
 
-## Higher-confidence current-location capture
+## Add Hexbin-map point location correction mode
 
 Status: executed
 
 ### Goal
 
-Improve the Entity data editor's `Use current location` behavior so captured
-`LOCATION` values come from a bounded repeated-read browser location session
-instead of a single cached-or-immediate reading.
+Let users correct GPS-inaccurate `LOCATION` point overlay data directly from the
+rendered `Hexbin-map` visualization through an explicit edit mode.
 
 ### Scope
 
-- Keep the implementation in `vedenemo-ux`.
-- Replace one-shot `getCurrentPosition` capture with a short `watchPosition`
-  capture session for single-point `LOCATION` fields.
-- Track latest reading, best reading, reported accuracy, elapsed time, and
-  reading count.
-- Let the user accept the best reading or cancel the capture.
-- Preserve manual JSON editing and the existing `{latitude, longitude}` saved
-  value shape.
-- Leave backend, core, CLI, `.vdos`, and `.vdmp` behavior unchanged.
+- Keep the implementation frontend-only in `vedenemo-ux`.
+- Keep normal `Hexbin-map` viewing read-only by default.
+- Add an explicit point edit mode for maps with point overlays.
+- Let users select one rendered point, preview local metric D-pad nudges, reset,
+  cancel, or save.
+- Save only the selected point instance's chosen `LOCATION` value through the
+  existing entity-instance update API.
+- Patch the current rendered map after save so the corrected point appears
+  immediately.
+- Leave backend, core, CLI, `.vdos`, and `.vdmp` formats unchanged.
 
 ### Completion Notes
 
-- Added structured current-location capture state for Entity data editor
-  `LOCATION` fields.
-- `Use current location` now starts a bounded high-accuracy `watchPosition`
-  session with `maximumAge: 0`.
-- The editor shows latest accuracy, best accuracy, elapsed time, reading count,
-  guidance text, and `Accept best` / `Cancel` actions.
-- Accepting writes the best reading as the existing compact
-  `{latitude, longitude}` JSON value; cancelling restores the previous field
-  value.
-- Watchers and timers are cleared on accept, cancel, timeout, manual field
-  change, model/entity/root replacement, and component cleanup.
-- Manual `LOCATION` JSON editing and validation remain unchanged.
+- Added editable source metadata to `HexbinMapPoint` for the point entity,
+  instance, and selected `LOCATION` attribute.
+- Added an explicit `Edit points` toggle in the rendered `Hexbin-map` viewer.
+- Point markers remain view-only by default; in edit mode they can be selected
+  by pointer or keyboard.
+- Added a compact point correction panel with source details, original and
+  adjusted coordinates, projection context, nudge step selection, D-pad controls,
+  `Reset`, `Cancel`, and `Save`.
+- D-pad nudging uses local meters-per-degree conversion and previews the marker
+  in the active map projection.
+- Saving submits the full selected instance value map through the existing
+  `updateEntityInstance` helper with only the chosen `LOCATION` value replaced.
+- Successful saves patch the current `HexbinMapData` in memory and show a
+  process-local persistence reminder.
+- Updated visualization documentation.
 - Verified with `npm run build` in `vedenemo-ux`.

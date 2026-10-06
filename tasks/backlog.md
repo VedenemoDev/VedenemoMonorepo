@@ -2,7 +2,7 @@
 
 ## Add Hexbin-map point location correction mode
 
-Status: planned
+Status: executed
 
 ### Goal
 
@@ -138,6 +138,29 @@ unnecessary event handling and visual noise to normal visualization use.
 - Decide whether the first slice should expose the edit dialog as a modal or a
   side/bottom panel; prefer a compact dialog/panel that does not permanently
   consume map width.
+
+### Planned vs. Executed Evaluation
+
+- Execution matched the planned frontend-only scope: backend, core, CLI,
+  `.vdos`, and `.vdmp` behavior were left unchanged.
+- Added the planned opt-in `Edit points` mode; normal map viewing remains
+  read-only by default, and maps without point overlays disable the edit control.
+- Implemented one-point-at-a-time correction with pointer and keyboard point
+  selection, a compact in-view correction panel, local metric D-pad nudging,
+  step-size selection, reset, cancel, and save.
+- Confirmed the existing full-instance `PUT` flow is sufficient for this first
+  slice by reusing `updateEntityInstance(...)` with all current instance values
+  preserved and only the selected `LOCATION` attribute replaced.
+- Extended `HexbinMapPoint` metadata so both direct and linked point overlays
+  retain the editable entity, instance, and `LOCATION` attribute.
+- Chose the planned local patch strategy after save; the rendered map updates
+  immediately without a full visualization reload.
+- Added the process-local persistence reminder after save so users know to
+  export a `.vdmp` dump if they want the correction preserved outside the
+  running backend process.
+- Verification matched the planned frontend build check with
+  `cd vedenemo-ux && npm run build`; backend verification was also run because
+  the task request asked for code compile checks.
 
 ## Add collapsible Hexbin-map subregion details panel
 

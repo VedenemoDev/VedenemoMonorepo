@@ -203,12 +203,20 @@ rendered subregion from the map, or selecting it from the panel's dropdown,
 highlights the polygon and shows the subregion instance's modeled attribute
 values. Maps without subregion overlay data do not render an empty right-side
 details pane. Long text values wrap and scroll in the detail panel instead of
-being used as crowded SVG labels. The rendered map starts fitted to the
-available SVG area and supports runtime-only zooming with visible zoom-out,
-zoom-in, and reset controls, plus mouse-wheel and browser-supported pinch zoom
-on the SVG map surface. Titles, details, legends, warnings, and the detail panel
-remain unscaled while the map boundary, subregion, shared-border, and point
-layers transform together. It does not yet generate hexbin cells.
+being used as crowded SVG labels. When a point overlay is rendered, the map
+viewer also exposes an explicit `Edit points` mode. Normal viewing remains
+read-only by default. In edit mode, point markers can be selected by pointer or
+keyboard, nudged north/south/east/west in local metric steps, reset, cancelled,
+or saved. Saving updates only the selected point instance's chosen `LOCATION`
+value through the existing model-instance update API and patches the current
+rendered map so the corrected marker is visible immediately. The saved
+correction is still only in the process-local model instance until the user
+exports a `.vdmp` dump. The rendered map starts fitted to the available SVG area
+and supports runtime-only zooming with visible zoom-out, zoom-in, and reset
+controls, plus mouse-wheel and browser-supported pinch zoom on the SVG map
+surface. Titles, details, legends, warnings, and the detail panel remain
+unscaled while the map boundary, subregion, shared-border, and point layers
+transform together. It does not yet generate hexbin cells.
 
 Use `Refresh` to reload backend data without losing the current runtime binding.
 

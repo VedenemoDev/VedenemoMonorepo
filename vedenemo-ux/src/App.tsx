@@ -466,6 +466,9 @@ type HexbinMapPoint = {
   id: string;
   label: string;
   location: LocationPoint;
+  entity: EntityDescription;
+  instance: EntityInstanceResponse;
+  locationAttribute: AttributeDescription;
   styleKey: string;
   styleLabel: string;
   style: HexbinMapPointStyle;
@@ -488,6 +491,13 @@ type HexbinMapData = {
   pointLegend: HexbinMapPointLegendEntry[];
   warnings: string[];
   overlayNotice?: string;
+};
+
+type HexbinMapPointEditDraft = {
+  pointId: string;
+  originalLocation: LocationPoint;
+  adjustedLocation: LocationPoint;
+  stepMeters: number;
 };
 
 type HexbinMapDetailField = {
@@ -540,6 +550,7 @@ const HEXBIN_MAP_CONFLICT_POINT_STYLE: HexbinMapPointStyle = {
   color: "#111827",
   shape: "cross",
 };
+const HEXBIN_MAP_POINT_NUDGE_STEPS = [0.1, 0.5, 1, 5, 10];
 const HEXBIN_MAP_DIRECT_POINT_SOURCE_VALUE = "__direct-point-attribute";
 
 async function loadRuntimeConfig(): Promise<RuntimeConfig> {
@@ -1298,6 +1309,19 @@ function parseLocationPoint(value: unknown): LocationPoint | null {
   return { latitude, longitude };
 }
 
+function metersPerDegreeAtLatitude(latitude: number): { latitude: number; longitude: number } {
+  const latitudeRadians = latitude * Math.PI / 180;
+  return {
+    latitude: 111132.92
+      - 559.82 * Math.cos(2 * latitudeRadians)
+      + 1.175 * Math.cos(4 * latitudeRadians)
+      - 0.0023 * Math.cos(6 * latitudeRadians),
+    longitude: 111412.84 * Math.cos(latitudeRadians)
+      - 93.5 * Math.cos(3 * latitudeRadians)
+      + 0.118 * Math.cos(5 * latitudeRadians),
+  };
+}
+
 function instanceOptionLabel(entity: EntityDescription, instance: EntityInstanceResponse): string {
   const labelAttribute = entity.attributes.find((attribute) => attribute.dataType !== "LOCATION_AREA") ?? entity.attributes[0] ?? null;
   const labelValue = labelAttribute === null ? "" : formatAttributeValue(labelAttribute, instance.values[labelAttribute.azName]).trim();
@@ -1937,6 +1961,9 @@ async function resolveHexbinMapPoints(
         id: path.point.id,
         label: entityInstanceLabel(pointEntity, path.point),
         location: path.location,
+        entity: pointEntity,
+        instance: path.point,
+        locationAttribute,
         styleKey: conflict ? "__conflict" : path.styleKey,
         styleLabel: conflict ? "Conflicting path" : path.styleLabel,
         style: conflict ? HEXBIN_MAP_CONFLICT_POINT_STYLE : styleByKey.get(path.styleKey) ?? hexbinMapPointStyleForIndex(0),
@@ -6374,7 +6401,32 @@ function VisualizationWizardPage() {
                 visualizationData.hexbinMap === null ? (
                   <div className="tree-empty">{visualizationData.status === "loading" ? "Loading map..." : "No visualization data"}</div>
                 ) : (
-                  <HexbinMapRenderer data={visualizationData.hexbinMap} />
+                  <HexbinMapRenderer
+                    apiBaseUrl={apiBaseUrl}
+                    modelAzName={modelAzName}
+                    instanceRootId={instanceRootId}
+                    data={visualizationData.hexbinMap}
+                    onPointLocationSaved={(pointId, adjustedLocation, updatedInstance) => {
+                      setVisualizationData((current) => {
+                        if (current.hexbinMap === null) {
+                          return current;
+                        }
+                        return {
+                          ...current,
+                          hexbinMap: {
+                            ...current.hexbinMap,
+                            points: current.hexbinMap.points.map((point) => point.id === pointId
+                              ? {
+                                ...point,
+                                location: adjustedLocation,
+                                instance: updatedInstance,
+                              }
+                              : point),
+                          },
+                        };
+                      });
+                    }}
+                  />
                 )
               ) : visualizationData.tree === null ? (
                 <div className="tree-empty">{visualizationData.status === "loading" ? "Loading tree..." : "No visualization data"}</div>
@@ -7676,17 +7728,39 @@ function TidyTreeBindingPanel({
   );
 }
 
-function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
+function HexbinMapRenderer({
+  apiBaseUrl,
+  modelAzName,
+  instanceRootId,
+  data,
+  onPointLocationSaved,
+}: {
+  apiBaseUrl: string;
+  modelAzName: string;
+  instanceRootId: string;
+  data: HexbinMapData;
+  onPointLocationSaved: (pointId: string, adjustedLocation: LocationPoint, updatedInstance: EntityInstanceResponse) => void;
+}) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+  const hexbinRenderBasisRef = useRef<{ data: HexbinMapData; projectionMode: HexbinMapProjectionMode } | null>(null);
   const zoomScaleRef = useRef(1);
   const syncingScrollRef = useRef(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [selectedSubregionId, setSelectedSubregionId] = useState("");
   const [projectionMode, setProjectionMode] = useState<HexbinMapProjectionMode>(data.projectionMode);
   const [detailPanelOpen, setDetailPanelOpen] = useState(false);
+  const [pointEditMode, setPointEditMode] = useState(false);
+  const [pointEditDraft, setPointEditDraft] = useState<HexbinMapPointEditDraft | null>(null);
+  const [pointEditMessage, setPointEditMessage] = useState("");
+  const [pointEditError, setPointEditError] = useState("");
+  const [pointEditSaving, setPointEditSaving] = useState(false);
   const hasSubregionDetails = data.subregions.length > 0;
+  const hasEditablePoints = data.points.length > 0;
+  const selectedEditPoint = pointEditDraft === null
+    ? null
+    : data.points.find((point) => point.id === pointEditDraft.pointId) ?? null;
 
   useEffect(() => {
     setSelectedSubregionId((current) => (
@@ -7702,6 +7776,10 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
 
   useEffect(() => {
     setDetailPanelOpen(false);
+    setPointEditMode(false);
+    setPointEditDraft(null);
+    setPointEditError("");
+    setPointEditSaving(false);
   }, [data]);
 
   useEffect(() => {
@@ -7737,19 +7815,12 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     const allPoints = [...allBoundaries.flat(), ...data.points.map((point) => point.location)];
     const averageLatitude = d3.mean(allPoints, (point) => point.latitude) ?? 0;
     const averageLongitude = d3.mean(allPoints, (point) => point.longitude) ?? 0;
-    const averageLatitudeRadians = averageLatitude * Math.PI / 180;
-    const metersPerLatitudeDegree = 111132.92
-      - 559.82 * Math.cos(2 * averageLatitudeRadians)
-      + 1.175 * Math.cos(4 * averageLatitudeRadians)
-      - 0.0023 * Math.cos(6 * averageLatitudeRadians);
-    const metersPerLongitudeDegree = 111412.84 * Math.cos(averageLatitudeRadians)
-      - 93.5 * Math.cos(3 * averageLatitudeRadians)
-      + 0.118 * Math.cos(5 * averageLatitudeRadians);
+    const averageMetersPerDegree = metersPerDegreeAtLatitude(averageLatitude);
     const projectToSourcePlane = (point: LocationPoint): [number, number] => {
       if (projectionMode === "topDownLocalMetric") {
         return [
-          (point.longitude - averageLongitude) * metersPerLongitudeDegree,
-          (point.latitude - averageLatitude) * metersPerLatitudeDegree,
+          (point.longitude - averageLongitude) * averageMetersPerDegree.longitude,
+          (point.latitude - averageLatitude) * averageMetersPerDegree.latitude,
         ];
       }
       return [point.longitude, point.latitude];
@@ -7960,20 +8031,49 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       .attr("y2", (stroke) => stroke.y2)
       .attr("stroke", (stroke) => stroke.color);
 
+    const renderedPoints = data.points.map((point) => ({
+      ...point,
+      location: pointEditDraft?.pointId === point.id ? pointEditDraft.adjustedLocation : point.location,
+    }));
+
     mapLayer.append("g")
       .attr("class", "hexbin-map-points")
       .selectAll("path")
-      .data(data.points.map((point) => ({
+      .data(renderedPoints.map((point) => ({
         ...point,
         projectedLocation: projectPoint(point.location),
       })))
       .join("path")
+      .attr("class", (point) => [
+        "hexbin-map-point",
+        pointEditMode ? "hexbin-map-point-editable" : "",
+        pointEditDraft?.pointId === point.id ? "hexbin-map-point-selected" : "",
+      ].filter(Boolean).join(" "))
+      .attr("data-point-id", (point) => point.id)
+      .attr("tabindex", pointEditMode ? 0 : null)
+      .attr("role", pointEditMode ? "button" : null)
+      .attr("aria-label", (point) => pointEditMode ? `Correct ${point.label}` : null)
+      .attr("aria-pressed", (point) => pointEditMode ? (pointEditDraft?.pointId === point.id ? "true" : "false") : null)
       .attr("d", (point) => symbolPathForStyle(point.style, point.conflict ? 92 : 72))
       .attr("transform", (point) => `translate(${point.projectedLocation[0]}, ${point.projectedLocation[1]})`)
       .attr("fill", (point) => point.style.color)
       .attr("stroke", "#ffffff")
+      .on("click", (_event, point) => {
+        if (pointEditMode) {
+          selectPointForCorrection(point);
+        }
+      })
+      .on("keydown", (event, point) => {
+        if (!pointEditMode) {
+          return;
+        }
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          selectPointForCorrection(point);
+        }
+      })
       .append("title")
-      .text((point) => `${point.label} - ${point.styleLabel}`);
+      .text((point) => pointEditMode ? `${point.label} - click to correct ${point.locationAttribute.visName}` : `${point.label} - ${point.styleLabel}`);
 
     const applyZoomTransform = (transform: d3.ZoomTransform) => {
       const nextScale = transform.k;
@@ -8010,12 +8110,21 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
         applyZoomTransform(event.transform);
       });
 
+    const previousRenderBasis = hexbinRenderBasisRef.current;
+    const preserveZoom = previousRenderBasis?.data === data && previousRenderBasis.projectionMode === projectionMode;
+    const initialScale = preserveZoom ? zoomScaleRef.current : 1;
+    const initialTransform = preserveZoom && viewportElement !== null
+      ? d3.zoomIdentity
+        .translate(-viewportElement.scrollLeft, -viewportElement.scrollTop)
+        .scale(initialScale)
+      : d3.zoomIdentity;
+    hexbinRenderBasisRef.current = { data, projectionMode };
     zoomBehaviorRef.current = zoomBehavior;
-    zoomScaleRef.current = 1;
-    setZoomScale(1);
+    zoomScaleRef.current = initialScale;
+    setZoomScale(initialScale);
     svg
       .call(zoomBehavior)
-      .call(zoomBehavior.transform, d3.zoomIdentity)
+      .call(zoomBehavior.transform, initialTransform)
       .on("dblclick.zoom", null);
 
     const syncZoomToScroll = () => {
@@ -8119,7 +8228,7 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       svg.on(".zoom", null);
       viewportElement?.removeEventListener("scroll", syncZoomToScroll);
     };
-  }, [data, projectionMode]);
+  }, [data, pointEditDraft, pointEditMode, projectionMode]);
 
   useEffect(() => {
     const svgElement = svgRef.current;
@@ -8153,6 +8262,80 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     }
   }
 
+  function selectPointForCorrection(point: HexbinMapPoint) {
+    setPointEditDraft({
+      pointId: point.id,
+      originalLocation: point.location,
+      adjustedLocation: point.location,
+      stepMeters: HEXBIN_MAP_POINT_NUDGE_STEPS[2],
+    });
+    setPointEditMessage("");
+    setPointEditError("");
+  }
+
+  function updatePointEditDraft(updater: (draft: HexbinMapPointEditDraft) => HexbinMapPointEditDraft) {
+    setPointEditDraft((current) => current === null ? current : updater(current));
+    setPointEditMessage("");
+    setPointEditError("");
+  }
+
+  function nudgePoint(direction: "north" | "south" | "east" | "west") {
+    updatePointEditDraft((draft) => {
+      const metersPerDegree = metersPerDegreeAtLatitude(draft.adjustedLocation.latitude);
+      const longitudeDivisor = Math.max(Math.abs(metersPerDegree.longitude), 0.000001);
+      const latitudeDelta = draft.stepMeters / metersPerDegree.latitude;
+      const longitudeDelta = draft.stepMeters / longitudeDivisor;
+      return {
+        ...draft,
+        adjustedLocation: {
+          latitude: direction === "north"
+            ? draft.adjustedLocation.latitude + latitudeDelta
+            : direction === "south"
+              ? draft.adjustedLocation.latitude - latitudeDelta
+              : draft.adjustedLocation.latitude,
+          longitude: direction === "east"
+            ? draft.adjustedLocation.longitude + longitudeDelta
+            : direction === "west"
+              ? draft.adjustedLocation.longitude - longitudeDelta
+              : draft.adjustedLocation.longitude,
+        },
+      };
+    });
+  }
+
+  async function savePointCorrection() {
+    if (selectedEditPoint === null || pointEditDraft === null || pointEditSaving) {
+      return;
+    }
+    setPointEditSaving(true);
+    setPointEditError("");
+    try {
+      const values = {
+        ...selectedEditPoint.instance.values,
+        [selectedEditPoint.locationAttribute.azName]: {
+          latitude: pointEditDraft.adjustedLocation.latitude,
+          longitude: pointEditDraft.adjustedLocation.longitude,
+        },
+      };
+      const updatedInstance = await updateEntityInstance(
+        apiBaseUrl,
+        modelAzName,
+        instanceRootId,
+        selectedEditPoint.entity.azName,
+        selectedEditPoint.instance.id,
+        values,
+      );
+      onPointLocationSaved(selectedEditPoint.id, pointEditDraft.adjustedLocation, updatedInstance);
+      setPointEditDraft(null);
+      setPointEditMode(false);
+      setPointEditMessage("Point location saved to the process-local model instance. Export a .vdmp dump before unload to preserve it outside this runtime.");
+    } catch (error) {
+      setPointEditError(error instanceof Error ? error.message : "Point location save failed");
+    } finally {
+      setPointEditSaving(false);
+    }
+  }
+
   return (
     <>
       <div className={detailPanelOpen && hasSubregionDetails ? "hexbin-map-layout hexbin-map-layout-details-open" : "hexbin-map-layout"}>
@@ -8168,6 +8351,26 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
                 <option value="topDownLocalMetric">Top-down</option>
               </select>
             </label>
+            <button
+              type="button"
+              className="hexbin-map-detail-toggle"
+              onClick={() => {
+                setPointEditMode((current) => {
+                  const next = !current;
+                  if (!next) {
+                    setPointEditDraft(null);
+                  }
+                  setPointEditMessage("");
+                  setPointEditError("");
+                  return next;
+                });
+              }}
+              disabled={!hasEditablePoints || pointEditSaving}
+              title={hasEditablePoints ? "Correct point locations" : "No point overlay available"}
+              aria-pressed={pointEditMode}
+            >
+              <span>{pointEditMode ? "Done" : "Edit points"}</span>
+            </button>
             <button
               type="button"
               className="hexbin-map-detail-toggle"
@@ -8193,6 +8396,89 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
           >
             <svg ref={svgRef} className="hexbin-map-svg" role="img" aria-label="Hexbin-map boundary" />
           </VisualizationZoomViewport>
+          {(pointEditMode || pointEditDraft !== null || pointEditMessage || pointEditError) && (
+            <section className="hexbin-map-point-editor" aria-label="Hexbin-map point location correction">
+              {pointEditDraft === null || selectedEditPoint === null ? (
+                <div className="hexbin-map-point-editor-empty">
+                  <strong>{pointEditMode ? "Select a point marker to correct its LOCATION value." : "Point editing is off."}</strong>
+                  {pointEditMessage && <span className="hexbin-map-point-editor-success">{pointEditMessage}</span>}
+                  {pointEditError && <span className="hexbin-map-point-editor-error">{pointEditError}</span>}
+                </div>
+              ) : (
+                <>
+                  <header className="hexbin-map-point-editor-header">
+                    <div>
+                      <h3>Point Correction</h3>
+                      <span>{selectedEditPoint.label}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="hexbin-map-detail-toggle"
+                      onClick={() => setPointEditDraft(null)}
+                      disabled={pointEditSaving}
+                    >
+                      Cancel
+                    </button>
+                  </header>
+                  <dl className="hexbin-map-point-editor-fields">
+                    <div>
+                      <dt>Source</dt>
+                      <dd>{selectedEditPoint.entity.visName} - {selectedEditPoint.instance.id}</dd>
+                    </div>
+                    <div>
+                      <dt>LOCATION</dt>
+                      <dd>{selectedEditPoint.locationAttribute.visName} ({selectedEditPoint.locationAttribute.azName})</dd>
+                    </div>
+                    <div>
+                      <dt>Projection</dt>
+                      <dd>{projectionMode === "topDownLocalMetric" ? "Top-down local metric" : "Default longitude/latitude"}</dd>
+                    </div>
+                    <div>
+                      <dt>Original</dt>
+                      <dd>{pointEditDraft.originalLocation.latitude.toFixed(8)}, {pointEditDraft.originalLocation.longitude.toFixed(8)}</dd>
+                    </div>
+                    <div>
+                      <dt>Adjusted</dt>
+                      <dd>{pointEditDraft.adjustedLocation.latitude.toFixed(8)}, {pointEditDraft.adjustedLocation.longitude.toFixed(8)}</dd>
+                    </div>
+                  </dl>
+                  <div className="hexbin-map-point-editor-controls">
+                    <div className="hexbin-map-nudge-pad" aria-label="Point nudge controls">
+                      <button type="button" onClick={() => nudgePoint("north")} disabled={pointEditSaving}>N</button>
+                      <button type="button" onClick={() => nudgePoint("west")} disabled={pointEditSaving}>W</button>
+                      <button type="button" onClick={() => nudgePoint("east")} disabled={pointEditSaving}>E</button>
+                      <button type="button" onClick={() => nudgePoint("south")} disabled={pointEditSaving}>S</button>
+                    </div>
+                    <label className="query-field">
+                      <span>Step</span>
+                      <select
+                        value={pointEditDraft.stepMeters}
+                        onChange={(event) => updatePointEditDraft((draft) => ({ ...draft, stepMeters: Number(event.target.value) }))}
+                        disabled={pointEditSaving}
+                      >
+                        {HEXBIN_MAP_POINT_NUDGE_STEPS.map((step) => (
+                          <option key={step} value={step}>{step} m</option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="hexbin-map-point-editor-actions">
+                      <button
+                        type="button"
+                        onClick={() => updatePointEditDraft((draft) => ({ ...draft, adjustedLocation: draft.originalLocation }))}
+                        disabled={pointEditSaving}
+                      >
+                        Reset
+                      </button>
+                      <button type="button" onClick={() => void savePointCorrection()} disabled={pointEditSaving}>
+                        {pointEditSaving ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  </div>
+                  {pointEditError && <p className="hexbin-map-point-editor-error">{pointEditError}</p>}
+                </>
+              )}
+            </section>
+          )}
         </div>
         {detailPanelOpen && hasSubregionDetails && (
           <HexbinMapDetailPanel

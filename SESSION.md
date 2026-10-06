@@ -15109,3 +15109,52 @@ Current status and next steps:
 - The plan calls out implementation checks around safe full-instance `PUT`
   updates, point metadata, immediate map refresh/patching, overlapping markers,
   and dialog/panel placement.
+
+## 2026-10-06 23:42 EEST
+
+Session goal:
+
+- Execute the current backlog plan for `Add Hexbin-map point location correction
+  mode`, verify it, and mark the backlog item executed while keeping it as
+  history.
+
+Files changed:
+
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `tasks/current-task.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `SESSION.md`
+
+Commands run:
+
+- Required project/session document reads with `sed`, `tail`, and `rg`
+- `npm run build` in `vedenemo-ux`
+- `git diff --check`
+- `mvn clean verify`
+- `git status --short --untracked-files=all`
+- `git diff --stat`
+- `git diff -- tasks/current-task.md tasks/backlog.md docs/visualizations.md | sed -n '1,260p'`
+- `git diff -- vedenemo-ux/src/App.tsx | sed -n '1,260p'`
+- `git diff -- vedenemo-ux/src/styles.css | sed -n '1,260p'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added an explicit rendered-map `Edit points` mode for `Hexbin-map` point
+  overlays.
+- Point markers remain view-only by default and become pointer/keyboard
+  selectable only while edit mode is active.
+- Added a compact correction panel with source identity, original and adjusted
+  coordinates, projection context, D-pad nudging, step-size selection, reset,
+  cancel, and save.
+- D-pad nudges use local meters-per-degree conversion and preview in the active
+  projection while preserving the current zoom basis during preview redraws.
+- Saves reuse the existing full-instance `PUT` helper, changing only the
+  selected `LOCATION` attribute and patching the rendered `HexbinMapData` in
+  memory after success.
+- Updated visualization documentation, current task notes, and the backlog
+  `Planned vs. Executed Evaluation`.
+- Verification passed with `npm run build`, `git diff --check`, and
+  `mvn clean verify`.
