@@ -7684,6 +7684,7 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
   const syncingScrollRef = useRef(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [selectedSubregionId, setSelectedSubregionId] = useState("");
+  const [projectionMode, setProjectionMode] = useState<HexbinMapProjectionMode>(data.projectionMode);
 
   useEffect(() => {
     setSelectedSubregionId((current) => (
@@ -7691,6 +7692,10 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
         ? current
         : data.subregions[0]?.id ?? ""
     ));
+  }, [data]);
+
+  useEffect(() => {
+    setProjectionMode(data.projectionMode);
   }, [data]);
 
   useEffect(() => {
@@ -7735,7 +7740,7 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       - 93.5 * Math.cos(3 * averageLatitudeRadians)
       + 0.118 * Math.cos(5 * averageLatitudeRadians);
     const projectToSourcePlane = (point: LocationPoint): [number, number] => {
-      if (data.projectionMode === "topDownLocalMetric") {
+      if (projectionMode === "topDownLocalMetric") {
         return [
           (point.longitude - averageLongitude) * metersPerLongitudeDegree,
           (point.latitude - averageLatitude) * metersPerLatitudeDegree,
@@ -8108,7 +8113,7 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
       svg.on(".zoom", null);
       viewportElement?.removeEventListener("scroll", syncZoomToScroll);
     };
-  }, [data]);
+  }, [data, projectionMode]);
 
   useEffect(() => {
     const svgElement = svgRef.current;
@@ -8146,6 +8151,18 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     <>
       <div className="hexbin-map-layout">
         <div className="hexbin-map-viewer">
+          <div className="hexbin-map-viewer-controls">
+            <label className="query-field">
+              <span>Projection</span>
+              <select
+                value={projectionMode}
+                onChange={(event) => setProjectionMode(event.target.value as HexbinMapProjectionMode)}
+              >
+                <option value="default">Default</option>
+                <option value="topDownLocalMetric">Top-down</option>
+              </select>
+            </label>
+          </div>
           <VisualizationZoomViewport
             scale={zoomScale}
             minScale={VISUALIZATION_HEXBIN_ZOOM_MIN}

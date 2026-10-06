@@ -1313,6 +1313,19 @@ body {
   border-right: 1px solid #d1d5db;
 }
 
+.hexbin-map-viewer-controls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid #d1d5db;
+  background: #fff;
+}
+
+.hexbin-map-viewer-controls .query-field {
+  width: min(100%, 16rem);
+}
+
 .hexbin-map-boundary-fill {
   fill: #dbeafe;
   fill-opacity: 0.55;

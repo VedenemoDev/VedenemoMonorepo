@@ -60,10 +60,12 @@ rendered area.
 ### Completion Notes
 
 - Added a frontend-only `Hexbin-map` projection mode selector to the binding
-  panel.
+  panel and the rendered map viewer.
 - Kept `Default` as the existing longitude/latitude rendering behavior.
 - Added `Top-down` as a local metric projection centered on the visible map
   data.
+- The rendered map viewer selector changes projection without reloading
+  instance data.
 - Routed root boundaries, subregion boundaries, shared-border calculations, and
   point overlays through the same selected projection function.
 - Left backend, core, CLI, `.vdos`, `.vdmp`, and stored `LOCATION_AREA` /

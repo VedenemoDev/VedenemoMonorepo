@@ -15001,3 +15001,39 @@ Current status and next steps:
 - Backend, core, CLI, `.vdos`, `.vdmp`, and stored spatial values were left
   unchanged.
 - Verification passed with `npm run build` and `git diff --check`.
+
+## 2026-10-06 22:45 EEST
+
+Session goal:
+
+- Make the `Hexbin-map` projection selector visible in the rendered map viewer,
+  not only in the binding step.
+
+Files changed:
+
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `vedenemo-ux/src/App.tsx`
+- `vedenemo-ux/src/styles.css`
+- `SESSION.md`
+
+Commands run:
+
+- Required project/session document reads with `sed` and `tail`
+- `git status --short`
+- `sed` and `rg` inspection of the `Hexbin-map` renderer and controls
+- `npm run build` in `vedenemo-ux`
+- `git diff --check`
+- `git diff --stat`
+- `git diff -- vedenemo-ux/src/App.tsx vedenemo-ux/src/styles.css docs/visualizations.md tasks/backlog.md | sed -n '1,260p'`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added a visible `Projection` selector above the rendered `Hexbin-map`
+  viewport.
+- Projection can now be changed between `Default` and `Top-down` without
+  reloading instance data.
+- The binding-step selector still establishes the initial rendered projection.
+- Updated backlog completion notes and visualization documentation.
+- Verification passed with `npm run build` and `git diff --check`.
