@@ -335,6 +335,8 @@ type LocationPoint = {
   longitude: number;
 };
 
+type HexbinMapProjectionMode = "default" | "topDownLocalMetric";
+
 type LocationFormValue = {
   latitude: number;
   longitude: number;
@@ -368,6 +370,7 @@ type HexbinMapBinding = {
   overlayLabelTemplate: string;
   overlayStyleMode: HexbinMapStyleMode;
   manualOverlayStyles: Record<string, HexbinMapManualStyleAssignment>;
+  projectionMode: HexbinMapProjectionMode;
   pointContextTraversalValue: string;
   pointTraversalValue: string;
   pointLocationAttributeAzName: string;
@@ -478,6 +481,7 @@ type HexbinMapPointLegendEntry = {
 type HexbinMapData = {
   title: string;
   detail: string;
+  projectionMode: HexbinMapProjectionMode;
   boundary: LocationPoint[];
   subregions: HexbinMapSubregion[];
   points: HexbinMapPoint[];
@@ -1231,6 +1235,7 @@ function emptyHexbinMapBinding(): HexbinMapBinding {
     overlayLabelTemplate: "{id}",
     overlayStyleMode: "automaticPatternColor",
     manualOverlayStyles: {},
+    projectionMode: "default",
     pointContextTraversalValue: "",
     pointTraversalValue: "",
     pointLocationAttributeAzName: "",
@@ -1357,6 +1362,7 @@ function firstValidHexbinMapBinding(options: HexbinMapRootOption[]): HexbinMapBi
     overlayLabelTemplate: "{id}",
     overlayStyleMode: "automaticPatternColor",
     manualOverlayStyles: {},
+    projectionMode: "default",
     pointContextTraversalValue: "",
     pointTraversalValue: "",
     pointLocationAttributeAzName: "",
@@ -2068,6 +2074,7 @@ async function buildHexbinMapData(
     detail: subregions.length === 0
       ? `${attribute.visName} (${attribute.azName})${points.length === 0 ? "" : ` with ${points.length} point${points.length === 1 ? "" : "s"}`}`
       : `${attribute.visName} (${attribute.azName}) with ${subregions.length} subregion overlay${subregions.length === 1 ? "" : "s"}${points.length === 0 ? "" : ` and ${points.length} point${points.length === 1 ? "" : "s"}`}`,
+    projectionMode: binding.projectionMode,
     boundary,
     subregions,
     points,
@@ -6442,6 +6449,7 @@ function HexbinMapBindingPanel({
       overlayLabelTemplate: "{id}",
       overlayStyleMode: "automaticPatternColor",
       manualOverlayStyles: {},
+      projectionMode: "default",
       pointContextTraversalValue: "",
       pointTraversalValue: "",
       pointLocationAttributeAzName: "",
@@ -6558,6 +6566,17 @@ function HexbinMapBindingPanel({
                 {option.attribute.visName} ({option.attribute.azName}){option.disabledReason === undefined ? "" : ` - ${option.disabledReason}`}
               </option>
             ))}
+          </select>
+        </label>
+        <label className="query-field">
+          <span>Projection</span>
+          <select
+            value={binding.projectionMode}
+            onChange={(event) => onBindingChange({ ...binding, projectionMode: event.target.value as HexbinMapProjectionMode })}
+            disabled={selectedRootOption === null || selectedRootOption.disabledReason !== undefined}
+          >
+            <option value="default">Default</option>
+            <option value="topDownLocalMetric">Top-down</option>
           </select>
         </label>
       </div>
@@ -7705,25 +7724,46 @@ function HexbinMapRenderer({ data }: { data: HexbinMapData }) {
     );
     const allBoundaries = [data.boundary, ...data.subregions.map((subregion) => subregion.boundary)];
     const allPoints = [...allBoundaries.flat(), ...data.points.map((point) => point.location)];
-    const longitudes = allPoints.map((point) => point.longitude);
-    const latitudes = allPoints.map((point) => point.latitude);
-    const longitudeExtent = d3.extent(longitudes);
-    const latitudeExtent = d3.extent(latitudes);
-    const minLongitude = longitudeExtent[0] ?? 0;
-    const maxLongitude = longitudeExtent[1] ?? minLongitude;
-    const minLatitude = latitudeExtent[0] ?? 0;
-    const maxLatitude = latitudeExtent[1] ?? minLatitude;
-    const longitudeSpan = Math.max(maxLongitude - minLongitude, 0.000001);
-    const latitudeSpan = Math.max(maxLatitude - minLatitude, 0.000001);
-    const scale = Math.min((width - padding * 2) / longitudeSpan, (mapCanvasHeight - padding * 2) / latitudeSpan);
-    const mapWidth = longitudeSpan * scale;
-    const projectedMapHeight = latitudeSpan * scale;
+    const averageLatitude = d3.mean(allPoints, (point) => point.latitude) ?? 0;
+    const averageLongitude = d3.mean(allPoints, (point) => point.longitude) ?? 0;
+    const averageLatitudeRadians = averageLatitude * Math.PI / 180;
+    const metersPerLatitudeDegree = 111132.92
+      - 559.82 * Math.cos(2 * averageLatitudeRadians)
+      + 1.175 * Math.cos(4 * averageLatitudeRadians)
+      - 0.0023 * Math.cos(6 * averageLatitudeRadians);
+    const metersPerLongitudeDegree = 111412.84 * Math.cos(averageLatitudeRadians)
+      - 93.5 * Math.cos(3 * averageLatitudeRadians)
+      + 0.118 * Math.cos(5 * averageLatitudeRadians);
+    const projectToSourcePlane = (point: LocationPoint): [number, number] => {
+      if (data.projectionMode === "topDownLocalMetric") {
+        return [
+          (point.longitude - averageLongitude) * metersPerLongitudeDegree,
+          (point.latitude - averageLatitude) * metersPerLatitudeDegree,
+        ];
+      }
+      return [point.longitude, point.latitude];
+    };
+    const sourcePlanePoints = allPoints.map(projectToSourcePlane);
+    const xExtent = d3.extent(sourcePlanePoints, (point) => point[0]);
+    const yExtent = d3.extent(sourcePlanePoints, (point) => point[1]);
+    const minX = xExtent[0] ?? 0;
+    const maxX = xExtent[1] ?? minX;
+    const minY = yExtent[0] ?? 0;
+    const maxY = yExtent[1] ?? minY;
+    const xSpan = Math.max(maxX - minX, 0.000001);
+    const ySpan = Math.max(maxY - minY, 0.000001);
+    const scale = Math.min((width - padding * 2) / xSpan, (mapCanvasHeight - padding * 2) / ySpan);
+    const mapWidth = xSpan * scale;
+    const projectedMapHeight = ySpan * scale;
     const offsetX = (width - mapWidth) / 2;
     const offsetY = (mapCanvasHeight - projectedMapHeight) / 2;
-    const projectPoint = (point: LocationPoint): [number, number] => [
-      offsetX + (point.longitude - minLongitude) * scale,
-      offsetY + (maxLatitude - point.latitude) * scale,
-    ];
+    const projectPoint = (point: LocationPoint): [number, number] => {
+      const [sourceX, sourceY] = projectToSourcePlane(point);
+      return [
+        offsetX + (sourceX - minX) * scale,
+        offsetY + (maxY - sourceY) * scale,
+      ];
+    };
     const projectBoundary = (boundary: LocationPoint[]) => boundary.map(projectPoint);
     const closeBoundary = (boundary: [number, number][]) => boundary.length > 0
       ? [...boundary, boundary[0]]

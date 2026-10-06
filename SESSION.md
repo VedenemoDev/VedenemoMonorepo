@@ -14962,3 +14962,42 @@ Current status and next steps:
 - Added `alue.topDownProjection` metadata containing a local equirectangular metric birds-eye projection derived from the same boundary points.
 - Verified the new file is valid JSON and that the authoritative geographic boundary is byte-equivalent after normalized JSON comparison.
 - Current Vedenemo UX does not yet consume `topDownProjection`; a future UX change would be needed for automatic use of this metadata in rendering.
+
+## 2026-10-06 22:31 EEST
+
+Session goal:
+
+- Add a `Hexbin-map` runtime projection selector for default rendering and
+  top-down local metric rendering, then execute the matching backlog item.
+
+Files changed:
+
+- `docs/visualizations.md`
+- `tasks/backlog.md`
+- `vedenemo-ux/src/App.tsx`
+- `SESSION.md`
+
+Commands run:
+
+- Required project/session document reads with `sed` and `tail`
+- `sed` and `rg` inspection of `Hexbin-map` binding, renderer, point overlay,
+  and documentation code paths
+- `npm run build` in `vedenemo-ux`
+- `git diff --check`
+- `git diff -- vedenemo-ux/src/App.tsx docs/visualizations.md tasks/backlog.md | sed -n '1,260p'`
+- `git diff --stat`
+- `git status --short --untracked-files=all`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Added the newest backlog item and completed its planned/executed evaluation.
+- Added `Default` and `Top-down` projection modes to the `Hexbin-map` runtime
+  binding.
+- Implemented the top-down mode as a local metric projection centered on the
+  visible map data.
+- Root boundaries, subregion boundaries, shared borders, and point overlays now
+  use the same selected projection path.
+- Backend, core, CLI, `.vdos`, `.vdmp`, and stored spatial values were left
+  unchanged.
+- Verification passed with `npm run build` and `git diff --check`.

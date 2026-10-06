@@ -1,5 +1,88 @@
 # Backlog
 
+## Add Hexbin-map runtime projection mode selector
+
+Status: executed
+
+### Goal
+
+Let `Hexbin-map` users switch between the current default latitude/longitude
+rendering and a local metric top-down rendering without changing model data or
+stored `LOCATION_AREA` values.
+
+### Context
+
+Small real-world parcels can look visually skewed when longitude and latitude
+degrees are treated as equal display units. The underlying `LOCATION_AREA`
+boundary points should remain authoritative geographic latitude/longitude data,
+but the visualization can choose a different runtime projection for display.
+
+Point overlays must use the same projection as the root boundary and optional
+subregion boundaries so markers keep their correct visual relationship to the
+rendered area.
+
+### Proposed Implementation Approach
+
+- Keep the change frontend-only in `vedenemo-ux`.
+- Add a `Hexbin-map` binding option for projection mode.
+- Support two first-slice modes:
+  - `Default`: preserve the current longitude/latitude rendering.
+  - `Top-down`: use a local metric projection centered on the visible data.
+- Route root boundaries, subregion boundaries, shared-border calculations, and
+  point overlays through the same projection function.
+- Keep projection choice as runtime visualization configuration, not model
+  schema, `.vdos`, or `.vdmp` data.
+
+### Scope
+
+- Add projection mode state to the `Hexbin-map` runtime binding.
+- Add a small binding-panel selector for projection mode.
+- Implement local metric top-down projection in the existing D3 renderer.
+- Update visualization documentation.
+
+### Out Of Scope
+
+- Backend, core, CLI, `.vdos`, or `.vdmp` changes.
+- Persistent user visualization preferences.
+- Map tiles, CRS libraries, or external projection dependencies.
+- Rotation controls, manual projection tuning, or arbitrary projection plugins.
+
+### Acceptance Criteria
+
+- `Hexbin-map` binding offers `Default` and `Top-down` projection modes.
+- `Default` preserves the existing rendered behavior.
+- `Top-down` uses a local metric projection for the displayed area.
+- Root boundary, subregion boundaries, shared borders, and point overlays are
+  rendered with the same selected projection.
+- `LOCATION_AREA` model and instance values remain unchanged.
+- `cd vedenemo-ux && npm run build` succeeds.
+
+### Completion Notes
+
+- Added a frontend-only `Hexbin-map` projection mode selector to the binding
+  panel.
+- Kept `Default` as the existing longitude/latitude rendering behavior.
+- Added `Top-down` as a local metric projection centered on the visible map
+  data.
+- Routed root boundaries, subregion boundaries, shared-border calculations, and
+  point overlays through the same selected projection function.
+- Left backend, core, CLI, `.vdos`, `.vdmp`, and stored `LOCATION_AREA` /
+  `LOCATION` values unchanged.
+- Updated visualization documentation.
+- Verified with `npm run build` in `vedenemo-ux`.
+
+### Planned vs. Executed Evaluation
+
+- Summary: execution matched the planned frontend-only scope and did not add
+  persistence, backend changes, CRS libraries, map tiles, or model/schema
+  changes.
+- Summary: the first slice exposes exactly the planned `Default` and
+  `Top-down` projection modes.
+- Summary: point overlays reuse the same projection path as boundaries and
+  shared borders, so markers remain aligned with the selected display mode.
+- Summary: verification matched the acceptance criteria with a successful
+  `npm run build` in `vedenemo-ux`.
+
 ## Add Hexbin-map selected subregion detail panel
 
 Status: executed
