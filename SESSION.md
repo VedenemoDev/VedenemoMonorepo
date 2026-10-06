@@ -14882,3 +14882,52 @@ Current status and next steps:
   scrollable wrapped long text fields.
 - Updated README, visualization docs, and current architecture documentation.
 - Verification passed: `npm run build` in `vedenemo-ux` and `git diff --check`.
+## 2026-10-04 17:52 EEST
+
+Session goal:
+
+- Create Karttaselain-compatible GPX files from
+  `.vedenemo/Mikonmaa_omistaja_harmonisoitu_puustolla.vdmp` for each
+  `Metsakuvio` and the whole `Metsapalsta` boundary.
+
+Files changed:
+
+- `SESSION.md`
+
+Generated local artifacts:
+
+- `/tmp/Mikonmaa_GPX/K2.GPX`
+- `/tmp/Mikonmaa_GPX/K2.1.GPX`
+- `/tmp/Mikonmaa_GPX/K3.GPX`
+- `/tmp/Mikonmaa_GPX/K4.GPX`
+- `/tmp/Mikonmaa_GPX/K5.GPX`
+- `/tmp/Mikonmaa_GPX/K6.GPX`
+- `/tmp/Mikonmaa_GPX/K7.GPX`
+- `/tmp/Mikonmaa_GPX/K8.GPX`
+- `/tmp/Mikonmaa_GPX/Palsta.GPX`
+- `/tmp/Mikonmaa_GPX.zip`
+
+Commands run:
+
+- Required project/session document reads with `sed` and `tail`
+- `rg --files` / `find` / `ls` checks for source and Drive paths
+- `jq` inspection of `.vedenemo/Mikonmaa_omistaja_harmonisoitu_puustolla.vdmp`
+- Python GPX generation from `alue.boundary` values
+- Python XML parse and closed-boundary validation for generated GPX files
+- `zip -j /tmp/Mikonmaa_GPX.zip /tmp/Mikonmaa_GPX/*.GPX`
+- `unzip -l /tmp/Mikonmaa_GPX.zip`
+- `which rclone`, `which gdrive`, `which gcloud`
+- `gcloud auth list --format='value(account,status)'`
+- `git status --short`
+- `date '+%Y-%m-%d %H:%M %Z'`
+
+Current status and next steps:
+
+- Generated nine GPX 1.1 files using `<trk>/<trkseg>/<trkpt>` boundaries for
+  Karttaselain visualization.
+- Each boundary was closed by repeating the first point as the final track
+  point and validated with Python XML parsing.
+- Could not upload directly to the provided Google Drive folder because no
+  Google Drive upload connector or authenticated Drive CLI was available in the
+  sandbox; `gcloud` could not initialize credentials because its config
+  directory is read-only.
